@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reviewAPI, contentAPI } from '../utils/api';
 import { ReviewSchedule, Category } from '../types';
-import ReactMarkdown from 'react-markdown';
 
 const ReviewPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -157,7 +156,10 @@ const ReviewPage: React.FC = () => {
           {showContent && (
             <div className="p-6 border-b bg-gray-50">
               <div className="prose max-w-none">
-                <ReactMarkdown>{currentReview.content.content}</ReactMarkdown>
+                <div 
+                  className="prose prose-lg max-w-none"
+                  dangerouslySetInnerHTML={{ __html: currentReview.content.content }}
+                />
               </div>
               {currentReview.content.tags.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-1">

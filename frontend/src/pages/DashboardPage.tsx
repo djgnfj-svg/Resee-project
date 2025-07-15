@@ -3,12 +3,18 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { analyticsAPI } from '../utils/api';
 import { DashboardData } from '../types';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
     queryFn: analyticsAPI.getDashboard,
+  });
+
+  const { data: reviewStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['reviewStats'],
+    queryFn: analyticsAPI.getReviewStats,
   });
 
   if (isLoading) {
@@ -59,6 +65,21 @@ const DashboardPage: React.FC = () => {
       bgColor: 'bg-purple-50',
     },
   ];
+
+  // Chart colors
+  const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+
+  // Process review stats for charts
+  const processedDailyData = reviewStats?.daily_reviews?.map((item: any) => ({
+    date: new Date(item.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+    count: item.count
+  })) || [];
+
+  const processedResultData = reviewStats?.result_distribution?.map((item: any) => ({
+    name: item.result === 'remembered' ? '기억함' : 
+          item.result === 'partial' ? '애매함' : '모름',
+    value: item.count
+  })) || [];
 
   return (
     <div>
@@ -134,6 +155,79 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Charts Section */}
+      {!statsLoading && reviewStats && (
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Daily Reviews Chart */}
+          <div className="overflow-hidden rounded-lg bg-white shadow">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">📊 일별 복습 현황 (최근 30일)</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={processedDailyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="#3B82F6" 
+                    strokeWidth={2}
+                    dot={{ fill: '#3B82F6' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Review Results Distribution */}
+          <div className="overflow-hidden rounded-lg bg-white shadow">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">🎯 복습 결과 분포</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={processedResultData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {processedResultData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Weekly Performance Chart */}
+      {!statsLoading && reviewStats && (
+        <div className="mt-8">
+          <div className="overflow-hidden rounded-lg bg-white shadow">
+            <div className="p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">📈 주간 복습 성과</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={processedDailyData.slice(-7)}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#10B981" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

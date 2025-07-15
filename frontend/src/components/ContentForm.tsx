@@ -50,6 +50,7 @@ const ContentForm: React.FC<ContentFormProps> = ({
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   
   const editor = useEditor({
     extensions: [
@@ -61,7 +62,11 @@ const ContentForm: React.FC<ContentFormProps> = ({
       Link.configure({
         openOnClick: false,
       }),
-      Image,
+      Image.configure({
+        HTMLAttributes: {
+          class: 'rounded-lg max-w-full h-auto',
+        },
+      }),
       Table.configure({
         resizable: true,
       }),
@@ -143,6 +148,36 @@ const ContentForm: React.FC<ContentFormProps> = ({
         description: newCategoryDescription.trim()
       });
     }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setIsUploadingImage(true);
+    try {
+      const response = await contentAPI.uploadImage(file);
+      
+      // 이미지를 에디터에 삽입
+      editor?.chain().focus().setImage({ src: response.url }).run();
+      
+      console.log('이미지 업로드 성공:', response);
+    } catch (error) {
+      console.error('이미지 업로드 실패:', error);
+      alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleImageButtonClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (file) {
+        handleImageUpload(file);
+      }
+    };
+    input.click();
   };
 
   // Auto-save functionality
@@ -413,6 +448,14 @@ const ContentForm: React.FC<ContentFormProps> = ({
                 type="button"
               >
                 {'</>'}
+              </button>
+              <button
+                onClick={handleImageButtonClick}
+                disabled={isUploadingImage}
+                type="button"
+                className={isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''}
+              >
+                {isUploadingImage ? '📤' : '🖼️'}
               </button>
               <div className="w-px h-6 bg-gray-300 mx-1" />
               <button
