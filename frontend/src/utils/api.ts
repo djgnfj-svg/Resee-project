@@ -121,6 +121,23 @@ export const contentAPI = {
     const response = await api.get('/content/contents/by_category/');
     return response.data;
   },
+  
+  uploadImage: async (imageFile: File) => {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    
+    const response = await api.post('/content/upload-image/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+  
+  deleteImage: async (filename: string) => {
+    const response = await api.delete(`/content/delete-image/${filename}/`);
+    return response.data;
+  },
 };
 
 // Review API

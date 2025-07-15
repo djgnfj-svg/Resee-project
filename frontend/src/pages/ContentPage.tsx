@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
 import { Content, Category } from '../types';
 import ContentForm from '../components/ContentForm';
-import ReactMarkdown from 'react-markdown';
 
 const ContentPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -245,12 +244,13 @@ const ContentPage: React.FC = () => {
               </div>
               
               <div className="prose prose-sm max-w-none">
-                <ReactMarkdown>
-                  {content.content.length > 200 
-                    ? content.content.substring(0, 200) + '...' 
-                    : content.content
-                  }
-                </ReactMarkdown>
+                <div 
+                  dangerouslySetInnerHTML={{ 
+                    __html: content.content.length > 200 
+                      ? content.content.substring(0, 200) + '...' 
+                      : content.content
+                  }}
+                />
               </div>
 
               {content.tags.length > 0 && (
