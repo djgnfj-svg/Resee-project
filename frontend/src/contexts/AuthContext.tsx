@@ -47,16 +47,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
+      setUser(null); // Properly clear user state
     } finally {
       setIsLoading(false);
     }
   };
 
   const login = async (data: LoginData) => {
-    const tokens = await authAPI.login(data);
-    localStorage.setItem('access_token', tokens.access);
-    localStorage.setItem('refresh_token', tokens.refresh);
-    await fetchUser();
+    try {
+      const tokens = await authAPI.login(data);
+      localStorage.setItem('access_token', tokens.access);
+      localStorage.setItem('refresh_token', tokens.refresh);
+      await fetchUser();
+    } catch (error: any) {
+      // Clean up any partial state
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      setUser(null);
+      
+      // Re-throw the error so the login component can handle it
+      throw error;
+    }
   };
 
   const register = async (data: RegisterData) => {

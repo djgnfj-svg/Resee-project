@@ -1,8 +1,24 @@
-# 📚 Resee - 과학적 복습 플랫폼
+# 📚 Resee - 과학적 복습 플랫폼 v0.1
 
 **에빙하우스 망각곡선에 기반한 스마트 복습 시스템**
 
 Resee는 과학적으로 검증된 에빙하우스 망각곡선 이론을 활용하여 효율적인 학습과 장기 기억을 돕는 웹 플랫폼입니다.
+
+## 🎯 v0.1 주요 개선사항
+
+### ✨ 완성된 핵심 기능
+- ✅ **Tiptap 리치 텍스트 에디터**: 마크다운 지원, 이미지 업로드, 풍부한 툴바
+- ✅ **모던 UX/UI**: 그라디언트, 애니메이션, 반응형 디자인
+- ✅ **플립 카드 복습**: 키보드 단축키, 진행률 표시, 실시간 타이머
+- ✅ **고급 검색/필터**: 카테고리, 우선순위, 정렬, 실시간 필터 태그
+- ✅ **에러 핸들링**: 전역 에러 바운더리, 토스트 알림, 네트워크 에러 처리
+- ✅ **대시보드**: 히어로 섹션, 인터랙티브 차트, 통계 카드
+
+### 🎮 키보드 단축키
+- `Space`: 카드 뒤집기 (내용 보기/숨기기)
+- `1`: 모름 - 첫 번째 간격으로 리셋
+- `2`: 애매함 - 현재 간격 반복
+- `3`: 기억함 - 다음 간격으로 진행
 
 ## ✨ 주요 기능
 
@@ -85,6 +101,8 @@ docker-compose exec backend python manage.py createsuperuser
 ### 6. 접속
 - **프론트엔드**: http://localhost:3000
 - **백엔드 API**: http://localhost:8000/api
+- **API 문서 (Swagger)**: http://localhost:8000/swagger/
+- **API 문서 (ReDoc)**: http://localhost:8000/redoc/
 - **Django Admin**: http://localhost:8000/admin
 - **RabbitMQ Management**: http://localhost:15672
 
@@ -188,27 +206,50 @@ npm run build
 
 ## 📋 API 문서
 
-### 인증
-- `POST /api/auth/token/` - 로그인
+### 📖 인터랙티브 API 문서
+- **Swagger UI**: http://localhost:8000/swagger/ - 인터랙티브 API 테스트
+- **ReDoc**: http://localhost:8000/redoc/ - 깔끔한 API 문서 보기
+- **JSON Schema**: http://localhost:8000/swagger.json - OpenAPI 스키마
+
+### 🔐 인증 방법
+1. `/api/auth/token/` 엔드포인트로 로그인
+2. 받은 `access` 토큰을 헤더에 포함: `Authorization: Bearer <token>`
+
+### 🎯 주요 엔드포인트
+
+#### 인증
+- `POST /api/auth/token/` - JWT 토큰 획득 (로그인)
 - `POST /api/auth/token/refresh/` - 토큰 갱신
 - `POST /api/accounts/users/register/` - 회원가입
 
-### 콘텐츠
-- `GET /api/content/contents/` - 콘텐츠 목록
-- `POST /api/content/contents/` - 콘텐츠 생성
-- `GET /api/content/contents/{id}/` - 콘텐츠 상세
+#### 콘텐츠 관리
+- `GET /api/content/contents/` - 콘텐츠 목록 (검색, 필터링, 정렬 지원)
+- `POST /api/content/contents/` - 새 콘텐츠 생성
+- `GET /api/content/contents/{id}/` - 콘텐츠 상세 조회
 - `PUT /api/content/contents/{id}/` - 콘텐츠 수정
 - `DELETE /api/content/contents/{id}/` - 콘텐츠 삭제
+- `GET /api/content/contents/by_category/` - 카테고리별 콘텐츠 그룹화
 
-### 복습
+#### 복습 시스템
 - `GET /api/review/today/` - 오늘의 복습 목록
-- `POST /api/review/complete/` - 복습 완료
-- `GET /api/review/schedules/` - 복습 스케줄
-- `GET /api/review/history/` - 복습 기록
+- `POST /api/review/complete/` - 복습 완료 및 스케줄 업데이트
+- `GET /api/review/schedules/` - 복습 스케줄 관리
+- `GET /api/review/history/` - 복습 기록 조회
+- `GET /api/review/category-stats/` - 카테고리별 복습 통계
 
-### 카테고리
+#### 카테고리 & 태그
 - `GET /api/content/categories/` - 카테고리 목록
-- `POST /api/content/categories/` - 카테고리 생성
+- `POST /api/content/categories/` - 새 카테고리 생성
+- `GET /api/content/tags/` - 태그 목록
+- `POST /api/content/tags/` - 새 태그 생성
+
+#### 분석 & 대시보드
+- `GET /api/analytics/dashboard/` - 대시보드 데이터
+- `GET /api/analytics/review-stats/` - 상세 복습 통계
+
+### 📸 파일 업로드
+- `POST /api/content/upload-image/` - 이미지 업로드 (Tiptap 에디터용)
+- `DELETE /api/content/delete-image/{filename}/` - 이미지 삭제
 
 ## 🧪 테스트
 

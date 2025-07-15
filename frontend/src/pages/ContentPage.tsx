@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { contentAPI } from '../utils/api';
 import { Content, Category } from '../types';
 import ContentForm from '../components/ContentForm';
 
 const ContentPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPriority, setSelectedPriority] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('created_desc');
 
   // Fetch contents
   const { data: contents = [], isLoading: contentsLoading } = useQuery<Content[]>({
-    queryKey: ['contents', selectedCategory, searchTerm],
+    queryKey: ['contents', selectedCategory, searchTerm, selectedPriority, sortBy],
     queryFn: () => {
       const params = new URLSearchParams();
       if (selectedCategory !== 'all') {
@@ -22,6 +27,10 @@ const ContentPage: React.FC = () => {
       if (searchTerm) {
         params.append('search', searchTerm);
       }
+      if (selectedPriority !== 'all') {
+        params.append('priority', selectedPriority);
+      }
+      params.append('ordering', sortBy);
       return contentAPI.getContents(params.toString()).then(res => res.results || res);
     },
   });
@@ -37,11 +46,13 @@ const ContentPage: React.FC = () => {
     mutationFn: contentAPI.createContent,
     onSuccess: (data) => {
       console.log('콘텐츠 생성 성공:', data);
+      toast.success('콘텐츠가 성공적으로 생성되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['contents'] });
       setShowForm(false);
     },
     onError: (error) => {
       console.error('콘텐츠 생성 실패:', error);
+      toast.error('콘텐츠 생성에 실패했습니다.');
     },
   });
 
@@ -50,9 +61,14 @@ const ContentPage: React.FC = () => {
     mutationFn: ({ id, data }: { id: number; data: any }) => 
       contentAPI.updateContent(id, data),
     onSuccess: () => {
+      toast.success('콘텐츠가 성공적으로 수정되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['contents'] });
       setEditingContent(null);
       setShowForm(false);
+    },
+    onError: (error) => {
+      console.error('콘텐츠 수정 실패:', error);
+      toast.error('콘텐츠 수정에 실패했습니다.');
     },
   });
 
@@ -60,7 +76,12 @@ const ContentPage: React.FC = () => {
   const deleteContentMutation = useMutation({
     mutationFn: contentAPI.deleteContent,
     onSuccess: () => {
+      toast.success('콘텐츠가 성공적으로 삭제되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['contents'] });
+    },
+    onError: (error) => {
+      console.error('콘텐츠 삭제 실패:', error);
+      toast.error('콘텐츠 삭제에 실패했습니다.');
     },
   });
 
@@ -151,19 +172,41 @@ const ContentPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="mb-6 bg-white p-4 rounded-lg shadow">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Advanced Search & Filters */}
+      <div className="mb-6 bg-white p-6 rounded-2xl shadow-lg">
+        <div className="flex items-center mb-4">
+          <div className="text-xl mr-2">🔍</div>
+          <h2 className="text-lg font-semibold text-gray-900">검색 & 필터</h2>
+        </div>
+        
+        {/* Search Bar */}
+        <div className="relative mb-4">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="제목이나 내용으로 검색..."
+            className="block w-full pl-10 pr-4 py-3 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+          />
+        </div>
+
+        {/* Filter Options */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Category filter */}
           <div>
-            <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 mb-1">
-              카테고리
+            <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 mb-2">
+              📂 카테고리
             </label>
             <select
               id="category-filter"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
             >
               <option value="all">전체 카테고리</option>
               {categories.map((category) => (
@@ -174,20 +217,79 @@ const ContentPage: React.FC = () => {
             </select>
           </div>
 
-          {/* Search */}
+          {/* Priority filter */}
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-              검색
+            <label htmlFor="priority-filter" className="block text-sm font-medium text-gray-700 mb-2">
+              ⚡ 우선순위
             </label>
-            <input
-              type="text"
-              id="search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="제목이나 내용으로 검색..."
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            />
+            <select
+              id="priority-filter"
+              value={selectedPriority}
+              onChange={(e) => setSelectedPriority(e.target.value)}
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+            >
+              <option value="all">전체 우선순위</option>
+              <option value="high">높음</option>
+              <option value="medium">보통</option>
+              <option value="low">낮음</option>
+            </select>
           </div>
+
+          {/* Sort by */}
+          <div>
+            <label htmlFor="sort-filter" className="block text-sm font-medium text-gray-700 mb-2">
+              📊 정렬
+            </label>
+            <select
+              id="sort-filter"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
+            >
+              <option value="created_desc">최신순</option>
+              <option value="created_asc">오래된순</option>
+              <option value="title_asc">제목순</option>
+              <option value="priority_desc">우선순위 높은순</option>
+              <option value="priority_asc">우선순위 낮은순</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Active Filters Display */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {searchTerm && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+              검색: "{searchTerm}"
+              <button
+                onClick={() => setSearchTerm('')}
+                className="ml-2 text-blue-600 hover:text-blue-800"
+              >
+                ×
+              </button>
+            </span>
+          )}
+          {selectedCategory !== 'all' && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+              카테고리: {categories.find(c => c.slug === selectedCategory)?.name}
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className="ml-2 text-green-600 hover:text-green-800"
+              >
+                ×
+              </button>
+            </span>
+          )}
+          {selectedPriority !== 'all' && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+              우선순위: {selectedPriority === 'high' ? '높음' : selectedPriority === 'medium' ? '보통' : '낮음'}
+              <button
+                onClick={() => setSelectedPriority('all')}
+                className="ml-2 text-yellow-600 hover:text-yellow-800"
+              >
+                ×
+              </button>
+            </span>
+          )}
         </div>
       </div>
 

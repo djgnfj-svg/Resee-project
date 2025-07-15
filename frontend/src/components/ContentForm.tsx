@@ -1,18 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import CharacterCount from '@tiptap/extension-character-count';
-import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
-import Table from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
 import { contentAPI } from '../utils/api';
 import { Category, Tag } from '../types';
+import TiptapEditor from './TiptapEditor';
 
 interface ContentFormData {
   title: string;
@@ -36,7 +27,7 @@ const ContentForm: React.FC<ContentFormProps> = ({
   initialData
 }) => {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, formState: { errors } } = useForm<ContentFormData>({
+  const { register, handleSubmit, formState: { errors }, watch } = useForm<ContentFormData>({
     defaultValues: {
       priority: 'medium',
       ...initialData
@@ -48,49 +39,7 @@ const ContentForm: React.FC<ContentFormProps> = ({
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({
-        placeholder: 'Notion처럼 /를 입력하거나 마크다운 문법을 사용하세요...'
-      }),
-      CharacterCount,
-      Link.configure({
-        openOnClick: false,
-      }),
-      Image.configure({
-        HTMLAttributes: {
-          class: 'rounded-lg max-w-full h-auto',
-        },
-      }),
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-    ],
-    content: content,
-    onUpdate: ({ editor }) => {
-      setContent(editor.getHTML());
-    },
-    editorProps: {
-      attributes: {
-        class: 'tiptap-editor min-h-[700px] p-8 focus:outline-none text-gray-900 leading-relaxed prose prose-lg max-w-none',
-      },
-    },
-  });
-  
-  // Update editor content when initialData changes
-  React.useEffect(() => {
-    if (editor && initialData?.content !== undefined) {
-      editor.commands.setContent(initialData.content);
-    }
-  }, [editor, initialData?.content]);
+  const [activeTab, setActiveTab] = useState<'basic' | 'content' | 'settings'>('basic');
 
   // Fetch categories and tags
   const { data: categories = [] } = useQuery<Category[]>({
@@ -150,572 +99,382 @@ const ContentForm: React.FC<ContentFormProps> = ({
     }
   };
 
-  const handleImageUpload = async (file: File) => {
-    setIsUploadingImage(true);
+  const handleImageUpload = async (file: File): Promise<string> => {
     try {
       const response = await contentAPI.uploadImage(file);
-      
-      // 이미지를 에디터에 삽입
-      editor?.chain().focus().setImage({ src: response.url }).run();
-      
-      console.log('이미지 업로드 성공:', response);
+      return response.url || response.image_url;
     } catch (error) {
-      console.error('이미지 업로드 실패:', error);
-      alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
-    } finally {
-      setIsUploadingImage(false);
+      console.error('Image upload failed:', error);
+      throw error;
     }
   };
 
-  const handleImageButtonClick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (event) => {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (file) {
-        handleImageUpload(file);
-      }
-    };
-    input.click();
-  };
-
-  // Auto-save functionality
-  useEffect(() => {
-    if (!content || content.length < 10) return;
-    
-    const autoSaveTimer = setTimeout(() => {
-      setAutoSaveStatus('saving');
-      const draftData = {
-        title: '',
-        content,
-        timestamp: new Date().toISOString()
-      };
-      localStorage.setItem('contentDraft', JSON.stringify(draftData));
-      setAutoSaveStatus('saved');
-      setLastSaved(new Date());
-    }, 2000);
-
-    return () => clearTimeout(autoSaveTimer);
-  }, [content]);
-
-  // Load draft on mount
-  useEffect(() => {
-    if (!initialData) {
-      const draft = localStorage.getItem('contentDraft');
-      if (draft) {
-        try {
-          const draftData = JSON.parse(draft);
-          setContent(draftData.content || '');
-          setLastSaved(new Date(draftData.timestamp));
-        } catch (error) {
-          console.error('Failed to load draft:', error);
-        }
-      }
+  const watchedTitle = watch('title');
+  const watchedPriority = watch('priority');
+  
+  const isBasicComplete = watchedTitle && watchedTitle.trim().length > 0;
+  const isContentComplete = content && content.trim().length > 10;
+  const canSubmit = isBasicComplete && isContentComplete;
+  
+  const tabs = [
+    { id: 'basic', label: '기본 정보', icon: '📝', complete: isBasicComplete },
+    { id: 'content', label: '콘텐츠 작성', icon: '✍️', complete: isContentComplete },
+    { id: 'settings', label: '추가 설정', icon: '⚙️', complete: true }
+  ];
+  
+  const nextTab = () => {
+    if (activeTab === 'basic' && isBasicComplete) {
+      setActiveTab('content');
+    } else if (activeTab === 'content' && isContentComplete) {
+      setActiveTab('settings');
     }
-  }, [initialData]);
+  };
+  
+  const prevTab = () => {
+    if (activeTab === 'settings') {
+      setActiveTab('content');
+    } else if (activeTab === 'content') {
+      setActiveTab('basic');
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-6">
-            <h2 className="text-2xl font-bold text-white">
-              {initialData ? '📝 콘텐츠 수정' : '✨ 새 콘텐츠 작성'}
-            </h2>
-            <p className="text-primary-100 mt-2">
-              Tiptap으로 Notion처럼 실시간 렌더링하며 작성하세요
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit(onFormSubmit)} className="p-8 space-y-8">
-        {/* Title */}
-        <div className="group">
-          <label htmlFor="title" className="block text-sm font-semibold text-gray-800 mb-2">
-            📄 제목 *
-          </label>
-          <input
-            {...register('title', { required: '제목을 입력해주세요.' })}
-            type="text"
-            className="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all duration-200 bg-gray-50 focus:bg-white"
-            placeholder="매력적인 제목을 입력하세요..."
-          />
-          {errors.title && (
-            <p className="mt-2 text-sm text-red-600 flex items-center">
-              <span className="mr-1">⚠️</span>
-              {errors.title.message}
-            </p>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="group">
-          <label htmlFor="content" className="block text-sm font-semibold text-gray-800 mb-2">
-            ✍️ 내용 *
-          </label>
-          <div className="mt-1 rounded-lg overflow-hidden border-2 border-gray-200 focus-within:border-primary-500 transition-all duration-200">
-            <style>{`
-              .tiptap-editor {
-                font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
-                font-size: 16px;
-              }
-              
-              .tiptap-editor h1 {
-                font-size: 2.5rem;
-                font-weight: 800;
-                line-height: 1.2;
-                margin: 1.5rem 0 1rem 0;
-                color: #1f2937;
-                border-bottom: 2px solid #e5e7eb;
-                padding-bottom: 0.5rem;
-              }
-              
-              .tiptap-editor h2 {
-                font-size: 2rem;
-                font-weight: 700;
-                line-height: 1.3;
-                margin: 1.25rem 0 0.75rem 0;
-                color: #374151;
-              }
-              
-              .tiptap-editor h3 {
-                font-size: 1.5rem;
-                font-weight: 600;
-                line-height: 1.4;
-                margin: 1rem 0 0.5rem 0;
-                color: #4b5563;
-              }
-              
-              .tiptap-editor h4 {
-                font-size: 1.25rem;
-                font-weight: 600;
-                line-height: 1.4;
-                margin: 1rem 0 0.5rem 0;
-                color: #6b7280;
-              }
-              
-              .tiptap-editor ul {
-                list-style-type: disc;
-                margin-left: 1.5rem;
-                margin: 1rem 0;
-              }
-              
-              .tiptap-editor ol {
-                list-style-type: decimal;
-                margin-left: 1.5rem;
-                margin: 1rem 0;
-              }
-              
-              .tiptap-editor li {
-                margin: 0.5rem 0;
-                line-height: 1.6;
-              }
-              
-              .tiptap-editor strong {
-                font-weight: 700;
-                color: #1f2937;
-              }
-              
-              .tiptap-editor em {
-                font-style: italic;
-                color: #374151;
-              }
-              
-              .tiptap-editor blockquote {
-                border-left: 4px solid #3b82f6;
-                padding-left: 1rem;
-                margin: 1rem 0;
-                background-color: #f8fafc;
-                font-style: italic;
-                color: #64748b;
-              }
-              
-              
-              .tiptap-editor pre {
-                background-color: #1e293b;
-                padding: 1rem;
-                border-radius: 0.5rem;
-                overflow-x: auto;
-                margin: 1rem 0;
-              }
-              
-              .tiptap-editor pre code {
-                background-color: transparent;
-                padding: 0;
-                color: #e2e8f0;
-                font-size: 0.875rem;
-              }
-              
-              .tiptap-editor p {
-                margin: 1rem 0;
-                line-height: 1.7;
-              }
-              
-              .tiptap-editor hr {
-                border: none;
-                height: 2px;
-                background-color: #e5e7eb;
-                margin: 2rem 0;
-              }
-              
-              .tiptap-editor table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 1rem 0;
-              }
-              
-              .tiptap-editor th,
-              .tiptap-editor td {
-                border: 1px solid #d1d5db;
-                padding: 0.75rem;
-                text-align: left;
-              }
-              
-              .tiptap-editor th {
-                background-color: #f9fafb;
-                font-weight: 600;
-              }
-              
-              .tiptap-editor p.is-editor-empty:first-child::before {
-                content: attr(data-placeholder);
-                float: left;
-                color: #9ca3af;
-                pointer-events: none;
-                height: 0;
-              }
-              
-              .tiptap-toolbar {
-                display: flex;
-                gap: 0.5rem;
-                padding: 0.75rem;
-                background-color: #f9fafb;
-                border-bottom: 1px solid #e5e7eb;
-                flex-wrap: wrap;
-              }
-              
-              .tiptap-toolbar button {
-                padding: 0.5rem;
-                border: 1px solid #d1d5db;
-                border-radius: 0.375rem;
-                background-color: white;
-                color: #374151;
-                font-size: 0.875rem;
-                cursor: pointer;
-                transition: all 0.2s;
-              }
-              
-              .tiptap-toolbar button:hover {
-                background-color: #f3f4f6;
-              }
-              
-              .tiptap-toolbar button.is-active {
-                background-color: #3b82f6;
-                color: white;
-                border-color: #3b82f6;
-              }
-            `}</style>
-            
-            {/* Notion-style Toolbar */}
-            <div className="tiptap-toolbar">
-              <button
-                onClick={() => editor?.chain().focus().toggleBold().run()}
-                disabled={!editor?.can().chain().focus().toggleBold().run()}
-                className={editor?.isActive('bold') ? 'is-active' : ''}
-                type="button"
-              >
-                <strong>B</strong>
-              </button>
-              <button
-                onClick={() => editor?.chain().focus().toggleItalic().run()}
-                disabled={!editor?.can().chain().focus().toggleItalic().run()}
-                className={editor?.isActive('italic') ? 'is-active' : ''}
-                type="button"
-              >
-                <em>I</em>
-              </button>
-              <button
-                onClick={() => editor?.chain().focus().toggleStrike().run()}
-                disabled={!editor?.can().chain().focus().toggleStrike().run()}
-                className={editor?.isActive('strike') ? 'is-active' : ''}
-                type="button"
-              >
-                <s>S</s>
-              </button>
-              <button
-                onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
-                disabled={!editor?.can().chain().focus().toggleCodeBlock().run()}
-                className={editor?.isActive('codeBlock') ? 'is-active' : ''}
-                type="button"
-              >
-                {'</>'}
-              </button>
-              <button
-                onClick={handleImageButtonClick}
-                disabled={isUploadingImage}
-                type="button"
-                className={isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''}
-              >
-                {isUploadingImage ? '📤' : '🖼️'}
-              </button>
-              <div className="w-px h-6 bg-gray-300 mx-1" />
-              <button
-                onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
-                className={editor?.isActive('heading', { level: 1 }) ? 'is-active' : ''}
-                type="button"
-              >
-                H1
-              </button>
-              <button
-                onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-                className={editor?.isActive('heading', { level: 2 }) ? 'is-active' : ''}
-                type="button"
-              >
-                H2
-              </button>
-              <button
-                onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
-                className={editor?.isActive('heading', { level: 3 }) ? 'is-active' : ''}
-                type="button"
-              >
-                H3
-              </button>
-              <div className="w-px h-6 bg-gray-300 mx-1" />
-              <button
-                onClick={() => editor?.chain().focus().toggleBulletList().run()}
-                className={editor?.isActive('bulletList') ? 'is-active' : ''}
-                type="button"
-              >
-                • List
-              </button>
-              <button
-                onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-                className={editor?.isActive('orderedList') ? 'is-active' : ''}
-                type="button"
-              >
-                1. List
-              </button>
-              <button
-                onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-                className={editor?.isActive('blockquote') ? 'is-active' : ''}
-                type="button"
-              >
-                Quote
-              </button>
-              <button
-                onClick={() => editor?.chain().focus().setHorizontalRule().run()}
-                type="button"
-              >
-                HR
-              </button>
-            </div>
-            
-            <div className="relative">
-              <EditorContent editor={editor} />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-4">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-white">
+                  {initialData ? '콘텐츠 수정' : '새 콘텐츠 작성'}
+                </h1>
+                <p className="text-blue-100 mt-1">
+                  단계별로 정보를 입력하여 콘텐츠를 만들어보세요
+                </p>
+              </div>
+              <div className="text-white text-sm bg-white/20 px-3 py-1 rounded-full">
+                {Math.round(((activeTab === 'basic' ? 1 : activeTab === 'content' ? 2 : 3) / 3) * 100)}%
+              </div>
             </div>
           </div>
-          {!content && (
-            <p className="mt-3 text-sm text-red-600 flex items-center">
-              <span className="mr-1">⚠️</span>
-              내용을 입력해주세요.
-            </p>
-          )}
-          <div className="mt-3 flex justify-between items-center text-sm">
-            <div className="flex items-center text-gray-600">
-              <span className="mr-1">✨</span>
-              <span>Tiptap WYSIWYG 에디터로 # 입력 시 즉시 큰 제목으로, ``` 입력 시 코드 블록이 생성됩니다</span>
-            </div>
-            <div className="flex items-center space-x-3 text-xs text-gray-500">
-              <span className="flex items-center">
-                <span className="mr-1">📊</span>
-                {editor?.storage.characterCount?.characters() || 0} 문자
-              </span>
-              <span className="flex items-center">
-                <span className="mr-1">📝</span>
-                {editor?.storage.characterCount?.words() || 0} 단어
-              </span>
-              {autoSaveStatus === 'saving' && (
-                <span className="flex items-center text-blue-500">
-                  <span className="mr-1">💾</span>
-                  저장 중...
-                </span>
+
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200 bg-gray-50">
+            <nav className="flex space-x-8 px-6" aria-label="Tabs">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-lg">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  {tab.complete && (
+                    <span className="ml-2 text-green-500">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <form onSubmit={handleSubmit(onFormSubmit)} className="p-6">
+            {/* Tab Content */}
+            <div className="mt-6">
+              {activeTab === 'basic' && (
+                <div className="space-y-6">
+                  <div className="text-center mb-8">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">기본 정보 입력</h2>
+                    <p className="text-gray-600">콘텐츠의 제목과 카테고리, 중요도를 설정하세요</p>
+                  </div>
+
+                  {/* Title */}
+                  <div className="space-y-2">
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                      제목 *
+                    </label>
+                    <input
+                      {...register('title', { required: '제목을 입력해주세요.' })}
+                      type="text"
+                      className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      placeholder="예: React Hook 사용법 정리"
+                    />
+                    {errors.title && (
+                      <p className="text-sm text-red-600 flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {errors.title.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Category */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                        카테고리
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewCategoryForm(!showNewCategoryForm)}
+                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                      >
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                        </svg>
+                        새 카테고리
+                      </button>
+                    </div>
+                    
+                    {showNewCategoryForm && (
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="space-y-3">
+                          <input
+                            type="text"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            placeholder="카테고리 이름"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <div className="flex space-x-2">
+                            <button
+                              type="button"
+                              onClick={handleCreateCategory}
+                              disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+                            >
+                              {createCategoryMutation.isPending ? '생성 중...' : '생성'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowNewCategoryForm(false);
+                                setNewCategoryName('');
+                                setNewCategoryDescription('');
+                              }}
+                              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm"
+                            >
+                              취소
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <select
+                      {...register('category')}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">카테고리 선택 (선택사항)</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Priority */}
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      중요도 *
+                    </label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { value: 'high', label: '높음', color: 'red', description: '매우 중요' },
+                        { value: 'medium', label: '보통', color: 'yellow', description: '일반적' },
+                        { value: 'low', label: '낮음', color: 'green', description: '참고용' }
+                      ].map((option) => (
+                        <label key={option.value} className="relative">
+                          <input
+                            {...register('priority', { required: true })}
+                            type="radio"
+                            value={option.value}
+                            className="sr-only"
+                          />
+                          <div className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                            watchedPriority === option.value
+                              ? option.color === 'red' ? 'border-red-500 bg-red-50' :
+                                option.color === 'yellow' ? 'border-yellow-500 bg-yellow-50' :
+                                'border-green-500 bg-green-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}>
+                            <div className="text-center">
+                              <div className={`w-8 h-8 rounded-full mx-auto mb-2 ${
+                                option.color === 'red' ? 'bg-red-500' :
+                                option.color === 'yellow' ? 'bg-yellow-500' : 'bg-green-500'
+                              }`}></div>
+                              <div className="font-medium text-gray-900">{option.label}</div>
+                              <div className="text-sm text-gray-600">{option.description}</div>
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
-              {autoSaveStatus === 'saved' && lastSaved && (
-                <span className="flex items-center text-green-500">
-                  <span className="mr-1">✅</span>
-                  {lastSaved.toLocaleTimeString()}에 저장됨
-                </span>
+
+              {activeTab === 'content' && (
+                <div className="space-y-6">
+                  <div className="text-center mb-8">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">콘텐츠 작성</h2>
+                    <p className="text-gray-600">리치 텍스트 에디터로 내용을 작성하세요</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="content" className="block text-sm font-medium text-gray-700">
+                      내용 *
+                    </label>
+                    <TiptapEditor
+                      content={content}
+                      onChange={setContent}
+                      placeholder="여기에 내용을 입력하세요..."
+                      className="w-full"
+                      onImageUpload={handleImageUpload}
+                    />
+                    {!content.trim() && (
+                      <p className="text-sm text-red-600 flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        내용을 입력해주세요
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'settings' && (
+                <div className="space-y-6">
+                  <div className="text-center mb-8">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">추가 설정</h2>
+                    <p className="text-gray-600">태그를 선택하여 콘텐츠를 더 세밀하게 분류할 수 있습니다</p>
+                  </div>
+
+                  {/* Tags */}
+                  {tags.length > 0 ? (
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        태그 선택 (선택사항)
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {tags.map((tag) => (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => handleTagToggle(tag.id)}
+                            className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                              selectedTags.includes(tag.id)
+                                ? 'bg-blue-100 text-blue-800 border-2 border-blue-300'
+                                : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:bg-gray-200'
+                            }`}
+                          >
+                            <span className="mr-1">
+                              {selectedTags.includes(tag.id) ? '✓' : '+'}
+                            </span>
+                            {tag.name}
+                          </button>
+                        ))}
+                      </div>
+                      {selectedTags.length > 0 && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                          <p className="text-sm text-blue-800">
+                            선택된 태그: {selectedTags.length}개
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 text-4xl mb-4">🏷️</div>
+                      <p className="text-gray-600">사용 가능한 태그가 없습니다</p>
+                      <p className="text-sm text-gray-500 mt-2">관리자에게 태그 생성을 요청하세요</p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* Category */}
-        <div className="group">
-          <div className="flex items-center justify-between mb-3">
-            <label htmlFor="category" className="block text-sm font-semibold text-gray-800">
-              🏷️ 카테고리
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowNewCategoryForm(!showNewCategoryForm)}
-              className="inline-flex items-center px-3 py-1 text-sm font-medium text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-md transition-colors duration-200"
-            >
-              <span className="mr-1">➕</span>
-              새 카테고리
-            </button>
-          </div>
-          
-          {showNewCategoryForm && (
-            <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-              <div className="space-y-4">
-                <div>
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="카테고리 이름을 입력하세요"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all duration-200"
-                  />
-                </div>
-                <div>
-                  <textarea
-                    value={newCategoryDescription}
-                    onChange={(e) => setNewCategoryDescription(e.target.value)}
-                    placeholder="카테고리 설명 (선택사항)"
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all duration-200"
-                  />
-                </div>
-                <div className="flex space-x-2">
+            {/* Navigation and Submit buttons */}
+            <div className="flex justify-between items-center pt-8 border-t border-gray-200">
+              <div className="flex space-x-3">
+                {activeTab !== 'basic' && (
                   <button
                     type="button"
-                    onClick={handleCreateCategory}
-                    disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 disabled:opacity-50 transition-colors duration-200"
+                    onClick={prevTab}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
                   >
-                    {createCategoryMutation.isPending ? (
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    이전
+                  </button>
+                )}
+                
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                  취소
+                </button>
+              </div>
+              
+              <div className="flex space-x-3">
+                {activeTab !== 'settings' && (
+                  <button
+                    type="button"
+                    onClick={nextTab}
+                    disabled={(activeTab === 'basic' && !isBasicComplete) || (activeTab === 'content' && !isContentComplete)}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    다음
+                    <svg className="w-4 h-4 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                )}
+                
+                {activeTab === 'settings' && (
+                  <button
+                    type="submit"
+                    disabled={isLoading || !canSubmit}
+                    className="inline-flex items-center px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-600 to-green-700 rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    {isLoading ? (
                       <>
-                        <span className="mr-2">⏳</span>
-                        생성 중...
+                        <svg className="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        저장 중...
                       </>
                     ) : (
                       <>
-                        <span className="mr-2">✨</span>
-                        생성
+                        <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        저장하기
                       </>
                     )}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowNewCategoryForm(false);
-                      setNewCategoryName('');
-                      setNewCategoryDescription('');
-                    }}
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors duration-200"
-                  >
-                    <span className="mr-2">❌</span>
-                    취소
-                  </button>
-                </div>
+                )}
               </div>
             </div>
-          )}
-          
-          <select
-            {...register('category')}
-            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all duration-200 bg-gray-50 focus:bg-white"
-          >
-            <option value="">📂 카테고리 선택 (선택사항)</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Priority */}
-        <div className="group">
-          <label className="block text-sm font-semibold text-gray-800 mb-3">
-            🚨 중요도 *
-          </label>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: 'high', label: '높음', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', emoji: '🔴' },
-              { value: 'medium', label: '보통', color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200', emoji: '🟡' },
-              { value: 'low', label: '낮음', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', emoji: '🟢' }
-            ].map((option) => (
-              <label key={option.value} className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${option.bg} ${option.border} hover:shadow-sm`}>
-                <input
-                  {...register('priority', { required: true })}
-                  type="radio"
-                  value={option.value}
-                  className="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300"
-                />
-                <span className={`ml-3 flex items-center font-medium ${option.color}`}>
-                  <span className="mr-2">{option.emoji}</span>
-                  {option.label}
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Tags */}
-        {tags.length > 0 && (
-          <div className="group">
-            <label className="block text-sm font-semibold text-gray-800 mb-3">
-              🏷️ 태그
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => handleTagToggle(tag.id)}
-                  className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all duration-200 ${
-                    selectedTags.includes(tag.id)
-                      ? 'bg-primary-100 text-primary-800 border-primary-300 shadow-sm'
-                      : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
-                  }`}
-                >
-                  <span className="mr-1">{selectedTags.includes(tag.id) ? '✅' : '🔘'}</span>
-                  {tag.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Submit buttons */}
-        <div className="flex justify-end space-x-4 pt-8 border-t-2 border-gray-100">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="inline-flex items-center px-6 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-          >
-            <span className="mr-2">❌</span>
-            취소
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="inline-flex items-center px-8 py-3 border-2 border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-          >
-            {isLoading ? (
-              <>
-                <span className="mr-2">⏳</span>
-                저장 중...
-              </>
-            ) : (
-              <>
-                <span className="mr-2">💾</span>
-                저장
-              </>
-            )}
-          </button>
-        </div>
           </form>
         </div>
       </div>
