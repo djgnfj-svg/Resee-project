@@ -23,7 +23,12 @@ const LoginPage: React.FC = () => {
       await login(data);
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(err.response?.data?.detail || '로그인에 실패했습니다.');
+      // Use userMessage from API interceptor if available
+      const errorMessage = err.userMessage || 
+                          err.response?.data?.detail || 
+                          err.response?.data?.message ||
+                          '로그인에 실패했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +93,17 @@ const LoginPage: React.FC = () => {
           </div>
         </form>
 
-        <p className="mt-10 text-center text-sm text-gray-500">
+        {/* Test Account Info */}
+        <div className="mt-8 rounded-md bg-blue-50 p-4">
+          <h3 className="text-sm font-medium text-blue-800 mb-2">🧪 테스트 계정</h3>
+          <div className="text-xs text-blue-700 space-y-1">
+            <div><strong>관리자:</strong> admin / admin123!</div>
+            <div><strong>일반 사용자:</strong> testuser / test123!</div>
+            <div><strong>데모 계정:</strong> demo / demo123!</div>
+          </div>
+        </div>
+
+        <p className="mt-6 text-center text-sm text-gray-500">
           계정이 없으신가요?{' '}
           <Link to="/register" className="font-semibold leading-6 text-primary-600 hover:text-primary-500">
             회원가입

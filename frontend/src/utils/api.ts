@@ -24,12 +24,13 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle token refresh
+// Response interceptor to handle token refresh and errors
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     
+    // Handle 401 errors (unauthorized)
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
@@ -48,9 +49,30 @@ api.interceptors.response.use(
         } catch (refreshError) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          window.location.href = '/login';
+          // Don't redirect automatically, let the component handle it
+          error.isAuthError = true;
         }
+      } else {
+        // No refresh token available
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        error.isAuthError = true;
       }
+    }
+    
+    // Handle other errors
+    if (error.response) {
+      // Server responded with error status
+      const errorMessage = error.response.data?.message || 
+                          error.response.data?.detail || 
+                          `서버 오류 (${error.response.status})`;
+      error.userMessage = errorMessage;
+    } else if (error.request) {
+      // Network error
+      error.userMessage = '네트워크 연결을 확인해 주세요.';
+    } else {
+      // Other error
+      error.userMessage = '예상치 못한 오류가 발생했습니다.';
     }
     
     return Promise.reject(error);
