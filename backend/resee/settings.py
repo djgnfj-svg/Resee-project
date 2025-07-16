@@ -2,10 +2,12 @@
 Django settings for resee project.
 """
 
-from pathlib import Path
 import os
 from datetime import timedelta
+from pathlib import Path
+
 import dj_database_url
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -204,8 +206,6 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 REVIEW_INTERVALS = [1, 3, 7, 14, 30]
 
 # Celery Beat periodic tasks
-from celery.schedules import crontab
-
 CELERY_BEAT_SCHEDULE = {
     'send-daily-review-notifications': {
         'task': 'review.tasks.send_daily_review_notifications',

@@ -83,3 +83,42 @@ export interface DashboardData {
   success_rate: number;
   total_reviews_30_days: number;
 }
+
+// Content API types
+export interface CreateContentData {
+  title: string;
+  content: string;
+  category?: number;
+  priority: 'low' | 'medium' | 'high';
+  tag_ids?: number[];
+}
+
+export interface UpdateContentData extends Partial<CreateContentData> {}
+
+export interface CreateCategoryData {
+  name: string;
+  description: string;
+}
+
+// Review API types
+export interface CompleteReviewData {
+  content_id: number;
+  result: 'remembered' | 'partial' | 'forgot';
+  time_spent?: number;
+  notes?: string;
+}
+
+export interface CreateReviewHistoryData extends CompleteReviewData {}
+
+// API Response types
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export interface ImageUploadResponse {
+  image_url: string;
+  filename: string;
+}

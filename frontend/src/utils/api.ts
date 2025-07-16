@@ -1,5 +1,23 @@
 import axios from 'axios';
-import { AuthTokens, LoginData, RegisterData, User } from '../types';
+import { 
+  AuthTokens, 
+  LoginData, 
+  RegisterData, 
+  User,
+  CreateContentData,
+  UpdateContentData,
+  CreateCategoryData,
+  CompleteReviewData,
+  CreateReviewHistoryData,
+  PaginatedResponse,
+  Content,
+  Category,
+  Tag,
+  ReviewSchedule,
+  ReviewHistory,
+  ImageUploadResponse,
+  DashboardData
+} from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -104,47 +122,47 @@ export const authAPI = {
 
 // Content API
 export const contentAPI = {
-  getContents: async (params?: string) => {
+  getContents: async (params?: string): Promise<PaginatedResponse<Content> | Content[]> => {
     const url = params ? `/content/contents/?${params}` : '/content/contents/';
     const response = await api.get(url);
     return response.data;
   },
   
-  createContent: async (data: any) => {
+  createContent: async (data: CreateContentData): Promise<Content> => {
     const response = await api.post('/content/contents/', data);
     return response.data;
   },
   
-  updateContent: async (id: number, data: any) => {
+  updateContent: async (id: number, data: UpdateContentData): Promise<Content> => {
     const response = await api.put(`/content/contents/${id}/`, data);
     return response.data;
   },
   
-  deleteContent: async (id: number) => {
+  deleteContent: async (id: number): Promise<void> => {
     await api.delete(`/content/contents/${id}/`);
   },
   
-  getCategories: async () => {
+  getCategories: async (): Promise<PaginatedResponse<Category> | Category[]> => {
     const response = await api.get('/content/categories/');
     return response.data;
   },
   
-  createCategory: async (data: { name: string; description: string }) => {
+  createCategory: async (data: CreateCategoryData): Promise<Category> => {
     const response = await api.post('/content/categories/', data);
     return response.data;
   },
   
-  getTags: async () => {
+  getTags: async (): Promise<PaginatedResponse<Tag> | Tag[]> => {
     const response = await api.get('/content/tags/');
     return response.data;
   },
   
-  getContentsByCategory: async () => {
+  getContentsByCategory: async (): Promise<Record<string, Content[]>> => {
     const response = await api.get('/content/contents/by_category/');
     return response.data;
   },
   
-  uploadImage: async (imageFile: File) => {
+  uploadImage: async (imageFile: File): Promise<ImageUploadResponse> => {
     const formData = new FormData();
     formData.append('image', imageFile);
     
@@ -156,7 +174,7 @@ export const contentAPI = {
     return response.data;
   },
   
-  deleteImage: async (filename: string) => {
+  deleteImage: async (filename: string): Promise<void> => {
     const response = await api.delete(`/content/delete-image/${filename}/`);
     return response.data;
   },
@@ -164,33 +182,33 @@ export const contentAPI = {
 
 // Review API
 export const reviewAPI = {
-  getTodayReviews: async (params?: string) => {
+  getTodayReviews: async (params?: string): Promise<ReviewSchedule[]> => {
     const url = params ? `/review/today/${params}` : '/review/today/';
     const response = await api.get(url);
     return response.data;
   },
   
-  getSchedules: async () => {
+  getSchedules: async (): Promise<PaginatedResponse<ReviewSchedule> | ReviewSchedule[]> => {
     const response = await api.get('/review/schedules/');
     return response.data;
   },
   
-  getHistory: async () => {
+  getHistory: async (): Promise<PaginatedResponse<ReviewHistory> | ReviewHistory[]> => {
     const response = await api.get('/review/history/');
     return response.data;
   },
   
-  createHistory: async (data: any) => {
+  createHistory: async (data: CreateReviewHistoryData): Promise<ReviewHistory> => {
     const response = await api.post('/review/history/', data);
     return response.data;
   },
   
-  completeReview: async (data: any) => {
+  completeReview: async (data: CompleteReviewData): Promise<{ message: string; next_review_date?: string }> => {
     const response = await api.post('/review/complete/', data);
     return response.data;
   },
   
-  getCategoryStats: async () => {
+  getCategoryStats: async (): Promise<Record<string, any>> => {
     const response = await api.get('/review/category-stats/');
     return response.data;
   },
@@ -198,12 +216,12 @@ export const reviewAPI = {
 
 // Analytics API
 export const analyticsAPI = {
-  getDashboard: async () => {
+  getDashboard: async (): Promise<DashboardData> => {
     const response = await api.get('/analytics/dashboard/');
     return response.data;
   },
   
-  getReviewStats: async () => {
+  getReviewStats: async (): Promise<Record<string, any>> => {
     const response = await api.get('/analytics/review-stats/');
     return response.data;
   },

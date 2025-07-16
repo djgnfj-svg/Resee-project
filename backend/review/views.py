@@ -3,11 +3,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.utils import timezone
-from django.conf import settings
+from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import ReviewSchedule, ReviewHistory
 from .serializers import ReviewScheduleSerializer, ReviewHistorySerializer
+from .utils import get_review_intervals, calculate_success_rate, get_today_reviews_count
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ReviewScheduleViewSet(viewsets.ModelViewSet):
@@ -140,59 +144,76 @@ class CompleteReviewView(APIView):
         }
     )
     def post(self, request):
-        """Complete a review and update schedule"""
+        """Complete a review and update schedule with improved error handling"""
         content_id = request.data.get('content_id')
         result = request.data.get('result')  # 'remembered', 'partial', 'forgot'
         time_spent = request.data.get('time_spent')
         notes = request.data.get('notes', '')
         
+        # Validate required fields
         if not content_id or not result:
             return Response(
                 {'error': 'content_id and result are required'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Validate result value
+        valid_results = ['remembered', 'partial', 'forgot']
+        if result not in valid_results:
+            return Response(
+                {'error': f'result must be one of: {", ".join(valid_results)}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         try:
-            # Get the review schedule
-            schedule = ReviewSchedule.objects.get(
-                content_id=content_id,
-                user=request.user,
-                is_active=True
-            )
-            
-            # Create review history
-            history = ReviewHistory.objects.create(
-                content=schedule.content,
-                user=request.user,
-                result=result,
-                time_spent=time_spent,
-                notes=notes
-            )
-            
-            # Update schedule based on result
-            if result == 'remembered':
-                # Advance to next interval
-                schedule.advance_schedule()
-            elif result == 'partial':
-                # Stay at current interval but reset date
-                intervals = getattr(settings, 'REVIEW_INTERVALS', [1, 3, 7, 14, 30])
-                current_interval = intervals[schedule.interval_index]
-                schedule.next_review_date = timezone.now() + timezone.timedelta(days=current_interval)
-                schedule.save()
-            else:  # 'forgot'
-                # Reset to first interval
-                schedule.reset_schedule()
-            
-            return Response({
-                'message': 'Review completed successfully',
-                'next_review_date': schedule.next_review_date,
-                'interval_index': schedule.interval_index
-            })
-            
+            with transaction.atomic():
+                # Get the review schedule
+                schedule = ReviewSchedule.objects.select_for_update().get(
+                    content_id=content_id,
+                    user=request.user,
+                    is_active=True
+                )
+                
+                # Create review history
+                history = ReviewHistory.objects.create(
+                    content=schedule.content,
+                    user=request.user,
+                    result=result,
+                    time_spent=time_spent,
+                    notes=notes
+                )
+                
+                # Update schedule based on result
+                if result == 'remembered':
+                    # Advance to next interval
+                    schedule.advance_schedule()
+                elif result == 'partial':
+                    # Stay at current interval but reset date
+                    intervals = get_review_intervals()
+                    current_interval = intervals[schedule.interval_index]
+                    schedule.next_review_date = timezone.now() + timezone.timedelta(days=current_interval)
+                    schedule.save()
+                else:  # 'forgot'
+                    # Reset to first interval
+                    schedule.reset_schedule()
+                
+                return Response({
+                    'message': 'Review completed successfully',
+                    'next_review_date': schedule.next_review_date,
+                    'interval_index': schedule.interval_index
+                })
+                
         except ReviewSchedule.DoesNotExist:
+            logger.warning(f"Review schedule not found for content_id={content_id}, user={request.user.id}")
             return Response(
                 {'error': 'Review schedule not found'}, 
                 status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error completing review: {str(e)}", exc_info=True)
+            return Response(
+                {'error': '복습 완료 처리 중 오류가 발생했습니다.'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
@@ -229,45 +250,32 @@ class CategoryReviewStatsView(APIView):
         )}
     )
     def get(self, request):
-        """Get review stats by category"""
+        """Get review stats by category - optimized version"""
         from content.models import Category
-        from django.db.models import Count, Q
+        from django.db.models import Q
         
-        categories = Category.objects.all()
+        # Get user-accessible categories
+        categories = Category.objects.filter(
+            Q(user=None) | Q(user=request.user)
+        )
         result = {}
         
         for category in categories:
-            # Today's reviews for this category
-            today_reviews = ReviewSchedule.objects.filter(
-                user=request.user,
-                is_active=True,
-                next_review_date__date__lte=timezone.now().date(),
-                content__category=category
-            ).count()
-            
-            # Total content in category
+            # Use utility functions for consistent calculations
+            today_reviews = get_today_reviews_count(request.user, category=category)
             total_content = request.user.contents.filter(category=category).count()
-            
-            # Success rate for this category (last 30 days)
-            from datetime import timedelta
-            thirty_days_ago = timezone.now().date() - timedelta(days=30)
-            
-            category_reviews = ReviewHistory.objects.filter(
-                user=request.user,
-                content__category=category,
-                review_date__date__gte=thirty_days_ago
+            success_rate, total_reviews_30_days, _ = calculate_success_rate(
+                request.user, category=category, days=30
             )
             
-            total_reviews = category_reviews.count()
-            successful_reviews = category_reviews.filter(result='remembered').count()
-            success_rate = (successful_reviews / total_reviews * 100) if total_reviews > 0 else 0
-            
-            result[category.slug] = {
-                'category': category.name,
-                'today_reviews': today_reviews,
-                'total_content': total_content,
-                'success_rate': round(success_rate, 1),
-                'total_reviews_30_days': total_reviews,
-            }
+            # Only include categories with content or reviews
+            if total_content > 0 or total_reviews_30_days > 0:
+                result[category.slug] = {
+                    'category': category.name,
+                    'today_reviews': today_reviews,
+                    'total_content': total_content,
+                    'success_rate': success_rate,
+                    'total_reviews_30_days': total_reviews_30_days,
+                }
         
         return Response(result)

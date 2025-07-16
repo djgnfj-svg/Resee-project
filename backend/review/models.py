@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.conf import settings
 from datetime import timedelta
 from django.utils import timezone
 
@@ -26,14 +25,16 @@ class ReviewSchedule(models.Model):
     
     def get_next_interval(self):
         """Get next review interval in days"""
-        intervals = getattr(settings, 'REVIEW_INTERVALS', [1, 3, 7, 14, 30])
+        from .utils import get_review_intervals
+        intervals = get_review_intervals()
         if self.interval_index < len(intervals) - 1:
             return intervals[self.interval_index + 1]
         return intervals[-1]  # Stay at the longest interval
     
     def advance_schedule(self):
         """Advance to next review interval"""
-        intervals = getattr(settings, 'REVIEW_INTERVALS', [1, 3, 7, 14, 30])
+        from .utils import get_review_intervals
+        intervals = get_review_intervals()
         if self.interval_index < len(intervals) - 1:
             self.interval_index += 1
         
@@ -43,8 +44,9 @@ class ReviewSchedule(models.Model):
     
     def reset_schedule(self):
         """Reset to first interval (for failed reviews)"""
+        from .utils import get_review_intervals
         self.interval_index = 0
-        intervals = getattr(settings, 'REVIEW_INTERVALS', [1, 3, 7, 14, 30])
+        intervals = get_review_intervals()
         self.next_review_date = timezone.now() + timedelta(days=intervals[0])
         self.save()
 
