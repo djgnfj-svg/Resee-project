@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
 import { Category, Tag } from '../types';
-import TiptapEditor from './TiptapEditor';
+import NotionEditor from './NotionEditor';
 
 interface ContentFormData {
   title: string;
@@ -336,10 +336,10 @@ const ContentForm: React.FC<ContentFormProps> = ({
                     <label htmlFor="content" className="block text-sm font-medium text-gray-700">
                       내용 *
                     </label>
-                    <TiptapEditor
+                    <NotionEditor
                       content={content}
                       onChange={setContent}
-                      placeholder="여기에 내용을 입력하세요..."
+                      placeholder="여기에 내용을 입력하거나 '/'를 입력하여 명령어를 확인하세요..."
                       className="w-full"
                       onImageUpload={handleImageUpload}
                     />

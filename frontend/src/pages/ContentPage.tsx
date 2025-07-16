@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { contentAPI } from '../utils/api';
 import { Content, Category } from '../types';
-import ContentForm from '../components/ContentForm';
+import ContentFormV2 from '../components/ContentFormV2';
 
 const ContentPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -132,20 +132,18 @@ const ContentPage: React.FC = () => {
 
   if (showForm) {
     return (
-      <div>
-        <ContentForm
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-          isLoading={createContentMutation.isPending || updateContentMutation.isPending}
-          initialData={editingContent ? {
-            title: editingContent.title,
-            content: editingContent.content,
-            category: editingContent.category?.id,
-            priority: editingContent.priority,
-            tag_ids: editingContent.tags.map(tag => tag.id)
-          } : undefined}
-        />
-      </div>
+      <ContentFormV2
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+        isLoading={createContentMutation.isPending || updateContentMutation.isPending}
+        initialData={editingContent ? {
+          title: editingContent.title,
+          content: editingContent.content,
+          category: editingContent.category?.id,
+          priority: editingContent.priority,
+          tag_ids: editingContent.tags.map(tag => tag.id)
+        } : undefined}
+      />
     );
   }
 
