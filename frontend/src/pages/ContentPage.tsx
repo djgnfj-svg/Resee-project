@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
 import { contentAPI } from '../utils/api';
 import { Content, Category, CreateContentData, UpdateContentData } from '../types';
+import { extractResults, getPriorityInfo, formatDate, truncateText } from '../utils/helpers';
 import ContentFormV2 from '../components/ContentFormV2';
 
 const ContentPage: React.FC = () => {
@@ -34,14 +35,14 @@ const ContentPage: React.FC = () => {
         params.append('priority', selectedPriority);
       }
       params.append('ordering', sortBy);
-      return contentAPI.getContents(params.toString()).then(res => res.results || res);
+      return contentAPI.getContents(params.toString()).then(extractResults);
     },
   });
 
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => contentAPI.getCategories().then(res => res.results || res),
+    queryFn: () => contentAPI.getCategories().then(extractResults),
   });
 
   // Create content mutation
@@ -145,16 +146,16 @@ const ContentPage: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-8 flex justify-between items-center">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">콘텐츠 관리</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">콘텐츠 관리</h1>
+          <p className="mt-2 text-sm sm:text-base text-gray-600">
             학습 콘텐츠를 작성하고 관리합니다.
           </p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500"
+          className="inline-flex items-center justify-center rounded-md bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 min-h-[44px] w-full sm:w-auto"
         >
           <svg className="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
@@ -164,10 +165,10 @@ const ContentPage: React.FC = () => {
       </div>
 
       {/* Advanced Search & Filters */}
-      <div className="mb-6 bg-white p-6 rounded-2xl shadow-lg">
+      <div className="mb-6 bg-white p-4 sm:p-6 rounded-2xl shadow-lg">
         <div className="flex items-center mb-4">
           <div className="text-xl mr-2">🔍</div>
-          <h2 className="text-lg font-semibold text-gray-900">검색 & 필터</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">검색 & 필터</h2>
         </div>
         
         {/* Search Bar */}
@@ -182,12 +183,12 @@ const ContentPage: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="제목이나 내용으로 검색..."
-            className="block w-full pl-10 pr-4 py-3 text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            className="block w-full pl-10 pr-4 py-3 text-base sm:text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
           />
         </div>
 
         {/* Filter Options */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Category filter */}
           <div>
             <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 mb-2">

@@ -4,11 +4,13 @@ import { motion } from 'framer-motion';
 interface ImageUploadDropzoneProps {
   onImageUpload: (file: File) => Promise<string>;
   className?: string;
+  children?: React.ReactNode;
 }
 
 const ImageUploadDropzone: React.FC<ImageUploadDropzoneProps> = ({
   onImageUpload,
-  className = ''
+  className = '',
+  children
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -113,6 +115,9 @@ const ImageUploadDropzone: React.FC<ImageUploadDropzoneProps> = ({
           </div>
         </motion.div>
       )}
+
+      {/* Children content */}
+      {children}
 
       {/* Hidden file input */}
       <input

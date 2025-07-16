@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
 import { Category, Tag } from '../types';
+import { extractResults } from '../utils/helpers';
 import NotionEditor from './NotionEditor';
 
 interface ContentFormData {
@@ -44,12 +45,12 @@ const ContentForm: React.FC<ContentFormProps> = ({
   // Fetch categories and tags
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => contentAPI.getCategories().then(res => res.results || res),
+    queryFn: () => contentAPI.getCategories().then(extractResults),
   });
 
   const { data: tags = [] } = useQuery<Tag[]>({
     queryKey: ['tags'],
-    queryFn: () => contentAPI.getTags().then(res => res.results || res),
+    queryFn: () => contentAPI.getTags().then(extractResults),
   });
 
   // Create category mutation
@@ -102,7 +103,7 @@ const ContentForm: React.FC<ContentFormProps> = ({
   const handleImageUpload = async (file: File): Promise<string> => {
     try {
       const response = await contentAPI.uploadImage(file);
-      return response.url || response.image_url;
+      return response.url;
     } catch (error) {
       console.error('Image upload failed:', error);
       throw error;

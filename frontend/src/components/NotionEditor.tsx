@@ -10,6 +10,9 @@ import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import Dropcursor from '@tiptap/extension-dropcursor';
 import Gapcursor from '@tiptap/extension-gapcursor';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import ListItem from '@tiptap/extension-list-item';
+import { createLowlight } from 'lowlight';
 import MarkdownShortcuts from './extensions/MarkdownShortcuts';
 import ImageUploadDropzone from './ImageUploadDropzone';
 
@@ -85,9 +88,15 @@ const NotionEditor: React.FC<NotionEditorProps> = ({
     },
     {
       title: '코드 블록',
-      description: '코드를 위한 블록',
+      description: '구문 강조가 있는 코드 블록',
       icon: '</>',
       command: (editor) => editor.chain().focus().toggleCodeBlock().run()
+    },
+    {
+      title: '인라인 코드',
+      description: '텍스트 안의 코드',
+      icon: '`',
+      command: (editor) => editor.chain().focus().toggleCode().run()
     },
     {
       title: '구분선',
@@ -102,11 +111,45 @@ const NotionEditor: React.FC<NotionEditorProps> = ({
     command.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const lowlight = createLowlight();
+  
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        // Disable the default code block to use our enhanced version
+        codeBlock: false,
+      }),
       MarkdownShortcuts,
-      Typography,
+      Typography.configure({
+        openDoubleQuote: '"',
+        closeDoubleQuote: '"',
+        openSingleQuote: "'",
+        closeSingleQuote: "'",
+        leftArrow: '←',
+        rightArrow: '→',
+        copyright: '©',
+        trademark: '™',
+        registeredTrademark: '®',
+        oneHalf: '½',
+        oneQuarter: '¼',
+        threeQuarters: '¾',
+        plusMinus: '±',
+        notEqual: '≠',
+        laquo: '«',
+        raquo: '»',
+        multiplication: '×',
+        superscriptTwo: '²',
+        superscriptThree: '³',
+        ellipsis: '…',
+      }),
+      // Enhanced code block with syntax highlighting
+      CodeBlockLowlight.configure({
+        lowlight,
+        HTMLAttributes: {
+          class: 'bg-gray-900 text-gray-100 p-4 rounded-lg text-sm font-mono overflow-x-auto',
+        },
+      }),
+      ListItem,
       Image.configure({
         inline: false,
         HTMLAttributes: {
@@ -125,7 +168,11 @@ const NotionEditor: React.FC<NotionEditorProps> = ({
       CharacterCount.configure({
         limit: 10000,
       }),
-      TaskList,
+      TaskList.configure({
+        HTMLAttributes: {
+          class: 'not-prose',
+        },
+      }),
       TaskItem.configure({
         nested: true,
         HTMLAttributes: {
@@ -216,37 +263,39 @@ const NotionEditor: React.FC<NotionEditorProps> = ({
     setSearchQuery('');
   }, [editor]);
 
-  const addImage = useCallback(async (file?: File) => {
+  const addImage = useCallback(async (file: File): Promise<string> => {
+    if (!editor || !onImageUpload) {
+      throw new Error('Editor or image upload function not available');
+    }
+    
+    try {
+      const url = await onImageUpload(file);
+      editor.chain().focus().setImage({ src: url }).run();
+      return url;
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      throw error;
+    }
+  }, [editor, onImageUpload]);
+
+  const addImageFromPicker = useCallback(async () => {
     if (!editor || !onImageUpload) return;
     
-    if (file) {
-      // Direct file upload (for drag & drop)
-      try {
-        const url = await onImageUpload(file);
-        editor.chain().focus().setImage({ src: url }).run();
-        return url;
-      } catch (error) {
-        console.error('Image upload failed:', error);
-        throw error;
-      }
-    } else {
-      // File picker
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (file) {
-          try {
-            const url = await onImageUpload(file);
-            editor.chain().focus().setImage({ src: url }).run();
-          } catch (error) {
-            console.error('Image upload failed:', error);
-          }
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        try {
+          const url = await onImageUpload(file);
+          editor.chain().focus().setImage({ src: url }).run();
+        } catch (error) {
+          console.error('Image upload failed:', error);
         }
-      };
-      input.click();
-    }
+      }
+    };
+    input.click();
   }, [editor, onImageUpload]);
 
   // Handle keyboard navigation for slash menu
@@ -384,7 +433,7 @@ const NotionEditor: React.FC<NotionEditorProps> = ({
   if (!editor) return null;
 
   return (
-    <ImageUploadDropzone onImageUpload={onImageUpload ? addImage : async () => ''} className={className}>
+    <ImageUploadDropzone onImageUpload={onImageUpload ? addImage : async () => { throw new Error('Image upload not supported'); }} className={className}>
       <div className="relative w-full">
       {/* Slash Command Menu */}
       {showSlashMenu && (
@@ -438,16 +487,28 @@ const NotionEditor: React.FC<NotionEditorProps> = ({
         </div>
         
         {/* Footer */}
-        <div className="border-t border-gray-200 bg-gray-50 px-6 py-3 text-sm text-gray-500 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <span>💡 <strong>/</strong>를 입력하여 명령어 메뉴 열기</span>
-            <span>•</span>
-            <span><strong>**텍스트**</strong>로 굵게</span>
-            <span>•</span>
-            <span><strong>*텍스트*</strong>로 기울임</span>
-          </div>
-          <div>
-            {editor.storage.characterCount.characters()}/{editor.storage.characterCount.limit} 문자
+        <div className="border-t border-gray-200 bg-gray-50 px-6 py-3 text-sm text-gray-500">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-2 lg:space-y-0">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>💡 <strong>/</strong> 명령어 메뉴</span>
+              <span>•</span>
+              <span><strong>**굵게**</strong></span>
+              <span>•</span>
+              <span><strong>*기울임*</strong></span>
+              <span>•</span>
+              <span><strong>`코드`</strong></span>
+              <span>•</span>
+              <span><strong>```</strong> 코드블록</span>
+              <span>•</span>
+              <span><strong>- 또는 *</strong> 리스트</span>
+              <span>•</span>
+              <span><strong>1.</strong> 번호리스트</span>
+              <span>•</span>
+              <span><strong>[]</strong> 할일</span>
+            </div>
+            <div className="text-xs">
+              {editor.storage.characterCount.characters()}/{editor.storage.characterCount.limit} 문자
+            </div>
           </div>
         </div>
       </div>
@@ -457,7 +518,7 @@ const NotionEditor: React.FC<NotionEditorProps> = ({
           <div className="mt-4">
             <button
               type="button"
-              onClick={() => addImage()}
+              onClick={addImageFromPicker}
               className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <span className="mr-2">📷</span>
