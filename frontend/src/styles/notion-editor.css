@@ -1,0 +1,315 @@
+/* Notion-style Editor Styles */
+:root {
+  --editor-text-color: #374151;
+  --editor-heading-color: #111827;
+  --editor-border-color: #E5E7EB;
+  --editor-bg-light: #F3F4F6;
+  --editor-accent-color: #3B82F6;
+  --editor-code-color: #DC2626;
+  --editor-quote-color: #6B7280;
+  --editor-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  --editor-font-mono: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.notion-editor .ProseMirror {
+  outline: none;
+  line-height: 1.6;
+  font-size: 16px;
+  color: var(--editor-text-color);
+  min-height: 300px;
+  font-feature-settings: "liga" 1, "kern" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.notion-editor .ProseMirror h1 {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 1.5em 0 0.5em;
+  color: var(--editor-heading-color);
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.notion-editor .ProseMirror h1:hover {
+  transform: translateX(2px);
+}
+
+.notion-editor .ProseMirror h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.2em 0 0.4em;
+  color: var(--editor-heading-color);
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.notion-editor .ProseMirror h2:hover {
+  transform: translateX(2px);
+}
+
+.notion-editor .ProseMirror h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 1em 0 0.3em;
+  color: var(--editor-heading-color);
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.notion-editor .ProseMirror h3:hover {
+  transform: translateX(2px);
+}
+
+.notion-editor .ProseMirror p {
+  margin: 0.5em 0;
+}
+
+.notion-editor .ProseMirror p.is-editor-empty:first-child::before {
+  color: #9CA3AF;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.notion-editor .ProseMirror blockquote {
+  border-left: 4px solid var(--editor-border-color);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: var(--editor-quote-color);
+  background: rgba(59, 130, 246, 0.02);
+  border-radius: 0 0.25rem 0.25rem 0;
+  transition: all 0.2s ease;
+}
+
+.notion-editor .ProseMirror blockquote:hover {
+  background: rgba(59, 130, 246, 0.05);
+  border-left-color: var(--editor-accent-color);
+}
+
+.notion-editor .ProseMirror pre {
+  background: var(--editor-bg-light);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  font-family: var(--editor-font-mono);
+  font-size: 14px;
+  line-height: 1.4;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.notion-editor .ProseMirror pre:hover {
+  box-shadow: var(--editor-shadow);
+  border-color: var(--editor-accent-color);
+}
+
+.notion-editor .ProseMirror code {
+  background: var(--editor-bg-light);
+  border: 1px solid var(--editor-border-color);
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.25rem;
+  font-family: var(--editor-font-mono);
+  font-size: 0.875em;
+  color: var(--editor-code-color);
+  transition: all 0.2s ease;
+}
+
+.notion-editor .ProseMirror code:hover {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: var(--editor-code-color);
+}
+
+.notion-editor .ProseMirror ul, 
+.notion-editor .ProseMirror ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.notion-editor .ProseMirror li {
+  margin: 0.25rem 0;
+}
+
+.notion-editor .ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.notion-editor .ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  margin: 0.5rem 0;
+}
+
+.notion-editor .ProseMirror ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-right: 0.5rem;
+  margin-top: 0.125rem;
+  user-select: none;
+}
+
+.notion-editor .ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+.notion-editor .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.notion-editor .ProseMirror hr {
+  border: none;
+  border-top: 1px solid #E5E7EB;
+  margin: 2rem 0;
+}
+
+.notion-editor .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.notion-editor .ProseMirror a {
+  color: var(--editor-accent-color);
+  text-decoration: underline;
+  text-decoration-color: rgba(59, 130, 246, 0.4);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.notion-editor .ProseMirror a:hover {
+  text-decoration-color: var(--editor-accent-color);
+  background-color: rgba(59, 130, 246, 0.1);
+  border-radius: 0.25rem;
+  padding: 0 0.125rem;
+  transform: translateY(-1px);
+}
+
+/* Hover effects for blocks */
+.notion-editor .ProseMirror *:hover {
+  position: relative;
+}
+
+/* Selection styles */
+.notion-editor .ProseMirror .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(59, 130, 246, 0.1);
+  pointer-events: none;
+}
+
+/* Drop cursor */
+.notion-editor .ProseMirror .ProseMirror-dropcursor {
+  border-left: 2px solid #3B82F6;
+  border-right: 2px solid #3B82F6;
+  margin-left: -2px;
+  margin-right: -2px;
+}
+
+/* Gap cursor */
+.notion-editor .ProseMirror .ProseMirror-gapcursor {
+  display: none;
+  pointer-events: none;
+  position: absolute;
+}
+
+.notion-editor .ProseMirror .ProseMirror-gapcursor:after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: -2px;
+  width: 20px;
+  border-top: 2px solid #3B82F6;
+  animation: ProseMirror-cursor-blink 1.1s steps(2, start) infinite;
+}
+
+@keyframes ProseMirror-cursor-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* Floating elements */
+.notion-editor .floating-menu {
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  z-index: 50;
+}
+
+/* Focus styles */
+.notion-editor:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Typography improvements */
+.notion-editor .ProseMirror {
+  font-feature-settings: "liga" 1, "kern" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .notion-editor .ProseMirror {
+    font-size: 14px;
+    padding: 1rem;
+  }
+  
+  .notion-editor .ProseMirror h1 {
+    font-size: 1.75em;
+  }
+  
+  .notion-editor .ProseMirror h2 {
+    font-size: 1.375em;
+  }
+  
+  .notion-editor .ProseMirror h3 {
+    font-size: 1.125em;
+  }
+}
+
+/* Dark mode support (for future) */
+@media (prefers-color-scheme: dark) {
+  .notion-editor.dark .ProseMirror {
+    color: #F3F4F6;
+  }
+  
+  .notion-editor.dark .ProseMirror h1,
+  .notion-editor.dark .ProseMirror h2,
+  .notion-editor.dark .ProseMirror h3 {
+    color: #FFFFFF;
+  }
+  
+  .notion-editor.dark .ProseMirror blockquote {
+    border-left-color: #4B5563;
+    color: #9CA3AF;
+  }
+  
+  .notion-editor.dark .ProseMirror pre {
+    background: #1F2937;
+    border-color: #374151;
+  }
+  
+  .notion-editor.dark .ProseMirror code {
+    background: #1F2937;
+    border-color: #374151;
+    color: #EF4444;
+  }
+}

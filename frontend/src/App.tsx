@@ -12,7 +12,9 @@ import DashboardPage from './pages/DashboardPage';
 import ContentPage from './pages/ContentPage';
 import ReviewPage from './pages/ReviewPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import './styles/design-system.css';
 import './styles/animations.css';
+import './styles/notion-editor.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {
