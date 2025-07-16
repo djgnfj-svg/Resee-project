@@ -31,6 +31,12 @@ When implementing features, I will provide:
 
 **Resee** is a scientific review platform implementing spaced repetition learning based on the Ebbinghaus forgetting curve. It consists of a Django REST API backend with PostgreSQL/Redis/RabbitMQ and a React TypeScript frontend using Tiptap editor.
 
+### v0.2 Recent Updates
+- **✅ Immediate Review Feature**: Content can be reviewed immediately after creation
+- **✅ Initial Review Tracking**: Added `initial_review_completed` field to distinguish first reviews
+- **✅ Enhanced Review Flow**: Seamless transition from immediate review to spaced repetition
+- **✅ Playwright Testing**: Full workflow automated testing implemented
+
 ## Development Commands
 
 ### Docker Environment
@@ -179,7 +185,11 @@ docker-compose exec celery celery -A resee flower
 
 ## Spaced Repetition Logic
 
-**Review Intervals:** [1, 3, 7, 14, 30] days
+**Review Intervals:** [immediate, 1, 3, 7, 14, 30] days
+
+**Review Flow:**
+1. **Immediate Review**: Content available for review immediately after creation (`initial_review_completed = false`)
+2. **Spaced Repetition**: After first review completion, standard intervals apply
 
 **Review Results:**
 - **Remembered** - Advance to next interval
@@ -187,7 +197,7 @@ docker-compose exec celery celery -A resee flower
 - **Forgot** - Reset to first interval (1 day)
 
 **Background Tasks:**
-- `create_review_schedule_for_content` - Auto-creates schedules for new content
+- `create_review_schedule_for_content` - Auto-creates schedules with immediate availability
 - `send_daily_review_notifications` - Daily 9AM reminders
 - `cleanup_old_review_history` - Weekly cleanup of old history
 
@@ -221,6 +231,7 @@ resee/
 - JWT tokens with automatic refresh
 - Per-user data isolation with proper filtering
 - Image optimization with Pillow (800x600 max, 85% quality)
+- `initial_review_completed` field for immediate review tracking
 
 ### Frontend Patterns
 - React Query for server state with caching
@@ -228,10 +239,12 @@ resee/
 - React Hook Form for form validation
 - Tailwind CSS utility classes
 - TypeScript interfaces for all data contracts
+- Conditional rendering for "첫 번째 복습" vs "N번째 복습"
 
 ### Testing
 - Backend: Django TestCase and pytest with factory-boy
 - Frontend: React Testing Library with Jest
+- E2E Testing: Playwright for full workflow testing
 - Test database isolation and cleanup
 - Test coverage with pytest-cov
 
