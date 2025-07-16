@@ -1,13 +1,17 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from django.db import models
+from django.core.exceptions import ValidationError
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import Category, Tag, Content
 from .serializers import CategorySerializer, TagSerializer, ContentSerializer
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -169,24 +173,42 @@ class ContentViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=['get'])
     def by_category(self, request):
-        """Get contents grouped by category"""
-        categories = Category.objects.all()
-        result = {}
-        
-        for category in categories:
-            contents = self.get_queryset().filter(category=category)
-            result[category.slug] = {
-                'category': CategorySerializer(category).data,
-                'contents': ContentSerializer(contents, many=True).data,
-                'count': contents.count()
-            }
-        
-        # Add uncategorized content
-        uncategorized = self.get_queryset().filter(category__isnull=True)
-        result['uncategorized'] = {
-            'category': {'name': '미분류', 'slug': 'uncategorized'},
-            'contents': ContentSerializer(uncategorized, many=True).data,
-            'count': uncategorized.count()
-        }
-        
-        return Response(result)
+        """Get contents grouped by category - optimized version with error handling"""
+        try:
+            # Get user-accessible categories with user filtering
+            user_categories = Category.objects.filter(
+                models.Q(user=None) | models.Q(user=self.request.user)
+            )
+            
+            # Get all user's contents with category data in one query using select_related
+            user_contents = self.get_queryset().select_related('category').prefetch_related('tags')
+            
+            result = {}
+            
+            # Group contents by category efficiently
+            for category in user_categories:
+                category_contents = [content for content in user_contents if content.category_id == category.id]
+                if category_contents or category.user == self.request.user:  # Include user's custom categories even if empty
+                    result[category.slug] = {
+                        'category': CategorySerializer(category).data,
+                        'contents': ContentSerializer(category_contents, many=True).data,
+                        'count': len(category_contents)
+                    }
+            
+            # Add uncategorized content
+            uncategorized_contents = [content for content in user_contents if content.category is None]
+            if uncategorized_contents:
+                result['uncategorized'] = {
+                    'category': {'name': '미분류', 'slug': 'uncategorized'},
+                    'contents': ContentSerializer(uncategorized_contents, many=True).data,
+                    'count': len(uncategorized_contents)
+                }
+            
+            return Response(result)
+            
+        except Exception as e:
+            logger.error(f"Error in by_category view: {str(e)}", exc_info=True)
+            return Response(
+                {'error': '카테고리별 콘텐츠 조회 중 오류가 발생했습니다.'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

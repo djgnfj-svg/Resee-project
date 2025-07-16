@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
 import { contentAPI } from '../utils/api';
-import { Content, Category } from '../types';
+import { Content, Category, CreateContentData, UpdateContentData } from '../types';
 import ContentFormV2 from '../components/ContentFormV2';
 
 const ContentPage: React.FC = () => {
@@ -44,21 +47,19 @@ const ContentPage: React.FC = () => {
   // Create content mutation
   const createContentMutation = useMutation({
     mutationFn: contentAPI.createContent,
-    onSuccess: (data) => {
-      console.log('콘텐츠 생성 성공:', data);
+    onSuccess: () => {
       toast.success('콘텐츠가 성공적으로 생성되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['contents'] });
       setShowForm(false);
     },
-    onError: (error) => {
-      console.error('콘텐츠 생성 실패:', error);
+    onError: () => {
       toast.error('콘텐츠 생성에 실패했습니다.');
     },
   });
 
   // Update content mutation
   const updateContentMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => 
+    mutationFn: ({ id, data }: { id: number; data: UpdateContentData }) => 
       contentAPI.updateContent(id, data),
     onSuccess: () => {
       toast.success('콘텐츠가 성공적으로 수정되었습니다!');
@@ -66,8 +67,7 @@ const ContentPage: React.FC = () => {
       setEditingContent(null);
       setShowForm(false);
     },
-    onError: (error) => {
-      console.error('콘텐츠 수정 실패:', error);
+    onError: () => {
       toast.error('콘텐츠 수정에 실패했습니다.');
     },
   });
@@ -79,20 +79,16 @@ const ContentPage: React.FC = () => {
       toast.success('콘텐츠가 성공적으로 삭제되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['contents'] });
     },
-    onError: (error) => {
-      console.error('콘텐츠 삭제 실패:', error);
+    onError: () => {
       toast.error('콘텐츠 삭제에 실패했습니다.');
     },
   });
 
-  const handleSubmit = (data: any) => {
-    console.log('폼 제출됨:', data);
+  const handleSubmit = (data: CreateContentData | UpdateContentData) => {
     if (editingContent) {
-      console.log('콘텐츠 수정 모드');
       updateContentMutation.mutate({ id: editingContent.id, data });
     } else {
-      console.log('새 콘텐츠 생성 모드');
-      createContentMutation.mutate(data);
+      createContentMutation.mutate(data as CreateContentData);
     }
   };
 
@@ -157,10 +153,7 @@ const ContentPage: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => {
-            console.log('새 콘텐츠 버튼 클릭됨');
-            setShowForm(true);
-          }}
+          onClick={() => setShowForm(true)}
           className="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500"
         >
           <svg className="-ml-0.5 mr-1.5 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -344,13 +337,14 @@ const ContentPage: React.FC = () => {
               </div>
               
               <div className="prose prose-sm max-w-none">
-                <div 
-                  dangerouslySetInnerHTML={{ 
-                    __html: content.content.length > 200 
-                      ? content.content.substring(0, 200) + '...' 
-                      : content.content
-                  }}
-                />
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeSanitize]}
+                >
+                  {content.content.length > 200 
+                    ? content.content.substring(0, 200) + '...' 
+                    : content.content}
+                </ReactMarkdown>
               </div>
 
               {content.tags.length > 0 && (
