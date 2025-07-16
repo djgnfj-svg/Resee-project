@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Q
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import ReviewSchedule, ReviewHistory
@@ -80,12 +81,14 @@ class TodayReviewView(APIView):
         responses={200: ReviewScheduleSerializer(many=True)}
     )
     def get(self, request):
-        """Get today's review items"""
+        """Get today's review items (including initial reviews)"""
         today = timezone.now().date()
         schedules = ReviewSchedule.objects.filter(
             user=request.user,
-            is_active=True,
-            next_review_date__date__lte=today
+            is_active=True
+        ).filter(
+            # Include items that are due today OR are initial reviews not yet completed
+            Q(next_review_date__date__lte=today) | Q(initial_review_completed=False)
         ).select_related('content', 'content__category').order_by('next_review_date')
         
         # Category filter
@@ -185,15 +188,27 @@ class CompleteReviewView(APIView):
                 
                 # Update schedule based on result
                 if result == 'remembered':
+                    # Mark initial review as completed if it's the first review
+                    if not schedule.initial_review_completed:
+                        schedule.initial_review_completed = True
+                        schedule.save()
                     # Advance to next interval
                     schedule.advance_schedule()
                 elif result == 'partial':
+                    # Mark initial review as completed if it's the first review
+                    if not schedule.initial_review_completed:
+                        schedule.initial_review_completed = True
+                        schedule.save()
                     # Stay at current interval but reset date
                     intervals = get_review_intervals()
                     current_interval = intervals[schedule.interval_index]
                     schedule.next_review_date = timezone.now() + timezone.timedelta(days=current_interval)
                     schedule.save()
                 else:  # 'forgot'
+                    # Mark initial review as completed if it's the first review
+                    if not schedule.initial_review_completed:
+                        schedule.initial_review_completed = True
+                        schedule.save()
                     # Reset to first interval
                     schedule.reset_schedule()
                 

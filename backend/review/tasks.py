@@ -18,8 +18,8 @@ def create_review_schedule_for_content(content_id, user_id):
         content = Content.objects.get(id=content_id)
         user = User.objects.get(id=user_id)
         
-        # Create review schedule with first interval (1 day)
-        next_review_date = timezone.now() + timedelta(days=1)
+        # Create review schedule immediately available for initial review
+        next_review_date = timezone.now()
         
         schedule, created = ReviewSchedule.objects.get_or_create(
             content=content,
@@ -27,7 +27,8 @@ def create_review_schedule_for_content(content_id, user_id):
             defaults={
                 'next_review_date': next_review_date,
                 'interval_index': 0,
-                'is_active': True
+                'is_active': True,
+                'initial_review_completed': False
             }
         )
         
@@ -41,7 +42,7 @@ def send_daily_review_notifications():
     """Send daily review notifications to users"""
     today = timezone.now().date()
     
-    # Get all users who have reviews due today
+    # Get all users who have reviews due today (including initial reviews)
     due_schedules = ReviewSchedule.objects.filter(
         is_active=True,
         next_review_date__date__lte=today

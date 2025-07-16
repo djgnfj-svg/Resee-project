@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reviewAPI, contentAPI } from '../utils/api';
 import { ReviewSchedule, Category } from '../types';
+import { extractResults } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 const ReviewPage: React.FC = () => {
@@ -18,14 +19,14 @@ const ReviewPage: React.FC = () => {
     queryKey: ['todayReviews', selectedCategory],
     queryFn: () => {
       const params = selectedCategory !== 'all' ? `?category_slug=${selectedCategory}` : '';
-      return reviewAPI.getTodayReviews(params).then(res => res.results || res);
+      return reviewAPI.getTodayReviews(params).then(extractResults);
     },
   });
 
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => contentAPI.getCategories().then(res => res.results || res),
+    queryFn: () => contentAPI.getCategories().then(extractResults),
   });
 
   // Complete review mutation
@@ -237,7 +238,9 @@ const ReviewPage: React.FC = () => {
                          currentReview.content.priority === 'medium' ? '보통' : '낮음'}
                       </span>
                       <span className="text-gray-500 text-xs">
-                        {currentReview.interval_index + 1}번째 복습
+                        {currentReview.initial_review_completed ? 
+                          `${currentReview.interval_index + 1}번째 복습` : 
+                          '첫 번째 복습'}
                       </span>
                     </div>
                   </div>
