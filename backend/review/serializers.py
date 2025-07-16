@@ -11,7 +11,7 @@ class ReviewScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewSchedule
         fields = ('id', 'content', 'user', 'next_review_date', 'interval_index', 
-                 'is_active', 'created_at', 'updated_at')
+                 'is_active', 'initial_review_completed', 'created_at', 'updated_at')
         read_only_fields = ('id', 'user', 'created_at', 'updated_at')
 
 

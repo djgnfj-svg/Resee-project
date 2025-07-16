@@ -13,6 +13,7 @@ class ReviewSchedule(models.Model):
     next_review_date = models.DateTimeField()
     interval_index = models.IntegerField(default=0, help_text='Index in REVIEW_INTERVALS')
     is_active = models.BooleanField(default=True)
+    initial_review_completed = models.BooleanField(default=False, help_text='Whether the initial review has been completed')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

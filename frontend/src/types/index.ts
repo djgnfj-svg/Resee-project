@@ -62,6 +62,7 @@ export interface ReviewSchedule {
   next_review_date: string;
   interval_index: number;
   is_active: boolean;
+  initial_review_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -119,6 +120,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface ImageUploadResponse {
-  image_url: string;
+  url: string;
   filename: string;
+  size: number;
 }
