@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { contentAPI } from '../utils/api';
 import { Category, Tag } from '../types';
+import { extractResults } from '../utils/helpers';
 import NotionEditor from './NotionEditor';
 
 interface ContentFormData {
@@ -58,12 +59,12 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   // Fetch categories and tags
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => contentAPI.getCategories().then(res => res.results || res),
+    queryFn: () => contentAPI.getCategories().then(extractResults),
   });
 
   const { data: tags = [] } = useQuery<Tag[]>({
     queryKey: ['tags'],
-    queryFn: () => contentAPI.getTags().then(res => res.results || res),
+    queryFn: () => contentAPI.getTags().then(extractResults),
   });
 
   // Create category mutation
@@ -151,7 +152,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   const handleImageUpload = async (file: File): Promise<string> => {
     try {
       const response = await contentAPI.uploadImage(file);
-      return response.url || response.image_url;
+      return response.url;
     } catch (error) {
       console.error('Image upload failed:', error);
       throw error;
@@ -166,20 +167,20 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-3xl shadow-2xl overflow-hidden backdrop-blur-lg"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8">
+          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-4 sm:p-6 lg:p-8">
             <div className="flex items-center justify-between">
               <div>
                 <motion.h1 
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="text-3xl font-bold text-white"
+                  className="text-2xl sm:text-3xl font-bold text-white"
                 >
                   {initialData ? '콘텐츠 수정' : '새 콘텐츠 만들기'}
                 </motion.h1>
@@ -187,7 +188,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="text-indigo-100 mt-2"
+                  className="text-sm sm:text-base text-indigo-100 mt-2"
                 >
                   단계별로 정보를 입력하여 학습 콘텐츠를 만들어보세요
                 </motion.p>
@@ -206,7 +207,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
           </div>
 
           {/* Progress Steps */}
-          <div className="px-8 py-6 bg-gray-50 border-b">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-gray-50 border-b">
             <div className="flex items-center justify-between">
               {steps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
@@ -332,7 +333,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                     <label className="block text-sm font-semibold text-gray-900">
                       중요도 <span className="text-red-500">*</span>
                     </label>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {priorityOptions.map((option) => (
                         <label key={option.value} className="relative cursor-pointer">
                           <input
@@ -445,7 +446,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                       </div>
 
                       {/* Tags Grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 sm:max-h-80 overflow-y-auto">
                         {filteredTags.map((tag) => (
                           <motion.button
                             key={tag.id}
