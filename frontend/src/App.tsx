@@ -1,14 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
+// import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
+import SimpleDashboard from './pages/SimpleDashboard';
 import ContentPage from './pages/ContentPage';
 import ReviewPage from './pages/ReviewPage';
 import ProfilePage from './pages/ProfilePage';
@@ -43,7 +43,7 @@ function App() {
                 path="/dashboard" 
                 element={
                   <ProtectedRoute>
-                    <DashboardPage />
+                    <SimpleDashboard />
                   </ProtectedRoute>
                 } 
               />
@@ -89,7 +89,7 @@ function App() {
               />
             </Routes>
           </Layout>
-          <Toaster />
+          {/* <Toaster /> */}
         </Router>
       </AuthProvider>
     </QueryClientProvider>

@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+// import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeSanitize from 'rehype-sanitize';
+// import rehypeSanitize from 'rehype-sanitize';
 import { contentAPI } from '../utils/api';
 import { Content, Category, Tag } from '../types';
 import { extractResults, getPriorityInfo, formatDate, formatDateTime, truncateText } from '../utils/helpers';
@@ -400,13 +400,9 @@ const SearchPage: React.FC = () => {
           {/* Search Results */}
           {!isLoading && searchResults.length > 0 && (
             <div className="space-y-4">
-              <AnimatePresence>
                 {searchResults.map((content) => (
-                  <motion.div
+                  <div
                     key={content.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
                     className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-4 sm:p-6"
                   >
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 space-y-2 sm:space-y-0">
@@ -441,7 +437,7 @@ const SearchPage: React.FC = () => {
                     <div className="text-gray-600 text-sm sm:text-base mb-4 line-clamp-3">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeSanitize]}
+                        // rehypePlugins={[rehypeSanitize]}
                       >
                         {content.content.length > 200 
                           ? content.content.substring(0, 200) + '...' 
@@ -483,28 +479,20 @@ const SearchPage: React.FC = () => {
                         자세히 보기 →
                       </button>
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
-              </AnimatePresence>
             </div>
           )}
         </div>
       </div>
 
       {/* Content Detail Modal */}
-      <AnimatePresence>
         {selectedContent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4"
             onClick={() => setSelectedContent(null)}
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+            <div
               onClick={(e) => e.stopPropagation()}
               className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
             >
@@ -526,7 +514,7 @@ const SearchPage: React.FC = () => {
                 <div className="prose prose-sm sm:prose-base max-w-none">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeSanitize]}
+                    // rehypePlugins={[rehypeSanitize]}
                   >
                     {selectedContent.content}
                   </ReactMarkdown>
@@ -569,10 +557,9 @@ const SearchPage: React.FC = () => {
                   편집하기 →
                 </Link>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
     </div>
   );
 };

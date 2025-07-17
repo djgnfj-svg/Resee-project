@@ -5,6 +5,8 @@ import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
 // SVG 아이콘 컴포넌트들
 const IconBold = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -135,6 +137,10 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       }),
       CharacterCount.configure({
         limit: 10000,
+      }),
+      TaskList,
+      TaskItem.configure({
+        nested: true,
       }),
     ],
     content,
