@@ -63,24 +63,64 @@ const SettingsPage: React.FC = () => {
     });
   };
 
+  // Password change mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: authAPI.changePassword,
+    onSuccess: () => {
+      toast.success('비밀번호가 성공적으로 변경되었습니다!');
+      securityForm.reset();
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.current_password || error.response?.data?.new_password || '비밀번호 변경에 실패했습니다.';
+      toast.error(errorMessage);
+    },
+  });
+
   const onSecuritySubmit = (data: SecuritySettings) => {
     if (data.new_password !== data.confirm_password) {
       toast.error('새 비밀번호가 일치하지 않습니다.');
       return;
     }
-    // Password change API would go here
-    toast.success('비밀번호가 성공적으로 변경되었습니다!');
-    securityForm.reset();
+    changePasswordMutation.mutate({
+      current_password: data.current_password,
+      new_password: data.new_password,
+      new_password_confirm: data.confirm_password,
+    });
   };
 
   const exportData = () => {
     toast.success('데이터 내보내기가 시작되었습니다. 이메일로 다운로드 링크를 보내드릴게요.');
   };
 
-  const deleteAccount = () => {
-    if (window.confirm('정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-      toast.error('계정 삭제 기능은 아직 구현되지 않았습니다.');
+  // Account deletion form
+  const deleteAccountForm = useForm<{ password: string; confirmation: string }>({
+    defaultValues: {
+      password: '',
+      confirmation: '',
+    },
+  });
+
+  // Account deletion mutation
+  const deleteAccountMutation = useMutation({
+    mutationFn: authAPI.deleteAccount,
+    onSuccess: () => {
+      toast.success('계정이 성공적으로 삭제되었습니다.');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      window.location.href = '/login';
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.password || error.response?.data?.confirmation || '계정 삭제에 실패했습니다.';
+      toast.error(errorMessage);
+    },
+  });
+
+  const onDeleteAccount = (data: { password: string; confirmation: string }) => {
+    if (data.confirmation !== 'DELETE') {
+      toast.error('"DELETE"를 정확히 입력해주세요.');
+      return;
     }
+    deleteAccountMutation.mutate(data);
   };
 
   const tabs = [
@@ -269,9 +309,10 @@ const SettingsPage: React.FC = () => {
                   <div className="pt-4">
                     <button
                       type="submit"
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      disabled={changePasswordMutation.isPending}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
                     >
-                      비밀번호 변경
+                      {changePasswordMutation.isPending ? '변경 중...' : '비밀번호 변경'}
                     </button>
                   </div>
                 </form>
@@ -348,20 +389,50 @@ const SettingsPage: React.FC = () => {
               <div className="border-t border-gray-200 pt-6">
                 <h3 className="text-lg font-medium text-red-600 mb-4">위험 영역</h3>
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-base font-medium text-red-900">계정 삭제</h4>
-                      <p className="text-sm text-red-700">
-                        모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
-                      </p>
-                    </div>
-                    <button
-                      onClick={deleteAccount}
-                      className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                    >
-                      계정 삭제
-                    </button>
+                  <div className="mb-4">
+                    <h4 className="text-base font-medium text-red-900">계정 삭제</h4>
+                    <p className="text-sm text-red-700">
+                      모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+                    </p>
                   </div>
+                  
+                  <form onSubmit={deleteAccountForm.handleSubmit(onDeleteAccount)} className="space-y-4">
+                    <div>
+                      <label htmlFor="delete_password" className="block text-sm font-medium text-red-700 mb-2">
+                        계정 삭제를 위해 비밀번호를 입력해주세요
+                      </label>
+                      <input
+                        type="password"
+                        id="delete_password"
+                        {...deleteAccountForm.register('password', { required: '비밀번호를 입력해주세요' })}
+                        className="w-full px-3 py-2 border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500"
+                        placeholder="비밀번호"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="delete_confirmation" className="block text-sm font-medium text-red-700 mb-2">
+                        계정 삭제를 확인하기 위해 "DELETE"를 입력해주세요
+                      </label>
+                      <input
+                        type="text"
+                        id="delete_confirmation"
+                        {...deleteAccountForm.register('confirmation', { required: '"DELETE"를 입력해주세요' })}
+                        className="w-full px-3 py-2 border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500"
+                        placeholder="DELETE"
+                      />
+                    </div>
+                    
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={deleteAccountMutation.isPending}
+                        className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50"
+                      >
+                        {deleteAccountMutation.isPending ? '삭제 중...' : '계정 영구 삭제'}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>

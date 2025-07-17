@@ -118,6 +118,16 @@ export const authAPI = {
     const response = await api.put('/accounts/profile/', data);
     return response.data;
   },
+  
+  changePassword: async (data: { current_password: string; new_password: string; new_password_confirm: string; }): Promise<{ message: string }> => {
+    const response = await api.post('/accounts/password/change/', data);
+    return response.data;
+  },
+  
+  deleteAccount: async (data: { password: string; confirmation: string; }): Promise<{ message: string }> => {
+    const response = await api.post('/accounts/account/delete/', data);
+    return response.data;
+  },
 };
 
 // Content API

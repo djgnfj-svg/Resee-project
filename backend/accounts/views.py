@@ -4,9 +4,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
-from .serializers import UserSerializer, ProfileSerializer, UserRegistrationSerializer
+from .serializers import UserSerializer, ProfileSerializer, UserRegistrationSerializer, PasswordChangeSerializer, AccountDeleteSerializer
+import logging
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -47,4 +49,62 @@ class ProfileView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordChangeView(APIView):
+    """Password change view"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Change user password"""
+        serializer = PasswordChangeSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            try:
+                serializer.save()
+                logger.info(f"Password changed for user {request.user.username}")
+                return Response(
+                    {'message': 'Password changed successfully'},
+                    status=status.HTTP_200_OK
+                )
+            except Exception as e:
+                logger.error(f"Password change failed for user {request.user.username}: {str(e)}")
+                return Response(
+                    {'error': 'Password change failed'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AccountDeleteView(APIView):
+    """Account deletion view"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Delete user account"""
+        serializer = AccountDeleteSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            try:
+                user = request.user
+                username = user.username
+                email = user.email
+                
+                # Log the deletion before deleting
+                logger.warning(f"Account deletion initiated for user {username} ({email})")
+                
+                # Delete the account
+                serializer.save()
+                
+                logger.warning(f"Account deleted for user {username} ({email})")
+                
+                return Response(
+                    {'message': 'Account deleted successfully'},
+                    status=status.HTTP_200_OK
+                )
+            except Exception as e:
+                logger.error(f"Account deletion failed for user {request.user.username}: {str(e)}")
+                return Response(
+                    {'error': 'Account deletion failed'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

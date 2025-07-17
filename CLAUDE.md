@@ -80,6 +80,18 @@ docker-compose exec backend python manage.py collectstatic
 
 # Run specific test file
 docker-compose exec backend python manage.py test tests.test_content
+
+# Run pytest with specific markers
+docker-compose exec backend pytest -m unit
+docker-compose exec backend pytest -m "not slow"
+
+# Code quality checks
+docker-compose exec backend flake8
+docker-compose exec backend black .
+docker-compose exec backend isort .
+
+# Debug mode Django shell
+docker-compose exec backend python manage.py shell_plus --ipython
 ```
 
 ### Frontend (React)
@@ -96,8 +108,17 @@ docker-compose exec frontend npm test
 # Build production
 docker-compose exec frontend npm run build
 
-# Run linting (if configured)
+# Run linting
 docker-compose exec frontend npm run lint
+
+# Test with coverage
+docker-compose exec frontend npm test -- --coverage --watchAll=false
+
+# Type checking
+docker-compose exec frontend npx tsc --noEmit
+
+# Build and analyze bundle size
+docker-compose exec frontend npm run build -- --stats
 ```
 
 ### Celery (Background Tasks)
@@ -110,6 +131,15 @@ docker-compose exec celery-beat celery -A resee beat -l info
 
 # Celery monitoring (flower)
 docker-compose exec celery celery -A resee flower
+
+# Purge all tasks from queue
+docker-compose exec celery celery -A resee purge -f
+
+# Inspect active tasks
+docker-compose exec celery celery -A resee inspect active
+
+# Inspect scheduled tasks
+docker-compose exec celery celery -A resee inspect scheduled
 ```
 
 ## Architecture Overview
@@ -275,3 +305,102 @@ REACT_APP_API_URL=http://localhost:8000/api
 - Default timezone: Asia/Seoul
 - Korean language support in documentation
 - User timezone setting in User model
+
+## Debugging & Troubleshooting
+
+### Container Management
+```bash
+# View all container logs
+docker-compose logs
+
+# Follow specific service logs
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f celery
+
+# Restart a specific service
+docker-compose restart backend
+docker-compose restart frontend
+
+# Rebuild containers after dependency changes
+docker-compose build --no-cache backend
+docker-compose build --no-cache frontend
+
+# Check container health
+docker-compose ps
+```
+
+### Database Operations
+```bash
+# Access PostgreSQL directly
+docker-compose exec db psql -U resee_user -d resee_db
+
+# Backup database
+docker-compose exec db pg_dump -U resee_user resee_db > backup.sql
+
+# Reset database (CAUTION: destroys all data)
+docker-compose exec backend python manage.py flush --no-input
+docker-compose exec backend python manage.py migrate
+
+# Show migration status
+docker-compose exec backend python manage.py showmigrations
+
+# Create empty migration
+docker-compose exec backend python manage.py makemigrations --empty content
+```
+
+### Debugging Tools
+```bash
+# Django debug toolbar (available in DEBUG mode)
+# Access at http://localhost:8000/__debug__/
+
+# Interactive debugging with ipdb
+# Add to code: import ipdb; ipdb.set_trace()
+
+# Django shell with enhanced features
+docker-compose exec backend python manage.py shell_plus
+
+# Print SQL queries for a view
+docker-compose exec backend python manage.py debugsqlshell
+
+# Check Redis connection
+docker-compose exec redis redis-cli ping
+
+# Monitor Redis in real-time
+docker-compose exec redis redis-cli monitor
+```
+
+### Common Issues & Solutions
+
+**Frontend not updating:**
+```bash
+# Clear node_modules and reinstall
+docker-compose exec frontend rm -rf node_modules
+docker-compose exec frontend npm install
+
+# Clear React cache
+docker-compose exec frontend npm start -- --reset-cache
+```
+
+**Backend API errors:**
+```bash
+# Check for missing migrations
+docker-compose exec backend python manage.py makemigrations --check
+
+# Validate models
+docker-compose exec backend python manage.py validate_models
+
+# Check static files
+docker-compose exec backend python manage.py findstatic admin/css/base.css
+```
+
+**Celery tasks not running:**
+```bash
+# Check RabbitMQ connection
+docker-compose exec backend python -c "from resee.celery import app; print(app.control.inspect().active())"
+
+# Manually trigger a task
+docker-compose exec backend python manage.py shell
+>>> from review.tasks import send_daily_review_notifications
+>>> send_daily_review_notifications.delay()
+```

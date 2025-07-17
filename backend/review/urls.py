@@ -5,13 +5,15 @@ from .views import (
     TodayReviewView, CompleteReviewView, CategoryReviewStatsView
 )
 
+app_name = 'review'
+
 router = DefaultRouter()
-router.register(r'schedules', ReviewScheduleViewSet)
-router.register(r'history', ReviewHistoryViewSet)
+router.register(r'schedules', ReviewScheduleViewSet, basename='schedules')
+router.register(r'history', ReviewHistoryViewSet, basename='history')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('today/', TodayReviewView.as_view(), name='today-review'),
-    path('complete/', CompleteReviewView.as_view(), name='complete-review'),
-    path('category-stats/', CategoryReviewStatsView.as_view(), name='category-review-stats'),
+    path('today/', TodayReviewView.as_view(), name='today'),
+    path('complete/', CompleteReviewView.as_view(), name='complete'),
+    path('category-stats/', CategoryReviewStatsView.as_view(), name='category-stats'),
 ]

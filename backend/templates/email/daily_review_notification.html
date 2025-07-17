@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오늘의 복습 알림</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4F46E5;
+            text-decoration: none;
+        }
+        .content h1 {
+            color: #1F2937;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .stats {
+            background-color: #F3F4F6;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .stat-label {
+            color: #6B7280;
+        }
+        .stat-value {
+            font-weight: bold;
+            color: #1F2937;
+        }
+        .content-list {
+            margin: 20px 0;
+        }
+        .content-item {
+            background-color: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .content-title {
+            font-weight: bold;
+            color: #1F2937;
+            margin-bottom: 5px;
+        }
+        .content-category {
+            color: #6B7280;
+            font-size: 14px;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #4F46E5;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .cta-button:hover {
+            background-color: #4338CA;
+        }
+        .footer {
+            text-align: center;
+            color: #6B7280;
+            font-size: 14px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+        }
+        .unsubscribe {
+            color: #6B7280;
+            text-decoration: none;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="{{ site_url }}" class="logo">Resee</a>
+        </div>
+        
+        <div class="content">
+            <h1>안녕하세요, {{ user_name }}님! 👋</h1>
+            
+            <p>오늘 복습할 콘텐츠가 <strong>{{ total_count }}개</strong> 있습니다.</p>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">총 복습 대상:</span>
+                    <span class="stat-value">{{ total_count }}개</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">평균 소요 시간:</span>
+                    <span class="stat-value">약 {{ estimated_time }}분</span>
+                </div>
+            </div>
+            
+            {% if contents %}
+            <h2 style="font-size: 18px; margin-top: 30px;">오늘의 복습 목록</h2>
+            <div class="content-list">
+                {% for content in contents %}
+                <div class="content-item">
+                    <div class="content-title">{{ content.title }}</div>
+                    <div class="content-category">{{ content.category }} • {{ content.interval }}일째 복습</div>
+                </div>
+                {% endfor %}
+                
+                {% if remaining_count > 0 %}
+                <p style="text-align: center; color: #6B7280; font-size: 14px;">
+                    ...그리고 {{ remaining_count }}개 더
+                </p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <div style="text-align: center;">
+                <a href="{{ review_url }}" class="cta-button">지금 복습 시작하기</a>
+            </div>
+            
+            <p style="color: #6B7280; font-size: 14px;">
+                💡 <strong>팁:</strong> 규칙적인 복습은 장기 기억 형성에 도움이 됩니다. 
+                매일 같은 시간에 복습하는 습관을 만들어보세요!
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>이 이메일은 Resee 복습 알림 서비스의 일부입니다.</p>
+            <p>
+                알림 설정을 변경하려면 
+                <a href="{{ settings_url }}" style="color: #4F46E5;">설정 페이지</a>를 
+                방문해주세요.
+            </p>
+            <p style="margin-top: 15px;">
+                <a href="{{ unsubscribe_url }}" class="unsubscribe">알림 수신 거부</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
