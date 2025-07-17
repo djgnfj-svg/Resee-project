@@ -1,0 +1,544 @@
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { analyticsAPI } from '../utils/api';
+import { DashboardData, ReviewStatsData } from '../types';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, ComposedChart, Area, AreaChart } from 'recharts';
+import LoadingSpinner from '../components/LoadingSpinner';
+// import toast from 'react-hot-toast';
+
+const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [selectedDistributionPeriod, setSelectedDistributionPeriod] = useState<'all_time' | 'recent_30_days'>('recent_30_days');
+  
+  const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
+    queryKey: ['dashboard'],
+    queryFn: analyticsAPI.getDashboard,
+    onError: (error: any) => {
+      alert('Error: ' + (error.userMessage || '대시보드 데이터를 불러오는데 실패했습니다.'));
+    },
+  });
+
+  const { data: reviewStats, isLoading: statsLoading, error: statsError } = useQuery({
+    queryKey: ['reviewStats'],
+    queryFn: analyticsAPI.getReviewStats,
+    onError: (error: any) => {
+      alert('Error: ' + (error.userMessage || '통계 데이터를 불러오는데 실패했습니다.'));
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner size="lg" text="대시보드 데이터를 불러오는 중..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-md mx-auto mt-8 bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+        <div className="text-4xl mb-4">😞</div>
+        <h3 className="text-lg font-semibold text-red-800 mb-2">데이터를 불러올 수 없습니다</h3>
+        <p className="text-sm text-red-600 mb-4">
+          대시보드 데이터를 불러오는데 문제가 발생했습니다.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
+
+  const stats = [
+    {
+      name: '오늘의 복습',
+      value: dashboardData?.today_reviews || 0,
+      unit: '개',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      trend: statsData?.trends?.review_count_change,
+    },
+    {
+      name: '복습 연속일',
+      value: dashboardData?.streak_days || 0,
+      unit: '일',
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+    },
+    {
+      name: '전체 콘텐츠',
+      value: dashboardData?.total_content || 0,
+      unit: '개',
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+    },
+    {
+      name: '복습 성공률',
+      value: dashboardData?.success_rate || 0,
+      unit: '%',
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      trend: statsData?.trends?.success_rate_change,
+    },
+  ];
+
+  // Chart colors
+  const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+  const SUCCESS_COLORS = ['#10B981', '#F59E0B', '#EF4444'];
+
+  // Process review stats for charts
+  const statsData = reviewStats as any;
+  const processedDailyData = Array.isArray(statsData?.daily_reviews) ? statsData.daily_reviews.map((item: any) => ({
+    date: new Date(item.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+    count: item.count,
+    success_rate: item.success_rate,
+    remembered: item.remembered,
+    partial: item.partial,
+    forgot: item.forgot
+  })) : [];
+
+  // Get selected distribution data
+  const selectedDistribution = statsData?.result_distribution?.[selectedDistributionPeriod] || [];
+  const distributionTotal = selectedDistributionPeriod === 'recent_30_days' 
+    ? statsData?.result_distribution?.recent_total || 0
+    : statsData?.result_distribution?.all_time_total || 0;
+
+  const processedResultData = Array.isArray(selectedDistribution) ? selectedDistribution.map((item: any) => ({
+    name: item.name,
+    value: item.count,
+    percentage: item.percentage,
+    result: item.result
+  })) : [];
+
+  // Process weekly performance data
+  const processedWeeklyData = Array.isArray(statsData?.weekly_performance) ? statsData.weekly_performance.map((week: any) => ({
+    week: week.week_label,
+    success_rate: week.success_rate,
+    total_reviews: week.total_reviews,
+    consistency: week.consistency,
+    days_active: week.days_active
+  })) : [];
+
+  return (
+    <div>
+      {/* Hero Section */}
+      <div className="mb-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">안녕하세요! 📚</h1>
+            <p className="text-blue-100 text-lg">
+              오늘도 성실하게 학습하는 당신을 응원합니다.
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold">
+              {new Date().toLocaleDateString('ko-KR', { 
+                month: 'long', 
+                day: 'numeric', 
+                weekday: 'short' 
+              })}
+            </div>
+            <div className="text-blue-100 mt-1">
+              {new Date().toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        {stats.map((stat, index) => {
+          const icons = ['🎯', '🔥', '📖', '🎉'];
+          const gradients = [
+            'from-blue-500 to-blue-600',
+            'from-orange-500 to-red-500', 
+            'from-green-500 to-green-600',
+            'from-purple-500 to-purple-600'
+          ];
+          
+          const renderTrendIndicator = (trend: number | undefined) => {
+            if (trend === undefined || trend === 0) return null;
+            
+            const isPositive = trend > 0;
+            const color = isPositive ? 'text-green-500' : 'text-red-500';
+            const arrow = isPositive ? '↑' : '↓';
+            
+            return (
+              <div className={`flex items-center text-xs ${color} mt-1`}>
+                <span className="mr-1">{arrow}</span>
+                <span>{Math.abs(trend).toFixed(1)}</span>
+              </div>
+            );
+          };
+          
+          return (
+            <div
+              key={stat.name}
+              className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+            >
+              <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${gradients[index]} rounded-full opacity-10 transform translate-x-6 -translate-y-6`}></div>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <div className="text-2xl mb-2">{icons[index]}</div>
+                  <div className="text-right">
+                    <div className={`text-2xl font-bold bg-gradient-to-r ${gradients[index]} bg-clip-text text-transparent`}>
+                      {stat.value}{stat.unit}
+                    </div>
+                    {renderTrendIndicator(stat.trend)}
+                  </div>
+                </div>
+                <h3 className="text-gray-700 font-semibold text-lg">{stat.name}</h3>
+                <div className={`h-2 bg-gray-100 rounded-full mt-3 overflow-hidden`}>
+                  <div 
+                    className={`h-full bg-gradient-to-r ${gradients[index]} rounded-full transition-all duration-500`}
+                    style={{width: `${Math.min(stat.value, 100)}%`}}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Quick Actions & Tips */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-8">
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-lg">
+          <div className="flex items-center mb-4">
+            <div className="text-2xl mr-3">⚡</div>
+            <h3 className="text-xl font-bold text-gray-900">빠른 액션</h3>
+          </div>
+          <div className="space-y-3">
+            <button 
+              onClick={() => navigate('/content')}
+              className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4 text-white font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105"
+            >
+              <span className="relative z-10 flex items-center justify-center">
+                <span className="mr-2">📝</span>
+                새 콘텐츠 추가
+              </span>
+            </button>
+            <button 
+              onClick={() => navigate('/review')}
+              className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4 text-white font-semibold hover:from-green-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105"
+            >
+              <span className="relative z-10 flex items-center justify-center">
+                <span className="mr-2">🎯</span>
+                오늘의 복습 시작
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-lg">
+          <div className="flex items-center mb-4">
+            <div className="text-2xl mr-3">💡</div>
+            <h3 className="text-xl font-bold text-gray-900">학습 팁</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-start">
+              <div className="text-green-500 mr-3 mt-1">•</div>
+              <p className="text-gray-700">복습은 하루에 조금씩이라도 꾸준히 하는 것이 중요합니다.</p>
+            </div>
+            <div className="flex items-start">
+              <div className="text-yellow-500 mr-3 mt-1">•</div>
+              <p className="text-gray-700">기억이 애매하다면 '애매함'으로 표시하여 더 자주 복습하세요.</p>
+            </div>
+            <div className="flex items-start">
+              <div className="text-purple-500 mr-3 mt-1">•</div>
+              <p className="text-gray-700">카테고리와 태그를 활용하여 체계적으로 정리하세요.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Charts Section */}
+      {!statsLoading && reviewStats && (statsData)?.result_distribution && (
+        <div className="space-y-8">
+          {/* Weekly Performance Chart with Success Rates */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <div className="text-2xl mr-3">📈</div>
+                <h3 className="text-xl font-bold text-gray-900">주간 복습 성과</h3>
+              </div>
+              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">최근 4주</span>
+            </div>
+            
+            {/* Weekly Performance Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {processedWeeklyData.length > 0 && (
+                <div className="space-y-3">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">성공률</span>
+                      <span className="text-2xl font-bold text-green-600">{processedWeeklyData[0].success_rate}%</span>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">지속성</span>
+                      <span className="text-2xl font-bold text-blue-600">{processedWeeklyData[0].consistency}%</span>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">활동일</span>
+                      <span className="text-2xl font-bold text-purple-600">{processedWeeklyData[0].days_active}/7일</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={processedWeeklyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="week" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#666', fontSize: 12 }}
+                />
+                <YAxis 
+                  yAxisId="left"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#666', fontSize: 12 }}
+                />
+                <YAxis 
+                  yAxisId="right"
+                  orientation="right"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#666', fontSize: 12 }}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: 'none',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                  }}
+                  formatter={(value, name) => [
+                    name === 'success_rate' ? `${value}%` : 
+                    name === 'consistency' ? `${value}%` : value,
+                    name === 'success_rate' ? '성공률' :
+                    name === 'consistency' ? '지속성' : 
+                    name === 'total_reviews' ? '총 복습' : name
+                  ]}
+                />
+                <Bar 
+                  yAxisId="left"
+                  dataKey="total_reviews" 
+                  fill="url(#weeklyBarGradient)" 
+                  radius={[4, 4, 0, 0]}
+                  name="total_reviews"
+                />
+                <Line 
+                  yAxisId="right"
+                  type="monotone" 
+                  dataKey="success_rate" 
+                  stroke="#10B981" 
+                  strokeWidth={3}
+                  dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+                  name="success_rate"
+                />
+                <Line 
+                  yAxisId="right"
+                  type="monotone" 
+                  dataKey="consistency" 
+                  stroke="#3B82F6" 
+                  strokeWidth={3}
+                  dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                  name="consistency"
+                />
+                <defs>
+                  <linearGradient id="weeklyBarGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8B5CF6" />
+                    <stop offset="100%" stopColor="#6366F1" />
+                  </linearGradient>
+                </defs>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Enhanced Daily Reviews Chart with Success Rates */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <div className="text-2xl mr-3">📊</div>
+                  <h3 className="text-xl font-bold text-gray-900">일별 복습 현황</h3>
+                </div>
+                <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">최근 30일</span>
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <ComposedChart data={processedDailyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#666', fontSize: 12 }}
+                  />
+                  <YAxis 
+                    yAxisId="left"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#666', fontSize: 12 }}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#666', fontSize: 12 }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: 'none',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                    }}
+                    formatter={(value, name) => [
+                      name === 'success_rate' ? `${value}%` : value,
+                      name === 'success_rate' ? '성공률' : 
+                      name === 'count' ? '복습 횟수' : name
+                    ]}
+                  />
+                  <Bar 
+                    yAxisId="left"
+                    dataKey="count" 
+                    fill="url(#dailyBarGradient)" 
+                    radius={[2, 2, 0, 0]}
+                    name="count"
+                  />
+                  <Line 
+                    yAxisId="right"
+                    type="monotone" 
+                    dataKey="success_rate" 
+                    stroke="#10B981" 
+                    strokeWidth={2}
+                    dot={{ fill: '#10B981', strokeWidth: 1, r: 2 }}
+                    name="success_rate"
+                  />
+                  <defs>
+                    <linearGradient id="dailyBarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3B82F6" />
+                      <stop offset="100%" stopColor="#1D4ED8" />
+                    </linearGradient>
+                  </defs>
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Enhanced Review Results Distribution */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <div className="text-2xl mr-3">🎯</div>
+                  <h3 className="text-xl font-bold text-gray-900">복습 결과 분포</h3>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setSelectedDistributionPeriod('recent_30_days')}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      selectedDistributionPeriod === 'recent_30_days'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    30일
+                  </button>
+                  <button
+                    onClick={() => setSelectedDistributionPeriod('all_time')}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      selectedDistributionPeriod === 'all_time'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    전체
+                  </button>
+                </div>
+              </div>
+
+              {/* Distribution Summary */}
+              <div className="mb-4 text-center">
+                <div className="text-3xl font-bold text-gray-900">{distributionTotal}</div>
+                <div className="text-sm text-gray-500">
+                  {selectedDistributionPeriod === 'recent_30_days' ? '지난 30일 총 복습' : '전체 복습 횟수'}
+                </div>
+              </div>
+
+              {/* Detailed Breakdown */}
+              <div className="space-y-3 mb-6">
+                {processedResultData.length > 0 ? processedResultData.map((item, index) => (
+                  <div key={item.result} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center">
+                      <div 
+                        className="w-4 h-4 rounded-full mr-3"
+                        style={{ backgroundColor: SUCCESS_COLORS[index] }}
+                      ></div>
+                      <span className="font-medium">{item.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold">{item.percentage}%</div>
+                      <div className="text-sm text-gray-500">{item.value}회</div>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="text-center text-gray-500 py-8">
+                    아직 복습 데이터가 없습니다.
+                  </div>
+                )}
+              </div>
+
+              {processedResultData.length > 0 && (
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={processedResultData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {processedResultData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={SUCCESS_COLORS[index]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: 'none',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                      }}
+                      formatter={(value, name, entry) => [
+                        `${entry.payload.percentage}% (${value}회)`,
+                        entry.payload.name
+                      ]}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default DashboardPage;

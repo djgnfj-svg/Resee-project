@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+// import toast from 'react-hot-toast';
 import { authAPI } from '../utils/api';
 import { User } from '../types';
 
@@ -40,12 +40,12 @@ const ProfilePage: React.FC = () => {
   const updateProfileMutation = useMutation({
     mutationFn: authAPI.updateProfile,
     onSuccess: (updatedUser) => {
-      toast.success('프로필이 성공적으로 업데이트되었습니다!');
+      alert('Success: 프로필이 성공적으로 업데이트되었습니다!');
       queryClient.setQueryData(['profile'], updatedUser);
       setIsEditing(false);
     },
     onError: () => {
-      toast.error('프로필 업데이트에 실패했습니다.');
+      alert('Error: 프로필 업데이트에 실패했습니다.');
     },
   });
 

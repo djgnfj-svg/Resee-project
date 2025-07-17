@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+// import toast from 'react-hot-toast';
 import { authAPI } from '../utils/api';
 import { User } from '../types';
 
@@ -49,11 +49,11 @@ const SettingsPage: React.FC = () => {
   const updateProfileMutation = useMutation({
     mutationFn: authAPI.updateProfile,
     onSuccess: () => {
-      toast.success('설정이 성공적으로 저장되었습니다!');
+      alert('Success: 설정이 성공적으로 저장되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
     onError: () => {
-      toast.error('설정 저장에 실패했습니다.');
+      alert('Error: 설정 저장에 실패했습니다.');
     },
   });
 
@@ -67,18 +67,18 @@ const SettingsPage: React.FC = () => {
   const changePasswordMutation = useMutation({
     mutationFn: authAPI.changePassword,
     onSuccess: () => {
-      toast.success('비밀번호가 성공적으로 변경되었습니다!');
+      alert('Success: 비밀번호가 성공적으로 변경되었습니다!');
       securityForm.reset();
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.current_password || error.response?.data?.new_password || '비밀번호 변경에 실패했습니다.';
-      toast.error(errorMessage);
+      alert('Error: ' + errorMessage);
     },
   });
 
   const onSecuritySubmit = (data: SecuritySettings) => {
     if (data.new_password !== data.confirm_password) {
-      toast.error('새 비밀번호가 일치하지 않습니다.');
+      alert('Error: 새 비밀번호가 일치하지 않습니다.');
       return;
     }
     changePasswordMutation.mutate({
@@ -89,7 +89,7 @@ const SettingsPage: React.FC = () => {
   };
 
   const exportData = () => {
-    toast.success('데이터 내보내기가 시작되었습니다. 이메일로 다운로드 링크를 보내드릴게요.');
+    alert('Success: 데이터 내보내기가 시작되었습니다. 이메일로 다운로드 링크를 보내드릴게요.');
   };
 
   // Account deletion form
@@ -104,20 +104,20 @@ const SettingsPage: React.FC = () => {
   const deleteAccountMutation = useMutation({
     mutationFn: authAPI.deleteAccount,
     onSuccess: () => {
-      toast.success('계정이 성공적으로 삭제되었습니다.');
+      alert('Success: 계정이 성공적으로 삭제되었습니다.');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       window.location.href = '/login';
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.password || error.response?.data?.confirmation || '계정 삭제에 실패했습니다.';
-      toast.error(errorMessage);
+      alert('Error: ' + errorMessage);
     },
   });
 
   const onDeleteAccount = (data: { password: string; confirmation: string }) => {
     if (data.confirmation !== 'DELETE') {
-      toast.error('"DELETE"를 정확히 입력해주세요.');
+      alert('Error: "DELETE"를 정확히 입력해주세요.');
       return;
     }
     deleteAccountMutation.mutate(data);

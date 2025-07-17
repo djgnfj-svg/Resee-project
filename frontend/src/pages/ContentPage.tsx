@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+// import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeSanitize from 'rehype-sanitize';
+// import rehypeSanitize from 'rehype-sanitize';
 import { contentAPI } from '../utils/api';
 import { Content, Category, CreateContentData, UpdateContentData } from '../types';
 import { extractResults, getPriorityInfo, formatDate, truncateText } from '../utils/helpers';
@@ -49,12 +49,12 @@ const ContentPage: React.FC = () => {
   const createContentMutation = useMutation({
     mutationFn: contentAPI.createContent,
     onSuccess: () => {
-      toast.success('콘텐츠가 성공적으로 생성되었습니다!');
+      alert('Success: 콘텐츠가 성공적으로 생성되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['contents'] });
       setShowForm(false);
     },
     onError: () => {
-      toast.error('콘텐츠 생성에 실패했습니다.');
+      alert('Error: 콘텐츠 생성에 실패했습니다.');
     },
   });
 
@@ -63,13 +63,13 @@ const ContentPage: React.FC = () => {
     mutationFn: ({ id, data }: { id: number; data: UpdateContentData }) => 
       contentAPI.updateContent(id, data),
     onSuccess: () => {
-      toast.success('콘텐츠가 성공적으로 수정되었습니다!');
+      alert('Success: 콘텐츠가 성공적으로 수정되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['contents'] });
       setEditingContent(null);
       setShowForm(false);
     },
     onError: () => {
-      toast.error('콘텐츠 수정에 실패했습니다.');
+      alert('Error: 콘텐츠 수정에 실패했습니다.');
     },
   });
 
@@ -77,11 +77,11 @@ const ContentPage: React.FC = () => {
   const deleteContentMutation = useMutation({
     mutationFn: contentAPI.deleteContent,
     onSuccess: () => {
-      toast.success('콘텐츠가 성공적으로 삭제되었습니다!');
+      alert('Success: 콘텐츠가 성공적으로 삭제되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['contents'] });
     },
     onError: () => {
-      toast.error('콘텐츠 삭제에 실패했습니다.');
+      alert('Error: 콘텐츠 삭제에 실패했습니다.');
     },
   });
 
@@ -340,7 +340,7 @@ const ContentPage: React.FC = () => {
               <div className="prose prose-sm max-w-none">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeSanitize]}
+                  // rehypePlugins={[rehypeSanitize]}
                 >
                   {content.content.length > 200 
                     ? content.content.substring(0, 200) + '...' 

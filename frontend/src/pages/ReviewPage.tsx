@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import ReactMarkdown from 'react-markdown';
 import { reviewAPI, contentAPI } from '../utils/api';
 import { ReviewSchedule, Category } from '../types';
 import { extractResults } from '../utils/helpers';
-import toast from 'react-hot-toast';
+// import toast from 'react-hot-toast';
 
 const ReviewPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -65,7 +66,7 @@ const ReviewPage: React.FC = () => {
         'partial': '🤔 애매하군요, 다시 복습할게요.',
         'forgot': '😅 괜찮아요, 다시 배워봐요!'
       };
-      toast.success(messages[result]);
+      alert('Success: ' + messages[result]);
       
       setReviewsCompleted(prev => prev + 1);
       setStartTime(Date.now());
@@ -266,9 +267,9 @@ const ReviewPage: React.FC = () => {
                 <div className="p-8 h-full flex flex-col">
                   <div className="flex-1 overflow-y-auto">
                     <div className="prose prose-lg max-w-none">
-                      <div 
-                        dangerouslySetInnerHTML={{ __html: currentReview.content.content }}
-                      />
+                      <ReactMarkdown>
+                        {currentReview.content.content}
+                      </ReactMarkdown>
                     </div>
                     {currentReview.content.tags.length > 0 && (
                       <div className="mt-4 flex flex-wrap gap-2">

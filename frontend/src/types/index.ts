@@ -83,6 +83,57 @@ export interface DashboardData {
   total_content: number;
   success_rate: number;
   total_reviews_30_days: number;
+  streak_days: number;
+}
+
+export interface ResultDistribution {
+  result: string;
+  name: string;
+  count: number;
+  percentage: number;
+}
+
+export interface DailyReviewData {
+  date: string;
+  count: number;
+  success_rate: number;
+  remembered: number;
+  partial: number;
+  forgot: number;
+}
+
+export interface WeeklyPerformanceData {
+  week_start: string;
+  week_end: string;
+  week_label: string;
+  total_reviews: number;
+  success_rate: number;
+  consistency: number;
+  days_active: number;
+  remembered: number;
+  partial: number;
+  forgot: number;
+}
+
+export interface ReviewTrends {
+  review_count_change: number;
+  success_rate_change: number;
+  current_period_total: number;
+  previous_period_total: number;
+  current_success_rate: number;
+  previous_success_rate: number;
+}
+
+export interface ReviewStatsData {
+  result_distribution: {
+    all_time: ResultDistribution[];
+    recent_30_days: ResultDistribution[];
+    all_time_total: number;
+    recent_total: number;
+  };
+  daily_reviews: DailyReviewData[];
+  weekly_performance: WeeklyPerformanceData[];
+  trends: ReviewTrends;
 }
 
 // Content API types

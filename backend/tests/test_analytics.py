@@ -71,22 +71,24 @@ class AnalyticsAPITestCase(BaseAPITestCase, TestDataMixin):
         
         # Check required fields in response
         required_fields = [
-            'total_contents',
-            'total_reviews',
-            'reviews_today',
-            'streak_days',
-            'categories_count',
-            'recent_activity'
+            'today_reviews',
+            'pending_reviews',
+            'total_content',
+            'success_rate',
+            'total_reviews_30_days',
+            'streak_days'
         ]
         
         for field in required_fields:
             self.assertIn(field, response.data)
         
-        # Check values
-        self.assertEqual(response.data['total_contents'], 4)  # 3 + 1 from base setup
-        self.assertEqual(response.data['total_reviews'], 4)
-        self.assertEqual(response.data['categories_count'], 3)  # 2 + 1 from base setup
-        self.assertIsInstance(response.data['recent_activity'], list)
+        # Check types
+        self.assertIsInstance(response.data['today_reviews'], int)
+        self.assertIsInstance(response.data['pending_reviews'], int)
+        self.assertIsInstance(response.data['total_content'], int)
+        self.assertIsInstance(response.data['success_rate'], (int, float))
+        self.assertIsInstance(response.data['total_reviews_30_days'], int)
+        self.assertIsInstance(response.data['streak_days'], int)
     
     def test_dashboard_recent_activity(self):
         """Test recent activity in dashboard"""
@@ -156,36 +158,44 @@ class AnalyticsAPITestCase(BaseAPITestCase, TestDataMixin):
         
         # Check required fields
         required_fields = [
-            'total_reviews',
-            'success_rate',
-            'average_time_spent',
-            'review_distribution',
-            'daily_stats',
-            'category_performance'
+            'result_distribution',
+            'daily_reviews',
+            'weekly_performance',
+            'trends'
         ]
         
         for field in required_fields:
             self.assertIn(field, response.data)
         
-        # Check values
-        self.assertEqual(response.data['total_reviews'], 4)
-        self.assertIsInstance(response.data['success_rate'], (int, float))
-        self.assertIsInstance(response.data['average_time_spent'], (int, float))
-        self.assertIsInstance(response.data['review_distribution'], dict)
-        self.assertIsInstance(response.data['daily_stats'], list)
-        self.assertIsInstance(response.data['category_performance'], list)
+        # Check structure
+        self.assertIsInstance(response.data['result_distribution'], dict)
+        self.assertIsInstance(response.data['daily_reviews'], list)
+        self.assertIsInstance(response.data['weekly_performance'], list)
+        self.assertIsInstance(response.data['trends'], dict)
+        
+        # Check result distribution structure
+        result_dist = response.data['result_distribution']
+        self.assertIn('all_time', result_dist)
+        self.assertIn('recent_30_days', result_dist)
+        self.assertIn('all_time_total', result_dist)
+        self.assertIn('recent_total', result_dist)
     
     def test_review_stats_success_rate(self):
-        """Test success rate calculation"""
+        """Test success rate calculation in trends"""
         url = reverse('analytics:review-stats')
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        # With current test data: 2 remembered, 1 forgot, 1 partial
-        # Success rate should be 50% (2/4)
-        expected_success_rate = 50.0
-        self.assertEqual(response.data['success_rate'], expected_success_rate)
+        # Check trends include success rate
+        trends = response.data['trends']
+        self.assertIn('current_success_rate', trends)
+        self.assertIn('previous_success_rate', trends)
+        self.assertIn('success_rate_change', trends)
+        
+        self.assertIsInstance(trends['current_success_rate'], (int, float))
+        self.assertIsInstance(trends['previous_success_rate'], (int, float))
+        self.assertIsInstance(trends['success_rate_change'], (int, float))
     
     def test_review_stats_average_time(self):
         """Test average time spent calculation"""
