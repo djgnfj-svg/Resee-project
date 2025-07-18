@@ -107,7 +107,7 @@ const SimpleDashboard: React.FC = () => {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         {stats.map((stat, index) => (
           <div
-            key={stat.name}
+            key={`dashboard-stat-${index}`}
             className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <div className="flex items-center justify-between">

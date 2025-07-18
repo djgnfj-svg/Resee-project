@@ -2,7 +2,6 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Image from '@tiptap/extension-image';
-import Link from '@tiptap/extension-link';
 import { useCallback, useEffect, useState } from 'react';
 
 interface TipTapEditorProps {
@@ -37,6 +36,12 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           keepMarks: true,
           keepAttributes: false,
         },
+        link: {
+          openOnClick: false,
+          HTMLAttributes: {
+            class: 'tiptap-link',
+          },
+        },
       }),
       Placeholder.configure({
         placeholder: placeholder,
@@ -44,12 +49,6 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
       Image.configure({
         inline: true,
         allowBase64: true,
-      }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'tiptap-link',
-        },
       }),
     ],
     content: content,

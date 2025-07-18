@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 // import toast from 'react-hot-toast';
-import { authAPI } from '../utils/api';
-import { User } from '../types';
+import { authAPI, analyticsAPI } from '../utils/api';
+import { User, DashboardData } from '../types';
 
 interface ProfileFormData {
   username: string;
@@ -22,6 +22,12 @@ const ProfilePage: React.FC = () => {
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ['profile'],
     queryFn: authAPI.getProfile,
+  });
+
+  // Fetch dashboard statistics
+  const { data: stats, isLoading: statsLoading } = useQuery<DashboardData>({
+    queryKey: ['dashboard'],
+    queryFn: analyticsAPI.getDashboard,
   });
 
   // Form setup
@@ -272,24 +278,38 @@ const ProfilePage: React.FC = () => {
           {/* Account Statistics */}
           <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">계정 통계</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">15</div>
-                <div className="text-sm text-gray-600">총 콘텐츠</div>
+            {statsLoading ? (
+              <div className="flex items-center justify-center h-24">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">128</div>
-                <div className="text-sm text-gray-600">총 복습</div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {stats?.total_content || 0}
+                  </div>
+                  <div className="text-sm text-gray-600">총 콘텐츠</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {stats?.total_reviews_30_days || 0}
+                  </div>
+                  <div className="text-sm text-gray-600">총 복습 (30일)</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {stats?.success_rate ? `${Math.round(stats.success_rate)}%` : '0%'}
+                  </div>
+                  <div className="text-sm text-gray-600">성공률</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {stats?.streak_days || 0}
+                  </div>
+                  <div className="text-sm text-gray-600">연속 일수</div>
+                </div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">85%</div>
-                <div className="text-sm text-gray-600">성공률</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">7</div>
-                <div className="text-sm text-gray-600">연속 일수</div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
