@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
 import { Category } from '../types';
 import { extractResults } from '../utils/helpers';
-import BlockNoteEditor from './BlockNoteEditor';
+import TipTapEditor from './TipTapEditor';
 
 interface ContentFormData {
   title: string;
@@ -183,10 +183,10 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
               <label className="block text-sm font-semibold text-gray-900">
                 내용 <span className="text-red-500">*</span>
               </label>
-              <BlockNoteEditor
+              <TipTapEditor
                 content={content}
                 onChange={setContent}
-                placeholder="여기에 학습할 내용을 작성하세요..."
+                placeholder="내용을 입력하세요. # 제목, **굵게**, *기울임*, 1. 목록 등이 바로 적용됩니다!"
                 className="w-full"
                 onImageUpload={handleImageUpload}
               />
