@@ -145,9 +145,22 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
     // 이미지
     html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
     
-    // 목록 (간단화)
+    // 목록 처리 (개선)
+    // 불릿 목록
     html = html.replace(/^- (.*$)/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>(\n|$))+/g, (match) => {
+      return '<ul>' + match.replace(/\n/g, '') + '</ul>';
+    });
+    
+    // 번호 목록
     html = html.replace(/^(\d+)\. (.*$)/gm, '<li>$2</li>');
+    html = html.replace(/(<li>.*<\/li>(\n|$))+/g, (match) => {
+      // 이미 <ul>로 감싸져 있지 않은 경우에만 <ol>로 감싸기
+      if (!match.includes('<ul>')) {
+        return '<ol>' + match.replace(/\n/g, '') + '</ol>';
+      }
+      return match;
+    });
     
     // 인용문
     html = html.replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>');
@@ -519,10 +532,16 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
         }
 
         /* 목록 스타일 */
-        .tiptap-editor-content ul, 
+        .tiptap-editor-content ul {
+          margin: 1rem 0;
+          padding-left: 2rem;
+          list-style-type: disc;
+        }
+
         .tiptap-editor-content ol {
           margin: 1rem 0;
           padding-left: 2rem;
+          list-style-type: decimal;
         }
 
         .tiptap-editor-content li {
