@@ -13,7 +13,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'resee.settings')
 django.setup()
 
 from django.contrib.auth import get_user_model
-from content.models import Category, Content, Tag
+from content.models import Category, Content
 from review.models import ReviewSchedule
 import logging
 
@@ -136,26 +136,8 @@ def create_sample_content():
         if created:
             print(f"✅ 카테고리 '{category.name}' 생성 완료")
     
-    # Create global tags
-    tags_data = ['중요', '기초', '심화', '복습필요', '완료']
-    created_tags = []
-    for tag_name in tags_data:
-        try:
-            tag, created = Tag.objects.get_or_create(name=tag_name)
-            created_tags.append(tag)
-            if created:
-                print(f"✅ 태그 '{tag.name}' 생성 완료")
-            else:
-                print(f"⚠️  태그 '{tag.name}'이 이미 존재합니다.")
-        except Exception as e:
-            print(f"❌ 태그 '{tag_name}' 생성 실패: {str(e)}")
-            # Try to get existing tag
-            try:
-                tag = Tag.objects.get(name=tag_name)
-                created_tags.append(tag)
-                print(f"✅ 기존 태그 '{tag.name}' 사용")
-            except Tag.DoesNotExist:
-                print(f"❌ 태그 '{tag_name}' 조회도 실패")
+    # Skip tag creation as Tag model is not used in current schema
+    print("⚠️  Tag 모델이 현재 스키마에 없으므로 태그 생성을 건너뜁니다.")
     
     # Create sample content for each test user
     sample_contents = [
@@ -325,13 +307,13 @@ while condition:
                     priority=content_data['priority']
                 )
                 
-                # Add tags
-                for tag_name in content_data['tags']:
-                    try:
-                        tag = Tag.objects.get(name=tag_name)
-                        content.tags.add(tag)
-                    except Tag.DoesNotExist:
-                        print(f"⚠️  태그 '{tag_name}'을 찾을 수 없습니다.")
+                # Skip tag assignment as Tag model is not used
+                # for tag_name in content_data['tags']:
+                #     try:
+                #         tag = Tag.objects.get(name=tag_name)
+                #         content.tags.add(tag)
+                #     except Tag.DoesNotExist:
+                #         print(f"⚠️  태그 '{tag_name}'을 찾을 수 없습니다.")
                 
                 print(f"✅ 콘텐츠 '{content.title}' 생성 완료")
                 
