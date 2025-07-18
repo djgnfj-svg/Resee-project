@@ -250,7 +250,7 @@ const BlockNoteEditor: React.FC<BlockNoteEditorProps> = ({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className="editor-textarea"
-        rows={10}
+        rows={25}
       />
 
       {/* Hidden file input */}
@@ -333,7 +333,7 @@ const BlockNoteEditor: React.FC<BlockNoteEditorProps> = ({
           border: none;
           outline: none;
           resize: vertical;
-          min-height: 300px;
+          min-height: 600px;
           font-family: inherit;
           font-size: 1rem;
           line-height: 1.5;
