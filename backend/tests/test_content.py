@@ -14,8 +14,8 @@ from PIL import Image
 import io
 
 from .base import BaseTestCase, BaseAPITestCase, TestDataMixin
-from content.models import Content, Category, Tag
-from content.serializers import ContentSerializer, CategorySerializer, TagSerializer
+from content.models import Content, Category
+from content.serializers import ContentSerializer, CategorySerializer
 
 
 class ContentModelTestCase(BaseTestCase):
@@ -34,7 +34,6 @@ class ContentModelTestCase(BaseTestCase):
         self.assertEqual(content.priority, 'high')
         self.assertEqual(content.author, self.user)
         self.assertEqual(content.category, self.category)
-        self.assertTrue(content.tags.filter(name='test-tag').exists())
     
     def test_content_string_representation(self):
         """Test content string representation"""
@@ -72,17 +71,11 @@ class ContentModelTestCase(BaseTestCase):
     
     def test_content_with_multiple_tags(self):
         """Test content with multiple tags"""
-        tag1 = Tag.objects.create(name='tag1')
-        tag2 = Tag.objects.create(name='tag2')
-        tag3 = Tag.objects.create(name='tag3')
-        
         content = self.create_content()
-        content.tags.add(tag1, tag2, tag3)
         
-        self.assertEqual(content.tags.count(), 4)  # Including the default tag
-        self.assertTrue(content.tags.filter(name='tag1').exists())
-        self.assertTrue(content.tags.filter(name='tag2').exists())
-        self.assertTrue(content.tags.filter(name='tag3').exists())
+        # Test that content can be created without tags
+        self.assertEqual(content.title, 'Test Content')
+        self.assertEqual(content.author, self.user)
     
     def test_content_ordering(self):
         """Test content ordering by creation date"""
@@ -163,45 +156,6 @@ class CategoryModelTestCase(BaseTestCase):
         self.assertIn(content2, category.contents.all())
 
 
-class TagModelTestCase(BaseTestCase):
-    """Test cases for Tag model"""
-    
-    def test_tag_creation(self):
-        """Test creating tag"""
-        tag = Tag.objects.create(name='test-tag')
-        
-        self.assertEqual(tag.name, 'test-tag')
-        self.assertEqual(tag.slug, 'test-tag')
-    
-    def test_tag_string_representation(self):
-        """Test tag string representation"""
-        tag = self.create_tag(name='test-tag')
-        self.assertEqual(str(tag), 'test-tag')
-    
-    def test_tag_slug_generation(self):
-        """Test tag slug generation"""
-        tag = Tag.objects.create(name='Test Tag With Spaces')
-        self.assertEqual(tag.slug, 'test-tag-with-spaces')
-    
-    def test_tag_unique_name(self):
-        """Test tag unique name constraint"""
-        Tag.objects.create(name='test-tag')
-        
-        with self.assertRaises(Exception):
-            Tag.objects.create(name='test-tag')
-    
-    def test_tag_contents_relationship(self):
-        """Test tag to contents relationship"""
-        tag = self.create_tag()
-        content1 = self.create_content()
-        content2 = self.create_content(title='Content 2')
-        
-        content1.tags.add(tag)
-        content2.tags.add(tag)
-        
-        self.assertEqual(tag.contents.count(), 2)
-        self.assertIn(content1, tag.contents.all())
-        self.assertIn(content2, tag.contents.all())
 
 
 class ContentSerializerTestCase(BaseTestCase):
@@ -218,21 +172,15 @@ class ContentSerializerTestCase(BaseTestCase):
         self.assertEqual(data['priority'], content.priority)
         self.assertEqual(data['author'], content.author.username)
         self.assertEqual(data['category']['id'], content.category.id)
-        self.assertEqual(len(data['tags']), 1)
-        self.assertEqual(data['tags'][0]['name'], 'test-tag')
     
     def test_content_serializer_create(self):
         """Test ContentSerializer create"""
-        tag1 = Tag.objects.create(name='tag1')
-        tag2 = Tag.objects.create(name='tag2')
-        
         data = {
             'title': 'New Content',
             'content': 'New content body',
             'priority': 'high',
             'author': self.user.id,
-            'category': self.category.id,
-            'tag_ids': [tag1.id, tag2.id]
+            'category': self.category.id
         }
         
         serializer = ContentSerializer(data=data)
@@ -244,18 +192,15 @@ class ContentSerializerTestCase(BaseTestCase):
         self.assertEqual(content.priority, 'high')
         self.assertEqual(content.author, self.user)
         self.assertEqual(content.category, self.category)
-        self.assertEqual(content.tags.count(), 2)
     
     def test_content_serializer_update(self):
         """Test ContentSerializer update"""
         content = self.create_content()
-        new_tag = Tag.objects.create(name='new-tag')
         
         data = {
             'title': 'Updated Content',
             'content': 'Updated content body',
-            'priority': 'low',
-            'tag_ids': [new_tag.id]
+            'priority': 'low'
         }
         
         serializer = ContentSerializer(content, data=data, partial=True)
@@ -265,8 +210,6 @@ class ContentSerializerTestCase(BaseTestCase):
         self.assertEqual(updated_content.title, 'Updated Content')
         self.assertEqual(updated_content.content, 'Updated content body')
         self.assertEqual(updated_content.priority, 'low')
-        self.assertEqual(updated_content.tags.count(), 1)
-        self.assertTrue(updated_content.tags.filter(name='new-tag').exists())
     
     def test_category_serializer(self):
         """Test CategorySerializer"""
@@ -278,14 +221,6 @@ class ContentSerializerTestCase(BaseTestCase):
         self.assertEqual(data['slug'], category.slug)
         self.assertEqual(data['user'], category.user.id)
     
-    def test_tag_serializer(self):
-        """Test TagSerializer"""
-        tag = self.create_tag()
-        serializer = TagSerializer(tag)
-        data = serializer.data
-        
-        self.assertEqual(data['name'], tag.name)
-        self.assertEqual(data['slug'], tag.slug)
 
 
 class ContentAPITestCase(BaseAPITestCase, TestDataMixin):
@@ -308,8 +243,7 @@ class ContentAPITestCase(BaseAPITestCase, TestDataMixin):
             'title': 'New Content',
             'content': 'New content body',
             'priority': 'high',
-            'category': self.category.id,
-            'tag_ids': [self.tag.id]
+            'category': self.category.id
         }
         
         response = self.client.post(url, data, format='json')
@@ -501,48 +435,6 @@ class CategoryAPITestCase(BaseAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-class TagAPITestCase(BaseAPITestCase):
-    """Test cases for Tag API endpoints"""
-    
-    def test_list_tags(self):
-        """Test listing tags"""
-        tag1 = Tag.objects.create(name='tag1')
-        tag2 = Tag.objects.create(name='tag2')
-        
-        url = reverse('content:tags-list')
-        response = self.client.get(url)
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 3)  # 2 + 1 from setup
-    
-    def test_create_tag(self):
-        """Test creating tag"""
-        url = reverse('content:tags-list')
-        data = {
-            'name': 'new-tag'
-        }
-        
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        
-        tag = Tag.objects.get(name='new-tag')
-        self.assertEqual(tag.name, 'new-tag')
-        self.assertEqual(tag.slug, 'new-tag')
-    
-    def test_tag_search(self):
-        """Test tag search"""
-        tag1 = Tag.objects.create(name='python')
-        tag2 = Tag.objects.create(name='django')
-        tag3 = Tag.objects.create(name='javascript')
-        
-        url = reverse('content:tags-list')
-        response = self.client.get(url, {'search': 'python'})
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        names = [item['name'] for item in response.data['results']]
-        self.assertIn('python', names)
-        self.assertNotIn('django', names)
-        self.assertNotIn('javascript', names)
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp())

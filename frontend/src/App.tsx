@@ -12,11 +12,9 @@ import ContentPage from './pages/ContentPage';
 import ReviewPage from './pages/ReviewPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
-import SearchPage from './pages/SearchPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/design-system.css';
 import './styles/animations.css';
-import './styles/notion-editor.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,14 +73,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <SettingsPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/search" 
-                element={
-                  <ProtectedRoute>
-                    <SearchPage />
                   </ProtectedRoute>
                 } 
               />

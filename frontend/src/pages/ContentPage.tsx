@@ -12,20 +12,16 @@ const ContentPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('created_desc');
 
   // Fetch contents
   const { data: contents = [], isLoading: contentsLoading } = useQuery<Content[]>({
-    queryKey: ['contents', selectedCategory, searchTerm, selectedPriority, sortBy],
+    queryKey: ['contents', selectedCategory, selectedPriority, sortBy],
     queryFn: () => {
       const params = new URLSearchParams();
       if (selectedCategory !== 'all') {
         params.append('category_slug', selectedCategory);
-      }
-      if (searchTerm) {
-        params.append('search', searchTerm);
       }
       if (selectedPriority !== 'all') {
         params.append('priority', selectedPriority);
@@ -159,29 +155,13 @@ const ContentPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Advanced Search & Filters */}
+      {/* Filters */}
       <div className="mb-6 bg-white p-4 sm:p-6 rounded-2xl shadow-lg">
         <div className="flex items-center mb-4">
-          <div className="text-xl mr-2">🔍</div>
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">검색 & 필터</h2>
+          <div className="text-xl mr-2">📂</div>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">필터</h2>
         </div>
         
-        {/* Search Bar */}
-        <div className="relative mb-4">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="제목이나 내용으로 검색..."
-            className="block w-full pl-10 pr-4 py-3 text-base sm:text-lg border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-          />
-        </div>
-
         {/* Filter Options */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Category filter */}
@@ -244,17 +224,6 @@ const ContentPage: React.FC = () => {
 
         {/* Active Filters Display */}
         <div className="mt-4 flex flex-wrap gap-2">
-          {searchTerm && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-              검색: "{searchTerm}"
-              <button
-                onClick={() => setSearchTerm('')}
-                className="ml-2 text-blue-600 hover:text-blue-800"
-              >
-                ×
-              </button>
-            </span>
-          )}
           {selectedCategory !== 'all' && (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
               카테고리: {categories.find(c => c.slug === selectedCategory)?.name}
@@ -292,7 +261,7 @@ const ContentPage: React.FC = () => {
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900">콘텐츠 없음</h3>
           <p className="mt-1 text-sm text-gray-500">
-            {selectedCategory === 'all' ? '새로운 학습 콘텐츠를 추가해보세요.' : '이 카테고리에 콘텐츠가 없습니다.'}
+            {selectedCategory === 'all' && selectedPriority === 'all' ? '새로운 학습 콘텐츠를 추가해보세요.' : '선택한 필터에 해당하는 콘텐츠가 없습니다.'}
           </p>
         </div>
       ) : (

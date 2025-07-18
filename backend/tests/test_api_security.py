@@ -11,7 +11,7 @@ from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .base import BaseAPITestCase, TestDataMixin
-from content.models import Content, Category, Tag
+from content.models import Content, Category
 from review.models import ReviewSchedule, ReviewHistory
 
 User = get_user_model()

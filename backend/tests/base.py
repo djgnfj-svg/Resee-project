@@ -13,7 +13,7 @@ import io
 import tempfile
 import os
 
-from content.models import Content, Category, Tag
+from content.models import Content, Category
 from review.models import ReviewSchedule, ReviewHistory
 
 User = get_user_model()
@@ -26,7 +26,6 @@ class BaseTestCase(TestCase):
         """Set up test fixtures"""
         self.user = self.create_user(username='testuser', email='test@example.com')
         self.category = self.create_category()
-        self.tag = self.create_tag()
         self.content = self.create_content()
     
     def create_user(self, **kwargs):
@@ -52,13 +51,6 @@ class BaseTestCase(TestCase):
         defaults.update(kwargs)
         return Category.objects.create(**defaults)
     
-    def create_tag(self, **kwargs):
-        """Create a test tag"""
-        defaults = {
-            'name': 'test-tag',
-        }
-        defaults.update(kwargs)
-        return Tag.objects.create(**defaults)
     
     def create_content(self, **kwargs):
         """Create test content"""
@@ -71,8 +63,6 @@ class BaseTestCase(TestCase):
         }
         defaults.update(kwargs)
         content = Content.objects.create(**defaults)
-        if hasattr(self, 'tag'):
-            content.tags.add(self.tag)
         return content
     
     def create_review_schedule(self, **kwargs):
@@ -134,7 +124,6 @@ class BaseAPITestCase(APITestCase):
         self.user = self.create_user(username='testuser', email='test@example.com')
         self.authenticate_user()
         self.category = self.create_category()
-        self.tag = self.create_tag()
         self.content = self.create_content()
     
     def create_user(self, **kwargs):
@@ -167,13 +156,6 @@ class BaseAPITestCase(APITestCase):
         defaults.update(kwargs)
         return Category.objects.create(**defaults)
     
-    def create_tag(self, **kwargs):
-        """Create a test tag"""
-        defaults = {
-            'name': 'test-tag',
-        }
-        defaults.update(kwargs)
-        return Tag.objects.create(**defaults)
     
     def create_content(self, **kwargs):
         """Create test content"""
@@ -186,7 +168,6 @@ class BaseAPITestCase(APITestCase):
         }
         defaults.update(kwargs)
         content = Content.objects.create(**defaults)
-        content.tags.add(self.tag)
         return content
     
     def create_review_schedule(self, **kwargs):
@@ -270,7 +251,7 @@ class TestDataMixin:
                 category=self.category,
                 priority='medium',
             )
-            content.tags.add(self.tag)
+            # Tag functionality has been removed
             contents.append(content)
         return contents
     

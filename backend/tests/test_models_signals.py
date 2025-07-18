@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 
 from .base import BaseTestCase, TestDataMixin
-from content.models import Content, Category, Tag
+from content.models import Content, Category
 from review.models import ReviewSchedule, ReviewHistory
 from review.utils import get_review_intervals
 from review.signals import create_review_schedule_signal
@@ -175,56 +175,6 @@ class CategoryModelAdvancedTestCase(BaseTestCase):
         self.assertIsNone(content.category)
 
 
-class TagModelAdvancedTestCase(BaseTestCase):
-    """Advanced Tag model tests"""
-    
-    def test_tag_slug_generation(self):
-        """Test tag slug generation"""
-        tag = Tag.objects.create(name='Python Programming')
-        self.assertEqual(tag.name, 'Python Programming')
-        # Assuming slug field
-        # self.assertEqual(tag.slug, 'python-programming')
-    
-    def test_tag_content_relationships(self):
-        """Test many-to-many relationships with content"""
-        tag1 = Tag.objects.create(name='tag1')
-        tag2 = Tag.objects.create(name='tag2')
-        
-        content1 = self.create_content(title='Content 1')
-        content2 = self.create_content(title='Content 2')
-        
-        # Add tags to content
-        content1.tags.add(tag1, tag2)
-        content2.tags.add(tag1)
-        
-        # Test relationships
-        self.assertEqual(content1.tags.count(), 3)  # Including default tag
-        self.assertEqual(content2.tags.count(), 2)  # Including default tag
-        
-        # Test reverse relationship
-        tag1_contents = Content.objects.filter(tags=tag1)
-        self.assertEqual(tag1_contents.count(), 2)
-    
-    def test_tag_deletion_with_contents(self):
-        """Test tag deletion when attached to contents"""
-        tag = Tag.objects.create(name='to-delete')
-        content = self.create_content()
-        content.tags.add(tag)
-        
-        tag_id = tag.id
-        tag.delete()
-        
-        # Content should still exist, just without the tag
-        content.refresh_from_db()
-        self.assertFalse(content.tags.filter(id=tag_id).exists())
-    
-    def test_tag_case_sensitivity(self):
-        """Test tag name case sensitivity"""
-        tag1 = Tag.objects.create(name='Python')
-        
-        # Should not be able to create duplicate with different case
-        with self.assertRaises(IntegrityError):
-            Tag.objects.create(name='python')
 
 
 class ReviewScheduleModelAdvancedTestCase(BaseTestCase):
