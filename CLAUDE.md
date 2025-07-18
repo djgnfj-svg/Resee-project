@@ -164,13 +164,13 @@ docker-compose exec celery celery -A resee inspect scheduled
 
 **Core Apps:**
 - `accounts/` - User management with custom User model
-- `content/` - Learning content with categories, tags, and image upload
+- `content/` - Learning content with categories, tags, and priority levels
 - `review/` - Spaced repetition system with ReviewSchedule and ReviewHistory
 - `analytics/` - Dashboard metrics and statistics
 
 ### Frontend (React + TypeScript)
 - **React 18** with TypeScript for type safety
-- **BlockNote** for notion-like rich text editing with real-time markdown rendering
+- **TipTap Editor** for rich text editing with real-time markdown rendering
 - **React Query** for server state management
 - **React Hook Form** for form validation
 - **Tailwind CSS** for styling
@@ -179,24 +179,24 @@ docker-compose exec celery celery -A resee inspect scheduled
 **Key Components:**
 - `AuthContext` - Global authentication state
 - `ProtectedRoute` - Route protection wrapper
-- `ContentFormV2` - Content creation/editing with BlockNote editor
-- `BlockNoteEditor` - Notion-like rich text editor with image support
+- `ContentFormV2` - Content creation/editing with TipTap editor
+- `TipTapEditor` - Rich text editor with markdown shortcuts support
 - `Layout` - Main application layout with navigation
 
 ## Database Models
 
 ### Core Models
 - **User** - Custom user with timezone and notification settings
-- **Content** - Learning materials with title, markdown content, category, tags, priority
-- **Category** - Per-user + global content categories
-- **Tag** - Global content tags
+- **Content** - Learning materials with title, markdown content, category, priority (low/medium/high)
+- **Category** - Per-user + global content categories with slug and description
 - **ReviewSchedule** - Spaced repetition scheduling (intervals: 1, 3, 7, 14, 30 days)
 - **ReviewHistory** - Review session records with results (remembered/partial/forgot)
 
 ### Key Relationships
 - User has many Content, ReviewSchedule, ReviewHistory, Category
-- Content belongs to Category, has many Tags (many-to-many)
+- Content belongs to Category with priority levels
 - ReviewSchedule links User and Content with timing logic
+- Category has unique slug per user for SEO-friendly URLs
 
 ## API Endpoints
 
@@ -207,11 +207,9 @@ docker-compose exec celery celery -A resee inspect scheduled
 - `GET/PUT /api/accounts/profile/` - Profile management
 
 ### Content Management
-- `GET/POST /api/content/contents/` - Content CRUD
+- `GET/POST /api/content/contents/` - Content CRUD with priority filtering
 - `GET /api/content/contents/by_category/` - Grouped by category
-- `GET/POST /api/content/categories/` - Category management
-- `GET/POST /api/content/tags/` - Tag management
-- `POST /api/content/upload-image/` - Image upload with optimization
+- `GET/POST /api/content/categories/` - Category management with slug support
 
 ### Review System
 - `GET /api/review/today/` - Today's due reviews
@@ -271,7 +269,8 @@ resee/
 - Celery tasks for background processing
 - JWT tokens with automatic refresh
 - Per-user data isolation with proper filtering
-- Image optimization with Pillow (800x600 max, 85% quality)
+- Content priority system (low/medium/high) for study planning
+- Category slugs for SEO-friendly URLs
 - `initial_review_completed` field for immediate review tracking
 
 ### Frontend Patterns
@@ -280,6 +279,9 @@ resee/
 - React Hook Form for form validation
 - Tailwind CSS utility classes
 - TypeScript interfaces for all data contracts
+- TipTap editor with markdown shortcuts for rich content creation
+- Priority-based content organization (low/medium/high)
+- Category-based content filtering and navigation
 - Conditional rendering for "첫 번째 복습" vs "N번째 복습"
 
 ### Testing
