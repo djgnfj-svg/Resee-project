@@ -53,6 +53,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # 'resee.middleware.SecurityHeadersMiddleware',
+    # 'resee.middleware.RateLimitMiddleware',
+    # 'resee.middleware.RequestLoggingMiddleware',
+    # 'resee.middleware.SQLInjectionDetectionMiddleware',
+    # 'resee.middleware.LoginAttemptTrackingMiddleware',
+    # 'resee.middleware.IPWhitelistMiddleware',
+    # 'resee.middleware.ContentTypeValidationMiddleware',
+    # 'resee.middleware.FileUploadSecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

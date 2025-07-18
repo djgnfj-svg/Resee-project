@@ -24,14 +24,48 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], permission_classes=[])
     def register(self, request):
         """User registration endpoint"""
+        logger.info(f"회원가입 요청: {request.data.get('username', 'unknown')}")
+        
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
-            return Response(
-                UserSerializer(user).data,
-                status=status.HTTP_201_CREATED
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                user = serializer.save()
+                logger.info(f"회원가입 성공: {user.username}")
+                return Response(
+                    {
+                        'message': '회원가입이 완료되었습니다.',
+                        'user': UserSerializer(user).data
+                    },
+                    status=status.HTTP_201_CREATED
+                )
+            except Exception as e:
+                logger.error(f"회원가입 실패: {str(e)}")
+                return Response(
+                    {
+                        'error': '회원가입 중 오류가 발생했습니다.',
+                        'details': str(e)
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        # 상세한 에러 정보 로깅
+        logger.error(f"회원가입 유효성 검사 실패: {serializer.errors}")
+        
+        # 에러 메시지를 한국어로 변환
+        error_messages = {}
+        for field, errors in serializer.errors.items():
+            if isinstance(errors, list):
+                error_messages[field] = errors
+            else:
+                error_messages[field] = [str(errors)]
+        
+        return Response(
+            {
+                'error': '입력 정보를 확인해주세요.',
+                'field_errors': error_messages
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class ProfileView(APIView):

@@ -1,13 +1,11 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-// import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-// import rehypeSanitize from 'rehype-sanitize';
 import { contentAPI } from '../utils/api';
 import { Content, Category } from '../types';
-import { extractResults, getPriorityInfo, formatDate, formatDateTime, truncateText } from '../utils/helpers';
+import { extractResults, getPriorityInfo } from '../utils/helpers';
 
 interface SearchFilters {
   query: string;
@@ -404,7 +402,6 @@ const SearchPage: React.FC = () => {
                     <div className="text-gray-600 text-sm sm:text-base mb-4 line-clamp-3">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
-                        // rehypePlugins={[rehypeSanitize]}
                       >
                         {content.content.length > 200 
                           ? content.content.substring(0, 200) + '...' 
@@ -462,7 +459,6 @@ const SearchPage: React.FC = () => {
                 <div className="prose prose-sm sm:prose-base max-w-none">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    // rehypePlugins={[rehypeSanitize]}
                   >
                     {selectedContent.content}
                   </ReactMarkdown>

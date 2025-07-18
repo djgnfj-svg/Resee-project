@@ -9,6 +9,7 @@ const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [, setFieldErrors] = useState<Record<string, string[]>>({});
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterData>();
   const password = watch('password');
@@ -16,12 +17,40 @@ const RegisterPage: React.FC = () => {
   const onSubmit = async (data: RegisterData) => {
     setIsLoading(true);
     setError('');
+    setFieldErrors({});
     
     try {
       await registerUser(data);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.username?.[0] || err.response?.data?.email?.[0] || '회원가입에 실패했습니다.');
+      console.error('회원가입 에러:', err.response?.data);
+      
+      // 새로운 에러 응답 형식 처리
+      if (err.response?.data?.field_errors) {
+        setFieldErrors(err.response.data.field_errors);
+        setError(err.response.data.error || '입력 정보를 확인해주세요.');
+      } 
+      // 기존 에러 응답 형식 처리
+      else if (err.response?.data) {
+        const errorData = err.response.data;
+        
+        // 필드별 에러 메시지 추출
+        const extractedErrors: Record<string, string[]> = {};
+        Object.keys(errorData).forEach(field => {
+          if (Array.isArray(errorData[field])) {
+            extractedErrors[field] = errorData[field];
+          } else if (typeof errorData[field] === 'string') {
+            extractedErrors[field] = [errorData[field]];
+          }
+        });
+        
+        setFieldErrors(extractedErrors);
+        setError(errorData.detail || errorData.error || '회원가입에 실패했습니다.');
+      } 
+      // 네트워크 에러 등
+      else {
+        setError('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+      }
     } finally {
       setIsLoading(false);
     }

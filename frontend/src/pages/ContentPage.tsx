@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-// import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-// import rehypeSanitize from 'rehype-sanitize';
 import { contentAPI } from '../utils/api';
 import { Content, Category, CreateContentData, UpdateContentData } from '../types';
-import { extractResults, getPriorityInfo, formatDate, truncateText } from '../utils/helpers';
+import { extractResults } from '../utils/helpers';
 import ContentFormV2 from '../components/ContentFormV2';
 
 const ContentPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -339,7 +335,6 @@ const ContentPage: React.FC = () => {
               <div className="prose prose-sm max-w-none">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
-                  // rehypePlugins={[rehypeSanitize]}
                 >
                   {content.content.length > 200 
                     ? content.content.substring(0, 200) + '...' 
