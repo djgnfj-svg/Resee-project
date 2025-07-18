@@ -8,7 +8,6 @@ from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
-from PIL import Image
 import io
 import tempfile
 import os
@@ -104,14 +103,11 @@ class BaseTestCase(TestCase):
         return ReviewHistory.objects.create(**defaults)
     
     def create_test_image(self, format='PNG'):
-        """Create a test image file"""
-        image = Image.new('RGB', (100, 100), color='red')
-        file_obj = io.BytesIO()
-        image.save(file_obj, format=format)
-        file_obj.seek(0)
+        """Create a test image file (stub - image upload functionality removed)"""
+        # Create a simple fake image file for any remaining tests
         return SimpleUploadedFile(
             name=f'test.{format.lower()}',
-            content=file_obj.read(),
+            content=b'fake image content',
             content_type=f'image/{format.lower()}'
         )
 
@@ -209,14 +205,11 @@ class BaseAPITestCase(APITestCase):
         return ReviewHistory.objects.create(**defaults)
     
     def create_test_image(self, format='PNG'):
-        """Create a test image file"""
-        image = Image.new('RGB', (100, 100), color='red')
-        file_obj = io.BytesIO()
-        image.save(file_obj, format=format)
-        file_obj.seek(0)
+        """Create a test image file (stub - image upload functionality removed)"""
+        # Create a simple fake image file for any remaining tests
         return SimpleUploadedFile(
             name=f'test.{format.lower()}',
-            content=file_obj.read(),
+            content=b'fake image content',
             content_type=f'image/{format.lower()}'
         )
 

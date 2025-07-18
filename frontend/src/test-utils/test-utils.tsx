@@ -103,11 +103,6 @@ export const createMockLocalStorage = () => {
   };
 };
 
-// Mock file for testing file uploads
-export const createMockFile = (name = 'test.png', type = 'image/png') => {
-  const file = new File(['test'], name, { type });
-  return file;
-};
 
 // Mock form data for testing
 export const mockFormData = {

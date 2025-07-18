@@ -272,15 +272,6 @@ export const handlers = [
     );
   }),
 
-  // Image upload
-  rest.post(`${API_BASE_URL}/content/upload-image/`, (req, res, ctx) => {
-    return res(
-      ctx.json({
-        filename: 'test-image.png',
-        url: 'http://localhost:8000/media/test-image.png',
-      })
-    );
-  }),
 
   // Error scenarios
   rest.get(`${API_BASE_URL}/error-test/`, (req, res, ctx) => {

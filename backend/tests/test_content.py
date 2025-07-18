@@ -2,7 +2,6 @@
 Tests for content app
 """
 
-import tempfile
 import os
 from django.test import TestCase, override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -10,8 +9,6 @@ from django.urls import reverse
 from django.utils.text import slugify
 from rest_framework import status
 from rest_framework.test import APITestCase
-from PIL import Image
-import io
 
 from .base import BaseTestCase, BaseAPITestCase, TestDataMixin
 from content.models import Content, Category
@@ -435,99 +432,3 @@ class CategoryAPITestCase(BaseAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-
-
-@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
-class ImageUploadTestCase(BaseAPITestCase):
-    """Test cases for image upload functionality"""
-    
-    def test_upload_image_valid(self):
-        """Test uploading valid image"""
-        url = reverse('content:upload-image')
-        
-        # Create test image
-        image = self.create_test_image()
-        
-        response = self.client.post(url, {'image': image}, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('url', response.data)
-        self.assertIn('filename', response.data)
-    
-    def test_upload_image_invalid_format(self):
-        """Test uploading invalid image format"""
-        url = reverse('content:upload-image')
-        
-        # Create text file instead of image
-        text_file = SimpleUploadedFile(
-            "test.txt", 
-            b"This is not an image", 
-            content_type="text/plain"
-        )
-        
-        response = self.client.post(url, {'image': text_file}, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    
-    def test_upload_image_too_large(self):
-        """Test uploading image that's too large"""
-        url = reverse('content:upload-image')
-        
-        # Create large image (larger than would be optimized)
-        large_image = Image.new('RGB', (2000, 2000), color='red')
-        file_obj = io.BytesIO()
-        large_image.save(file_obj, format='PNG')
-        file_obj.seek(0)
-        
-        large_image_file = SimpleUploadedFile(
-            name='large.png',
-            content=file_obj.read(),
-            content_type='image/png'
-        )
-        
-        response = self.client.post(url, {'image': large_image_file}, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Should be optimized to smaller size
-        self.assertIn('url', response.data)
-    
-    def test_upload_image_unauthenticated(self):
-        """Test uploading image without authentication"""
-        self.client.credentials()
-        
-        url = reverse('content:upload-image')
-        image = self.create_test_image()
-        
-        response = self.client.post(url, {'image': image}, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-    
-    def test_delete_image(self):
-        """Test deleting uploaded image"""
-        # First upload an image
-        upload_url = reverse('content:upload-image')
-        image = self.create_test_image()
-        
-        upload_response = self.client.post(upload_url, {'image': image}, format='multipart')
-        self.assertEqual(upload_response.status_code, status.HTTP_200_OK)
-        
-        filename = upload_response.data['filename']
-        
-        # Then delete it
-        delete_url = reverse('content:delete-image', kwargs={'filename': filename})
-        response = self.client.delete(delete_url)
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('message', response.data)
-    
-    def test_delete_nonexistent_image(self):
-        """Test deleting non-existent image"""
-        url = reverse('content:delete-image', kwargs={'filename': 'nonexistent.jpg'})
-        response = self.client.delete(url)
-        
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-    
-    def tearDown(self):
-        """Clean up uploaded test files"""
-        super().tearDown()
-        # Clean up any uploaded files
-        import shutil
-        media_root = tempfile.mkdtemp()
-        if os.path.exists(media_root):
-            shutil.rmtree(media_root)
