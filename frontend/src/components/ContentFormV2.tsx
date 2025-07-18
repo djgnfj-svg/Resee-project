@@ -147,11 +147,11 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
             </div>
 
             {/* Priority */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-900">
                 중요도 <span className="text-red-500">*</span>
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {priorityOptions.map((option) => (
                   <label key={option.value} className="relative cursor-pointer">
                     <input
@@ -160,17 +160,17 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                       value={option.value}
                       className="sr-only"
                     />
-                    <div className={`p-6 rounded-xl border-2 text-center transition-all duration-200 ${
+                    <div className={`p-3 rounded-lg border-2 text-center transition-all duration-200 ${
                         watchedPriority === option.value
                           ? option.color === 'red' 
-                            ? 'border-red-400 bg-red-50 ring-4 ring-red-200'
+                            ? 'border-red-400 bg-red-50 ring-2 ring-red-200'
                             : option.color === 'yellow'
-                            ? 'border-yellow-400 bg-yellow-50 ring-4 ring-yellow-200'
-                            : 'border-green-400 bg-green-50 ring-4 ring-green-200'
+                            ? 'border-yellow-400 bg-yellow-50 ring-2 ring-yellow-200'
+                            : 'border-green-400 bg-green-50 ring-2 ring-green-200'
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}>
-                      <div className="text-3xl mb-2">{option.emoji}</div>
-                      <div className="font-semibold text-gray-900">{option.label}</div>
+                      <div className="text-xl mb-1">{option.emoji}</div>
+                      <div className="font-medium text-gray-900 text-sm">{option.label}</div>
                       <div className="text-xs text-gray-600 mt-1">{option.description}</div>
                     </div>
                   </label>
