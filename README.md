@@ -338,3 +338,4 @@ docker-compose exec backend python manage.py collectstatic
 ---
 
 **Resee**로 더 스마트하게 학습하세요! 🚀
+
