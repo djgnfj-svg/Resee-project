@@ -52,12 +52,13 @@ const LoginPage: React.FC = () => {
           
           <div>
             <label htmlFor="username" className="block text-sm font-medium leading-6 text-gray-900">
-              사용자명
+              이메일 또는 사용자명
             </label>
             <div className="mt-2">
               <input
-                {...register('username', { required: '사용자명을 입력해주세요.' })}
+                {...register('username', { required: '이메일 또는 사용자명을 입력해주세요.' })}
                 type="text"
+                placeholder="이메일 또는 사용자명을 입력하세요"
                 className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
               />
               {errors.username && (
@@ -97,9 +98,9 @@ const LoginPage: React.FC = () => {
         <div className="mt-8 rounded-md bg-blue-50 p-4">
           <h3 className="text-sm font-medium text-blue-800 mb-2">🧪 테스트 계정</h3>
           <div className="text-xs text-blue-700 space-y-1">
-            <div><strong>관리자:</strong> admin / admin123!</div>
-            <div><strong>일반 사용자:</strong> testuser / test123!</div>
-            <div><strong>데모 계정:</strong> demo / demo123!</div>
+            <div><strong>관리자:</strong> admin@resee.com / admin123!</div>
+            <div><strong>일반 사용자:</strong> test@resee.com / test123!</div>
+            <div><strong>데모 계정:</strong> demo@resee.com / demo123!</div>
           </div>
         </div>
 

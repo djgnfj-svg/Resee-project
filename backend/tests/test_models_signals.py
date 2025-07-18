@@ -14,8 +14,7 @@ from .base import BaseTestCase, TestDataMixin
 from content.models import Content, Category
 from review.models import ReviewSchedule, ReviewHistory
 from review.utils import get_review_intervals
-from review.signals import create_review_schedule_signal
-from content.signals import post_save, post_delete
+from django.db.models.signals import post_save, post_delete
 
 User = get_user_model()
 
