@@ -1,16 +1,15 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
-import { Category, Tag } from '../types';
+import { Category } from '../types';
 import { extractResults } from '../utils/helpers';
-import NotionEditor from './NotionEditor';
+import BlockNoteEditor from './BlockNoteEditor';
 
 interface ContentFormData {
   title: string;
   content: string;
   category?: number;
-  tag_ids?: number[];
   priority: 'low' | 'medium' | 'high';
 }
 
@@ -27,13 +26,11 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   isLoading = false,
   initialData
 }) => {
-  const queryClient = useQueryClient();
   const { 
     register, 
     handleSubmit, 
     formState: { errors }, 
     watch,
-    setValue,
   } = useForm<ContentFormData>({
     mode: 'onChange',
     defaultValues: {
@@ -42,39 +39,24 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
     }
   });
 
-  const [selectedTags, setSelectedTags] = useState<number[]>(initialData?.tag_ids || []);
   const [content, setContent] = useState<string>(initialData?.content || '');
 
   // Watch form values for real-time validation
   const watchedTitle = watch('title');
   const watchedPriority = watch('priority');
 
-  // Fetch categories and tags
+  // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: () => contentAPI.getCategories().then(extractResults),
   });
 
-  const { data: tags = [] } = useQuery<Tag[]>({
-    queryKey: ['tags'],
-    queryFn: () => contentAPI.getTags().then(extractResults),
-  });
-
-  const handleTagToggle = useCallback((tagId: number) => {
-    setSelectedTags(prev => 
-      prev.includes(tagId) 
-        ? prev.filter(id => id !== tagId)
-        : [...prev, tagId]
-    );
-  }, []);
-
   const onFormSubmit = useCallback((data: ContentFormData) => {
     onSubmit({
       ...data,
       content: content,
-      tag_ids: selectedTags
     });
-  }, [content, selectedTags, onSubmit]);
+  }, [content, onSubmit]);
 
   const handleImageUpload = async (file: File): Promise<string> => {
     try {
@@ -201,7 +183,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
               <label className="block text-sm font-semibold text-gray-900">
                 내용 <span className="text-red-500">*</span>
               </label>
-              <NotionEditor
+              <BlockNoteEditor
                 content={content}
                 onChange={setContent}
                 placeholder="여기에 학습할 내용을 작성하세요..."
@@ -219,39 +201,6 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                   <span className="mr-1">✅</span>
                   훌륭해요! {content.trim().length}글자 작성완료
                 </p>
-              )}
-            </div>
-
-            {/* Tags */}
-            <div className="space-y-4">
-              <label className="block text-sm font-semibold text-gray-900">
-                태그 (선택사항)
-              </label>
-              {tags.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {tags.map((tag) => (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      onClick={() => handleTagToggle(tag.id)}
-                      className={`p-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                        selectedTags.includes(tag.id)
-                          ? 'bg-indigo-100 text-indigo-700 border-2 border-indigo-300 ring-2 ring-indigo-200'
-                          : 'bg-gray-50 text-gray-700 border-2 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
-                      }`}
-                    >
-                      <span className="mr-1">
-                        {selectedTags.includes(tag.id) ? '✓' : '+'}
-                      </span>
-                      {tag.name}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-2">🏷️</div>
-                  <p className="text-gray-600">아직 태그가 없어요</p>
-                </div>
               )}
             </div>
 

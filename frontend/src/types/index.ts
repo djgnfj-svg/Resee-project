@@ -36,20 +36,12 @@ export interface Category {
   created_at: string;
 }
 
-export interface Tag {
-  id: number;
-  name: string;
-  slug: string;
-  created_at: string;
-}
-
 export interface Content {
   id: number;
   title: string;
   content: string;
   author: string;
   category?: Category;
-  tags: Tag[];
   priority: 'low' | 'medium' | 'high';
   created_at: string;
   updated_at: string;
@@ -142,7 +134,6 @@ export interface CreateContentData {
   content: string;
   category?: number;
   priority: 'low' | 'medium' | 'high';
-  tag_ids?: number[];
 }
 
 export interface UpdateContentData extends Partial<CreateContentData> {}

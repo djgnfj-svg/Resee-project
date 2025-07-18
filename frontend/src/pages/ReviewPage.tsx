@@ -271,15 +271,6 @@ const ReviewPage: React.FC = () => {
                         {currentReview.content.content}
                       </ReactMarkdown>
                     </div>
-                    {currentReview.content.tags.length > 0 && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {currentReview.content.tags.map((tag) => (
-                          <span key={tag.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            {tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                   
                   <div className="mt-6 text-center">

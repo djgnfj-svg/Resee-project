@@ -7,8 +7,8 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .models import Category, Tag, Content
-from .serializers import CategorySerializer, TagSerializer, ContentSerializer
+from .models import Category, Content
+from .serializers import CategorySerializer, ContentSerializer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -51,32 +51,6 @@ class CategoryViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
-class TagViewSet(viewsets.ModelViewSet):
-    """
-    🏷️ 태그 관리
-    
-    학습 콘텐츠에 태그를 추가하여 세부 분류 및 검색을 지원합니다.
-    """
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-    
-    @swagger_auto_schema(
-        operation_summary="태그 목록 조회",
-        operation_description="모든 태그 목록을 반환합니다.",
-        responses={200: TagSerializer(many=True)}
-    )
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
-    
-    @swagger_auto_schema(
-        operation_summary="새 태그 생성",
-        operation_description="새로운 태그를 생성합니다.",
-        request_body=TagSerializer,
-        responses={201: TagSerializer()}
-    )
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
-
 
 class ContentViewSet(viewsets.ModelViewSet):
     """
@@ -88,7 +62,7 @@ class ContentViewSet(viewsets.ModelViewSet):
     queryset = Content.objects.all()
     serializer_class = ContentSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['category', 'priority', 'tags']
+    filterset_fields = ['category', 'priority']
     search_fields = ['title', 'content']
     ordering_fields = ['created_at', 'updated_at', 'title']
     ordering = ['-created_at']
@@ -181,7 +155,7 @@ class ContentViewSet(viewsets.ModelViewSet):
             )
             
             # Get all user's contents with category data in one query using select_related
-            user_contents = self.get_queryset().select_related('category').prefetch_related('tags')
+            user_contents = self.get_queryset().select_related('category')
             
             result = {}
             
