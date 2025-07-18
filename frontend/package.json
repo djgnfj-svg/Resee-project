@@ -3,30 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@blocknote/core": "^0.34.0",
+    "@blocknote/mantine": "^0.34.0",
+    "@blocknote/react": "^0.34.0",
     "@headlessui/react": "^1.7.4",
     "@heroicons/react": "^2.0.13",
     "@tanstack/react-query": "^4.16.1",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^14.4.3",
-    "@tiptap/core": "^2.26.1",
-    "@tiptap/extension-character-count": "^2.26.1",
-    "@tiptap/extension-code-block-lowlight": "^2.26.1",
-    "@tiptap/extension-dropcursor": "^2.26.1",
-    "@tiptap/extension-gapcursor": "^2.26.1",
-    "@tiptap/extension-image": "^2.26.1",
-    "@tiptap/extension-link": "^2.26.1",
-    "@tiptap/extension-list-item": "^2.26.1",
-    "@tiptap/extension-placeholder": "^2.26.1",
-    "@tiptap/extension-table": "^2.26.1",
-    "@tiptap/extension-table-cell": "^2.26.1",
-    "@tiptap/extension-table-header": "^2.26.1",
-    "@tiptap/extension-table-row": "^2.26.1",
-    "@tiptap/extension-task-item": "^2.26.1",
-    "@tiptap/extension-task-list": "^2.26.1",
-    "@tiptap/extension-typography": "^2.26.1",
-    "@tiptap/react": "^2.26.1",
-    "@tiptap/starter-kit": "^2.26.1",
     "@types/jest": "^27.5.2",
     "@types/node": "^16.18.3",
     "@types/react": "^18.0.25",
@@ -34,8 +19,6 @@
     "autoprefixer": "^10.4.13",
     "axios": "^1.2.0",
     "framer-motion": "^12.23.6",
-    "highlight.js": "^11.11.1",
-    "lowlight": "^3.3.0",
     "postcss": "^8.4.19",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -55,6 +38,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "test:ci": "react-scripts test --coverage --ci --watchAll=false",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -76,7 +61,25 @@
     ]
   },
   "devDependencies": {
-    "@types/node": "^16.18.3"
+    "@types/node": "^16.18.3",
+    "msw": "^1.3.5"
   },
-  "proxy": "http://backend:8000"
+  "proxy": "http://backend:8000",
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx,ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/index.tsx",
+      "!src/setupTests.ts",
+      "!src/test-utils/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    }
+  }
 }

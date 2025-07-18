@@ -33,15 +33,56 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'password', 'password_confirm',
                  'first_name', 'last_name', 'timezone', 'notification_enabled')
     
+    def validate_username(self, value):
+        """Validate username"""
+        if len(value) < 3:
+            raise serializers.ValidationError("사용자명은 최소 3글자 이상이어야 합니다.")
+        if len(value) > 150:
+            raise serializers.ValidationError("사용자명은 150글자를 초과할 수 없습니다.")
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("이미 사용 중인 사용자명입니다.")
+        return value
+    
+    def validate_email(self, value):
+        """Validate email"""
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("이미 사용 중인 이메일 주소입니다.")
+        return value
+    
+    def validate_password(self, value):
+        """Validate password strength"""
+        if len(value) < 8:
+            raise serializers.ValidationError("비밀번호는 최소 8글자 이상이어야 합니다.")
+        
+        # Check for at least one letter and one number
+        has_letter = any(c.isalpha() for c in value)
+        has_number = any(c.isdigit() for c in value)
+        
+        if not has_letter:
+            raise serializers.ValidationError("비밀번호에는 최소 하나의 문자가 포함되어야 합니다.")
+        if not has_number:
+            raise serializers.ValidationError("비밀번호에는 최소 하나의 숫자가 포함되어야 합니다.")
+        
+        return value
+    
     def validate(self, attrs):
+        """Validate form data"""
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError("Passwords don't match")
+            raise serializers.ValidationError({
+                'password_confirm': "비밀번호가 일치하지 않습니다."
+            })
         return attrs
     
     def create(self, validated_data):
-        validated_data.pop('password_confirm')
-        user = User.objects.create_user(**validated_data)
-        return user
+        """Create new user"""
+        try:
+            validated_data.pop('password_confirm')
+            user = User.objects.create_user(**validated_data)
+            return user
+        except Exception as e:
+            raise serializers.ValidationError({
+                'non_field_errors': f"계정 생성 중 오류가 발생했습니다: {str(e)}"
+            })
 
 
 class PasswordChangeSerializer(serializers.Serializer):

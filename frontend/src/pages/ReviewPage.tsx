@@ -4,7 +4,6 @@ import ReactMarkdown from 'react-markdown';
 import { reviewAPI, contentAPI } from '../utils/api';
 import { ReviewSchedule, Category } from '../types';
 import { extractResults } from '../utils/helpers';
-// import toast from 'react-hot-toast';
 
 const ReviewPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -50,7 +49,7 @@ const ReviewPage: React.FC = () => {
     },
   });
 
-  const handleReviewComplete = (result: 'remembered' | 'partial' | 'forgot') => {
+  const handleReviewComplete = React.useCallback((result: 'remembered' | 'partial' | 'forgot') => {
     const currentReview = reviews[currentReviewIndex];
     if (currentReview) {
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
@@ -71,7 +70,7 @@ const ReviewPage: React.FC = () => {
       setReviewsCompleted(prev => prev + 1);
       setStartTime(Date.now());
     }
-  };
+  }, [reviews, currentReviewIndex, startTime, completeReviewMutation]);
 
   const currentReview = reviews[currentReviewIndex];
   const progress = reviews.length > 0 ? ((currentReviewIndex + 1) / reviews.length) * 100 : 0;
