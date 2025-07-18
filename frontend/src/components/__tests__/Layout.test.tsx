@@ -214,35 +214,6 @@ describe('Layout', () => {
     expect(homeLink).toHaveClass('active', 'bg-blue-100', 'text-blue-700');
   });
 
-  it('should display search bar', async () => {
-    render(
-      <Wrapper>
-        <Layout>
-          <div>Test Content</div>
-        </Layout>
-      </Wrapper>
-    );
-
-    expect(screen.getByPlaceholderText(/검색/i)).toBeInTheDocument();
-  });
-
-  it('should handle search input', async () => {
-    const user = userEvent.setup();
-    
-    render(
-      <Wrapper>
-        <Layout>
-          <div>Test Content</div>
-        </Layout>
-      </Wrapper>
-    );
-
-    const searchInput = screen.getByPlaceholderText(/검색/i);
-    
-    await user.type(searchInput, 'test search');
-    
-    expect(searchInput).toHaveValue('test search');
-  });
 
   it('should display notifications if any', async () => {
     render(

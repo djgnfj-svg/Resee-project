@@ -13,7 +13,7 @@ from rest_framework.test import APITestCase
 
 from .base import BaseTestCase, BaseAPITestCase, TestDataMixin
 from accounts.models import User
-from content.models import Content, Category, Tag
+from content.models import Content, Category
 from review.models import ReviewSchedule, ReviewHistory
 from review.tasks import create_review_schedule_for_content, send_daily_review_notifications
 
@@ -67,15 +67,7 @@ class CompleteUserWorkflowTestCase(BaseAPITestCase, TestDataMixin):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         category_id = response.data['id']
         
-        # 4. Create Tag
-        tag_url = reverse('content:tags-list')
-        tag_data = {
-            'name': 'basics'
-        }
-        
-        response = self.client.post(tag_url, tag_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        tag_id = response.data['id']
+        # 4. Skip Tag creation since Tag model has been removed
         
         # 5. Create Content
         content_url = reverse('content:contents-list')
@@ -83,8 +75,7 @@ class CompleteUserWorkflowTestCase(BaseAPITestCase, TestDataMixin):
             'title': 'Python Variables',
             'content': 'Variables in Python are used to store data values.',
             'priority': 'high',
-            'category': category_id,
-            'tag_ids': [tag_id]
+            'category': category_id
         }
         
         response = self.client.post(content_url, content_data, format='json')
@@ -398,8 +389,7 @@ class CompleteUserWorkflowTestCase(BaseAPITestCase, TestDataMixin):
             'title': 'Content with Image',
             'content': f'Content with image: {uploaded_url}',
             'priority': 'medium',
-            'category': self.category.id,
-            'tag_ids': [self.tag.id]
+            'category': self.category.id
         }
         
         response = self.client.post(content_url, content_data, format='json')
@@ -489,8 +479,7 @@ class CompleteUserWorkflowTestCase(BaseAPITestCase, TestDataMixin):
             'title': '',  # Empty title
             'content': 'Valid content',
             'priority': 'invalid_priority',  # Invalid priority
-            'category': 99999,  # Non-existent category
-            'tag_ids': [99999]  # Non-existent tag
+            'category': 99999  # Non-existent category
         }
         
         response = self.client.post(content_url, invalid_data, format='json')
@@ -520,10 +509,7 @@ class CompleteUserWorkflowTestCase(BaseAPITestCase, TestDataMixin):
             category = self.create_category(name=f'Category {i}')
             categories.append(category)
         
-        tags = []
-        for i in range(10):
-            tag = Tag.objects.create(name=f'tag-{i}')
-            tags.append(tag)
+        # Skip tag creation since Tag model has been removed
         
         contents = []
         for i in range(50):
@@ -531,8 +517,7 @@ class CompleteUserWorkflowTestCase(BaseAPITestCase, TestDataMixin):
                 title=f'Content {i}',
                 category=categories[i % len(categories)]
             )
-            # Add random tags
-            content.tags.set(tags[:3])
+            # Skip tag assignment since Tag model has been removed
             contents.append(content)
         
         # Create review schedules and history

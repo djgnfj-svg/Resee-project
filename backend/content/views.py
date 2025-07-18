@@ -57,13 +57,12 @@ class ContentViewSet(viewsets.ModelViewSet):
     📖 학습 콘텐츠 관리
     
     사용자의 학습 콘텐츠를 생성, 수정, 삭제, 조회할 수 있습니다.
-    검색, 필터링, 정렬 기능을 지원합니다.
+    필터링, 정렬 기능을 지원합니다.
     """
     queryset = Content.objects.all()
     serializer_class = ContentSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['category', 'priority']
-    search_fields = ['title', 'content']
     ordering_fields = ['created_at', 'updated_at', 'title']
     ordering = ['-created_at']
     
@@ -79,9 +78,8 @@ class ContentViewSet(viewsets.ModelViewSet):
     
     @swagger_auto_schema(
         operation_summary="콘텐츠 목록 조회",
-        operation_description="사용자의 모든 학습 콘텐츠를 조회합니다. 검색, 필터링, 정렬이 가능합니다.",
+        operation_description="사용자의 모든 학습 콘텐츠를 조회합니다. 필터링, 정렬이 가능합니다.",
         manual_parameters=[
-            openapi.Parameter('search', openapi.IN_QUERY, description="제목이나 내용으로 검색", type=openapi.TYPE_STRING),
             openapi.Parameter('category', openapi.IN_QUERY, description="카테고리로 필터링", type=openapi.TYPE_INTEGER),
             openapi.Parameter('category_slug', openapi.IN_QUERY, description="카테고리 슬러그로 필터링", type=openapi.TYPE_STRING),
             openapi.Parameter('priority', openapi.IN_QUERY, description="우선순위로 필터링 (high/medium/low)", type=openapi.TYPE_STRING),
