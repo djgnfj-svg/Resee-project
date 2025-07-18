@@ -370,42 +370,6 @@ class CompleteUserWorkflowTestCase(BaseAPITestCase, TestDataMixin):
         self.assertEqual(stats_data['total_reviews'], 1)
         self.assertEqual(stats_data['success_rate'], 0.0)
     
-    def test_image_upload_workflow(self):
-        """Test image upload workflow"""
-        # Create test image
-        image = self.create_test_image()
-        
-        # Upload image
-        upload_url = reverse('content:upload-image')
-        response = self.client.post(upload_url, {'image': image}, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
-        uploaded_filename = response.data['filename']
-        uploaded_url = response.data['url']
-        
-        # Create content with uploaded image
-        content_url = reverse('content:contents-list')
-        content_data = {
-            'title': 'Content with Image',
-            'content': f'Content with image: {uploaded_url}',
-            'priority': 'medium',
-            'category': self.category.id
-        }
-        
-        response = self.client.post(content_url, content_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        
-        content_id = response.data['id']
-        
-        # Verify content was created
-        content = Content.objects.get(id=content_id)
-        self.assertEqual(content.title, 'Content with Image')
-        self.assertIn(uploaded_url, content.content)
-        
-        # Clean up - delete image
-        delete_url = reverse('content:delete-image', kwargs={'filename': uploaded_filename})
-        response = self.client.delete(delete_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
     
     def test_user_data_isolation(self):
         """Test that user data is properly isolated"""

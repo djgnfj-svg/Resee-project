@@ -1,14 +1,12 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import Image from '@tiptap/extension-image';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 
 interface TipTapEditorProps {
   content: string;
   onChange: (content: string) => void;
   placeholder?: string;
-  onImageUpload?: (file: File) => Promise<string>;
   className?: string;
 }
 
@@ -16,10 +14,8 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
   content,
   onChange,
   placeholder = '내용을 입력하세요. # 제목, **굵게**, *기울임*, 1. 목록 등이 바로 적용됩니다!',
-  onImageUpload,
   className = ''
 }) => {
-  const [isUploading, setIsUploading] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -45,10 +41,6 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
       }),
       Placeholder.configure({
         placeholder: placeholder,
-      }),
-      Image.configure({
-        inline: true,
-        allowBase64: true,
       }),
     ],
     content: content,
@@ -97,8 +89,6 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
     // 링크
     markdown = markdown.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/g, '[$2]($1)');
     
-    // 이미지
-    markdown = markdown.replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g, '![$2]($1)');
     
     // 줄바꿈
     markdown = markdown.replace(/<br\s*\/?>/g, '\n');
@@ -141,8 +131,6 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
     // 링크
     html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
     
-    // 이미지
-    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
     
     // 목록 처리 (개선)
     // 불릿 목록
@@ -181,36 +169,6 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
     }
   }, [content, editor, convertToMarkdown, convertFromMarkdown]);
 
-  // 이미지 업로드 핸들러
-  const handleImageUpload = useCallback(async (file: File) => {
-    if (!onImageUpload || !editor) return;
-    
-    setIsUploading(true);
-    try {
-      const imageUrl = await onImageUpload(file);
-      editor.commands.setImage({ src: imageUrl, alt: file.name });
-    } catch (error) {
-      console.error('이미지 업로드 실패:', error);
-      alert('이미지 업로드에 실패했습니다.');
-    } finally {
-      setIsUploading(false);
-    }
-  }, [onImageUpload, editor]);
-
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      handleImageUpload(file);
-    }
-    e.target.value = '';
-  }, [handleImageUpload]);
-
-  const addImage = useCallback(() => {
-    const url = window.prompt('이미지 URL을 입력하세요:');
-    if (url && editor) {
-      editor.commands.setImage({ src: url });
-    }
-  }, [editor]);
 
   const addLink = useCallback(() => {
     const url = window.prompt('링크 URL을 입력하세요:');
@@ -321,39 +279,12 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           >
             🔗
           </button>
-          <button
-            onClick={addImage}
-            className="toolbar-btn"
-            title="이미지 URL"
-          >
-            🖼️
-          </button>
-          {onImageUpload && (
-            <button
-              onClick={() => document.getElementById('image-upload')?.click()}
-              className="toolbar-btn"
-              title="이미지 업로드"
-              disabled={isUploading}
-            >
-              {isUploading ? '⏳' : '📷'}
-            </button>
-          )}
         </div>
       </div>
 
       {/* 에디터 */}
       <EditorContent editor={editor} className="tiptap-content" />
 
-      {/* 숨겨진 파일 입력 */}
-      {onImageUpload && (
-        <input
-          id="image-upload"
-          type="file"
-          accept="image/*"
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
-        />
-      )}
 
       {/* 도움말 */}
       <div className="tiptap-help">
@@ -574,14 +505,6 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           text-decoration-color: #3b82f6;
         }
 
-        /* 이미지 스타일 */
-        .tiptap-editor-content img {
-          max-width: 100%;
-          height: auto;
-          border-radius: 0.5rem;
-          margin: 1rem 0;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
 
         /* 도움말 */
         .tiptap-help {

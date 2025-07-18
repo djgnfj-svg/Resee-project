@@ -14,7 +14,6 @@ import {
   Category,
   ReviewSchedule,
   ReviewHistory,
-  ImageUploadResponse,
   DashboardData
 } from '../types';
 
@@ -166,22 +165,6 @@ export const contentAPI = {
     return response.data;
   },
   
-  uploadImage: async (imageFile: File): Promise<ImageUploadResponse> => {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-    
-    const response = await api.post('/content/upload-image/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  },
-  
-  deleteImage: async (filename: string): Promise<void> => {
-    const response = await api.delete(`/content/delete-image/${filename}/`);
-    return response.data;
-  },
 };
 
 // Review API

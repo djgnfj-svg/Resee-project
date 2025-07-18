@@ -3,7 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ContentFormV2 from '../ContentFormV2';
-import { createMockFile } from '../../test-utils/test-utils';
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -242,26 +241,6 @@ describe('ContentFormV2', () => {
     });
   });
 
-  it('should handle image upload in editor', async () => {
-    const user = userEvent.setup();
-
-    render(
-      <Wrapper>
-        <ContentFormV2 {...defaultProps} />
-      </Wrapper>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId('blocknote-editor')).toBeInTheDocument();
-    });
-
-    // Test image upload functionality
-    const file = createMockFile('test.png', 'image/png');
-    
-    // This would normally trigger through the BlockNote editor
-    // For testing, we just verify the component doesn't crash
-    expect(screen.getByTestId('blocknote-editor')).toBeInTheDocument();
-  });
 
   it('should validate required fields', async () => {
     const onSubmit = jest.fn();

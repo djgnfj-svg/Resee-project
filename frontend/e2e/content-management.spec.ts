@@ -141,27 +141,6 @@ test.describe('Content Management', () => {
     }
   });
 
-  test('should upload and insert image in content', async ({ page }) => {
-    await page.goto('/content/new');
-    
-    // Fill basic content info
-    await page.getByLabelText(/제목/i).fill('Content with Image');
-    
-    // Upload image through editor
-    const fileInput = page.getByRole('button', { name: /이미지 업로드/i });
-    if (await fileInput.isVisible()) {
-      // Create a test image file
-      const buffer = Buffer.from('test image data');
-      await fileInput.setInputFiles({
-        name: 'test-image.png',
-        mimeType: 'image/png',
-        buffer: buffer,
-      });
-      
-      // Image should be inserted into editor
-      await expect(page.getByAltText('test-image.png')).toBeVisible();
-    }
-  });
 
   test('should create and assign new category', async ({ page }) => {
     await page.goto('/content/new');

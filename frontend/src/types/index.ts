@@ -161,8 +161,3 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
-export interface ImageUploadResponse {
-  url: string;
-  filename: string;
-  size: number;
-}

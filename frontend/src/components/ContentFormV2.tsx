@@ -58,15 +58,6 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
     });
   }, [content, onSubmit]);
 
-  const handleImageUpload = async (file: File): Promise<string> => {
-    try {
-      const response = await contentAPI.uploadImage(file);
-      return response.url;
-    } catch (error) {
-      console.error('Image upload failed:', error);
-      throw error;
-    }
-  };
 
   const priorityOptions = [
     { value: 'high', label: '높음', color: 'red', emoji: '🔴', description: '매우 중요한 내용' },
@@ -188,7 +179,6 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                 onChange={setContent}
                 placeholder="내용을 입력하세요. # 제목, **굵게**, *기울임*, 1. 목록 등이 바로 적용됩니다!"
                 className="w-full"
-                onImageUpload={handleImageUpload}
               />
               {content.trim().length > 0 && content.trim().length < 10 && (
                 <p className="text-sm text-yellow-600 flex items-center">
