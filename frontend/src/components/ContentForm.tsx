@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
-import { Category, Tag } from '../types';
+import { Category } from '../types';
 import { extractResults } from '../utils/helpers';
 import NotionEditor from './NotionEditor';
 
@@ -10,7 +10,6 @@ interface ContentFormData {
   title: string;
   content: string;
   category?: number;
-  tag_ids?: number[];
   priority: 'low' | 'medium' | 'high';
 }
 
@@ -35,22 +34,16 @@ const ContentForm: React.FC<ContentFormProps> = ({
     }
   });
 
-  const [selectedTags, setSelectedTags] = useState<number[]>(initialData?.tag_ids || []);
   const [content, setContent] = useState<string>(initialData?.content || '');
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryDescription, setNewCategoryDescription] = useState('');
   const [activeTab, setActiveTab] = useState<'basic' | 'content' | 'settings'>('basic');
 
-  // Fetch categories and tags
+  // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: () => contentAPI.getCategories().then(extractResults),
-  });
-
-  const { data: tags = [] } = useQuery<Tag[]>({
-    queryKey: ['tags'],
-    queryFn: () => contentAPI.getTags().then(extractResults),
   });
 
   // Create category mutation
@@ -65,13 +58,6 @@ const ContentForm: React.FC<ContentFormProps> = ({
     },
   });
 
-  const handleTagToggle = (tagId: number) => {
-    setSelectedTags(prev => 
-      prev.includes(tagId) 
-        ? prev.filter(id => id !== tagId)
-        : [...prev, tagId]
-    );
-  };
 
   const onFormSubmit = (data: ContentFormData) => {
     if (!content.trim()) {
@@ -82,12 +68,10 @@ const ContentForm: React.FC<ContentFormProps> = ({
     console.log('ContentForm 제출 데이터:', {
       ...data,
       content: content,
-      tag_ids: selectedTags
     });
     onSubmit({
       ...data,
       content: content,
-      tag_ids: selectedTags
     });
   };
 
@@ -360,49 +344,14 @@ const ContentForm: React.FC<ContentFormProps> = ({
                 <div className="space-y-6">
                   <div className="text-center mb-8">
                     <h2 className="text-xl font-semibold text-gray-900 mb-2">추가 설정</h2>
-                    <p className="text-gray-600">태그를 선택하여 콘텐츠를 더 세밀하게 분류할 수 있습니다</p>
+                    <p className="text-gray-600">콘텐츠의 우선순위를 설정할 수 있습니다</p>
                   </div>
 
-                  {/* Tags */}
-                  {tags.length > 0 ? (
-                    <div className="space-y-3">
-                      <label className="block text-sm font-medium text-gray-700">
-                        태그 선택 (선택사항)
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {tags.map((tag) => (
-                          <button
-                            key={tag.id}
-                            type="button"
-                            onClick={() => handleTagToggle(tag.id)}
-                            className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                              selectedTags.includes(tag.id)
-                                ? 'bg-blue-100 text-blue-800 border-2 border-blue-300'
-                                : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:bg-gray-200'
-                            }`}
-                          >
-                            <span className="mr-1">
-                              {selectedTags.includes(tag.id) ? '✓' : '+'}
-                            </span>
-                            {tag.name}
-                          </button>
-                        ))}
-                      </div>
-                      {selectedTags.length > 0 && (
-                        <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                          <p className="text-sm text-blue-800">
-                            선택된 태그: {selectedTags.length}개
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="text-gray-400 text-4xl mb-4">🏷️</div>
-                      <p className="text-gray-600">사용 가능한 태그가 없습니다</p>
-                      <p className="text-sm text-gray-500 mt-2">관리자에게 태그 생성을 요청하세요</p>
-                    </div>
-                  )}
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 text-4xl mb-4">⚙️</div>
+                    <p className="text-gray-600">현재 추가 설정이 없습니다</p>
+                    <p className="text-sm text-gray-500 mt-2">기본 정보와 우선순위만 설정하면 됩니다</p>
+                  </div>
                 </div>
               )}
             </div>

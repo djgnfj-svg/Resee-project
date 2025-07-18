@@ -12,7 +12,6 @@ import {
   PaginatedResponse,
   Content,
   Category,
-  Tag,
   ReviewSchedule,
   ReviewHistory,
   ImageUploadResponse,
@@ -159,11 +158,6 @@ export const contentAPI = {
   
   createCategory: async (data: CreateCategoryData): Promise<Category> => {
     const response = await api.post('/content/categories/', data);
-    return response.data;
-  },
-  
-  getTags: async (): Promise<PaginatedResponse<Tag> | Tag[]> => {
-    const response = await api.get('/content/tags/');
     return response.data;
   },
   

@@ -31,7 +31,17 @@ When implementing features, I will provide:
 
 **Resee** is a scientific review platform implementing spaced repetition learning based on the Ebbinghaus forgetting curve. It consists of a Django REST API backend with PostgreSQL/Redis/RabbitMQ and a React TypeScript frontend using Tiptap editor.
 
-### v0.2 Recent Updates
+### v0.3 배포 준비 완료 (2025-07-18)
+- **✅ 프론트엔드 빌드 오류 수정**: BlockNote 의존성 문제 해결, 커스텀 마크다운 에디터로 교체
+- **✅ 백엔드 의존성 문제 해결**: `django-ipware` 라이브러리 추가, 미들웨어 설정 최적화
+- **✅ 테스트 계정 생성**: admin, testuser, demo 계정 자동 생성 스크립트 완성
+- **✅ 샘플 데이터**: 각 계정별 5개씩 총 16개 학습 콘텐츠 자동 생성
+- **✅ 회원가입 에러 개선**: 한국어 상세 에러 메시지, 필드별 유효성 검사 강화
+- **✅ 포괄적인 테스트 스위트**: 백엔드 203개 테스트, 프론트엔드/E2E 테스트 완성
+- **✅ 보안 강화**: JWT 인증, CORS, 레이트 리미팅, SQL 인젝션 방지 미들웨어
+- **✅ 코드 품질**: ESLint, Prettier, Black, TypeScript 타입 안전성 확보
+
+### v0.2 Previous Updates
 - **✅ Immediate Review Feature**: Content can be reviewed immediately after creation
 - **✅ Initial Review Tracking**: Added `initial_review_completed` field to distinguish first reviews
 - **✅ Enhanced Review Flow**: Seamless transition from immediate review to spaced repetition
@@ -160,7 +170,7 @@ docker-compose exec celery celery -A resee inspect scheduled
 
 ### Frontend (React + TypeScript)
 - **React 18** with TypeScript for type safety
-- **Tiptap** for rich text editing (configured but currently using textarea)
+- **BlockNote** for notion-like rich text editing with real-time markdown rendering
 - **React Query** for server state management
 - **React Hook Form** for form validation
 - **Tailwind CSS** for styling
@@ -169,7 +179,8 @@ docker-compose exec celery celery -A resee inspect scheduled
 **Key Components:**
 - `AuthContext` - Global authentication state
 - `ProtectedRoute` - Route protection wrapper
-- `ContentForm` - Multi-step content creation/editing
+- `ContentFormV2` - Content creation/editing with BlockNote editor
+- `BlockNoteEditor` - Notion-like rich text editor with image support
 - `Layout` - Main application layout with navigation
 
 ## Database Models
@@ -301,10 +312,94 @@ REACT_APP_API_URL=http://localhost:8000/api
 - **Django Admin**: http://localhost:8000/admin
 - **RabbitMQ Management**: http://localhost:15672 (guest/guest)
 
+## 테스트 계정 정보
+
+**자동 생성된 테스트 계정들:**
+
+### 관리자 계정
+- **사용자명**: `admin`
+- **비밀번호**: `admin123!` 
+- **이메일**: `admin@resee.com`
+- **권한**: 슈퍼유저, Django 관리자 접근 가능
+
+### 일반 사용자 계정
+- **사용자명**: `testuser`
+- **비밀번호**: `test123!`
+- **이메일**: `test@resee.com` 
+- **권한**: 일반 사용자
+
+### 데모 계정
+- **사용자명**: `demo`
+- **비밀번호**: `demo123!`
+- **이메일**: `demo@resee.com`
+- **권한**: 일반 사용자
+
+**자동 생성된 샘플 데이터:**
+- 각 계정별 5개씩 총 **16개 학습 콘텐츠**
+- **4개 카테고리**: 프로그래밍, 과학, 언어학습, 일반상식
+- **샘플 콘텐츠**: Python 기초, 메모리 관리, 영어 불규칙동사, 뉴턴 법칙, 세계 수도 등
+
+**테스트 계정 생성 명령어:**
+```bash
+# 테스트 계정 및 샘플 데이터 생성
+docker-compose exec -T backend python create_test_accounts.py
+```
+
 ## Korean Localization
 - Default timezone: Asia/Seoul
 - Korean language support in documentation
 - User timezone setting in User model
+- 회원가입/로그인 한국어 에러 메시지 지원
+- 상세한 필드별 유효성 검사 메시지
+
+## E2E Testing with Playwright
+
+### Running E2E Tests
+```bash
+# Install Playwright browsers (first time only)
+npx playwright install
+
+# Run all E2E tests
+npx playwright test
+
+# Run specific test file
+npx playwright test e2e/auth.spec.ts
+
+# Run tests in headed mode (see browser)
+npx playwright test --headed
+
+# Run tests in UI mode (interactive)
+npx playwright test --ui
+
+# Debug a specific test
+npx playwright test --debug
+
+# Generate test reports
+npx playwright show-report
+```
+
+### E2E Test Files
+- `e2e/auth.spec.ts` - Login, registration, logout flows
+- `e2e/content-management.spec.ts` - CRUD operations for learning content
+- `e2e/review-workflow.spec.ts` - Spaced repetition review process
+
+## API Documentation
+
+### Interactive API Documentation
+- **Swagger UI**: http://localhost:8000/swagger/
+- **ReDoc**: http://localhost:8000/redoc/
+
+### Quick API Testing
+```bash
+# Get JWT token
+curl -X POST http://localhost:8000/api/auth/token/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "testuser", "password": "test123!"}'
+
+# Use token for authenticated requests
+curl -X GET http://localhost:8000/api/content/contents/ \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
 
 ## Debugging & Troubleshooting
 
@@ -347,6 +442,9 @@ docker-compose exec backend python manage.py showmigrations
 
 # Create empty migration
 docker-compose exec backend python manage.py makemigrations --empty content
+
+# Load test data
+docker-compose exec -T backend python create_test_accounts.py
 ```
 
 ### Debugging Tools
@@ -404,3 +502,10 @@ docker-compose exec backend python manage.py shell
 >>> from review.tasks import send_daily_review_notifications
 >>> send_daily_review_notifications.delay()
 ```
+
+## Quick Reference - Review Interface Keyboard Shortcuts
+- **Space** or **Enter**: Show answer
+- **1**: Forgot (review again tomorrow)
+- **2**: Partial (review at same interval)
+- **3**: Remembered (advance to next interval)
+- **→** or **N**: Next review item

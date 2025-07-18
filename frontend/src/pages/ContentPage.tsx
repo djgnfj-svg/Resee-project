@@ -138,7 +138,6 @@ const ContentPage: React.FC = () => {
           content: editingContent.content,
           category: editingContent.category?.id,
           priority: editingContent.priority,
-          tag_ids: editingContent.tags.map(tag => tag.id)
         } : undefined}
       />
     );
@@ -348,15 +347,6 @@ const ContentPage: React.FC = () => {
                 </ReactMarkdown>
               </div>
 
-              {content.tags.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-1">
-                  {content.tags.map((tag) => (
-                    <span key={tag.id} className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                      {tag.name}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           ))}
         </div>

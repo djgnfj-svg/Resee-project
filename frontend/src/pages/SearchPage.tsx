@@ -6,13 +6,12 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 // import rehypeSanitize from 'rehype-sanitize';
 import { contentAPI } from '../utils/api';
-import { Content, Category, Tag } from '../types';
+import { Content, Category } from '../types';
 import { extractResults, getPriorityInfo, formatDate, formatDateTime, truncateText } from '../utils/helpers';
 
 interface SearchFilters {
   query: string;
   categories: string[];
-  tags: string[];
   priorities: string[];
   dateRange: {
     start: string;
@@ -26,7 +25,6 @@ const SearchPage: React.FC = () => {
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
     categories: [],
-    tags: [],
     priorities: [],
     dateRange: { start: '', end: '' },
     sortBy: 'created_at',
@@ -36,15 +34,10 @@ const SearchPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedContent, setSelectedContent] = useState<Content | null>(null);
 
-  // Fetch categories and tags
+  // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: () => contentAPI.getCategories().then(extractResults),
-  });
-
-  const { data: tags = [] } = useQuery<Tag[]>({
-    queryKey: ['tags'],
-    queryFn: () => contentAPI.getTags().then(extractResults),
   });
 
   // Search results
@@ -59,10 +52,6 @@ const SearchPage: React.FC = () => {
       
       if (filters.categories.length > 0) {
         filters.categories.forEach(cat => params.append('category', cat));
-      }
-      
-      if (filters.tags.length > 0) {
-        filters.tags.forEach(tag => params.append('tags', tag));
       }
       
       if (filters.priorities.length > 0) {
@@ -82,14 +71,14 @@ const SearchPage: React.FC = () => {
       
       return contentAPI.getContents(params.toString()).then(extractResults);
     },
-    enabled: filters.query.length >= 2 || filters.categories.length > 0 || filters.tags.length > 0
+    enabled: filters.query.length >= 2 || filters.categories.length > 0
   });
 
   const updateFilter = useCallback((key: keyof SearchFilters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  const toggleArrayFilter = useCallback((key: 'categories' | 'tags' | 'priorities', value: string) => {
+  const toggleArrayFilter = useCallback((key: 'categories' | 'priorities', value: string) => {
     setFilters(prev => ({
       ...prev,
       [key]: prev[key].includes(value) 
@@ -102,7 +91,6 @@ const SearchPage: React.FC = () => {
     setFilters({
       query: '',
       categories: [],
-      tags: [],
       priorities: [],
       dateRange: { start: '', end: '' },
       sortBy: 'created_at',
@@ -113,7 +101,6 @@ const SearchPage: React.FC = () => {
   const hasActiveFilters = useMemo(() => {
     return filters.query || 
            filters.categories.length > 0 || 
-           filters.tags.length > 0 || 
            filters.priorities.length > 0 ||
            filters.dateRange.start ||
            filters.dateRange.end;
@@ -194,26 +181,6 @@ const SearchPage: React.FC = () => {
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="ml-2 text-sm text-gray-700">{category.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  🏷️ 태그
-                </label>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {tags.map((tag) => (
-                    <label key={tag.id} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={filters.tags.includes(tag.name)}
-                        onChange={() => toggleArrayFilter('tags', tag.name)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">{tag.name}</span>
                     </label>
                   ))}
                 </div>
@@ -445,25 +412,6 @@ const SearchPage: React.FC = () => {
                       </ReactMarkdown>
                     </div>
 
-                    {/* Tags */}
-                    {content.tags && content.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {content.tags.slice(0, 5).map((tag) => (
-                          <span
-                            key={tag.id}
-                            className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs"
-                          >
-                            🏷️ {tag.name}
-                          </span>
-                        ))}
-                        {content.tags.length > 5 && (
-                          <span className="text-xs text-gray-500">
-                            +{content.tags.length - 5} more
-                          </span>
-                        )}
-                      </div>
-                    )}
-
                     {/* Meta Info */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 space-y-2 sm:space-y-0">
                       <div className="flex items-center space-x-4">
@@ -520,24 +468,8 @@ const SearchPage: React.FC = () => {
                   </ReactMarkdown>
                 </div>
                 
-                {/* Tags and Meta */}
+                {/* Meta Information */}
                 <div className="mt-6 pt-6 border-t border-gray-200">
-                  {selectedContent.tags && selectedContent.tags.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">태그</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedContent.tags.map((tag) => (
-                          <span
-                            key={tag.id}
-                            className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs"
-                          >
-                            🏷️ {tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
                   <div className="text-xs text-gray-500 space-y-1">
                     <div>📅 생성일: {new Date(selectedContent.created_at).toLocaleString('ko-KR')}</div>
                     <div>🔄 수정일: {new Date(selectedContent.updated_at).toLocaleString('ko-KR')}</div>

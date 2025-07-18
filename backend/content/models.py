@@ -27,23 +27,6 @@ class Category(models.Model):
         return self.name
 
 
-class Tag(models.Model):
-    """Content tag"""
-    name = models.CharField(max_length=50, unique=True)
-    slug = models.SlugField(max_length=50, unique=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        ordering = ['name']
-    
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name)
-        super().save(*args, **kwargs)
-    
-    def __str__(self):
-        return self.name
-
 
 class Content(models.Model):
     """Learning content"""
@@ -57,7 +40,6 @@ class Content(models.Model):
     content = models.TextField(help_text='Markdown content')
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='contents')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
-    tags = models.ManyToManyField(Tag, blank=True)
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
