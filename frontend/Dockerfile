@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:18
 
 # Set working directory
 WORKDIR /app
@@ -7,8 +7,8 @@ WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 
 # Install app dependencies
-COPY package.json ./
-RUN npm install --silent
+COPY package.json package-lock.json ./
+RUN npm ci --silent
 
 # Copy app files
 COPY . ./

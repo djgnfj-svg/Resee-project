@@ -1,16 +1,15 @@
-# 📚 Resee - 과학적 복습 플랫폼 v0.2
+# 📚 Resee - 과학적 복습 플랫폼 v0.3
 
 **에빙하우스 망각곡선에 기반한 스마트 복습 시스템**
 
 Resee는 과학적으로 검증된 에빙하우스 망각곡선 이론을 활용하여 효율적인 학습과 장기 기억을 돕는 웹 플랫폼입니다.
 
-## 🎯 v0.2 주요 개선사항
+## 🚀 v0.3 주요 개선사항 (2025-07-19)
 
 ### ✨ 새로운 기능
-- 🆕 **콘텐츠 생성 즉시 복습**: 콘텐츠 만들자마자 바로 복습 시작 가능
-- 🆕 **초기 복습 구분**: "첫 번째 복습" vs "N번째 복습" 명확한 표시
-- 🆕 **개선된 복습 플로우**: 즉시 복습 완료 후 정상 spaced repetition 적용
-- 🆕 **Playwright 테스트**: 전체 워크플로우 자동화 테스트 완료
+- 🆕 **이메일 로그인**: 사용자명 없이 이메일만으로 간편 로그인
+- 🆕 **개발 환경 단순화**: docker-compose 명령어만으로 쉬운 프로젝트 실행
+- 🆕 **SSL 비활성화 옵션**: HTTP 환경에서도 안정적인 운영
 
 ### ✅ 기존 완성된 기능
 - ✅ **Tiptap 리치 텍스트 에디터**: 마크다운 지원, 이미지 업로드, 풍부한 툴바
@@ -83,42 +82,48 @@ git clone https://github.com/yourusername/resee.git
 cd resee
 ```
 
-### 2. 환경 변수 설정
-```bash
-cp .env.example .env
-# .env 파일을 편집하여 필요한 설정 변경
-```
+### 2. 개발 환경 실행
 
-### 3. Docker 컨테이너 실행
 ```bash
+# 개발 환경 시작
 docker-compose up -d
+
+# 재빌드 후 시작
+docker-compose up -d --build
+
+# 서비스 중지
+docker-compose down
+
+# 서비스 상태 확인
+docker-compose ps
+
+# 로그 보기
+docker-compose logs -f
 ```
 
-### 4. 데이터베이스 마이그레이션
-```bash
-docker-compose exec backend python manage.py migrate
-```
+### 3. 접속 정보
 
-### 5. 슈퍼유저 생성
-```bash
-docker-compose exec backend python manage.py createsuperuser
-```
-
-### 6. 접속
 - **프론트엔드**: http://localhost:3000
 - **백엔드 API**: http://localhost:8000/api
 - **API 문서 (Swagger)**: http://localhost:8000/swagger/
-- **API 문서 (ReDoc)**: http://localhost:8000/redoc/
 - **Django Admin**: http://localhost:8000/admin
-- **RabbitMQ Management**: http://localhost:15672
+
+### 4. 테스트 계정 🧪
+자동으로 생성되는 테스트 계정으로 바로 시작할 수 있습니다:
+
+- **관리자**: `admin@resee.com` / `admin123!`
+- **테스트 사용자**: `test@resee.com` / `test123!`
+- **데모 계정**: `demo@resee.com` / `demo123!`
 
 ## 📖 사용법
 
 ### 1. 회원가입 및 로그인
-1. http://localhost:3000 접속
+1. 웹사이트 접속 (개발환경: localhost:3000, 프로덕션: localhost)
 2. "회원가입" 버튼 클릭
-3. 계정 정보 입력 후 가입
-4. 로그인하여 대시보드 접속
+3. **이메일과 비밀번호**만 입력하여 간편 가입
+4. **이메일로 로그인**하여 대시보드 접속
+
+> 💡 **v0.3 개선**: 더 이상 사용자명이 필요하지 않습니다! 이메일만으로 간편하게 가입하고 로그인할 수 있습니다.
 
 ### 2. 콘텐츠 작성
 1. "새 콘텐츠 추가" 버튼 클릭

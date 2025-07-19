@@ -8,7 +8,6 @@ from pathlib import Path
 
 import dj_database_url
 from celery.schedules import crontab
-enumerate
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -51,16 +50,12 @@ INSTALLED_APPS = [
     'analytics',
 ]
 
+# Environment-based configuration
+ENVIRONMENT = os.environ.get('ENVIRONMENT', 'development')
+
+# Base middleware for all environments
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # 'resee.middleware.SecurityHeadersMiddleware',
-    # 'resee.middleware.RateLimitMiddleware',
-    # 'resee.middleware.RequestLoggingMiddleware',
-    # 'resee.middleware.SQLInjectionDetectionMiddleware',
-    # 'resee.middleware.LoginAttemptTrackingMiddleware',
-    # 'resee.middleware.IPWhitelistMiddleware',
-    # 'resee.middleware.ContentTypeValidationMiddleware',
-    # 'resee.middleware.FileUploadSecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -70,6 +65,25 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Add security middleware for production environments
+if ENVIRONMENT in ['staging', 'production']:
+    SECURITY_MIDDLEWARE = [
+        'resee.middleware.SecurityHeadersMiddleware',
+        'resee.middleware.RateLimitMiddleware',
+        'resee.middleware.RequestLoggingMiddleware',
+        'resee.middleware.SQLInjectionDetectionMiddleware',
+        'resee.middleware.LoginAttemptTrackingMiddleware',
+        'resee.middleware.ContentTypeValidationMiddleware',
+        'resee.middleware.FileUploadSecurityMiddleware',
+    ]
+    
+    # Insert security middleware after SecurityMiddleware
+    MIDDLEWARE = MIDDLEWARE[:1] + SECURITY_MIDDLEWARE + MIDDLEWARE[1:]
+    
+    # Add IP whitelist middleware if configured
+    if os.environ.get('ADMIN_IP_WHITELIST'):
+        MIDDLEWARE.insert(-1, 'resee.middleware.IPWhitelistMiddleware')
 
 ROOT_URLCONF = 'resee.urls'
 
@@ -171,10 +185,18 @@ SIMPLE_JWT = {
 }
 
 # CORS settings
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+if os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True':
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+    
+    # Add custom origins from environment
+    custom_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+    if custom_origins:
+        CORS_ALLOWED_ORIGINS.extend(custom_origins.split(','))
 
 # Redis settings
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
@@ -364,3 +386,83 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+# Create logs directory if it doesn't exist
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(exist_ok=True)
+
+# Environment-specific configuration overrides
+if ENVIRONMENT == 'development':
+    # Development-specific settings (keep current defaults)
+    pass
+
+elif ENVIRONMENT == 'staging':
+    # Staging environment settings
+    DEBUG = False
+    ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+    
+    # Use production settings but with less strict JWT tokens
+    from .production_settings import *
+    
+    # Staging-specific overrides
+    SIMPLE_JWT.update({
+        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+        'REFRESH_TOKEN_LIFETIME': timedelta(days=3),
+    })
+    
+    # Less aggressive rate limiting for testing
+    REST_FRAMEWORK.update({
+        'DEFAULT_THROTTLE_RATES': {
+            'anon': '200/hour',
+            'user': '2000/hour',
+            'login': '10/min',
+            'upload': '20/hour',
+        }
+    })
+
+elif ENVIRONMENT == 'production':
+    # Production environment settings
+    DEBUG = False
+    ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+    
+    # Import all production settings
+    from .production_settings import *
+    
+    # Ensure logs directory exists with proper permissions
+    LOGS_DIR.chmod(0o755)
+    
+    # Additional production-only settings
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = os.environ.get('FORCE_HTTPS', 'False') == 'True'
+    
+    # Production cache settings with longer timeouts
+    CACHES['default'].update({
+        'TIMEOUT': 300,  # 5 minutes default timeout
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 100,
+                'retry_on_timeout': True,
+            },
+            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+            'IGNORE_EXCEPTIONS': True,
+        }
+    })
+
+# Validation: Ensure critical environment variables are set for production
+if ENVIRONMENT in ['staging', 'production']:
+    required_env_vars = [
+        'SECRET_KEY',
+        'DATABASE_URL', 
+        'ALLOWED_HOSTS',
+        'CELERY_BROKER_URL',
+        'REDIS_URL'
+    ]
+    
+    missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
+    if missing_vars:
+        raise ValueError(f"Missing required environment variables for {ENVIRONMENT}: {', '.join(missing_vars)}")
+    
+    # Validate SECRET_KEY is not the default development key
+    if 'django-insecure' in SECRET_KEY or SECRET_KEY == 'your-secret-key-for-development':
+        raise ValueError("Cannot use development SECRET_KEY in production environment")
