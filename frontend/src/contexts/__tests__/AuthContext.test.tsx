@@ -17,11 +17,11 @@ const TestComponent = () => {
 
   return (
     <div>
-      <div data-testid="user">{user ? `User: ${user.username}` : 'No user'}</div>
+      <div data-testid="user">{user ? `User: ${user.email}` : 'No user'}</div>
       <div data-testid="loading">{isLoading ? 'Loading...' : 'Not loading'}</div>
       <div data-testid="authenticated">{isAuthenticated ? 'Authenticated' : 'Not authenticated'}</div>
       <button 
-        onClick={() => login({ username: 'testuser', password: 'password' })}
+        onClick={() => login({ email: 'test@example.com', password: 'password' })}
         data-testid="login-btn"
       >
         Login
@@ -29,7 +29,6 @@ const TestComponent = () => {
       <button onClick={logout} data-testid="logout-btn">Logout</button>
       <button 
         onClick={() => register({
-          username: 'newuser',
           email: 'new@example.com',
           password: 'password',
           password_confirm: 'password',
@@ -95,7 +94,7 @@ describe('AuthContext', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('user')).toHaveTextContent('User: testuser');
+      expect(screen.getByTestId('user')).toHaveTextContent('User: test@example.com');
     });
   });
 
@@ -155,7 +154,7 @@ describe('AuthContext', () => {
 
     // Should load user data from token
     await waitFor(() => {
-      expect(screen.getByTestId('user')).toHaveTextContent('User: testuser');
+      expect(screen.getByTestId('user')).toHaveTextContent('User: test@example.com');
     });
 
     expect(screen.getByTestId('authenticated')).toHaveTextContent('Authenticated');

@@ -1,7 +1,48 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 User = get_user_model()
+
+
+class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Custom JWT serializer that uses email instead of username"""
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remove the username field and add email field
+        self.fields.pop('username', None)
+        self.fields['email'] = serializers.EmailField()
+
+    def validate(self, attrs):
+        # Use email for authentication
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        if email and password:
+            user = authenticate(
+                request=self.context.get('request'),
+                username=email,  # Django's authenticate uses 'username' parameter but we pass email
+                password=password
+            )
+
+            if not user:
+                raise serializers.ValidationError('이메일 또는 비밀번호가 올바르지 않습니다.')
+
+            if not user.is_active:
+                raise serializers.ValidationError('비활성화된 계정입니다.')
+
+            # Set the user for token generation
+            self.user = user
+            return {}
+        else:
+            raise serializers.ValidationError('이메일과 비밀번호를 입력해주세요.')
+
+    @classmethod
+    def get_token(cls, user):
+        return super().get_token(user)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -9,7 +50,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 
+        fields = ('id', 'email', 'first_name', 'last_name', 
                  'timezone', 'notification_enabled', 'date_joined')
         read_only_fields = ('id', 'date_joined')
 
@@ -19,29 +60,19 @@ class ProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 
+        fields = ('email', 'first_name', 'last_name', 
                  'timezone', 'notification_enabled')
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """User registration serializer"""
+    """User registration serializer with email-only authentication"""
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True)
     
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password_confirm',
+        fields = ('email', 'password', 'password_confirm',
                  'first_name', 'last_name', 'timezone', 'notification_enabled')
-    
-    def validate_username(self, value):
-        """Validate username"""
-        if len(value) < 3:
-            raise serializers.ValidationError("사용자명은 최소 3글자 이상이어야 합니다.")
-        if len(value) > 150:
-            raise serializers.ValidationError("사용자명은 150글자를 초과할 수 없습니다.")
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("이미 사용 중인 사용자명입니다.")
-        return value
     
     def validate_email(self, value):
         """Validate email"""
@@ -93,7 +124,7 @@ class PasswordChangeSerializer(serializers.Serializer):
     
     def validate_current_password(self, value):
         user = self.context['request'].user
-        if not authenticate(username=user.username, password=value):
+        if not authenticate(username=user.email, password=value):
             raise serializers.ValidationError("Current password is incorrect")
         return value
     
@@ -116,7 +147,7 @@ class AccountDeleteSerializer(serializers.Serializer):
     
     def validate_password(self, value):
         user = self.context['request'].user
-        if not authenticate(username=user.username, password=value):
+        if not authenticate(username=user.email, password=value):
             raise serializers.ValidationError("Password is incorrect")
         return value
     

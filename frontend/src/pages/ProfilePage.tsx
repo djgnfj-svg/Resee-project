@@ -6,7 +6,6 @@ import { authAPI, analyticsAPI } from '../utils/api';
 import { User, DashboardData } from '../types';
 
 interface ProfileFormData {
-  username: string;
   email: string;
   first_name: string;
   last_name: string;
@@ -33,7 +32,6 @@ const ProfilePage: React.FC = () => {
   // Form setup
   const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm<ProfileFormData>({
     defaultValues: user ? {
-      username: user.username,
       email: user.email,
       first_name: user.first_name,
       last_name: user.last_name,
@@ -62,7 +60,6 @@ const ProfilePage: React.FC = () => {
   const handleCancel = () => {
     if (user) {
       reset({
-        username: user.username,
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
@@ -116,12 +113,12 @@ const ProfilePage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="text-center">
               <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold mb-4">
-                {user.first_name ? user.first_name[0].toUpperCase() : user.username[0].toUpperCase()}
+                {user.first_name ? user.first_name[0].toUpperCase() : user.email[0].toUpperCase()}
               </div>
               <h2 className="text-xl font-semibold text-gray-900">
                 {user.first_name && user.last_name 
                   ? `${user.first_name} ${user.last_name}`
-                  : user.username
+                  : user.email.split('@')[0]
                 }
               </h2>
               <p className="text-gray-600">{user.email}</p>
@@ -165,23 +162,6 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Username */}
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                  사용자명
-                </label>
-                <input
-                  type="text"
-                  id="username"
-                  {...register('username', { required: '사용자명은 필수입니다' })}
-                  disabled={!isEditing}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-                />
-                {errors.username && (
-                  <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
-                )}
-              </div>
-
               {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
