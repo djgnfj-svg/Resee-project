@@ -73,25 +73,6 @@ const RegisterPage: React.FC = () => {
           )}
           
           <div>
-            <label htmlFor="username" className="block text-sm font-medium leading-6 text-gray-900">
-              사용자명
-            </label>
-            <div className="mt-2">
-              <input
-                {...register('username', { 
-                  required: '사용자명을 입력해주세요.',
-                  minLength: { value: 3, message: '사용자명은 최소 3자 이상이어야 합니다.' }
-                })}
-                type="text"
-                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
-              />
-              {errors.username && (
-                <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div>
             <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">
               이메일
             </label>

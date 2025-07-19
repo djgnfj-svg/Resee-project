@@ -34,7 +34,6 @@ const customRender = (
 // Mock user data for testing
 export const mockUser = {
   id: 1,
-  username: 'testuser',
   email: 'test@example.com',
   first_name: 'Test',
   last_name: 'User',

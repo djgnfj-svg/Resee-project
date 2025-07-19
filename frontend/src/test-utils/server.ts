@@ -7,7 +7,6 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 // Mock data
 const mockUser = {
   id: 1,
-  username: 'testuser',
   email: 'test@example.com',
   first_name: 'Test',
   last_name: 'User',
@@ -98,7 +97,6 @@ export const handlers = [
       ctx.status(201),
       ctx.json({
         id: 2,
-        username: 'newuser',
         email: 'new@example.com',
         first_name: 'New',
         last_name: 'User',

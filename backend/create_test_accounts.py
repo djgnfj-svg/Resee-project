@@ -27,7 +27,6 @@ def create_test_accounts():
     
     test_accounts = [
         {
-            'username': 'admin',
             'email': 'admin@resee.com',
             'password': 'admin123!',
             'first_name': '관리자',
@@ -36,7 +35,6 @@ def create_test_accounts():
             'is_staff': True
         },
         {
-            'username': 'testuser',
             'email': 'test@resee.com',
             'password': 'test123!',
             'first_name': '테스트',
@@ -45,7 +43,6 @@ def create_test_accounts():
             'is_staff': False
         },
         {
-            'username': 'demo',
             'email': 'demo@resee.com',
             'password': 'demo123!',
             'first_name': '데모',
@@ -58,18 +55,13 @@ def create_test_accounts():
     created_users = []
     
     for account_data in test_accounts:
-        username = account_data['username']
+        email = account_data['email']
         
         # Check if user already exists
-        if User.objects.filter(username=username).exists():
-            print(f"⚠️  사용자 '{username}'이 이미 존재합니다. 건너뜁니다.")
-            user = User.objects.get(username=username)
+        if User.objects.filter(email=email).exists():
+            print(f"⚠️  사용자 '{email}'이 이미 존재합니다. 건너뜁니다.")
+            user = User.objects.get(email=email)
             created_users.append(user)
-            continue
-        
-        # Check if email already exists
-        if User.objects.filter(email=account_data['email']).exists():
-            print(f"⚠️  이메일 '{account_data['email']}'이 이미 사용 중입니다. 건너뜁니다.")
             continue
         
         try:
@@ -79,7 +71,6 @@ def create_test_accounts():
             
             if user_data.get('is_superuser'):
                 user = User.objects.create_superuser(
-                    username=user_data['username'],
                     email=user_data['email'],
                     password=password,
                     first_name=user_data.get('first_name', ''),
@@ -87,7 +78,6 @@ def create_test_accounts():
                 )
             else:
                 user = User.objects.create_user(
-                    username=user_data['username'],
                     email=user_data['email'],
                     password=password,
                     first_name=user_data.get('first_name', ''),
@@ -96,10 +86,10 @@ def create_test_accounts():
                 )
             
             created_users.append(user)
-            print(f"✅ 사용자 '{username}' 생성 완료")
+            print(f"✅ 사용자 '{email}' 생성 완료")
             
         except Exception as e:
-            print(f"❌ 사용자 '{username}' 생성 실패: {str(e)}")
+            print(f"❌ 사용자 '{email}' 생성 실패: {str(e)}")
     
     return created_users
 
@@ -109,7 +99,7 @@ def create_sample_content():
     print("\n📚 샘플 콘텐츠 생성을 시작합니다...")
     
     # Get test users (exclude admin)
-    test_users = User.objects.filter(username__in=['testuser', 'demo'])
+    test_users = User.objects.filter(email__in=['test@resee.com', 'demo@resee.com'])
     
     if not test_users.exists():
         print("⚠️  테스트 사용자가 없습니다. 샘플 콘텐츠를 생성하지 않습니다.")
@@ -279,7 +269,7 @@ while condition:
     ]
     
     for user in test_users:
-        print(f"\n👤 사용자 '{user.username}'의 샘플 콘텐츠 생성 중...")
+        print(f"\n👤 사용자 '{user.email}'의 샘플 콘텐츠 생성 중...")
         
         for content_data in sample_contents:
             # Get category
@@ -341,19 +331,16 @@ def main():
         print("\n📋 생성된 테스트 계정:")
         print("-" * 40)
         print("관리자 계정:")
-        print("  사용자명: admin")
-        print("  비밀번호: admin123!")
         print("  이메일: admin@resee.com")
+        print("  비밀번호: admin123!")
         print()
         print("일반 사용자 계정:")
-        print("  사용자명: testuser")
-        print("  비밀번호: test123!")
         print("  이메일: test@resee.com")
+        print("  비밀번호: test123!")
         print()
         print("데모 계정:")
-        print("  사용자명: demo")
-        print("  비밀번호: demo123!")
         print("  이메일: demo@resee.com")
+        print("  비밀번호: demo123!")
         print()
         print("🌐 로그인 페이지: http://localhost:3000/login")
         print("🔧 관리자 페이지: http://localhost:8000/admin")
