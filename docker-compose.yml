@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: resee_db
       POSTGRES_USER: resee_user
-      POSTGRES_PASSWORD: resee_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-resee_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -21,7 +21,7 @@ services:
     image: rabbitmq:3-management
     environment:
       RABBITMQ_DEFAULT_USER: resee
-      RABBITMQ_DEFAULT_PASS: resee_password
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-resee_password}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -56,12 +56,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
-      - CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
+      - DATABASE_URL=${DATABASE_URL:-postgresql://resee_user:resee_password@db:5432/resee_db}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://resee:resee_password@rabbitmq:5672//}
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - DEBUG=True
-      - SECRET_KEY=your-secret-key-for-development
-      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-for-development}
+      - ALLOWED_HOSTS=*
     depends_on:
       db:
         condition: service_healthy
@@ -76,8 +76,8 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
-      - CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
+      - DATABASE_URL=${DATABASE_URL:-postgresql://resee_user:resee_password@db:5432/resee_db}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://resee:resee_password@rabbitmq:5672//}
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - db
@@ -93,8 +93,8 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
-      - CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
+      - DATABASE_URL=${DATABASE_URL:-postgresql://resee_user:resee_password@db:5432/resee_db}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-amqp://resee:resee_password@rabbitmq:5672//}
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - db
@@ -113,7 +113,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:8000/api
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000/api}
     depends_on:
       - backend
 

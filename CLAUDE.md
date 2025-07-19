@@ -2,34 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Developer Role & Expertise
-I am a Senior Full-Stack Web Developer with 8+ years of experience in building scalable, high-performance web applications. I have deep expertise in modern development practices, architectural patterns, and leading development teams.
-
-### Development Approach
-- **Test-Driven Development (TDD)** - Write tests first, then implement features
-- **Clean Code Principles** - SOLID, DRY, KISS principles
-- **Performance First** - Optimize for speed and scalability
-- **Security by Design** - Implement security best practices from the start
-- **Comprehensive Documentation** - Clear code documentation and architecture decisions
-
-### Technical Standards
-- **Code Coverage**: 90%+ unit test coverage
-- **Type Safety**: Full TypeScript typing, Django type hints
-- **Code Quality**: ESLint, Prettier, Black, isort, flake8
-- **Performance Monitoring**: Application metrics and monitoring
-- **Security**: OWASP Top 10 compliance, regular dependency updates
-
-### Response Format for Development Tasks
-When implementing features, I will provide:
-1. **Architecture Overview** - System design and technical approach
-2. **Implementation Strategy** - Step-by-step development plan with TDD
-3. **Code Examples** - Production-ready code with tests
-4. **Testing Strategy** - Unit, integration, and E2E test plans
-5. **Deployment & DevOps** - CI/CD and infrastructure considerations
-
 ## Project Overview
 
 **Resee** is a scientific review platform implementing spaced repetition learning based on the Ebbinghaus forgetting curve. It consists of a Django REST API backend with PostgreSQL/Redis/RabbitMQ and a React TypeScript frontend using Tiptap editor.
+
+### v0.3.1 이메일 인증 시스템 완성 (2025-07-19)
+- **✅ 이메일 전용 로그인 시스템**: username 필드 완전 제거, 이메일만으로 인증
+- **✅ 개발 환경 단순화**: 복잡한 설정 파일들 제거, docker-compose 중심으로 간소화
+- **✅ SSL/HTTP 유연한 지원**: 개발환경에서 HTTP, 프로덕션에서 SSL 선택적 활성화
+- **✅ Celery 서비스 안정화**: 백그라운드 작업 및 스케줄링 완전 동작
+- **✅ 프론트엔드 타입 안전성**: TypeScript 컴파일 오류 완전 해결
+- **✅ 코드 정리 및 최적화**: 불필요한 파일 제거, 환경 변수 정리 완료
 
 ### v0.3 배포 준비 완료 (2025-07-18)
 - **✅ 프론트엔드 빌드 오류 수정**: BlockNote 의존성 문제 해결, 커스텀 마크다운 에디터로 교체
@@ -49,7 +32,7 @@ When implementing features, I will provide:
 
 ## Development Commands
 
-### Docker Environment
+### Docker Environment (Development)
 ```bash
 # Start all services
 docker-compose up -d
@@ -63,6 +46,29 @@ docker-compose build
 # View logs
 docker-compose logs -f backend
 docker-compose logs -f frontend
+```
+
+### Production Deployment
+```bash
+# Prepare environment
+cp .env.production .env
+# Edit .env with actual production values
+
+# Deploy with automated script
+chmod +x deploy/deploy.sh
+./deploy/deploy.sh production
+
+# Manual deployment
+docker-compose -f docker-compose.prod.yml build --no-cache
+docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.prod.yml exec backend python manage.py migrate
+docker-compose -f docker-compose.prod.yml exec backend python manage.py collectstatic --noinput
+
+# Production management
+docker-compose -f docker-compose.prod.yml ps
+docker-compose -f docker-compose.prod.yml logs -f [service]
+docker-compose -f docker-compose.prod.yml restart [service]
+docker-compose -f docker-compose.prod.yml down
 ```
 
 ### Backend (Django)
@@ -347,6 +353,19 @@ REACT_APP_API_URL=http://localhost:8000/api
 docker-compose exec -T backend python create_test_accounts.py
 ```
 
+## Security Considerations
+
+### Production Deployment Checklist
+- **Environment Variables**: Never commit `.env` file - use `.env.example` as template
+- **Secret Key**: Generate with `openssl rand -base64 32` or Django's `get_random_secret_key()`
+- **DEBUG**: Must be `False` in production
+- **ALLOWED_HOSTS**: Configure with actual domain names
+- **Database**: Use strong passwords and SSL connections
+- **CORS**: Restrict to specific origins in production
+- **HTTPS**: Always use SSL/TLS in production
+
+See `README_SECURITY.md` for detailed security setup instructions.
+
 ## Korean Localization
 - Default timezone: Asia/Seoul
 - Korean language support in documentation
@@ -505,9 +524,60 @@ docker-compose exec backend python manage.py shell
 >>> send_daily_review_notifications.delay()
 ```
 
-## Quick Reference - Review Interface Keyboard Shortcuts
+## Quick Reference
+
+### Review Interface Keyboard Shortcuts
 - **Space** or **Enter**: Show answer
 - **1**: Forgot (review again tomorrow)
 - **2**: Partial (review at same interval)
 - **3**: Remembered (advance to next interval)
 - **→** or **N**: Next review item
+
+### Common Development Tasks
+
+#### Running a single test
+```bash
+# Backend - specific test class or method
+docker-compose exec backend python manage.py test content.tests.ContentModelTest.test_create_content
+docker-compose exec backend pytest backend/content/tests/test_models.py::ContentModelTest::test_create_content
+
+# Frontend - specific test file
+docker-compose exec frontend npm test -- content.test.tsx --watchAll=false
+```
+
+#### Checking code quality before commit
+```bash
+# Backend
+docker-compose exec backend black . --check
+docker-compose exec backend flake8
+docker-compose exec backend python manage.py test
+
+# Frontend  
+docker-compose exec frontend npm run lint
+docker-compose exec frontend npx tsc --noEmit
+docker-compose exec frontend npm test -- --watchAll=false
+```
+
+#### Creating a new Django app
+```bash
+docker-compose exec backend python manage.py startapp app_name
+# Then add to INSTALLED_APPS in resee/settings.py
+```
+
+#### Updating dependencies
+```bash
+# Backend
+docker-compose exec backend pip install package_name
+docker-compose exec backend pip freeze > requirements.txt
+
+# Frontend
+docker-compose exec frontend npm install package_name
+# package.json is automatically updated
+```
+
+### Performance Optimization Tips
+- Use `select_related()` and `prefetch_related()` for Django ORM queries
+- Implement pagination for list endpoints (already set in DRF settings)
+- Use React.memo() for expensive component re-renders
+- Leverage React Query's caching for API responses
+- Monitor Celery task performance with Flower
