@@ -53,3 +53,4 @@ __pycache__/
 
 # MCP Configuration
 .mcp.json
+.env.production
