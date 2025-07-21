@@ -24,10 +24,21 @@ const LoginPage: React.FC = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       // Use userMessage from API interceptor if available
-      const errorMessage = err.userMessage || 
-                          err.response?.data?.detail || 
-                          err.response?.data?.message ||
-                          '로그인에 실패했습니다.';
+      let errorMessage = err.userMessage;
+      
+      if (!errorMessage) {
+        // Fallback error handling in case interceptor didn't process it
+        if (err.response?.data?.non_field_errors && Array.isArray(err.response.data.non_field_errors)) {
+          errorMessage = err.response.data.non_field_errors[0];
+        } else if (err.response?.data?.detail) {
+          errorMessage = err.response.data.detail;
+        } else if (err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        } else {
+          errorMessage = '로그인에 실패했습니다.';
+        }
+      }
+      
       setError(errorMessage);
     } finally {
       setIsLoading(false);

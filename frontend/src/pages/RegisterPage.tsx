@@ -25,32 +25,50 @@ const RegisterPage: React.FC = () => {
     } catch (err: any) {
       console.error('회원가입 에러:', err.response?.data);
       
-      // 새로운 에러 응답 형식 처리
-      if (err.response?.data?.field_errors) {
-        setFieldErrors(err.response.data.field_errors);
-        setError(err.response.data.error || '입력 정보를 확인해주세요.');
-      } 
-      // 기존 에러 응답 형식 처리
-      else if (err.response?.data) {
-        const errorData = err.response.data;
-        
-        // 필드별 에러 메시지 추출
-        const extractedErrors: Record<string, string[]> = {};
-        Object.keys(errorData).forEach(field => {
-          if (Array.isArray(errorData[field])) {
-            extractedErrors[field] = errorData[field];
-          } else if (typeof errorData[field] === 'string') {
-            extractedErrors[field] = [errorData[field]];
+      // Use userMessage from API interceptor if available
+      let errorMessage = err.userMessage;
+      
+      if (!errorMessage) {
+        // Fallback error handling in case interceptor didn't process it
+        if (err.response?.data?.non_field_errors && Array.isArray(err.response.data.non_field_errors)) {
+          errorMessage = err.response.data.non_field_errors[0];
+        } else if (err.response?.data?.detail) {
+          errorMessage = err.response.data.detail;
+        } else if (err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response?.data?.field_errors) {
+          setFieldErrors(err.response.data.field_errors);
+          errorMessage = err.response.data.error || '입력 정보를 확인해주세요.';
+        } else if (err.response?.data) {
+          // Handle field-specific errors from Django REST framework
+          const errorData = err.response.data;
+          const extractedErrors: Record<string, string[]> = {};
+          let hasFieldErrors = false;
+          
+          Object.keys(errorData).forEach(field => {
+            if (Array.isArray(errorData[field])) {
+              extractedErrors[field] = errorData[field];
+              hasFieldErrors = true;
+            } else if (typeof errorData[field] === 'string') {
+              extractedErrors[field] = [errorData[field]];
+              hasFieldErrors = true;
+            }
+          });
+          
+          if (hasFieldErrors) {
+            setFieldErrors(extractedErrors);
+            // Show the first field error as main error
+            const firstField = Object.keys(extractedErrors)[0];
+            errorMessage = extractedErrors[firstField][0];
+          } else {
+            errorMessage = '회원가입에 실패했습니다.';
           }
-        });
-        
-        setFieldErrors(extractedErrors);
-        setError(errorData.detail || errorData.error || '회원가입에 실패했습니다.');
-      } 
-      // 네트워크 에러 등
-      else {
-        setError('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+        } else {
+          errorMessage = '네트워크 오류가 발생했습니다. 다시 시도해주세요.';
+        }
       }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
