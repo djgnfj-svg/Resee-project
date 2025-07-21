@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   ScatterChart,
   Scatter,
-  TreeMap
+  Treemap
 } from 'recharts';
 import { 
   BookOpenIcon,
@@ -297,7 +297,7 @@ const AdvancedCategoryAnalysis: React.FC<AdvancedCategoryAnalysisProps> = ({ dat
         </h3>
         <div className="h-96">
           <ResponsiveContainer width="100%" height="100%">
-            <TreeMap
+            <Treemap
               data={treemapData}
               dataKey="size"
               aspectRatio={4/3}

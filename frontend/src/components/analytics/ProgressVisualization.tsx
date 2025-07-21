@@ -19,8 +19,8 @@ import {
   RadialBar
 } from 'recharts';
 import { 
-  TrendingUpIcon, 
-  TrendingDownIcon, 
+  ArrowArrowTrendingUpIcon, 
+  ArrowArrowTrendingDownIcon, 
   MinusIcon,
   FireIcon,
   AcademicCapIcon,
@@ -177,9 +177,9 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
                 : 'bg-gray-100 dark:bg-gray-700'
             }`}>
               {performanceInsights.trend === 'up' ? (
-                <TrendingUpIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
+                <ArrowTrendingUpIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
               ) : performanceInsights.trend === 'down' ? (
-                <TrendingDownIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
+                <ArrowTrendingDownIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
               ) : (
                 <MinusIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
               )}
