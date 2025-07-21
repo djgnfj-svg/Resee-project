@@ -9,6 +9,8 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  showWelcome: boolean;
+  setShowWelcome: (show: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +30,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const isAuthenticated = !!user;
 
@@ -74,6 +77,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await authAPI.register(data);
     // After registration, automatically log in
     await login({ email: data.email, password: data.password });
+    // Show welcome modal for new users
+    setShowWelcome(true);
   };
 
   const logout = () => {
@@ -89,6 +94,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     isAuthenticated,
+    showWelcome,
+    setShowWelcome,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -13,6 +13,7 @@ from accounts.views import EmailTokenObtainPairView
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from .health import health_check, detailed_health_check, readiness_check, liveness_check
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -46,6 +47,12 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # Health checks
+    path('api/health/', health_check, name='health'),
+    path('api/health/detailed/', detailed_health_check, name='detailed_health'),
+    path('api/health/ready/', readiness_check, name='readiness'),
+    path('api/health/live/', liveness_check, name='liveness'),
     
     # API Documentation
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

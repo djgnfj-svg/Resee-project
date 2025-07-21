@@ -1,10 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Count, Q, Avg
+from django.db.models import Count, Q, Avg, F, Case, When, IntegerField
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 from review.models import ReviewHistory, ReviewSchedule
 from review.utils import calculate_success_rate, get_today_reviews_count, get_pending_reviews_count
+from content.models import Content, Category
+from collections import defaultdict
 
 
 class DashboardView(APIView):
@@ -249,3 +251,407 @@ class ReviewStatsView(APIView):
             'current_success_rate': round(current_success_rate, 1),
             'previous_success_rate': round(previous_success_rate, 1),
         }
+
+
+class AdvancedAnalyticsView(APIView):
+    """고급 학습 분석 데이터 제공"""
+    
+    def get(self, request):
+        """종합적인 학습 분석 데이터 반환"""
+        user = request.user
+        
+        return Response({
+            'learning_insights': self._get_learning_insights(user),
+            'category_performance': self._get_category_performance(user),
+            'study_patterns': self._get_study_patterns(user),
+            'achievement_stats': self._get_achievement_stats(user),
+            'recommendations': self._get_recommendations(user),
+        })
+    
+    def _get_learning_insights(self, user):
+        """학습 인사이트 데이터"""
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        seven_days_ago = timezone.now() - timedelta(days=7)
+        
+        # 전체 통계
+        total_content = user.contents.count()
+        total_reviews = ReviewHistory.objects.filter(user=user).count()
+        
+        # 최근 30일 활동
+        recent_reviews = ReviewHistory.objects.filter(
+            user=user,
+            review_date__gte=thirty_days_ago
+        )
+        
+        # 최근 7일 활동
+        week_reviews = ReviewHistory.objects.filter(
+            user=user,
+            review_date__gte=seven_days_ago
+        )
+        
+        # 성공률 계산
+        recent_success_rate = (
+            recent_reviews.filter(result='remembered').count() / 
+            recent_reviews.count() * 100
+        ) if recent_reviews.count() > 0 else 0
+        
+        week_success_rate = (
+            week_reviews.filter(result='remembered').count() / 
+            week_reviews.count() * 100
+        ) if week_reviews.count() > 0 else 0
+        
+        # 평균 복습 간격 계산
+        avg_interval = self._calculate_average_interval(user)
+        
+        return {
+            'total_content': total_content,
+            'total_reviews': total_reviews,
+            'recent_30d_reviews': recent_reviews.count(),
+            'recent_7d_reviews': week_reviews.count(),
+            'recent_success_rate': round(recent_success_rate, 1),
+            'week_success_rate': round(week_success_rate, 1),
+            'average_interval_days': avg_interval,
+            'streak_days': self._calculate_detailed_streak(user),
+        }
+    
+    def _get_category_performance(self, user):
+        """카테고리별 성과 분석"""
+        categories = Category.objects.filter(user=user)
+        category_stats = []
+        
+        for category in categories:
+            # 카테고리별 콘텐츠 및 리뷰 통계
+            content_count = Content.objects.filter(category=category).count()
+            
+            # 카테고리 콘텐츠의 모든 리뷰
+            category_reviews = ReviewHistory.objects.filter(
+                content__category=category
+            )
+            
+            if category_reviews.exists():
+                total_reviews = category_reviews.count()
+                remembered_count = category_reviews.filter(result='remembered').count()
+                success_rate = (remembered_count / total_reviews * 100)
+                
+                # 최근 30일 성과
+                recent_reviews = category_reviews.filter(
+                    review_date__gte=timezone.now() - timedelta(days=30)
+                )
+                recent_success_rate = (
+                    recent_reviews.filter(result='remembered').count() / 
+                    recent_reviews.count() * 100
+                ) if recent_reviews.count() > 0 else 0
+                
+                # 난이도 계산 (실패율 기반)
+                difficulty = 100 - success_rate
+                
+                category_stats.append({
+                    'id': category.id,
+                    'name': category.name,
+                    'slug': category.slug,
+                    'content_count': content_count,
+                    'total_reviews': total_reviews,
+                    'success_rate': round(success_rate, 1),
+                    'recent_success_rate': round(recent_success_rate, 1),
+                    'difficulty_level': round(difficulty, 1),
+                    'mastery_level': self._calculate_mastery_level(success_rate),
+                })
+        
+        return sorted(category_stats, key=lambda x: x['success_rate'], reverse=True)
+    
+    def _get_study_patterns(self, user):
+        """학습 패턴 분석"""
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        
+        # 시간대별 학습 패턴
+        hourly_pattern = defaultdict(int)
+        reviews = ReviewHistory.objects.filter(
+            user=user,
+            review_date__gte=thirty_days_ago
+        )
+        
+        for review in reviews:
+            hour = review.review_date.hour
+            hourly_pattern[hour] += 1
+        
+        # 요일별 학습 패턴
+        daily_pattern = defaultdict(int)
+        for review in reviews:
+            weekday = review.review_date.weekday()  # 0=Monday, 6=Sunday
+            daily_pattern[weekday] += 1
+        
+        # 패턴 데이터 정리
+        hourly_data = [
+            {'hour': hour, 'count': hourly_pattern[hour]}
+            for hour in range(24)
+        ]
+        
+        daily_labels = ['월', '화', '수', '목', '금', '토', '일']
+        daily_data = [
+            {'day': daily_labels[day], 'count': daily_pattern[day]}
+            for day in range(7)
+        ]
+        
+        # 최적 학습 시간 추천
+        best_hour = max(hourly_pattern.items(), key=lambda x: x[1])[0] if hourly_pattern else 9
+        best_day = max(daily_pattern.items(), key=lambda x: x[1])[0] if daily_pattern else 0
+        
+        return {
+            'hourly_pattern': hourly_data,
+            'daily_pattern': daily_data,
+            'recommended_hour': best_hour,
+            'recommended_day': daily_labels[best_day],
+            'total_study_sessions': len(reviews),
+        }
+    
+    def _get_achievement_stats(self, user):
+        """성취 통계"""
+        # 연속 학습일 계산
+        current_streak = self._calculate_detailed_streak(user)
+        max_streak = self._calculate_max_streak(user)
+        
+        # 완벽한 복습 세션 (모두 기억함)
+        perfect_sessions = self._count_perfect_sessions(user)
+        
+        # 카테고리 마스터리 (성공률 90% 이상)
+        mastered_categories = self._count_mastered_categories(user)
+        
+        # 월간 목표 달성률
+        monthly_target = 100  # 기본 목표: 월 100회 복습
+        current_month_reviews = ReviewHistory.objects.filter(
+            user=user,
+            review_date__month=timezone.now().month,
+            review_date__year=timezone.now().year
+        ).count()
+        
+        monthly_progress = min(100, (current_month_reviews / monthly_target * 100))
+        
+        return {
+            'current_streak': current_streak,
+            'max_streak': max_streak,
+            'perfect_sessions': perfect_sessions,
+            'mastered_categories': mastered_categories,
+            'monthly_progress': round(monthly_progress, 1),
+            'monthly_target': monthly_target,
+            'monthly_completed': current_month_reviews,
+        }
+    
+    def _get_recommendations(self, user):
+        """개인화된 학습 추천"""
+        recommendations = []
+        
+        # 카테고리별 성과 분석
+        category_performance = self._get_category_performance(user)
+        
+        # 약한 카테고리 추천
+        weak_categories = [cat for cat in category_performance if cat['success_rate'] < 70]
+        if weak_categories:
+            recommendations.append({
+                'type': 'weak_category',
+                'title': '집중 학습 필요',
+                'message': f"{weak_categories[0]['name']} 카테고리의 복습이 필요해 보여요.",
+                'action': 'review_category',
+                'category_id': weak_categories[0]['id'],
+            })
+        
+        # 학습 패턴 기반 추천
+        study_patterns = self._get_study_patterns(user)
+        if study_patterns['total_study_sessions'] > 0:
+            recommendations.append({
+                'type': 'optimal_time',
+                'title': '최적 학습 시간',
+                'message': f"{study_patterns['recommended_hour']}시경이 가장 활발한 학습 시간대예요.",
+                'action': 'schedule_reminder',
+                'hour': study_patterns['recommended_hour'],
+            })
+        
+        # 연속 학습일 격려
+        achievement_stats = self._get_achievement_stats(user)
+        if achievement_stats['current_streak'] >= 7:
+            recommendations.append({
+                'type': 'streak_celebration',
+                'title': '연속 학습 달성!',
+                'message': f"{achievement_stats['current_streak']}일 연속 학습 중이에요. 대단해요! 🎉",
+                'action': 'continue_streak',
+            })
+        
+        return recommendations
+    
+    def _calculate_average_interval(self, user):
+        """평균 복습 간격 계산"""
+        schedules = ReviewSchedule.objects.filter(user=user, interval__isnull=False)
+        if schedules.exists():
+            total_interval = sum(schedule.interval for schedule in schedules)
+            return round(total_interval / schedules.count(), 1)
+        return 0
+    
+    def _calculate_detailed_streak(self, user):
+        """상세한 연속 학습일 계산"""
+        today = timezone.now().date()
+        streak = 0
+        
+        for i in range(365):  # 최대 1년
+            check_date = today - timedelta(days=i)
+            has_review = ReviewHistory.objects.filter(
+                user=user,
+                review_date__date=check_date
+            ).exists()
+            
+            if has_review:
+                streak += 1
+            else:
+                break
+        
+        return streak
+    
+    def _calculate_max_streak(self, user):
+        """최대 연속 학습일 계산"""
+        reviews = ReviewHistory.objects.filter(user=user).order_by('review_date')
+        if not reviews.exists():
+            return 0
+        
+        max_streak = 0
+        current_streak = 1
+        prev_date = reviews.first().review_date.date()
+        
+        for review in reviews[1:]:
+            current_date = review.review_date.date()
+            if (current_date - prev_date).days == 1:
+                current_streak += 1
+            else:
+                max_streak = max(max_streak, current_streak)
+                current_streak = 1
+            prev_date = current_date
+        
+        return max(max_streak, current_streak)
+    
+    def _count_perfect_sessions(self, user):
+        """완벽한 복습 세션 수 계산"""
+        # 하루 단위로 모든 복습이 'remembered'인 날을 계산
+        thirty_days_ago = timezone.now().date() - timedelta(days=30)
+        perfect_days = 0
+        
+        for i in range(30):
+            check_date = thirty_days_ago + timedelta(days=i)
+            day_reviews = ReviewHistory.objects.filter(
+                user=user,
+                review_date__date=check_date
+            )
+            
+            if day_reviews.exists():
+                total_count = day_reviews.count()
+                remembered_count = day_reviews.filter(result='remembered').count()
+                
+                if total_count == remembered_count:
+                    perfect_days += 1
+        
+        return perfect_days
+    
+    def _count_mastered_categories(self, user):
+        """마스터한 카테고리 수 (성공률 90% 이상)"""
+        category_performance = self._get_category_performance(user)
+        return len([cat for cat in category_performance if cat['success_rate'] >= 90])
+    
+    def _calculate_mastery_level(self, success_rate):
+        """마스터리 레벨 계산"""
+        if success_rate >= 90:
+            return 'expert'
+        elif success_rate >= 75:
+            return 'advanced'
+        elif success_rate >= 60:
+            return 'intermediate'
+        elif success_rate >= 40:
+            return 'beginner'
+        else:
+            return 'novice'
+
+
+class LearningCalendarView(APIView):
+    """학습 캘린더 및 히트맵 데이터"""
+    
+    def get(self, request):
+        """캘린더 히트맵 데이터 반환"""
+        user = request.user
+        
+        # 지난 365일 데이터
+        one_year_ago = timezone.now().date() - timedelta(days=365)
+        calendar_data = []
+        
+        for i in range(365):
+            date = one_year_ago + timedelta(days=i)
+            
+            # 해당 날짜의 복습 데이터
+            day_reviews = ReviewHistory.objects.filter(
+                user=user,
+                review_date__date=date
+            )
+            
+            total_reviews = day_reviews.count()
+            remembered_count = day_reviews.filter(result='remembered').count()
+            success_rate = (remembered_count / total_reviews * 100) if total_reviews > 0 else 0
+            
+            # 강도 계산 (0-4 레벨)
+            intensity = 0
+            if total_reviews > 0:
+                if total_reviews >= 20:
+                    intensity = 4
+                elif total_reviews >= 15:
+                    intensity = 3
+                elif total_reviews >= 10:
+                    intensity = 2
+                else:
+                    intensity = 1
+            
+            calendar_data.append({
+                'date': date.isoformat(),
+                'count': total_reviews,
+                'success_rate': round(success_rate, 1),
+                'intensity': intensity,
+                'remembered': remembered_count,
+                'partial': day_reviews.filter(result='partial').count(),
+                'forgot': day_reviews.filter(result='forgot').count(),
+            })
+        
+        # 월별 요약 통계
+        monthly_summary = self._get_monthly_summary(user, calendar_data)
+        
+        return Response({
+            'calendar_data': calendar_data,
+            'monthly_summary': monthly_summary,
+            'total_active_days': len([d for d in calendar_data if d['count'] > 0]),
+            'best_day': max(calendar_data, key=lambda x: x['count']) if calendar_data else None,
+        })
+    
+    def _get_monthly_summary(self, user, calendar_data):
+        """월별 요약 통계"""
+        monthly_stats = defaultdict(lambda: {
+            'total_reviews': 0,
+            'active_days': 0,
+            'total_remembered': 0,
+        })
+        
+        for day_data in calendar_data:
+            date = datetime.fromisoformat(day_data['date']).date()
+            month_key = f"{date.year}-{date.month:02d}"
+            
+            monthly_stats[month_key]['total_reviews'] += day_data['count']
+            if day_data['count'] > 0:
+                monthly_stats[month_key]['active_days'] += 1
+            monthly_stats[month_key]['total_remembered'] += day_data['remembered']
+        
+        # 최근 12개월만 반환
+        result = []
+        for month_key in sorted(monthly_stats.keys())[-12:]:
+            stats = monthly_stats[month_key]
+            success_rate = (
+                stats['total_remembered'] / stats['total_reviews'] * 100
+            ) if stats['total_reviews'] > 0 else 0
+            
+            result.append({
+                'month': month_key,
+                'total_reviews': stats['total_reviews'],
+                'active_days': stats['active_days'],
+                'success_rate': round(success_rate, 1),
+            })
+        
+        return result

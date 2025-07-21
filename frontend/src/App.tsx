@@ -2,12 +2,15 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import EnhancedRegisterPage from './pages/EnhancedRegisterPage';
+import OnboardingPage from './pages/OnboardingPage';
 import SimpleDashboard from './pages/SimpleDashboard';
+import AdvancedDashboard from './pages/AdvancedDashboard';
 import ContentPage from './pages/ContentPage';
 import ReviewPage from './pages/ReviewPage';
 import ProfilePage from './pages/ProfilePage';
@@ -28,19 +31,29 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <Layout>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <Layout>
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/register" element={<EnhancedRegisterPage />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
               <Route 
                 path="/dashboard" 
                 element={
                   <ProtectedRoute>
                     <SimpleDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/analytics" 
+                element={
+                  <ProtectedRoute>
+                    <AdvancedDashboard />
                   </ProtectedRoute>
                 } 
               />
@@ -76,11 +89,12 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-            </Routes>
-          </Layout>
-        </Router>
-      </AuthProvider>
-    </QueryClientProvider>
+              </Routes>
+            </Layout>
+          </Router>
+        </AuthProvider>
+      </QueryClientProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

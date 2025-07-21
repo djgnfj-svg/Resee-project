@@ -37,7 +37,7 @@ const LoginPage: React.FC = () => {
   return (
     <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-        <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
+        <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900 dark:text-gray-100">
           로그인
         </h2>
       </div>
@@ -45,13 +45,13 @@ const LoginPage: React.FC = () => {
       <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
         <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-700">{error}</div>
+            <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
+              <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
             </div>
           )}
           
           <div>
-            <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">
+            <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
               이메일
             </label>
             <div className="mt-2">
@@ -65,26 +65,26 @@ const LoginPage: React.FC = () => {
                 })}
                 type="email"
                 placeholder="이메일을 입력하세요"
-                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                className="block w-full rounded-md border-0 py-1.5 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
               )}
             </div>
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium leading-6 text-gray-900">
+            <label htmlFor="password" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
               비밀번호
             </label>
             <div className="mt-2">
               <input
                 {...register('password', { required: '비밀번호를 입력해주세요.' })}
                 type="password"
-                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
+                className="block w-full rounded-md border-0 py-1.5 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-primary-600 sm:text-sm sm:leading-6"
               />
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
               )}
             </div>
           </div>
@@ -101,16 +101,16 @@ const LoginPage: React.FC = () => {
         </form>
 
         {/* Test Account Info */}
-        <div className="mt-8 rounded-md bg-blue-50 p-4">
-          <h3 className="text-sm font-medium text-blue-800 mb-2">🧪 테스트 계정</h3>
-          <div className="text-xs text-blue-700 space-y-1">
+        <div className="mt-8 rounded-md bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
+          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">🧪 테스트 계정</h3>
+          <div className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
             <div><strong>관리자:</strong> admin@resee.com / admin123!</div>
             <div><strong>일반 사용자:</strong> test@resee.com / test123!</div>
             <div><strong>데모 계정:</strong> demo@resee.com / demo123!</div>
           </div>
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
           계정이 없으신가요?{' '}
           <Link to="/register" className="font-semibold leading-6 text-primary-600 hover:text-primary-500">
             회원가입
