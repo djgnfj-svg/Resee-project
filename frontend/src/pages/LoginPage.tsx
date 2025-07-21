@@ -162,15 +162,6 @@ const LoginPage: React.FC = () => {
           </>
         )}
 
-        {/* Test Account Info */}
-        <div className="mt-8 rounded-md bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
-          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">🧪 테스트 계정</h3>
-          <div className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
-            <div><strong>관리자:</strong> admin@resee.com / admin123!</div>
-            <div><strong>일반 사용자:</strong> test@resee.com / test123!</div>
-            <div><strong>데모 계정:</strong> demo@resee.com / demo123!</div>
-          </div>
-        </div>
 
         <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
           계정이 없으신가요?{' '}

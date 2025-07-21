@@ -208,7 +208,7 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
           <CheckCircleIcon className="flex-shrink-0 w-5 h-5 text-indigo-600 dark:text-indigo-400 mt-0.5" />
           <div>
             <div className="text-sm font-medium text-indigo-900 dark:text-indigo-200 mb-1">
-              AI 기반 개인화 추천
+              지능형 개인화 추천
             </div>
             <div className="text-sm text-indigo-700 dark:text-indigo-300">
               학습 패턴과 성과를 분석하여 개인에게 최적화된 학습 방법을 추천합니다. 

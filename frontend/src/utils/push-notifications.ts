@@ -283,17 +283,4 @@ export function isNotificationSupported(): boolean {
   return 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
 }
 
-// 테스트용 알림
-export function testNotification(): void {
-  if (!isNotificationSupported()) {
-    alert('이 브라우저는 알림을 지원하지 않습니다.');
-    return;
-  }
-
-  showLocalNotification({
-    title: '🧪 테스트 알림',
-    body: 'Resee 알림이 정상적으로 작동합니다!',
-    tag: 'test',
-    data: { type: 'test' }
-  });
-}
+// Note: Test notification function removed for production

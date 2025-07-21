@@ -368,7 +368,7 @@ const AdvancedCategoryAnalysis: React.FC<AdvancedCategoryAnalysisProps> = ({ dat
           </div>
           <div className="flex-1">
             <h4 className="text-lg font-medium text-amber-900 dark:text-amber-100 mb-4">
-              🚀 AI 기반 개선 제안
+              🚀 스마트 개선 제안
             </h4>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {improvementSuggestions
