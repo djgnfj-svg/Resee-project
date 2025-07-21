@@ -6,6 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Resee** is a scientific review platform implementing spaced repetition learning based on the Ebbinghaus forgetting curve. It consists of a Django REST API backend with PostgreSQL/Redis/RabbitMQ and a React TypeScript frontend using Tiptap editor.
 
+### v0.3.2 Google OAuth 소셜 로그인 구현 (2025-07-21)
+- **✅ Google OAuth 2.0 통합**: Google Identity Services를 통한 소셜 로그인 구현
+- **✅ 백엔드 OAuth 처리**: JWT 토큰 생성 및 사용자 자동 생성 시스템
+- **✅ 프론트엔드 소셜 로그인**: Google Sign-In 버튼 및 콜백 처리
+- **✅ 환경 변수 설정**: Google APIs Console 설정 가이드 및 환경 변수 구성
+- **✅ 사용자 경험 개선**: 기존/신규 사용자 구분 및 적절한 페이지 리다이렉트
+
 ### v0.3.1 이메일 인증 시스템 완성 (2025-07-19)
 - **✅ 이메일 전용 로그인 시스템**: username 필드 완전 제거, 이메일만으로 인증
 - **✅ 개발 환경 단순화**: 복잡한 설정 파일들 제거, docker-compose 중심으로 간소화
@@ -287,12 +294,22 @@ CELERY_RESULT_BACKEND=redis://redis:6379/0
 SECRET_KEY=your-secret-key
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1,backend
+
+# Google OAuth 2.0
+GOOGLE_OAUTH2_CLIENT_ID=your-google-client-id
+GOOGLE_OAUTH2_CLIENT_SECRET=your-google-client-secret
 ```
 
 ### Frontend
 ```
 REACT_APP_API_URL=http://localhost:8000/api
+REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
 ```
+
+### Google OAuth 2.0 Setup
+1. **Google APIs Console 설정**: `docs/GOOGLE_OAUTH_SETUP.md` 가이드 참고
+2. **환경 변수 설정**: Google Client ID와 Secret을 환경 변수에 설정
+3. **테스트**: 로그인/회원가입 페이지에서 "Google로 로그인" 버튼 확인
 
 ## Service URLs (Docker Development)
 - **Frontend**: http://localhost:3000

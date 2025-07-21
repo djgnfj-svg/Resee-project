@@ -6,6 +6,7 @@ export interface User {
   timezone: string;
   notification_enabled: boolean;
   date_joined: string;
+  is_email_verified: boolean;
 }
 
 export interface LoginData {
@@ -19,6 +20,12 @@ export interface RegisterData {
   password_confirm: string;
   first_name?: string;
   last_name?: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  user: User;
+  requires_email_verification?: boolean;
 }
 
 export interface AuthTokens {

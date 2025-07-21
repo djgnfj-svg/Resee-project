@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, LoginData, RegisterData } from '../types';
+import { User, LoginData, RegisterData, RegisterResponse } from '../types';
 import { authAPI } from '../utils/api';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (data: LoginData) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  register: (data: RegisterData) => Promise<RegisterResponse>;
+  loginWithGoogle: (token: string) => Promise<any>;
   logout: () => void;
   isAuthenticated: boolean;
   showWelcome: boolean;
@@ -74,11 +75,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const register = async (data: RegisterData) => {
-    await authAPI.register(data);
-    // After registration, automatically log in
+    const response = await authAPI.register(data);
+    
+    // If email verification is required, don't auto-login
+    if (response.requires_email_verification) {
+      return response;
+    }
+    
+    // Old behavior: automatically log in for users who don't need email verification
     await login({ email: data.email, password: data.password });
     // Show welcome modal for new users
     setShowWelcome(true);
+    
+    return response;
+  };
+
+  const loginWithGoogle = async (token: string) => {
+    try {
+      const response = await authAPI.googleLogin(token);
+      
+      // JWT 토큰 저장
+      localStorage.setItem('access_token', response.access);
+      localStorage.setItem('refresh_token', response.refresh);
+      
+      // 사용자 정보 설정
+      setUser(response.user);
+      
+      // 신규 사용자인 경우 환영 모달 표시
+      if (response.is_new_user) {
+        setShowWelcome(true);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Google login failed:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
@@ -92,6 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     register,
+    loginWithGoogle,
     logout,
     isAuthenticated,
     showWelcome,

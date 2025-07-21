@@ -60,6 +60,8 @@ services:
       - DEBUG=True
       - SECRET_KEY=your-secret-key-for-development
       - ALLOWED_HOSTS=*
+      - GOOGLE_OAUTH2_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
+      - GOOGLE_OAUTH2_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET_HERE
     depends_on:
       db:
         condition: service_healthy
@@ -78,6 +80,7 @@ services:
       - "3000:3000"
     environment:
       - REACT_APP_API_URL=http://localhost/api
+      - REACT_APP_GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
 
   celery:
     build: ./backend

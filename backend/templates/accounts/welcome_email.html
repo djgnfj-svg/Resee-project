@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>환영합니다 - Resee</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+        }
+        .content {
+            padding: 40px;
+        }
+        .feature {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .feature h3 {
+            margin: 0 0 10px 0;
+            color: #4F46E5;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 30px;
+            background: #4F46E5;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .button:hover {
+            background: #4338CA;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 환영합니다!</h1>
+            <p style="font-size: 18px; margin-top: 10px;">Resee와 함께 효과적인 학습을 시작하세요</p>
+        </div>
+        <div class="content">
+            <h2>안녕하세요, {{ user.first_name|default:"" }} {{ user.last_name|default:"" }}님!</h2>
+            
+            <p>이메일 인증이 완료되었습니다. 이제 Resee의 모든 기능을 사용하실 수 있습니다.</p>
+            
+            <h3>🚀 시작하기</h3>
+            <div class="feature">
+                <h3>📝 첫 번째 콘텐츠 만들기</h3>
+                <p>학습하고 싶은 내용을 마크다운으로 작성하고 카테고리별로 정리하세요.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🧠 과학적인 복습 시스템</h3>
+                <p>에빙하우스 망각곡선을 기반으로 최적의 타이밍에 복습하여 장기 기억을 형성하세요.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>📊 학습 분석</h3>
+                <p>대시보드에서 학습 진도와 성과를 한눈에 확인하고 개선점을 찾아보세요.</p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ login_url }}" class="button">Resee 시작하기</a>
+            </div>
+            
+            <p>궁금한 점이 있으시면 언제든지 문의해주세요!</p>
+        </div>
+        <div class="footer">
+            <p>© 2025 Resee. 모든 권리 보유.</p>
+            <p>이 이메일은 자동으로 발송되었습니다.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext';
 import { RegisterData } from '../types';
 import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -27,6 +28,7 @@ const EnhancedRegisterPage: React.FC = () => {
   });
   
   const password = watch('password');
+  const passwordConfirm = watch('password_confirm');
   const email = watch('email');
   const firstName = watch('first_name');
   const lastName = watch('last_name');
@@ -37,9 +39,16 @@ const EnhancedRegisterPage: React.FC = () => {
     setFieldErrors({});
     
     try {
-      await registerUser(data);
-      // 성공 시 대시보드로 이동 (AuthContext에서 welcome modal 표시)
-      navigate('/dashboard');
+      const response = await registerUser(data);
+      
+      // Check if email verification is required
+      if (response?.requires_email_verification) {
+        // Redirect to verification pending page
+        navigate(`/verification-pending?email=${encodeURIComponent(data.email)}`);
+      } else {
+        // Old behavior for backward compatibility
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       console.error('회원가입 에러:', err.response?.data);
       
@@ -81,7 +90,12 @@ const EnhancedRegisterPage: React.FC = () => {
       case 1:
         return email && /^\S+@\S+$/i.test(email);
       case 2:
-        return password && password.length >= 8 && /[a-zA-Z]/.test(password) && /\d/.test(password);
+        return password && 
+               passwordConfirm && 
+               password.length >= 8 && 
+               /[a-zA-Z]/.test(password) && 
+               /\d/.test(password) &&
+               password === passwordConfirm;
       case 3:
         return firstName && lastName;
       default:
@@ -331,6 +345,26 @@ const EnhancedRegisterPage: React.FC = () => {
               )}
             </div>
           </form>
+          
+          {/* Social Login Divider */}
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+              </div>
+              <div className="relative flex justify-center text-sm font-medium leading-6">
+                <span className="bg-white dark:bg-gray-900 px-6 text-gray-900 dark:text-gray-100">또는</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Google Sign In */}
+          <div className="mt-6">
+            <GoogleSignInButton
+              onSuccess={() => navigate('/dashboard')}
+              onError={(error) => setError(error)}
+            />
+          </div>
         </div>
 
         {/* 로그인 링크 */}
