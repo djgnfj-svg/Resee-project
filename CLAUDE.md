@@ -48,28 +48,8 @@ docker-compose logs -f backend
 docker-compose logs -f frontend
 ```
 
-### Production Deployment
-```bash
-# Prepare environment
-cp .env.production .env
-# Edit .env with actual production values
-
-# Deploy with automated script
-chmod +x deploy/deploy.sh
-./deploy/deploy.sh production
-
-# Manual deployment
-docker-compose -f docker-compose.prod.yml build --no-cache
-docker-compose -f docker-compose.prod.yml up -d
-docker-compose -f docker-compose.prod.yml exec backend python manage.py migrate
-docker-compose -f docker-compose.prod.yml exec backend python manage.py collectstatic --noinput
-
-# Production management
-docker-compose -f docker-compose.prod.yml ps
-docker-compose -f docker-compose.prod.yml logs -f [service]
-docker-compose -f docker-compose.prod.yml restart [service]
-docker-compose -f docker-compose.prod.yml down
-```
+# Note: Production deployment configuration is not included in this repository.
+# Deployment scripts and production configurations will be added later.
 
 ### Backend (Django)
 ```bash
@@ -422,40 +402,27 @@ curl -X GET http://localhost:8000/api/content/contents/ \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-## Deployment & Production
+## Continuous Integration (CI)
 
-### Automated Deployment Script
-```bash
-# Deploy to staging or production environments
-./scripts/deploy.sh staging
-./scripts/deploy.sh production
-
-# The script includes:
-# - Health checks
-# - Automatic backups before deployment
-# - Rollback capability
-# - Zero-downtime deployment
-```
+### CI Pipeline
+- **Automated Testing**: Backend (Django + pytest) and Frontend (React + Jest) tests
+- **Code Quality**: Black, Flake8, ESLint, TypeScript compilation checks
+- **Build Testing**: Docker image build verification
+- **Coverage Reports**: Codecov integration for test coverage tracking
 
 ### Health Check Endpoints
 ```bash
 # Check backend health
 curl http://localhost:8000/api/health/
 
-# Production health check
-curl https://your-domain.com/api/health/
+# Detailed health check (includes DB, Redis, Celery status)
+curl http://localhost:8000/api/health/detailed/
 ```
 
-### CI/CD Pipeline
-- **Continuous Integration**: Runs on every push to main branch
-- **Deployment**: Triggered by version tags (e.g., v1.0.0)
-- **E2E Tests**: Automated Playwright tests on pull requests
-
-```bash
-# Trigger deployment via git tag
-git tag v1.0.0
-git push origin v1.0.0
-```
+### CI Workflow Triggers
+- **Push to main/develop**: Full CI pipeline runs
+- **Pull Requests**: All checks must pass before merge
+- **Manual Testing**: E2E tests with Playwright (separate workflow)
 
 ## Debugging & Troubleshooting
 
