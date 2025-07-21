@@ -213,7 +213,7 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
                   y={80} 
                   stroke="#f59e0b" 
                   strokeDasharray="3 3"
-                  label={{ value: "목표선 (80%)", position: "topLeft" }}
+                  label={{ value: "목표선 (80%)", position: "top" }}
                 />
               </LineChart>
             </ResponsiveContainer>
