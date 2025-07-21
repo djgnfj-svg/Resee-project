@@ -1,0 +1,113 @@
+import React, { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
+
+interface GoogleSignInButtonProps {
+  onSuccess?: () => void;
+  onError?: (error: string) => void;
+}
+
+const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
+  onSuccess,
+  onError,
+}) => {
+  const buttonRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const { loginWithGoogle } = useAuth();
+
+  useEffect(() => {
+    // Google Sign-In script가 이미 로드되어 있는지 확인
+    if (window.google) {
+      initializeGoogleSignIn();
+    } else {
+      // Google Sign-In script 동적 로드
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = initializeGoogleSignIn;
+      document.head.appendChild(script);
+
+      return () => {
+        document.head.removeChild(script);
+      };
+    }
+  }, []);
+
+  const initializeGoogleSignIn = () => {
+    if (!window.google || !buttonRef.current) return;
+
+    const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      console.error('REACT_APP_GOOGLE_CLIENT_ID가 설정되지 않았습니다.');
+      onError?.('Google 로그인 설정이 완료되지 않았습니다.');
+      return;
+    }
+
+    // Google Sign-In 초기화
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleCredentialResponse,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+
+    // 버튼 렌더링
+    window.google.accounts.id.renderButton(buttonRef.current, {
+      theme: 'outline',
+      size: 'large',
+      width: '100%',
+      text: 'signin_with',
+      logo_alignment: 'left',
+    });
+  };
+
+  const handleCredentialResponse = async (response: any) => {
+    try {
+      const { credential } = response;
+      
+      if (!credential) {
+        throw new Error('Google 인증 정보를 받지 못했습니다.');
+      }
+
+      // 백엔드 API 호출
+      const result = await loginWithGoogle(credential);
+      
+      console.log('Google 로그인 성공:', result);
+      
+      if (result.is_new_user) {
+        // 신규 사용자인 경우 온보딩 페이지로
+        navigate('/onboarding');
+      } else {
+        // 기존 사용자는 대시보드로
+        navigate('/dashboard');
+      }
+      
+      onSuccess?.();
+      
+    } catch (error: any) {
+      console.error('Google 로그인 실패:', error);
+      const errorMessage = error.response?.data?.error || error.message || 'Google 로그인에 실패했습니다.';
+      onError?.(errorMessage);
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <div ref={buttonRef} className="w-full flex justify-center"></div>
+      <noscript>
+        <div className="text-center text-red-600">
+          Google 로그인을 사용하려면 JavaScript를 활성화해주세요.
+        </div>
+      </noscript>
+    </div>
+  );
+};
+
+export default GoogleSignInButton;

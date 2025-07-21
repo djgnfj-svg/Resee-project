@@ -8,6 +8,8 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import EnhancedRegisterPage from './pages/EnhancedRegisterPage';
+import EmailVerificationPage from './pages/EmailVerificationPage';
+import VerificationPendingPage from './pages/VerificationPendingPage';
 import OnboardingPage from './pages/OnboardingPage';
 import SimpleDashboard from './pages/SimpleDashboard';
 import AdvancedDashboard from './pages/AdvancedDashboard';
@@ -40,6 +42,8 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<EnhancedRegisterPage />} />
+              <Route path="/verify-email" element={<EmailVerificationPage />} />
+              <Route path="/verification-pending" element={<VerificationPendingPage />} />
               <Route path="/onboarding" element={<OnboardingPage />} />
               <Route 
                 path="/dashboard" 

@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext';
 import { LoginData } from '../types';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -10,6 +11,8 @@ const LoginPage: React.FC = () => {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showEmailVerificationLink, setShowEmailVerificationLink] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginData>();
 
@@ -18,6 +21,7 @@ const LoginPage: React.FC = () => {
   const onSubmit = async (data: LoginData) => {
     setIsLoading(true);
     setError('');
+    setShowEmailVerificationLink(false);
     
     try {
       await login(data);
@@ -39,10 +43,20 @@ const LoginPage: React.FC = () => {
         }
       }
       
+      // Check if the error is related to email verification
+      if (errorMessage.includes('이메일 인증')) {
+        setShowEmailVerificationLink(true);
+        setUserEmail(data.email);
+      }
+      
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleResendVerification = () => {
+    navigate(`/verification-pending?email=${encodeURIComponent(userEmail)}`);
   };
 
   return (
@@ -58,6 +72,17 @@ const LoginPage: React.FC = () => {
           {error && (
             <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
               <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
+              {showEmailVerificationLink && (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    className="text-sm text-indigo-600 hover:text-indigo-500 font-medium underline"
+                  >
+                    인증 이메일 재발송하기
+                  </button>
+                </div>
+              )}
             </div>
           )}
           
@@ -110,6 +135,26 @@ const LoginPage: React.FC = () => {
             </button>
           </div>
         </form>
+
+        {/* Social Login Divider */}
+        <div className="mt-6">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+            </div>
+            <div className="relative flex justify-center text-sm font-medium leading-6">
+              <span className="bg-white dark:bg-gray-900 px-6 text-gray-900 dark:text-gray-100">또는</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Google Sign In */}
+        <div className="mt-6">
+          <GoogleSignInButton
+            onSuccess={() => navigate(from, { replace: true })}
+            onError={(error) => setError(error)}
+          />
+        </div>
 
         {/* Test Account Info */}
         <div className="mt-8 rounded-md bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">

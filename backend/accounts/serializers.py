@@ -34,6 +34,9 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
             if not user.is_active:
                 raise serializers.ValidationError('비활성화된 계정입니다.')
 
+            if not user.is_email_verified:
+                raise serializers.ValidationError('이메일 인증을 완료해주세요.')
+
             # Set the user for token generation
             self.user = user
             return {}
@@ -51,8 +54,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'first_name', 'last_name', 
-                 'timezone', 'notification_enabled', 'date_joined')
-        read_only_fields = ('id', 'date_joined')
+                 'timezone', 'notification_enabled', 'date_joined', 'is_email_verified')
+        read_only_fields = ('id', 'date_joined', 'is_email_verified')
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -61,7 +64,8 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('email', 'first_name', 'last_name', 
-                 'timezone', 'notification_enabled')
+                 'timezone', 'notification_enabled', 'is_email_verified')
+        read_only_fields = ('email', 'is_email_verified')
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

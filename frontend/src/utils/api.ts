@@ -3,6 +3,7 @@ import {
   AuthTokens, 
   LoginData, 
   RegisterData, 
+  RegisterResponse,
   User,
   CreateContentData,
   UpdateContentData,
@@ -148,13 +149,18 @@ export const authAPI = {
     return response.data;
   },
   
-  register: async (data: RegisterData): Promise<User> => {
+  register: async (data: RegisterData): Promise<RegisterResponse> => {
     const response = await api.post('/accounts/users/register/', data);
     return response.data;
   },
   
   getProfile: async (): Promise<User> => {
     const response = await api.get('/accounts/profile/');
+    return response.data;
+  },
+  
+  googleLogin: async (token: string): Promise<any> => {
+    const response = await api.post('/accounts/google-oauth/', { token });
     return response.data;
   },
   
@@ -258,6 +264,17 @@ export const analyticsAPI = {
     const response = await api.get('/analytics/review-stats/');
     return response.data;
   },
+};
+
+// Email Verification API
+export const verifyEmail = async (token: string, email: string): Promise<{ message: string; user: User }> => {
+  const response = await api.post('/accounts/verify-email/', { token, email });
+  return response.data;
+};
+
+export const resendVerificationEmail = async (email: string): Promise<{ message: string }> => {
+  const response = await api.post('/accounts/resend-verification/', { email });
+  return response.data;
 };
 
 export default api;

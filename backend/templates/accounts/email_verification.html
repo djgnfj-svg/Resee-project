@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이메일 인증 - Resee</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: #4F46E5;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 40px;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 30px;
+            background: #4F46E5;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .button:hover {
+            background: #4338CA;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+        .warning {
+            background: #FEF3C7;
+            border: 1px solid #F59E0B;
+            padding: 12px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Resee 이메일 인증</h1>
+        </div>
+        <div class="content">
+            <h2>안녕하세요, {{ user.first_name|default:"" }} {{ user.last_name|default:"" }}님!</h2>
+            
+            <p>Resee에 가입해 주셔서 감사합니다. 아래 버튼을 클릭하여 이메일 주소를 인증해주세요.</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ verification_url }}" class="button">이메일 인증하기</a>
+            </div>
+            
+            <div class="warning">
+                <strong>⚠️ 주의:</strong> 이 링크는 {{ expiry_hours }}시간 동안만 유효합니다.
+            </div>
+            
+            <p>버튼이 작동하지 않는 경우, 아래 링크를 복사하여 브라우저에 직접 붙여넣으세요:</p>
+            <p style="word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 5px; font-size: 12px;">
+                {{ verification_url }}
+            </p>
+            
+            <p>이 이메일을 요청하지 않으셨다면, 이 메시지를 무시하셔도 됩니다.</p>
+        </div>
+        <div class="footer">
+            <p>© 2025 Resee. 모든 권리 보유.</p>
+            <p>이 이메일은 자동으로 발송되었습니다. 회신하지 마세요.</p>
+        </div>
+    </div>
+</body>
+</html>
