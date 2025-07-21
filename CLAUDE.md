@@ -422,6 +422,41 @@ curl -X GET http://localhost:8000/api/content/contents/ \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
+## Deployment & Production
+
+### Automated Deployment Script
+```bash
+# Deploy to staging or production environments
+./scripts/deploy.sh staging
+./scripts/deploy.sh production
+
+# The script includes:
+# - Health checks
+# - Automatic backups before deployment
+# - Rollback capability
+# - Zero-downtime deployment
+```
+
+### Health Check Endpoints
+```bash
+# Check backend health
+curl http://localhost:8000/api/health/
+
+# Production health check
+curl https://your-domain.com/api/health/
+```
+
+### CI/CD Pipeline
+- **Continuous Integration**: Runs on every push to main branch
+- **Deployment**: Triggered by version tags (e.g., v1.0.0)
+- **E2E Tests**: Automated Playwright tests on pull requests
+
+```bash
+# Trigger deployment via git tag
+git tag v1.0.0
+git push origin v1.0.0
+```
+
 ## Debugging & Troubleshooting
 
 ### Container Management
@@ -581,3 +616,48 @@ docker-compose exec frontend npm install package_name
 - Use React.memo() for expensive component re-renders
 - Leverage React Query's caching for API responses
 - Monitor Celery task performance with Flower
+
+## Important Code Patterns & Architecture Decisions
+
+### Authentication Flow (v0.3.1)
+- **Email-only authentication**: Username field completely removed
+- **JWT tokens**: Access token (5 minutes) + Refresh token (7 days)
+- **Auto-refresh**: Frontend automatically refreshes tokens before expiry
+- **Login endpoint**: Uses email instead of username
+
+### API Request Pattern
+```typescript
+// Frontend API calls use the centralized API client
+import { api } from '../utils/api';
+
+// Automatic JWT token handling
+const response = await api.get('/content/contents/');
+```
+
+### Content Priority System
+- **Three levels**: low (green), medium (yellow), high (red)
+- **Filtering**: API supports `?priority=high` query parameter
+- **UI indicators**: Color-coded badges in content lists
+
+### Review Scheduling
+- **Immediate availability**: New content has `initial_review_completed=false`
+- **First review**: Shows "첫 번째 복습" in UI
+- **Subsequent reviews**: Follow spaced repetition intervals
+- **Background sync**: Celery creates schedules automatically via signals
+
+### Error Handling
+- **Backend**: Returns structured error responses with field-specific messages
+- **Frontend**: Toast notifications for user-friendly error display
+- **Korean localization**: Error messages support Korean language
+
+### State Management
+- **Authentication**: React Context (AuthContext)
+- **Server data**: React Query with 5-minute cache
+- **Forms**: React Hook Form with Zod validation
+- **Theme**: Local storage persistence
+
+### Testing Strategy
+- **Backend**: pytest for unit tests, Django TestCase for integration
+- **Frontend**: React Testing Library for components
+- **E2E**: Playwright for critical user flows
+- **Coverage**: Backend >80%, Frontend >70%

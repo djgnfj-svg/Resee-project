@@ -1,9 +1,11 @@
 from django.urls import path
-from .views import DashboardView, ReviewStatsView
+from .views import DashboardView, ReviewStatsView, AdvancedAnalyticsView, LearningCalendarView
 
 app_name = 'analytics'
 
 urlpatterns = [
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
     path('review-stats/', ReviewStatsView.as_view(), name='review-stats'),
+    path('advanced/', AdvancedAnalyticsView.as_view(), name='advanced-analytics'),
+    path('calendar/', LearningCalendarView.as_view(), name='learning-calendar'),
 ]

@@ -23,10 +23,10 @@ const SimpleDashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="max-w-md mx-auto mt-8 bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+      <div className="max-w-md mx-auto mt-8 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
         <div className="text-4xl mb-4">😞</div>
-        <h3 className="text-lg font-semibold text-red-800 mb-2">데이터를 불러올 수 없습니다</h3>
-        <p className="text-sm text-red-600 mb-4">
+        <h3 className="text-lg font-semibold text-red-800 dark:text-red-300 mb-2">데이터를 불러올 수 없습니다</h3>
+        <p className="text-sm text-red-600 dark:text-red-400 mb-4">
           대시보드 데이터를 불러오는데 문제가 발생했습니다.
         </p>
         <button
@@ -46,7 +46,7 @@ const SimpleDashboard: React.FC = () => {
       unit: '개',
       icon: '🎯',
       color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
     },
     {
       name: '복습 연속일',
@@ -54,7 +54,7 @@ const SimpleDashboard: React.FC = () => {
       unit: '일',
       icon: '🔥',
       color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      bgColor: 'bg-orange-50 dark:bg-orange-900/20',
     },
     {
       name: '전체 콘텐츠',
@@ -62,7 +62,7 @@ const SimpleDashboard: React.FC = () => {
       unit: '개',
       icon: '📖',
       color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      bgColor: 'bg-green-50 dark:bg-green-900/20',
     },
     {
       name: '복습 성공률',
@@ -70,7 +70,7 @@ const SimpleDashboard: React.FC = () => {
       unit: '%',
       icon: '🎉',
       color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
     },
   ];
 
@@ -108,7 +108,7 @@ const SimpleDashboard: React.FC = () => {
         {stats.map((stat, index) => (
           <div
             key={`dashboard-stat-${index}`}
-            className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+            className="relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 shadow-lg dark:shadow-gray-700/20 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             <div className="flex items-center justify-between">
               <div className="text-2xl mb-2">{stat.icon}</div>
@@ -118,7 +118,7 @@ const SimpleDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
-            <h3 className="text-gray-700 font-semibold text-lg">{stat.name}</h3>
+            <h3 className="text-gray-700 dark:text-gray-300 font-semibold text-lg">{stat.name}</h3>
             <div className="h-2 bg-gray-100 rounded-full mt-3 overflow-hidden">
               <div 
                 className={`h-full ${stat.bgColor} rounded-full transition-all duration-500`}
@@ -131,10 +131,10 @@ const SimpleDashboard: React.FC = () => {
 
       {/* Quick Actions & Tips */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-8">
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-lg">
+        <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 shadow-lg dark:shadow-gray-700/20">
           <div className="flex items-center mb-4">
             <div className="text-2xl mr-3">⚡</div>
-            <h3 className="text-xl font-bold text-gray-900">빠른 액션</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">빠른 액션</h3>
           </div>
           <div className="space-y-3">
             <a 
@@ -151,53 +151,60 @@ const SimpleDashboard: React.FC = () => {
               <span className="mr-2">🎯</span>
               오늘의 복습 시작
             </a>
+            <a 
+              href="/analytics"
+              className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-4 text-white font-semibold hover:from-purple-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 block text-center"
+            >
+              <span className="mr-2">📊</span>
+              고급 분석 보기
+            </a>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-lg">
+        <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 shadow-lg dark:shadow-gray-700/20">
           <div className="flex items-center mb-4">
             <div className="text-2xl mr-3">💡</div>
-            <h3 className="text-xl font-bold text-gray-900">학습 팁</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">학습 팁</h3>
           </div>
           <div className="space-y-3">
             <div className="flex items-start">
               <div className="text-green-500 mr-3 mt-1">•</div>
-              <p className="text-gray-700">복습은 하루에 조금씩이라도 꾸준히 하는 것이 중요합니다.</p>
+              <p className="text-gray-700 dark:text-gray-300">복습은 하루에 조금씩이라도 꾸준히 하는 것이 중요합니다.</p>
             </div>
             <div className="flex items-start">
               <div className="text-yellow-500 mr-3 mt-1">•</div>
-              <p className="text-gray-700">기억이 애매하다면 '애매함'으로 표시하여 더 자주 복습하세요.</p>
+              <p className="text-gray-700 dark:text-gray-300">기억이 애매하다면 '애매함'으로 표시하여 더 자주 복습하세요.</p>
             </div>
             <div className="flex items-start">
               <div className="text-purple-500 mr-3 mt-1">•</div>
-              <p className="text-gray-700">카테고리와 태그를 활용하여 체계적으로 정리하세요.</p>
+              <p className="text-gray-700 dark:text-gray-300">카테고리와 태그를 활용하여 체계적으로 정리하세요.</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Enhanced Analytics Notice */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-200">
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-indigo-200 dark:border-indigo-800">
         <div className="flex items-center mb-4">
           <div className="text-2xl mr-3">📈</div>
-          <h3 className="text-xl font-bold text-gray-900">향상된 분석 기능</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">향상된 분석 기능</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <h4 className="font-semibold text-gray-800 mb-2">🎯 주간 복습 성과</h4>
-            <p className="text-sm text-gray-600">최근 4주간의 복습 성과와 성공률을 한 눈에 확인할 수 있습니다.</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm dark:shadow-gray-700/20">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">🎯 주간 복습 성과</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">최근 4주간의 복습 성과와 성공률을 한 눈에 확인할 수 있습니다.</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <h4 className="font-semibold text-gray-800 mb-2">📊 일별 복습 현황</h4>
-            <p className="text-sm text-gray-600">일별 복습 횟수와 성공률 추이를 시각적으로 분석합니다.</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm dark:shadow-gray-700/20">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">📊 일별 복습 현황</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">일별 복습 횟수와 성공률 추이를 시각적으로 분석합니다.</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <h4 className="font-semibold text-gray-800 mb-2">🎭 복습 결과 분포</h4>
-            <p className="text-sm text-gray-600">기억함/애매함/모름의 분포를 30일/전체 기간별로 확인합니다.</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm dark:shadow-gray-700/20">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">🎭 복습 결과 분포</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">기억함/애매함/모름의 분포를 30일/전체 기간별로 확인합니다.</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <h4 className="font-semibold text-gray-800 mb-2">🔥 연속 학습 추적</h4>
-            <p className="text-sm text-gray-600">연속 복습일 수와 학습 지속성을 트래킹합니다.</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm dark:shadow-gray-700/20">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">🔥 연속 학습 추적</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">연속 복습일 수와 학습 지속성을 트래킹합니다.</p>
           </div>
         </div>
       </div>
