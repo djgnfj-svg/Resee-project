@@ -19,8 +19,8 @@ import {
   RadialBar
 } from 'recharts';
 import { 
-  ArrowArrowTrendingUpIcon, 
-  ArrowArrowTrendingDownIcon, 
+  ArrowTrendingUpIcon, 
+  ArrowTrendingDownIcon, 
   MinusIcon,
   FireIcon,
   AcademicCapIcon,
