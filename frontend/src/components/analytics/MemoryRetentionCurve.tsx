@@ -12,9 +12,9 @@ import {
   AreaChart
 } from 'recharts';
 import { 
-  BrainIcon, 
+  LightBulbIcon, 
   ClockIcon,
-  TrendingUpIcon,
+  ArrowArrowTrendingUpIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 
@@ -90,7 +90,7 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
               </p>
             </div>
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-              <BrainIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <LightBulbIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -113,7 +113,7 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
                 ? 'bg-yellow-100 dark:bg-yellow-900/30'
                 : 'bg-red-100 dark:bg-red-900/30'
             }`}>
-              <TrendingUpIcon className={`w-5 h-5 ${
+              <ArrowTrendingUpIcon className={`w-5 h-5 ${
                 performanceIndicators.efficiency >= 90 
                   ? 'text-green-600 dark:text-green-400' 
                   : performanceIndicators.efficiency >= 75
@@ -292,7 +292,7 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
         <div className="flex items-start space-x-4">
           <div className="flex-shrink-0">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <BrainIcon className="w-4 h-4 text-white" />
+              <LightBulbIcon className="w-4 h-4 text-white" />
             </div>
           </div>
           <div className="flex-1 min-w-0">
