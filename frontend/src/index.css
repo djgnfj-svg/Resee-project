@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* PWA 및 모바일 최적화 스타일 */
+@import './styles/pwa.css';
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Resee** is a scientific review platform implementing spaced repetition learning based on the Ebbinghaus forgetting curve. It consists of a Django REST API backend with PostgreSQL/Redis/RabbitMQ and a React TypeScript frontend using Tiptap editor.
 
+### v0.4.0 PWA 구현 및 모바일 최적화 (2025-07-21)
+- **✅ PWA 기본 구조**: manifest.json, service worker, 오프라인 지원
+- **✅ 모바일 최적화**: 반응형 디자인, 터치 최적화, 안전 영역 지원
+- **✅ 설치 기능**: 앱 설치 프롬프트, 홈 화면 추가 지원
+- **✅ 오프라인 캐싱**: 정적 자원 및 API 캐싱 전략 구현
+- **✅ 네트워크 상태**: 온/오프라인 상태 추적 및 사용자 알림
+- **✅ 푸시 알림 구조**: 복습 알림, 로컬 알림 시스템 기반 구축
+
 ### v0.3.2 Google OAuth 소셜 로그인 구현 (2025-07-21)
 - **✅ Google OAuth 2.0 통합**: Google Identity Services를 통한 소셜 로그인 구현
 - **✅ 백엔드 OAuth 처리**: JWT 토큰 생성 및 사용자 자동 생성 시스템
@@ -122,6 +130,10 @@ docker-compose exec frontend npx tsc --noEmit
 
 # Build and analyze bundle size
 docker-compose exec frontend npm run build -- --stats
+
+# PWA 관련 명령어
+docker-compose exec frontend npm run pwa:icons    # PWA 아이콘 생성
+docker-compose exec frontend npm run pwa:test     # Lighthouse PWA 테스트
 ```
 
 ### Celery (Background Tasks)
@@ -316,6 +328,32 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
 - **Backend API**: http://localhost:8000/api
 - **Django Admin**: http://localhost:8000/admin
 - **RabbitMQ Management**: http://localhost:15672 (guest/guest)
+
+## PWA 기능
+
+### 설치 및 오프라인 지원
+- **앱 설치**: 브라우저에서 "앱 설치" 버튼 클릭 또는 주소창의 설치 아이콘
+- **오프라인 사용**: Service Worker를 통한 캐싱으로 네트워크 없이도 기본 기능 사용 가능
+- **자동 업데이트**: 새 버전 감지 시 자동 업데이트 프롬프트
+
+### 모바일 최적화
+- **반응형 디자인**: 모든 화면 크기에서 최적화된 UI/UX
+- **터치 최적화**: 44px 최소 터치 영역, 햅틱 피드백
+- **iOS Safari 지원**: Safe Area 지원, 홈 화면 추가 최적화
+
+### PWA 개발 도구
+```bash
+# PWA 아이콘 생성 (Sharp 필요: npm install sharp)
+npm run pwa:icons
+
+# PWA 성능 테스트 (Lighthouse 필요)  
+npm run pwa:test
+
+# 수동 아이콘 생성 대안
+# 1. https://www.pwabuilder.com/imageGenerator
+# 2. 1024x1024 마스터 이미지 업로드
+# 3. 생성된 파일들을 frontend/public/icons/ 에 저장
+```
 
 ## 테스트 계정 정보
 
