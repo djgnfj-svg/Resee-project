@@ -4,8 +4,8 @@ docker-compose.override.yml
 
 # Environment
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
 
 # Dependencies
 node_modules/
