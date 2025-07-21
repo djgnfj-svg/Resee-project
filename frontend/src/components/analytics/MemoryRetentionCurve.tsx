@@ -14,7 +14,7 @@ import {
 import { 
   LightBulbIcon, 
   ClockIcon,
-  ArrowArrowTrendingUpIcon,
+  ArrowTrendingUpIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 
