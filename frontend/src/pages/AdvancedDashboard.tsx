@@ -416,7 +416,7 @@ const AdvancedDashboard: React.FC = () => {
               스마트 학습 분석
             </h1>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              AI 기반 개인화된 학습 인사이트와 추천
+              데이터 기반 개인화된 학습 인사이트와 추천
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -524,7 +524,7 @@ const AdvancedDashboard: React.FC = () => {
                 📚 고급 카테고리 성과 분석
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                카테고리별 상세 성과 지표와 AI 기반 개선 제안
+                카테고리별 상세 성과 지표와 스마트 개선 제안
               </p>
             </div>
           </div>
