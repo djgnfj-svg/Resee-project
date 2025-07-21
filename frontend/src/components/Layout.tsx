@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 import WelcomeModal from './WelcomeModal';
+import PWAInstallButton from './PWAInstallButton';
+import NetworkStatus from './NetworkStatus';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -54,6 +56,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               )}
             </div>
             <div className="flex items-center space-x-3">
+              <NetworkStatus showLabel={false} />
+              <PWAInstallButton variant="ghost" size="sm" />
               <ThemeToggle />
               {isAuthenticated && (
                 <div className="sm:hidden">
