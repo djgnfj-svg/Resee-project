@@ -279,7 +279,7 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
                   x={insights.nextOptimalReview} 
                   stroke="#8b5cf6" 
                   strokeDasharray="3 3"
-                  label={{ value: "최적 복습 시점", position: "topRight" }}
+                  label={{ value: "최적 복습 시점", position: "top" }}
                 />
               </AreaChart>
             </ResponsiveContainer>
