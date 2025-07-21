@@ -119,8 +119,16 @@ def send_verification_email_task(self, user_id: int):
             raise self.retry(exc=exc, countdown=countdown)
         else:
             # 최대 재시도 횟수 초과시 알림 발송
-            logger.critical(f"Max retries exceeded for user {user_id} email verification")
-            # TODO: 관리자에게 알림 발송
+            logger.critical(
+                f"Max retries exceeded for user {user_id} email verification. "
+                f"Manual intervention required. User email: {user.email}"
+            )
+            # 관리자용 슬랙/이메일 알림은 실무 환경에서 설정 필요
+            # from django.core.mail import mail_admins
+            # mail_admins(
+            #     f'Email Verification Failed - User {user_id}',
+            #     f'User {user.email} email verification failed after max retries.'
+            # )
             raise
 
 

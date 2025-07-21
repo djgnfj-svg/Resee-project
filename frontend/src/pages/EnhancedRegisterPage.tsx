@@ -346,25 +346,30 @@ const EnhancedRegisterPage: React.FC = () => {
             </div>
           </form>
           
-          {/* Social Login Divider */}
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+          {/* Social Login Section - only show if Google OAuth is configured */}
+          {process.env.REACT_APP_GOOGLE_CLIENT_ID && (
+            <>
+              {/* Social Login Divider */}
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                  </div>
+                  <div className="relative flex justify-center text-sm font-medium leading-6">
+                    <span className="bg-white dark:bg-gray-900 px-6 text-gray-900 dark:text-gray-100">또는</span>
+                  </div>
+                </div>
               </div>
-              <div className="relative flex justify-center text-sm font-medium leading-6">
-                <span className="bg-white dark:bg-gray-900 px-6 text-gray-900 dark:text-gray-100">또는</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Google Sign In */}
-          <div className="mt-6">
-            <GoogleSignInButton
-              onSuccess={() => navigate('/dashboard')}
-              onError={(error) => setError(error)}
-            />
-          </div>
+              {/* Google Sign In */}
+              <div className="mt-6">
+                <GoogleSignInButton
+                  onSuccess={() => navigate('/dashboard')}
+                  onError={(error) => setError(error)}
+                />
+              </div>
+            </>
+          )}
         </div>
 
         {/* 로그인 링크 */}

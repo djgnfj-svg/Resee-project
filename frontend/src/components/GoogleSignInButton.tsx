@@ -11,15 +11,23 @@ declare global {
 interface GoogleSignInButtonProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
+  redirectTo?: string;  // 로그인 후 이동할 경로
 }
 
 const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   onSuccess,
   onError,
+  redirectTo,
 }) => {
   const buttonRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { loginWithGoogle } = useAuth();
+  
+  // Google Client ID가 설정되지 않았으면 컴포넌트를 렌더링하지 않음
+  const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    return null;
+  }
 
   useEffect(() => {
     // Google Sign-In script가 이미 로드되어 있는지 확인
@@ -42,13 +50,6 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
   const initializeGoogleSignIn = () => {
     if (!window.google || !buttonRef.current) return;
-
-    const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      console.error('REACT_APP_GOOGLE_CLIENT_ID가 설정되지 않았습니다.');
-      onError?.('Google 로그인 설정이 완료되지 않았습니다.');
-      return;
-    }
 
     // Google Sign-In 초기화
     window.google.accounts.id.initialize({
@@ -79,9 +80,10 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       // 백엔드 API 호출
       const result = await loginWithGoogle(credential);
       
-      console.log('Google 로그인 성공:', result);
-      
-      if (result.is_new_user) {
+      // 커스텀 리다이렉트 경로가 있으면 우선 사용
+      if (redirectTo) {
+        navigate(redirectTo);
+      } else if (result.is_new_user) {
         // 신규 사용자인 경우 온보딩 페이지로
         navigate('/onboarding');
       } else {
