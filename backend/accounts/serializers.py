@@ -39,7 +39,11 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 
             # Set the user for token generation
             self.user = user
-            return {}
+            refresh = self.get_token(user)
+            return {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
         else:
             raise serializers.ValidationError('이메일과 비밀번호를 입력해주세요.')
 

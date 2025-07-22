@@ -1,0 +1,393 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-resee_db}
+      POSTGRES_USER: ${POSTGRES_USER:-resee_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - /backups/postgresql:/backups  # 백업 마운트
+    ports:
+      - "127.0.0.1:5432:5432"  # localhost에만 바인딩
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-resee_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c max_connections=100
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"  # localhost에만 바인딩
+    volumes:
+      - redis_data:/data
+      - /backups/redis:/backups  # 백업 마운트
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory ${REDIS_MAX_MEMORY:-256mb}
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --tcp-keepalive 300
+      --timeout 0
+      --databases 16
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.2'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-resee}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.6
+      RABBITMQ_DISK_FREE_LIMIT: 2GB
+    ports:
+      - "127.0.0.1:5672:5672"    # AMQP port
+      - "127.0.0.1:15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.2'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.production
+    command: >
+      sh -c "
+        python manage.py collectstatic --noinput &&
+        python manage.py migrate --noinput &&
+        gunicorn resee.wsgi:application
+        --bind 0.0.0.0:8000
+        --workers ${GUNICORN_WORKERS:-3}
+        --worker-class gthread
+        --threads ${GUNICORN_THREADS:-2}
+        --worker-connections ${GUNICORN_WORKER_CONNECTIONS:-1000}
+        --max-requests ${GUNICORN_MAX_REQUESTS:-1000}
+        --max-requests-jitter ${GUNICORN_MAX_REQUESTS_JITTER:-100}
+        --timeout ${GUNICORN_TIMEOUT:-30}
+        --keep-alive 5
+        --access-logfile -
+        --error-logfile -
+        --log-level info
+        --preload
+      "
+    volumes:
+      - static_files:/app/staticfiles
+      - media_files:/app/media
+      - /backups/application:/backups  # 백업 마운트
+      - /var/log/resee:/app/logs  # 로그 디렉토리 마운트
+    expose:
+      - "8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=resee.production_settings
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-resee_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-resee_db}
+      - CELERY_BROKER_URL=amqp://${RABBITMQ_USER:-resee}:${RABBITMQ_PASSWORD}@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/1
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
+      - SECURE_SSL_REDIRECT=${SECURE_SSL_REDIRECT:-False}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-False}
+      - CSRF_COOKIE_SECURE=${CSRF_COOKIE_SECURE:-False}
+      - USE_TLS=${USE_TLS:-False}
+      - GOOGLE_OAUTH2_CLIENT_ID=${GOOGLE_OAUTH2_CLIENT_ID}
+      - GOOGLE_OAUTH2_CLIENT_SECRET=${GOOGLE_OAUTH2_CLIENT_SECRET}
+      - EMAIL_BACKEND=${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
+      - EMAIL_HOST=${EMAIL_HOST:-}
+      - EMAIL_PORT=${EMAIL_PORT:-587}
+      - EMAIL_HOST_USER=${EMAIL_HOST_USER:-}
+      - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD:-}
+      - EMAIL_USE_TLS=${EMAIL_USE_TLS:-True}
+      - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-noreply@resee.com}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_SES_REGION_NAME=${AWS_SES_REGION_NAME:-us-east-1}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.production
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=${REACT_APP_API_URL}
+      - REACT_APP_GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID}
+      - REACT_APP_SENTRY_DSN=${REACT_APP_SENTRY_DSN:-}
+      - REACT_APP_VERSION=${REACT_APP_VERSION:-1.0.0}
+      - REACT_APP_ENVIRONMENT=${ENVIRONMENT:-production}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.3'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.production
+    command: >
+      celery -A resee worker
+      --loglevel=info
+      --concurrency=${CELERY_WORKERS:-2}
+      --max-tasks-per-child=${CELERY_MAX_TASKS_PER_CHILD:-1000}
+      --time-limit=${CELERY_TASK_TIME_LIMIT:-600}
+      --soft-time-limit=${CELERY_TASK_SOFT_TIME_LIMIT:-300}
+      --prefetch-multiplier=1
+      --without-gossip
+      --without-mingle
+      --without-heartbeat
+    volumes:
+      - media_files:/app/media
+      - /var/log/resee:/app/logs
+    environment:
+      - DJANGO_SETTINGS_MODULE=resee.production_settings
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-resee_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-resee_db}
+      - CELERY_BROKER_URL=amqp://${RABBITMQ_USER:-resee}:${RABBITMQ_PASSWORD}@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "celery", "-A", "resee", "inspect", "ping"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.3'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.production
+    command: >
+      celery -A resee beat
+      --loglevel=info
+      --schedule=/tmp/celerybeat-schedule
+      --pidfile=/tmp/celerybeat.pid
+    volumes:
+      - celery_beat_data:/tmp
+      - /var/log/resee:/app/logs
+    environment:
+      - DJANGO_SETTINGS_MODULE=resee.production_settings
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-resee_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-resee_db}
+      - CELERY_BROKER_URL=amqp://${RABBITMQ_USER:-resee}:${RABBITMQ_PASSWORD}@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/celerybeat.pid"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.production.conf:/etc/nginx/nginx.conf:ro
+      - ./config/ssl:/etc/nginx/ssl:ro  # SSL 인증서 디렉토리
+      - static_files:/usr/share/nginx/html/static:ro
+      - media_files:/usr/share/nginx/html/media:ro
+      - /var/log/nginx:/var/log/nginx
+    environment:
+      - NGINX_WORKER_PROCESSES=${NGINX_WORKER_PROCESSES:-auto}
+      - NGINX_WORKER_CONNECTIONS=${NGINX_WORKER_CONNECTIONS:-1024}
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  static_files:
+    driver: local
+  media_files:
+    driver: local
+  celery_beat_data:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
