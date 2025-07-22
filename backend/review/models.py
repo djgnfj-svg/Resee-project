@@ -27,7 +27,7 @@ class ReviewSchedule(models.Model):
     def get_next_interval(self):
         """Get next review interval in days"""
         from .utils import get_review_intervals
-        intervals = get_review_intervals()
+        intervals = get_review_intervals(self.user)
         if self.interval_index < len(intervals) - 1:
             return intervals[self.interval_index + 1]
         return intervals[-1]  # Stay at the longest interval
@@ -35,8 +35,12 @@ class ReviewSchedule(models.Model):
     def advance_schedule(self):
         """Advance to next review interval"""
         from .utils import get_review_intervals
-        intervals = get_review_intervals()
-        if self.interval_index < len(intervals) - 1:
+        intervals = get_review_intervals(self.user)
+        
+        # Handle case where current index exceeds new subscription limits
+        if self.interval_index >= len(intervals):
+            self.interval_index = len(intervals) - 1
+        elif self.interval_index < len(intervals) - 1:
             self.interval_index += 1
         
         next_interval = intervals[self.interval_index]
@@ -47,7 +51,7 @@ class ReviewSchedule(models.Model):
         """Reset to first interval (for failed reviews)"""
         from .utils import get_review_intervals
         self.interval_index = 0
-        intervals = get_review_intervals()
+        intervals = get_review_intervals(self.user)
         self.next_review_date = timezone.now() + timedelta(days=intervals[0])
         self.save()
 

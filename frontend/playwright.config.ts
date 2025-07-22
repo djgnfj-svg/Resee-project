@@ -68,19 +68,5 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: [
-    {
-      command: 'npm start',
-      url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120 * 1000,
-    },
-    {
-      command: 'docker-compose up -d backend',
-      url: 'http://localhost:8000/api/analytics/dashboard/',
-      reuseExistingServer: !process.env.CI,
-      timeout: 60 * 1000,
-    },
-  ],
+  /* Servers are already running in Docker, so we don't need to start them */
 });

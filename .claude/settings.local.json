@@ -69,7 +69,8 @@
       "Bash(chmod:*)",
       "Bash(openssl rand:*)",
       "Bash(cp:*)",
-      "Bash(./start.sh:*)"
+      "Bash(./start.sh:*)",
+      "Bash(true)"
     ]
   },
   "enableAllProjectMcpServers": true,

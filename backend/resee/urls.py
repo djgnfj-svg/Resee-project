@@ -69,6 +69,7 @@ urlpatterns = [
     path('api/content/', include('content.urls')),
     path('api/review/', include('review.urls')),
     path('api/analytics/', include('analytics.urls')),
+    path('api/ai-review/', include('ai_review.urls')),
 ]
 
 if settings.DEBUG:

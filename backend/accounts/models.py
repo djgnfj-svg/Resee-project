@@ -4,6 +4,8 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 import secrets
 from datetime import timedelta
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class UserManager(BaseUserManager):
@@ -115,3 +117,234 @@ class User(AbstractUser):
         
         time_since_sent = timezone.now() - self.email_verification_sent_at
         return time_since_sent > timedelta(minutes=5)
+    
+    def get_max_review_interval(self):
+        """Get maximum review interval based on subscription"""
+        if hasattr(self, 'subscription') and self.subscription.is_active and not self.subscription.is_expired():
+            return self.subscription.max_interval_days
+        return 7  # Default FREE tier
+    
+    def has_active_subscription(self):
+        """Check if user has an active subscription"""
+        if not hasattr(self, 'subscription'):
+            return False
+        return self.subscription.is_active and not self.subscription.is_expired()
+    
+    def can_upgrade_subscription(self):
+        """Check if user can upgrade subscription"""
+        if not self.is_email_verified:
+            return False
+        
+        if hasattr(self, 'subscription') and self.subscription.tier == SubscriptionTier.PRO:
+            return False
+        
+        return True
+    
+    def can_use_ai_features(self):
+        """Check if user can use AI features based on subscription"""
+        if not self.is_email_verified:
+            return False
+            
+        if not hasattr(self, 'subscription'):
+            return False
+            
+        return self.subscription.is_active and not self.subscription.is_expired()
+    
+    def get_ai_question_limit(self):
+        """Get AI question generation limit per day based on subscription tier"""
+        if not hasattr(self, 'subscription') or not self.subscription.is_active or self.subscription.is_expired():
+            return 0
+        
+        tier_limits = {
+            SubscriptionTier.FREE: 0,         # No AI features for free users
+            SubscriptionTier.BASIC: 10,       # 10 questions per day
+            SubscriptionTier.PREMIUM: 50,     # 50 questions per day
+            SubscriptionTier.PRO: 200,        # 200 questions per day (unlimited-like)
+        }
+        
+        return tier_limits.get(self.subscription.tier, 0)
+    
+    def get_ai_features_list(self):
+        """Get list of AI features available for user's subscription tier"""
+        if not self.can_use_ai_features():
+            return []
+            
+        tier_features = {
+            SubscriptionTier.FREE: [],
+            SubscriptionTier.BASIC: [
+                'multiple_choice',
+                'short_answer'
+            ],
+            SubscriptionTier.PREMIUM: [
+                'multiple_choice',
+                'short_answer',
+                'fill_blank'
+            ],
+            SubscriptionTier.PRO: [
+                'multiple_choice',
+                'short_answer', 
+                'fill_blank',
+                'blur_processing'
+            ]
+        }
+        
+        return tier_features.get(self.subscription.tier, [])
+
+
+class SubscriptionTier(models.TextChoices):
+    """Subscription tier choices"""
+    FREE = 'free', 'Free'
+    BASIC = 'basic', 'Basic (30일)'
+    PREMIUM = 'premium', 'Premium (60일)'
+    PRO = 'pro', 'Pro (90일)'
+
+
+class Subscription(models.Model):
+    """User subscription model"""
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE,
+        related_name='subscription'
+    )
+    tier = models.CharField(
+        max_length=20,
+        choices=SubscriptionTier.choices,
+        default=SubscriptionTier.FREE,
+        help_text='Subscription tier'
+    )
+    max_interval_days = models.IntegerField(
+        default=7,
+        help_text='Maximum review interval in days'
+    )
+    start_date = models.DateTimeField(
+        auto_now_add=True,
+        help_text='Subscription start date'
+    )
+    end_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Subscription end date (null for unlimited)'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Whether the subscription is active'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'accounts_subscription'
+        verbose_name = 'Subscription'
+        verbose_name_plural = 'Subscriptions'
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.get_tier_display()}"
+    
+    def is_expired(self):
+        """Check if subscription is expired"""
+        if not self.end_date:
+            return False
+        return timezone.now() > self.end_date
+    
+    def days_remaining(self):
+        """Calculate days remaining in subscription"""
+        if not self.end_date:
+            return None
+        
+        remaining = (self.end_date - timezone.now()).days
+        return max(0, remaining)
+    
+    def save(self, *args, **kwargs):
+        """Override save to set max_interval_days based on tier"""
+        tier_intervals = {
+            SubscriptionTier.FREE: 7,
+            SubscriptionTier.BASIC: 30,
+            SubscriptionTier.PREMIUM: 60,
+            SubscriptionTier.PRO: 90,
+        }
+        
+        if self.tier in tier_intervals:
+            self.max_interval_days = tier_intervals[self.tier]
+        
+        super().save(*args, **kwargs)
+
+
+class AIUsageTracking(models.Model):
+    """Track daily AI feature usage per user"""
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='ai_usage_records'
+    )
+    date = models.DateField(
+        default=timezone.now,
+        help_text='Date of usage'
+    )
+    questions_generated = models.IntegerField(
+        default=0,
+        help_text='Number of AI questions generated on this date'
+    )
+    evaluations_performed = models.IntegerField(
+        default=0,
+        help_text='Number of AI evaluations performed on this date'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'accounts_ai_usage_tracking'
+        unique_together = ['user', 'date']
+        verbose_name = 'AI Usage Tracking'
+        verbose_name_plural = 'AI Usage Trackings'
+        indexes = [
+            models.Index(fields=['user', 'date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.date}: {self.questions_generated} questions"
+    
+    @classmethod
+    def get_or_create_for_today(cls, user):
+        """Get or create usage record for today"""
+        today = timezone.now().date()
+        usage, created = cls.objects.get_or_create(
+            user=user,
+            date=today,
+            defaults={
+                'questions_generated': 0,
+                'evaluations_performed': 0
+            }
+        )
+        return usage
+    
+    def can_generate_questions(self, count=1):
+        """Check if user can generate more questions today"""
+        daily_limit = self.user.get_ai_question_limit()
+        if daily_limit == 0:
+            return False
+        return (self.questions_generated + count) <= daily_limit
+    
+    def increment_questions(self, count=1):
+        """Increment question generation count"""
+        if self.can_generate_questions(count):
+            self.questions_generated += count
+            self.save()
+            return True
+        return False
+    
+    def increment_evaluations(self, count=1):
+        """Increment evaluation count (no limit for now)"""
+        self.evaluations_performed += count
+        self.save()
+
+
+# Signal to create free subscription for new users
+@receiver(post_save, sender=User)
+def create_user_subscription(sender, instance, created, **kwargs):
+    """Create a free subscription for new users"""
+    if created and not hasattr(instance, 'subscription'):
+        Subscription.objects.create(
+            user=instance,
+            tier=SubscriptionTier.FREE,
+            max_interval_days=7
+        )
