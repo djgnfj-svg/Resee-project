@@ -6,14 +6,21 @@ import { contentAPI } from '../utils/api';
 import { Content, Category, CreateContentData, UpdateContentData } from '../types';
 import { extractResults } from '../utils/helpers';
 import ContentFormV2 from '../components/ContentFormV2';
+import { AIReviewSession } from '../components/ai/AIReviewSession';
+import { useAuth } from '../contexts/AuthContext';
 
 const ContentPage: React.FC = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('created_desc');
+  const [aiReviewContent, setAIReviewContent] = useState<Content | null>(null);
+
+  // Check if user can access AI features
+  const canUseAI = user?.subscription?.is_active && user?.is_email_verified;
 
   // Fetch contents
   const { data: contents = [], isLoading: contentsLoading } = useQuery<Content[]>({
@@ -101,6 +108,14 @@ const ContentPage: React.FC = () => {
     setEditingContent(null);
   };
 
+  const handleAIReview = (content: Content) => {
+    setAIReviewContent(content);
+  };
+
+  const handleAIReviewComplete = () => {
+    setAIReviewContent(null);
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'text-red-600 bg-red-50';
@@ -132,6 +147,31 @@ const ContentPage: React.FC = () => {
           priority: editingContent.priority,
         } : undefined}
       />
+    );
+  }
+
+  if (aiReviewContent) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Back Button */}
+        <div className="mb-4">
+          <button
+            onClick={handleAIReviewComplete}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            <svg className="-ml-0.5 mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            콘텐츠 목록으로 돌아가기
+          </button>
+        </div>
+
+        {/* AI Review Session */}
+        <AIReviewSession
+          content={aiReviewContent}
+          onSessionComplete={handleAIReviewComplete}
+        />
+      </div>
     );
   }
 
@@ -286,6 +326,29 @@ const ContentPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex space-x-2 ml-4">
+                  {canUseAI ? (
+                    <button
+                      onClick={() => handleAIReview(content)}
+                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-100 rounded-full hover:bg-purple-200 transition-colors"
+                      title="AI 스마트 학습으로 이 콘텐츠를 학습하세요"
+                    >
+                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      AI 학습
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => window.location.href = '/subscription'}
+                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-500 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
+                      title="구독하고 AI 학습 기능을 사용하세요"
+                    >
+                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      AI 학습 (구독 필요)
+                    </button>
+                  )}
                   <button
                     onClick={() => handleEdit(content)}
                     className="text-primary-600 hover:text-primary-900 text-sm"

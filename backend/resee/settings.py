@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'content',
     'review',
     'analytics',
+    'ai_review',
 ]
 
 # Environment-based configuration
@@ -514,6 +515,12 @@ elif ENVIRONMENT == 'production':
             'IGNORE_EXCEPTIONS': True,
         }
     })
+
+# AI Service Configuration
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', None)
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4')
+AI_MAX_RETRIES = int(os.environ.get('AI_MAX_RETRIES', '3'))
+AI_CACHE_TIMEOUT = int(os.environ.get('AI_CACHE_TIMEOUT', '3600'))  # 1 hour
 
 # Validation: Ensure critical environment variables are set for production
 if ENVIRONMENT in ['staging', 'production']:

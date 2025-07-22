@@ -15,7 +15,10 @@ import {
   Category,
   ReviewSchedule,
   ReviewHistory,
-  DashboardData
+  DashboardData,
+  Subscription,
+  SubscriptionTierInfo,
+  SubscriptionUpgradeData
 } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -275,6 +278,24 @@ export const verifyEmail = async (token: string, email: string): Promise<{ messa
 export const resendVerificationEmail = async (email: string): Promise<{ message: string }> => {
   const response = await api.post('/accounts/resend-verification/', { email });
   return response.data;
+};
+
+// Subscription API
+export const subscriptionAPI = {
+  getSubscription: async (): Promise<Subscription> => {
+    const response = await api.get('/accounts/subscription/');
+    return response.data;
+  },
+  
+  getSubscriptionTiers: async (): Promise<SubscriptionTierInfo[]> => {
+    const response = await api.get('/accounts/subscription/tiers/');
+    return response.data;
+  },
+  
+  upgradeSubscription: async (data: SubscriptionUpgradeData): Promise<Subscription> => {
+    const response = await api.post('/accounts/subscription/upgrade/', data);
+    return response.data;
+  },
 };
 
 export default api;

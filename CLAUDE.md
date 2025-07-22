@@ -6,6 +6,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Resee** is a scientific review platform implementing spaced repetition learning based on the Ebbinghaus forgetting curve. It consists of a Django REST API backend with PostgreSQL/Redis/RabbitMQ and a React TypeScript frontend using Tiptap editor.
 
+### v0.5.0 AI 기반 학습 시스템 및 구독 모델 구현 (2025-07-22)
+- **✅ 구독 기반 시스템**: Free(7일) → Basic(30일) → Premium(60일) → Pro(90일) 복습 간격 확장
+- **✅ AI 질문 자동 생성**: OpenAI GPT-4 기반 4가지 문제 유형 자동 생성
+  - 객관식 (Multiple Choice): 4개 선택지 중 정답 선택
+  - 주관식 (Short Answer): 개방형 질문과 모범 답안 제공
+  - 빈칸 채우기 (Fill Blank): 핵심 개념을 빈칸으로 처리하여 학습
+  - 블러 처리 (Blur Processing): 중요 영역을 블러 처리하여 게임형 학습
+- **✅ 구독 티어별 AI 기능 제한**:
+  - Free: AI 기능 사용 불가 (기존 복습 시스템만)
+  - Basic: 객관식/주관식, 일 10개 질문 생성
+  - Premium: 객관식/주관식/빈칸채우기, 일 50개 질문 생성
+  - Pro: 모든 AI 기능, 일 200개 질문 생성
+- **✅ AI 사용량 추적**: AIUsageTracking 모델로 일일 질문 생성 한도 관리
+- **✅ 읽기 전용 학습**: AI 질문과 정답을 보며 자가 학습 (자동 평가 기능 제외)
+
 ### v0.4.0 PWA 구현 및 모바일 최적화 (2025-07-21)
 - **✅ PWA 기본 구조**: manifest.json, service worker, 오프라인 지원
 - **✅ 모바일 최적화**: 반응형 디자인, 터치 최적화, 안전 영역 지원
@@ -168,10 +183,11 @@ docker-compose exec celery celery -A resee inspect scheduled
 - **Celery** for background tasks (review scheduling, notifications)
 
 **Core Apps:**
-- `accounts/` - User management with custom User model
+- `accounts/` - User management with custom User model and subscription system
 - `content/` - Learning content with categories, tags, and priority levels
 - `review/` - Spaced repetition system with ReviewSchedule and ReviewHistory
 - `analytics/` - Dashboard metrics and statistics
+- `ai_review/` - AI-powered question generation and learning tools
 
 ### Frontend (React + TypeScript)
 - **React 18** with TypeScript for type safety
@@ -196,6 +212,9 @@ docker-compose exec celery celery -A resee inspect scheduled
 - **Category** - Per-user + global content categories with slug and description
 - **ReviewSchedule** - Spaced repetition scheduling (intervals: 1, 3, 7, 14, 30 days)
 - **ReviewHistory** - Review session records with results (remembered/partial/forgot)
+- **Subscription** - User subscription tiers (Free/Basic/Premium/Pro) with AI feature limits
+- **AIQuestion** - AI-generated questions with type, difficulty, and options
+- **AIUsageTracking** - Daily AI feature usage tracking per user
 
 ### Key Relationships
 - User has many Content, ReviewSchedule, ReviewHistory, Category
@@ -230,6 +249,15 @@ docker-compose exec celery celery -A resee inspect scheduled
 - `GET /api/analytics/dashboard/` - Dashboard overview
 - `GET /api/analytics/review-stats/` - Review statistics
 
+### AI Review System
+- `GET /api/ai-review/health/` - AI system health check
+- `GET /api/ai-review/question-types/` - Available AI question types
+- `POST /api/ai-review/generate-questions/` - Generate AI questions for content
+- `GET /api/ai-review/content/<id>/questions/` - Get AI questions for specific content
+- `POST /api/ai-review/generate-fill-blanks/` - Generate fill-in-blank exercises
+- `POST /api/ai-review/identify-blur-regions/` - Identify blur regions for content
+- `GET /api/ai-review/sessions/` - AI review session history
+
 ## Spaced Repetition Logic
 
 **Review Intervals:** [immediate, 1, 3, 7, 14, 30] days
@@ -253,19 +281,21 @@ docker-compose exec celery celery -A resee inspect scheduled
 ```
 resee/
 ├── backend/                 # Django backend
-│   ├── accounts/           # User management
+│   ├── accounts/           # User management and subscriptions
 │   ├── content/            # Content management
 │   ├── review/             # Spaced repetition system
 │   ├── analytics/          # Statistics and analytics
+│   ├── ai_review/          # AI question generation and tools
 │   ├── resee/              # Django project settings
-│   └── tests/              # Test files
+│   └── tests/              # Test files (including AI tests)
 ├── frontend/               # React frontend
 │   ├── src/
 │   │   ├── components/     # Reusable components
+│   │   │   └── ai/         # AI-specific components
 │   │   ├── pages/          # Page components
 │   │   ├── contexts/       # React contexts
-│   │   ├── utils/          # Utilities (API client)
-│   │   └── types/          # TypeScript types
+│   │   ├── utils/          # Utilities (API client, AI API)
+│   │   └── types/          # TypeScript types (including AI types)
 │   └── public/             # Static assets
 └── docker-compose.yml      # Docker services
 ```
@@ -313,6 +343,12 @@ ALLOWED_HOSTS=localhost,127.0.0.1,backend
 # Google OAuth 2.0
 GOOGLE_OAUTH2_CLIENT_ID=your-google-client-id
 GOOGLE_OAUTH2_CLIENT_SECRET=your-google-client-secret
+
+# AI Features (OpenAI)
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-4
+AI_MAX_RETRIES=3
+AI_CACHE_TIMEOUT=3600
 ```
 
 ### Frontend

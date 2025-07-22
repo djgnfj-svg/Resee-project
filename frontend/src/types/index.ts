@@ -7,6 +7,7 @@ export interface User {
   notification_enabled: boolean;
   date_joined: string;
   is_email_verified: boolean;
+  subscription?: Subscription;
 }
 
 export interface LoginData {
@@ -166,3 +167,35 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+// Subscription types
+export type SubscriptionTier = 'free' | 'basic' | 'premium' | 'pro';
+
+export interface Subscription {
+  id: number;
+  tier: SubscriptionTier;
+  tier_display: string;
+  max_interval_days: number;
+  start_date: string;
+  end_date: string | null;
+  is_active: boolean;
+  days_remaining: number | null;
+  is_expired: boolean;
+}
+
+export interface SubscriptionTierInfo {
+  name: SubscriptionTier;
+  display_name: string;
+  max_days: number;
+  price: number;
+  features: string[];
+}
+
+export interface SubscriptionUpgradeData {
+  tier: SubscriptionTier;
+}
+
+export interface SubscriptionUpgradeError {
+  error?: string;
+  email_verified?: boolean;
+  tier?: string[];
+}

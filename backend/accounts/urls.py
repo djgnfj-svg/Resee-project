@@ -4,6 +4,9 @@ from .views import (
     UserViewSet, ProfileView, PasswordChangeView, AccountDeleteView,
     EmailVerificationView, ResendVerificationView, GoogleOAuthView
 )
+from .subscription_views import (
+    subscription_detail, subscription_tiers, subscription_upgrade
+)
 
 app_name = 'accounts'
 
@@ -18,4 +21,8 @@ urlpatterns = [
     path('verify-email/', EmailVerificationView.as_view(), name='verify-email'),
     path('resend-verification/', ResendVerificationView.as_view(), name='resend-verification'),
     path('google-oauth/', GoogleOAuthView.as_view(), name='google-oauth'),
+    # Subscription endpoints
+    path('subscription/', subscription_detail, name='subscription-detail'),
+    path('subscription/tiers/', subscription_tiers, name='subscription-tiers'),
+    path('subscription/upgrade/', subscription_upgrade, name='subscription-upgrade'),
 ]

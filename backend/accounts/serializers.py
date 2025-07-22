@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from .models import Subscription, SubscriptionTier
 
 User = get_user_model()
 
@@ -168,3 +169,54 @@ class AccountDeleteSerializer(serializers.Serializer):
         user = self.context['request'].user
         user.delete()
         return user
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    """Subscription serializer"""
+    tier_display = serializers.CharField(source='get_tier_display', read_only=True)
+    days_remaining = serializers.SerializerMethodField()
+    is_expired = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Subscription
+        fields = [
+            'id', 'tier', 'tier_display', 'max_interval_days',
+            'start_date', 'end_date', 'is_active',
+            'days_remaining', 'is_expired'
+        ]
+        read_only_fields = ['id', 'start_date']
+    
+    def get_days_remaining(self, obj):
+        """Get days remaining in subscription"""
+        return obj.days_remaining()
+    
+    def get_is_expired(self, obj):
+        """Check if subscription is expired"""
+        return obj.is_expired()
+
+
+class SubscriptionTierSerializer(serializers.Serializer):
+    """Serializer for subscription tier information"""
+    name = serializers.CharField()
+    display_name = serializers.CharField()
+    max_days = serializers.IntegerField()
+    price = serializers.IntegerField()
+    features = serializers.ListField(child=serializers.CharField())
+
+
+class SubscriptionUpgradeSerializer(serializers.Serializer):
+    """Serializer for subscription upgrade request"""
+    tier = serializers.ChoiceField(choices=SubscriptionTier.choices)
+    
+    def validate_tier(self, value):
+        """Validate tier selection"""
+        user = self.context['request'].user
+        
+        if not user.is_email_verified:
+            raise serializers.ValidationError('이메일 인증이 필요합니다.')
+        
+        if hasattr(user, 'subscription') and user.subscription.tier == SubscriptionTier.PRO:
+            if value == SubscriptionTier.PRO:
+                raise serializers.ValidationError('Already at highest subscription tier.')
+        
+        return value

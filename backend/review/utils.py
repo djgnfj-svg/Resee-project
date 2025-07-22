@@ -7,9 +7,45 @@ from datetime import timedelta
 from .models import ReviewHistory
 
 
-def get_review_intervals():
-    """Get review intervals from settings with fallback"""
-    return getattr(settings, 'REVIEW_INTERVALS', [1, 3, 7, 14, 30])
+def get_review_intervals(user=None):
+    """Get review intervals based on user's subscription tier
+    
+    Args:
+        user: User instance (optional). If not provided, returns default intervals.
+    
+    Returns:
+        list: Review intervals in days based on subscription tier
+    """
+    # Base intervals for all tiers
+    base_intervals = [1, 3, 7]
+    
+    if not user:
+        return base_intervals
+    
+    # Check if user has active subscription
+    if not hasattr(user, 'subscription'):
+        return base_intervals
+    
+    subscription = user.subscription
+    
+    # Check if subscription is active and not expired
+    if not subscription.is_active or subscription.is_expired():
+        return base_intervals
+    
+    # Return intervals based on subscription tier
+    from accounts.models import SubscriptionTier
+    
+    if subscription.tier == SubscriptionTier.FREE:
+        return base_intervals
+    elif subscription.tier == SubscriptionTier.BASIC:
+        return base_intervals + [14, 21, 30]
+    elif subscription.tier == SubscriptionTier.PREMIUM:
+        return base_intervals + [14, 21, 30, 45, 60]
+    elif subscription.tier == SubscriptionTier.PRO:
+        return base_intervals + [14, 21, 30, 45, 60, 75, 90]
+    
+    # Fallback to base intervals
+    return base_intervals
 
 
 def calculate_success_rate(user, category=None, days=30):
