@@ -54,3 +54,29 @@ __pycache__/
 # MCP Configuration
 .mcp.json
 .env.production
+
+# Development scripts and reports
+*test_report*.json
+docker_system_test_report.json
+
+# Log files (development)
+backend/logs/*.log
+
+# Local environment files  
+.env.local
+.env.*.local
+
+# Development artifacts
+*.backup
+*.bak
+create_test_accounts.py
+debug_utils.py
+
+# Backup directories
+/backups/
+
+# Health check and operational logs
+/var/log/
+*_backup.log
+*_health_*.txt
+*_report_*.txt

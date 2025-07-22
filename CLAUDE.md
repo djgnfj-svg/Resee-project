@@ -206,10 +206,13 @@ docker-compose exec celery celery -A resee inspect scheduled
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/token/` - Login (JWT)
+- `POST /api/auth/token/` - Login with email/password (JWT)
 - `POST /api/auth/token/refresh/` - Refresh JWT
-- `POST /api/accounts/users/register/` - Register
+- `POST /api/accounts/users/register/` - Register new user
 - `GET/PUT /api/accounts/profile/` - Profile management
+- `POST /api/accounts/users/google-auth/` - Google OAuth authentication
+- `POST /api/accounts/users/resend-verification/` - Resend email verification
+- `GET /api/accounts/users/verify-email/?token=` - Verify email address
 
 ### Content Management
 - `GET/POST /api/content/contents/` - Content CRUD with priority filtering
@@ -447,10 +450,10 @@ npx playwright show-report
 
 ### Quick API Testing
 ```bash
-# Get JWT token
+# Get JWT token (using email instead of username)
 curl -X POST http://localhost:8000/api/auth/token/ \
   -H "Content-Type: application/json" \
-  -d '{"username": "testuser", "password": "test123!"}'
+  -d '{"email": "test@resee.com", "password": "test123!"}'
 
 # Use token for authenticated requests
 curl -X GET http://localhost:8000/api/content/contents/ \
@@ -683,3 +686,136 @@ const response = await api.get('/content/contents/');
 - **Frontend**: React Testing Library for components
 - **E2E**: Playwright for critical user flows
 - **Coverage**: Backend >80%, Frontend >70%
+
+## Additional Development Patterns
+
+### Email Verification Flow
+```bash
+# Check email verification status for a user
+docker-compose exec backend python manage.py shell
+>>> from django.contrib.auth import get_user_model
+>>> User = get_user_model()
+>>> user = User.objects.get(email='test@resee.com')
+>>> print(f"Email verified: {user.email_verified}")
+>>> print(f"Verification token: {user.email_verification_token}")
+
+# Manually verify a user's email (for testing)
+>>> user.email_verified = True
+>>> user.save()
+```
+
+### Common Django Management Commands
+```bash
+# Check for security issues
+docker-compose exec backend python manage.py check --deploy
+
+# Generate a new SECRET_KEY
+docker-compose exec backend python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+
+# List all available management commands
+docker-compose exec backend python manage.py help
+
+# Show URLs configuration
+docker-compose exec backend python manage.py show_urls
+
+# Database inspection
+docker-compose exec backend python manage.py inspectdb
+
+# Clear cache
+docker-compose exec backend python manage.py clear_cache
+```
+
+### Monitoring and Performance
+```bash
+# Check database query count for a specific view
+docker-compose exec backend python manage.py shell
+>>> from django.test.utils import override_settings
+>>> from django.db import connection
+>>> from django.test import RequestFactory
+>>> # Make request and check queries
+
+# Monitor Celery task execution time
+docker-compose exec celery celery -A resee events
+
+# Redis memory usage
+docker-compose exec redis redis-cli info memory
+
+# PostgreSQL connection count
+docker-compose exec db psql -U resee_user -d resee_db -c "SELECT count(*) FROM pg_stat_activity;"
+```
+
+### Data Management Scripts
+```bash
+# Export user content to JSON
+docker-compose exec backend python manage.py dumpdata content.Content --indent 2 > content_backup.json
+
+# Import content from JSON
+docker-compose exec backend python manage.py loaddata content_backup.json
+
+# Create custom management command
+docker-compose exec backend python manage.py startapp management
+# Then create: management/commands/your_command.py
+```
+
+### Frontend Development Patterns
+```typescript
+// Using the API client with TypeScript
+import { api } from '../utils/api';
+import { Content } from '../types';
+
+// Type-safe API calls
+const contents = await api.get<Content[]>('/content/contents/');
+
+// Handle loading and error states with React Query
+const { data, isLoading, error } = useQuery({
+  queryKey: ['contents'],
+  queryFn: () => api.get<Content[]>('/content/contents/')
+});
+
+// Optimistic updates with React Query
+const mutation = useMutation({
+  mutationFn: (newContent: Partial<Content>) => 
+    api.post('/content/contents/', newContent),
+  onMutate: async (newContent) => {
+    await queryClient.cancelQueries(['contents']);
+    const previousContents = queryClient.getQueryData(['contents']);
+    queryClient.setQueryData(['contents'], old => [...old, newContent]);
+    return { previousContents };
+  }
+});
+```
+
+### Docker Development Tips
+```bash
+# Run commands without entering container
+docker-compose run --rm backend python manage.py migrate
+
+# Copy files from container
+docker cp $(docker-compose ps -q backend):/app/file.txt ./file.txt
+
+# View real-time container resource usage
+docker stats $(docker-compose ps -q)
+
+# Clean up Docker resources
+docker-compose down -v  # Remove volumes too
+docker system prune -a  # Clean everything (careful!)
+
+# Build with no cache for troubleshooting
+docker-compose build --no-cache --pull
+```
+
+### Debugging Production Issues
+```bash
+# Connect to production database (via SSH tunnel)
+ssh -L 5432:localhost:5432 production-server
+psql -h localhost -U resee_user -d resee_db
+
+# Export production logs
+docker-compose logs --since "2025-01-20" > production_logs.txt
+
+# Check for slow queries
+docker-compose exec backend python manage.py dbshell
+> SELECT query, calls, total_time, mean_time 
+> FROM pg_stat_statements 
+> ORDER BY mean_time DESC LIMIT 10;
+```
