@@ -8,6 +8,7 @@ import { aiReviewAPI } from '../../utils/ai-review-api';
 import { AIQuestionGenerator } from './AIQuestionGenerator';
 import { FillBlankQuestion } from './FillBlankQuestion';
 import { BlurProcessingViewer } from './BlurProcessingViewer';
+import { AIChatTutor } from './AIChatTutor';
 import type { 
   AIQuestion
 } from '../../types/ai-review';
@@ -20,7 +21,7 @@ interface AIReviewSessionProps {
   onSessionComplete?: () => void;
 }
 
-type ReviewMode = 'generator' | 'fill_blank' | 'blur_processing';
+type ReviewMode = 'generator' | 'fill_blank' | 'blur_processing' | 'ai_chat';
 
 export const AIReviewSession: React.FC<AIReviewSessionProps> = ({
   content,
@@ -65,6 +66,7 @@ export const AIReviewSession: React.FC<AIReviewSessionProps> = ({
       case 'generator': return '🤖';
       case 'fill_blank': return '🧩';
       case 'blur_processing': return '🎯';
+      case 'ai_chat': return '💬';
       default: return '📚';
     }
   };
@@ -74,19 +76,20 @@ export const AIReviewSession: React.FC<AIReviewSessionProps> = ({
       case 'generator': return 'AI 질문 생성기';
       case 'fill_blank': return '빈칸 채우기';
       case 'blur_processing': return '블러 처리 학습';
+      case 'ai_chat': return 'AI 튜터 채팅';
       default: return 'AI 학습';
     }
   };
 
   const renderModeSelector = () => {
-    const modes: ReviewMode[] = ['generator', 'fill_blank', 'blur_processing']; // Removed multiple_choice and short_answer since they need evaluation
+    const modes: ReviewMode[] = ['generator', 'fill_blank', 'blur_processing', 'ai_chat'];
     
-    // Define which modes are available per tier - simplified to generation only
+    // Define which modes are available per tier
     const getAvailableModes = (tier: string) => {
       switch (tier) {
-        case 'basic': return ['generator'];
-        case 'premium': return ['generator', 'fill_blank'];
-        case 'pro': return ['generator', 'fill_blank', 'blur_processing'];
+        case 'basic': return ['generator', 'ai_chat'];
+        case 'premium': return ['generator', 'fill_blank', 'ai_chat'];
+        case 'pro': return ['generator', 'fill_blank', 'blur_processing', 'ai_chat'];
         default: return ['generator']; // Free tier
       }
     };
@@ -139,7 +142,7 @@ export const AIReviewSession: React.FC<AIReviewSessionProps> = ({
         
         <div className="mt-4 p-3 bg-blue-50 rounded-lg">
           <p className="text-blue-800 text-sm">
-            💡 <strong>안내:</strong> AI 질문 생성 기능만 제공됩니다. 생성된 문제를 보고 학습하세요!
+            💡 <strong>안내:</strong> 객관식 질문 생성 및 대화형 학습 도구를 제공합니다!
           </p>
         </div>
       </div>
@@ -210,6 +213,9 @@ export const AIReviewSession: React.FC<AIReviewSessionProps> = ({
       case 'blur_processing':
         return <BlurProcessingViewer content={content} />;
 
+      case 'ai_chat':
+        return <AIChatTutor content={content} />;
+
       default:
         return <div>알 수 없는 모드입니다.</div>;
     }
@@ -255,18 +261,18 @@ export const AIReviewSession: React.FC<AIReviewSessionProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div className="p-4 bg-white rounded-lg border">
                   <h3 className="font-semibold text-blue-600 mb-2">베이직</h3>
-                  <p className="text-gray-600">• 객관식 • 주관식</p>
-                  <p className="text-gray-600">• 월 10개 질문</p>
+                  <p className="text-gray-600">• 객관식 • AI 채팅</p>
+                  <p className="text-gray-600">• 일 10회 사용</p>
                 </div>
                 <div className="p-4 bg-white rounded-lg border">
                   <h3 className="font-semibold text-purple-600 mb-2">프리미엄</h3>
-                  <p className="text-gray-600">• 객관식 • 주관식 • 빈칸 채우기</p>
-                  <p className="text-gray-600">• 월 50개 질문</p>
+                  <p className="text-gray-600">• 객관식 • 빈칸 채우기 • AI 채팅</p>
+                  <p className="text-gray-600">• 일 50회 사용</p>
                 </div>
                 <div className="p-4 bg-white rounded-lg border">
                   <h3 className="font-semibold text-green-600 mb-2">프로</h3>
                   <p className="text-gray-600">• 모든 AI 기능</p>
-                  <p className="text-gray-600">• 월 200개 질문</p>
+                  <p className="text-gray-600">• 일 200회 사용</p>
                 </div>
               </div>
 
@@ -324,9 +330,9 @@ export const AIReviewSession: React.FC<AIReviewSessionProps> = ({
             </div>
             <div className="p-3 bg-white rounded-lg">
               <div className="text-2xl font-bold text-purple-600">
-                {existingQuestions.filter(q => !q.options).length}
+                {existingQuestions.filter(q => q.question_type_display === 'Fill in the Blank').length}
               </div>
-              <div className="text-xs text-gray-600">주관식 질문</div>
+              <div className="text-xs text-gray-600">빈칸 채우기</div>
             </div>
           </div>
         </div>
@@ -336,10 +342,10 @@ export const AIReviewSession: React.FC<AIReviewSessionProps> = ({
       <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
         <h4 className="font-medium text-yellow-900 mb-2">💡 AI 학습 도구 사용법</h4>
         <ul className="text-yellow-800 text-sm space-y-1">
-          <li>• <strong>질문 생성기:</strong> 원하는 유형과 난이도로 맞춤형 문제 생성</li>
+          <li>• <strong>질문 생성기:</strong> 객관식 문제 자동 생성</li>
           <li>• <strong>빈칸 채우기:</strong> 핵심 용어 학습에 효과적인 대화형 도구</li>
           <li>• <strong>블러 처리:</strong> 게임처럼 재미있게 개념 학습</li>
-          <li>• <strong>자가 학습:</strong> 생성된 문제와 정답을 보며 스스로 학습하세요</li>
+          <li>• <strong>AI 채팅:</strong> 학습 내용에 대해 AI에게 질문하고 답변받기</li>
         </ul>
       </div>
     </div>

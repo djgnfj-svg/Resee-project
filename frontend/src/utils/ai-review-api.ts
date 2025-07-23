@@ -6,13 +6,12 @@ import type {
   AIQuestionType,
   AIQuestion,
   GenerateQuestionsRequest,
-  EvaluateAnswerRequest,
-  AnswerEvaluationResult,
-  AIEvaluation,
   FillBlankRequest,
   FillBlankResponse,
   BlurRegionsRequest,
   BlurRegionsResponse,
+  AIChatRequest,
+  AIChatResponse,
   PaginatedResponse,
 } from '../types/ai-review';
 
@@ -41,7 +40,6 @@ class AIReviewAPI {
     return response.data.results;
   }
 
-  // Note: Answer evaluation features have been removed - questions are for learning only
 
   // Fill-in-blank generation
   async generateFillBlanks(request: FillBlankRequest): Promise<FillBlankResponse> {
@@ -55,22 +53,13 @@ class AIReviewAPI {
     return response.data;
   }
 
-  // Utility functions
-  getScoreLabel(score: number): string {
-    if (score >= 0.9) return '우수';
-    if (score >= 0.7) return '양호';
-    if (score >= 0.5) return '보통';
-    if (score >= 0.3) return '미흡';
-    return '부족';
+  // AI Chat
+  async chatAboutContent(request: AIChatRequest): Promise<AIChatResponse> {
+    const response = await api.post('/ai-review/chat/', request);
+    return response.data;
   }
 
-  getScoreColor(score: number): string {
-    if (score >= 0.9) return 'text-green-600';
-    if (score >= 0.7) return 'text-blue-600';
-    if (score >= 0.5) return 'text-yellow-600';
-    if (score >= 0.3) return 'text-orange-600';
-    return 'text-red-600';
-  }
+  // Utility functions
 
   getDifficultyLabel(difficulty: number): string {
     switch (difficulty) {
@@ -86,7 +75,6 @@ class AIReviewAPI {
   getQuestionTypeLabel(type: string): string {
     switch (type) {
       case 'multiple_choice': return '객관식';
-      case 'short_answer': return '주관식';
       case 'fill_blank': return '빈칸 채우기';
       case 'blur_processing': return '블러 처리';
       default: return type;

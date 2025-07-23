@@ -23,6 +23,7 @@ const ThrowError = ({ shouldThrow = false }: { shouldThrow?: boolean }) => {
 };
 
 // Component that throws an error in useEffect
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ThrowErrorInEffect = ({ shouldThrow = false }: { shouldThrow?: boolean }) => {
   React.useEffect(() => {
     if (shouldThrow) {
@@ -275,6 +276,7 @@ describe('ErrorBoundary Component', () => {
 
   test('handles non-Error objects thrown as errors', () => {
     const ThrowString = () => {
+      // eslint-disable-next-line no-throw-literal
       throw 'String error';
     };
 

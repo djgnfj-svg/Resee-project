@@ -22,6 +22,7 @@ class OpenAIService:
     """
     
     def __init__(self):
+        """Initialize OpenAI service with configuration from Django settings"""
         api_key = getattr(settings, 'OPENAI_API_KEY', None)
         try:
             self.client = openai.OpenAI(
@@ -31,6 +32,7 @@ class OpenAIService:
             # Create a mock client for testing when no API key is available
             self.client = type('MockClient', (), {'api_key': api_key})()
         
+        # Load configuration from settings with sensible defaults
         self.model = getattr(settings, 'OPENAI_MODEL', 'gpt-4')
         self.max_retries = getattr(settings, 'AI_MAX_RETRIES', 3)
         self.cache_timeout = getattr(settings, 'AI_CACHE_TIMEOUT', 3600)  # 1 hour
@@ -89,14 +91,14 @@ class OpenAIService:
         Returns:
             List of question dictionaries
         """
-        # Check cache first
+        # Check cache first to avoid redundant API calls
         cache_key = f"ai_questions_{content.id}_{'-'.join(question_types)}_{difficulty}_{count}"
         cached_questions = cache.get(cache_key)
         if cached_questions:
             return cached_questions
         
-        # Prepare content for AI
-        content_text = content.content[:2000]  # Limit content length
+        # Prepare content for AI processing (limit to prevent token overflow)
+        content_text = content.content[:2000]  # Limit content length for API efficiency
         
         system_message = """You are an educational AI that generates high-quality review questions. 
         Create questions that test understanding and help with spaced repetition learning.
@@ -142,14 +144,14 @@ class OpenAIService:
         try:
             response_content, processing_time = self._make_api_call(messages, temperature=0.8, max_tokens=1500)
             
-            # Parse JSON response
+            # Parse JSON response with fallback handling
             try:
                 response_data = json.loads(response_content)
                 questions = response_data.get('questions', [])
             except json.JSONDecodeError:
-                # Fallback: try to extract JSON from response
+                # Fallback: try to extract JSON from response (AI sometimes wraps JSON in text)
                 try:
-                    # Find JSON block in response
+                    # Find JSON block in response by locating braces
                     start = response_content.find('{')
                     end = response_content.rfind('}') + 1
                     if start != -1 and end > start:
@@ -161,13 +163,13 @@ class OpenAIService:
                 except json.JSONDecodeError:
                     raise AIServiceError("Failed to parse AI response as JSON")
             
-            # Add metadata to questions
+            # Add metadata to questions for tracking and debugging
             for question in questions:
                 question['ai_model_used'] = self.model
                 question['processing_time_ms'] = processing_time
                 question['generation_prompt'] = user_message
             
-            # Cache the result
+            # Cache the result to improve performance for repeated requests
             cache.set(cache_key, questions, self.cache_timeout)
             
             return questions
@@ -251,11 +253,12 @@ class OpenAIService:
                 except json.JSONDecodeError:
                     raise AIServiceError("Failed to parse AI response as JSON")
             
-            # Validate and normalize score
+            # Validate and normalize score to ensure data integrity
             score = evaluation_data.get('score', 0.0)
             if not isinstance(score, (int, float)) or score < 0 or score > 1:
-                score = 0.5  # Default to neutral score
+                score = 0.5  # Default to neutral score if invalid
             
+            # Add metadata for tracking
             evaluation_data['score'] = float(score)
             evaluation_data['ai_model_used'] = self.model
             evaluation_data['processing_time_ms'] = processing_time
@@ -308,6 +311,7 @@ class OpenAIService:
         try:
             response_content, processing_time = self._make_api_call(messages)
             
+            # Parse response and add metadata
             try:
                 result = json.loads(response_content)
                 result['ai_model_used'] = self.model
@@ -366,6 +370,7 @@ class OpenAIService:
         try:
             response_content, processing_time = self._make_api_call(messages)
             
+            # Parse response and add tracking metadata
             try:
                 result = json.loads(response_content)
                 result['ai_model_used'] = self.model
@@ -376,6 +381,58 @@ class OpenAIService:
                 
         except Exception as e:
             raise AIServiceError(f"Blur region identification failed: {str(e)}")
+    
+    def chat_about_content(self, content_text: str, content_title: str, user_message: str) -> Dict[str, Any]:
+        """
+        Provide AI tutoring by answering questions about specific content
+        
+        Args:
+            content_text: The learning content text
+            content_title: Title of the content
+            user_message: User's question
+        
+        Returns:
+            Dictionary with AI response and metadata
+        """
+        system_message = f"""You are an AI tutor helping a student understand the learning material titled "{content_title}".
+
+        Learning Material:
+        {content_text[:2000]}  # Limit content to prevent token overflow
+
+        Guidelines:
+        - Answer questions based on the provided learning material
+        - If the question is not related to the material, gently redirect to the content
+        - Provide clear, educational explanations
+        - Use examples when helpful
+        - Encourage further learning
+        - Be supportive and patient
+        - Answer in Korean
+        """
+        
+        user_prompt = f"""
+        Student Question: {user_message}
+        
+        Please provide a helpful answer based on the learning material about "{content_title}".
+        """
+        
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_prompt}
+        ]
+        
+        try:
+            response_content, processing_time = self._make_api_call(messages, temperature=0.7, max_tokens=500)
+            
+            return {
+                "message": user_message,
+                "response": response_content,
+                "content_title": content_title,
+                "ai_model_used": self.model,
+                "processing_time_ms": processing_time
+            }
+            
+        except Exception as e:
+            raise AIServiceError(f"AI chat failed: {str(e)}")
 
 
 # Singleton instance

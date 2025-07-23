@@ -79,10 +79,10 @@ export const FillBlankQuestion: React.FC<FillBlankQuestionProps> = ({
       const correctAnswer = state.answers[blankKey].toLowerCase().trim();
       const userAnswer = state.userAnswers[blankKey].toLowerCase().trim();
       
-      // Simple similarity check - could be enhanced with fuzzy matching
-      if (userAnswer === correctAnswer || 
-          correctAnswer.includes(userAnswer) ||
-          userAnswer.includes(correctAnswer)) {
+      // Enhanced similarity check with multiple strategies
+      const isCorrect = checkAnswerSimilarity(correctAnswer, userAnswer);
+      
+      if (isCorrect) {
         correctCount++;
       }
     });
@@ -98,12 +98,66 @@ export const FillBlankQuestion: React.FC<FillBlankQuestionProps> = ({
     } else if (score >= 0.8) {
       toast.success(`우수합니다! ${correctCount}/${totalBlanks} 정답 👏`);
     } else if (score >= 0.6) {
-      toast.error(`좋습니다! ${correctCount}/${totalBlanks} 정답 📚`);
+      toast.success(`좋습니다! ${correctCount}/${totalBlanks} 정답 📚`);
     } else if (score >= 0.4) {
       toast.error(`조금 더 노력해보세요! ${correctCount}/${totalBlanks} 정답 💪`);
     } else {
       toast.error(`다시 한번 시도해보세요! ${correctCount}/${totalBlanks} 정답 🤔`);
     }
+  };
+
+  const checkAnswerSimilarity = (correct: string, user: string): boolean => {
+    // Exact match
+    if (user === correct) return true;
+    
+    // Remove common particles/suffixes for Korean
+    const cleanCorrect = removeKoreanParticles(correct);
+    const cleanUser = removeKoreanParticles(user);
+    
+    if (cleanUser === cleanCorrect) return true;
+    
+    // Partial matching (both directions)
+    if (correct.length >= 3 && user.length >= 2) {
+      if (correct.includes(user) || user.includes(correct)) return true;
+    }
+    
+    // Levenshtein distance for typos (allow 1-2 character differences)
+    const distance = levenshteinDistance(correct, user);
+    const maxAllowedDistance = Math.max(1, Math.floor(correct.length * 0.2));
+    
+    return distance <= maxAllowedDistance;
+  };
+
+  const removeKoreanParticles = (text: string): string => {
+    // Remove common Korean particles and endings
+    return text
+      .replace(/[은는이가을를에서의도로만]+$/, '') // Remove particles at the end
+      .replace(/[하다함기]$/, '') // Remove verb endings
+      .replace(/[적인적으로들]$/, '') // Remove adjective endings
+      .trim();
+  };
+
+  const levenshteinDistance = (a: string, b: string): number => {
+    const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+    
+    for (let i = 0; i <= b.length; i++) matrix[i][0] = i;
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+    
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
+          );
+        }
+      }
+    }
+    
+    return matrix[b.length][a.length];
   };
 
   const handleSubmit = () => {
@@ -143,9 +197,7 @@ export const FillBlankQuestion: React.FC<FillBlankQuestionProps> = ({
 
     const correctAnswer = state.answers[blankKey].toLowerCase().trim();
     const userAnswer = state.userAnswers[blankKey].toLowerCase().trim();
-    const isCorrect = userAnswer === correctAnswer || 
-                     correctAnswer.includes(userAnswer) ||
-                     userAnswer.includes(correctAnswer);
+    const isCorrect = checkAnswerSimilarity(correctAnswer, userAnswer);
 
     return `inline-block min-w-24 px-2 py-1 border-b-2 text-center ${
       isCorrect 
@@ -160,7 +212,7 @@ export const FillBlankQuestion: React.FC<FillBlankQuestionProps> = ({
 
     blankKeys.forEach(blankKey => {
       const blankPattern = `[${blankKey}]`;
-      const input = (
+      const inputElement = (
         <input
           key={blankKey}
           type="text"
@@ -231,7 +283,8 @@ export const FillBlankQuestion: React.FC<FillBlankQuestionProps> = ({
       {/* Instructions */}
       <div className="mb-4 p-3 bg-blue-50 rounded-lg">
         <p className="text-blue-800 text-sm">
-          🧩 <strong>빈칸 채우기:</strong> 아래 문장에서 빈칸에 들어갈 적절한 단어나 구문을 입력하세요.
+          🧩 <strong>빈칸 채우기:</strong> 아래 문장에서 빈칸에 들어갈 적절한 단어나 구문을 입력하세요.<br/>
+          💡 <strong>채점 방식:</strong> 유사한 답안, 오타, 조사 차이도 정답으로 인정됩니다!
         </p>
       </div>
 
@@ -286,9 +339,7 @@ export const FillBlankQuestion: React.FC<FillBlankQuestionProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {Object.entries(state.answers).map(([blankKey, correctAnswer]) => {
               const userAnswer = state.userAnswers[blankKey];
-              const isCorrect = userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim() ||
-                               correctAnswer.toLowerCase().includes(userAnswer.toLowerCase().trim()) ||
-                               userAnswer.toLowerCase().includes(correctAnswer.toLowerCase().trim());
+              const isCorrect = checkAnswerSimilarity(correctAnswer.toLowerCase().trim(), userAnswer.toLowerCase().trim());
               
               return (
                 <div key={blankKey} className="flex items-center gap-2">

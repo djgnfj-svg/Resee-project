@@ -84,14 +84,6 @@ const ReviewSimulation: React.FC<ReviewSimulationProps> = ({ className = '' }) =
     setIsAutoPlaying(false);
   };
 
-  const getResponseColor = (response: string) => {
-    switch (response) {
-      case 'remembered': return 'bg-green-500';
-      case 'partial': return 'bg-yellow-500';
-      case 'forgot': return 'bg-red-500';
-      default: return 'bg-gray-300';
-    }
-  };
 
   const getNextInterval = (response: 'remembered' | 'partial' | 'forgot') => {
     switch (response) {

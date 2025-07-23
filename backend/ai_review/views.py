@@ -13,20 +13,19 @@ from drf_yasg import openapi
 
 from content.models import Content
 from accounts.models import AIUsageTracking
-from .models import AIQuestionType, AIQuestion, AIEvaluation, AIReviewSession
+from .models import AIQuestionType, AIQuestion, AIReviewSession
 from .serializers import (
     AIQuestionTypeSerializer,
     AIQuestionSerializer, 
     GenerateQuestionsSerializer,
     GeneratedQuestionSerializer,
-    EvaluateAnswerSerializer,
-    AnswerEvaluationResultSerializer,
-    AIEvaluationSerializer,
     AIReviewSessionSerializer,
     FillBlankRequestSerializer,
     FillBlankResponseSerializer,
     BlurRegionsRequestSerializer,
-    BlurRegionsResponseSerializer
+    BlurRegionsResponseSerializer,
+    AIChatRequestSerializer,
+    AIChatResponseSerializer
 )
 from .services import ai_service, AIServiceError
 
@@ -188,7 +187,6 @@ class GenerateQuestionsView(APIView):
             )
 
 
-# AI Answer Evaluation removed - only question generation is supported
 
 
 class ContentQuestionsView(ListAPIView):
@@ -209,7 +207,6 @@ class ContentQuestionsView(ListAPIView):
         ).order_by('-created_at')
 
 
-# User evaluations view removed - only question generation is supported
 
 
 class AIReviewSessionListView(ListAPIView):
@@ -349,7 +346,6 @@ class IdentifyBlurRegionsView(APIView):
             )
 
 
-# Simple function-based views for basic endpoints
 @swagger_auto_schema(
     method='get',
     responses={200: 'AI Review system status'},
@@ -373,3 +369,111 @@ def ai_review_health(request):
             'status': 'unhealthy',
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AIChatView(APIView):
+    """
+    AI chat for learning content
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @swagger_auto_schema(
+        request_body=AIChatRequestSerializer,
+        responses={
+            200: AIChatResponseSerializer,
+            400: 'Bad Request',
+            403: 'Forbidden',
+            404: 'Content not found',
+            429: 'Rate limit exceeded',
+            500: 'AI service error'
+        }
+    )
+    def post(self, request):
+        """Chat with AI about learning content"""
+        # Check AI feature access
+        if not request.user.can_use_ai_features():
+            return Response(
+                {
+                    'error': 'AI features not available',
+                    'detail': 'Please upgrade your subscription and verify your email to access AI features.',
+                    'requires_subscription': True
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Check if ai_chat is in available features
+        available_features = request.user.get_ai_features_list()
+        if 'ai_chat' not in available_features:
+            return Response(
+                {
+                    'error': 'AI chat not available',
+                    'detail': 'AI chat is not available in your subscription tier.',
+                    'available_features': available_features
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = AIChatRequestSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        content_id = serializer.validated_data['content_id']
+        message = serializer.validated_data['message']
+        
+        # Check daily usage limit (reuse question limit for chat)
+        usage_record = AIUsageTracking.get_or_create_for_today(request.user)
+        if not usage_record.can_generate_questions(1):  # 1 chat = 1 question credit
+            daily_limit = request.user.get_ai_question_limit()
+            remaining = daily_limit - usage_record.questions_generated
+            return Response(
+                {
+                    'error': 'Daily limit exceeded',
+                    'detail': f'You have reached your daily limit of {daily_limit} AI interactions. '
+                             f'You have {max(0, remaining)} interactions remaining today.',
+                    'daily_limit': daily_limit,
+                    'used_today': usage_record.questions_generated,
+                    'remaining_today': max(0, remaining)
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+        
+        # Get content
+        content = get_object_or_404(Content, id=content_id, author=request.user)
+        
+        try:
+            # Get AI response
+            result = ai_service.chat_about_content(
+                content_text=content.content,
+                content_title=content.title,
+                user_message=message
+            )
+            
+            # Track usage (1 chat = 1 credit)
+            usage_record.increment_questions(1)
+            
+            logger.info(
+                f"AI chat interaction for content {content.id} "
+                f"(user: {request.user.email}, tier: {request.user.subscription.tier})"
+            )
+            
+            return Response(result, status=status.HTTP_200_OK)
+            
+        except AIServiceError as e:
+            logger.error(f"AI chat error for user {request.user.email}: {str(e)}")
+            return Response(
+                {'error': 'AI service temporarily unavailable', 'detail': str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error in AI chat: {str(e)}")
+            return Response(
+                {'error': 'AI chat failed'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

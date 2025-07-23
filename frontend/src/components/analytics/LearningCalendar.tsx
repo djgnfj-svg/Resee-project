@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { format, startOfYear, endOfYear, eachDayOfInterval, getDay, getMonth, getWeek } from 'date-fns';
+import { format, startOfYear, endOfYear, eachDayOfInterval, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 interface CalendarData {
@@ -38,6 +38,7 @@ const LearningCalendar: React.FC<LearningCalendarProps> = ({ calendarData }) => 
   const currentYear = new Date().getFullYear();
   const yearStart = startOfYear(new Date(currentYear, 0, 1));
   const yearEnd = endOfYear(new Date(currentYear, 11, 31));
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const allDays = eachDayOfInterval({ start: yearStart, end: yearEnd });
 
   // 날짜별 데이터 맵 생성

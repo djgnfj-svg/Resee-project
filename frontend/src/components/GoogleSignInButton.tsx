@@ -25,30 +25,8 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   
   // Google Client ID가 설정되지 않았으면 컴포넌트를 렌더링하지 않음
   const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
-  if (!clientId) {
-    return null;
-  }
 
-  useEffect(() => {
-    // Google Sign-In script가 이미 로드되어 있는지 확인
-    if (window.google) {
-      initializeGoogleSignIn();
-    } else {
-      // Google Sign-In script 동적 로드
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      script.onload = initializeGoogleSignIn;
-      document.head.appendChild(script);
-
-      return () => {
-        document.head.removeChild(script);
-      };
-    }
-  }, []);
-
-  const initializeGoogleSignIn = () => {
+  const initializeGoogleSignIn = React.useCallback(() => {
     if (!window.google || !buttonRef.current) return;
 
     // Google Sign-In 초기화
@@ -67,7 +45,29 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       text: 'signin_with',
       logo_alignment: 'left',
     });
-  };
+  }, [clientId]);
+
+  useEffect(() => {
+    // Google Client ID가 없으면 초기화하지 않음
+    if (!clientId) return;
+    // Google Sign-In script가 이미 로드되어 있는지 확인
+    if (window.google) {
+      initializeGoogleSignIn();
+    } else {
+      // Google Sign-In script 동적 로드
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = initializeGoogleSignIn;
+      document.head.appendChild(script);
+
+      return () => {
+        document.head.removeChild(script);
+      };
+    }
+  }, [clientId, initializeGoogleSignIn]);
+
 
   const handleCredentialResponse = async (response: any) => {
     try {
@@ -99,6 +99,11 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       onError?.(errorMessage);
     }
   };
+
+  // Google Client ID가 설정되지 않았으면 컴포넌트를 렌더링하지 않음
+  if (!clientId) {
+    return null;
+  }
 
   return (
     <div className="w-full">

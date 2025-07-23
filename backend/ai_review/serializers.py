@@ -35,7 +35,7 @@ class GenerateQuestionsSerializer(serializers.Serializer):
     content_id = serializers.IntegerField()
     question_types = serializers.ListField(
         child=serializers.CharField(),
-        help_text="List of question type names (multiple_choice, short_answer, etc.)"
+        help_text="List of question type names (multiple_choice, fill_blank, blur_processing)"
     )
     difficulty = serializers.IntegerField(min_value=1, max_value=5, default=1)
     count = serializers.IntegerField(min_value=1, max_value=10, default=3)
@@ -78,44 +78,6 @@ class GeneratedQuestionSerializer(serializers.Serializer):
     processing_time_ms = serializers.IntegerField(required=False)
 
 
-class AIEvaluationSerializer(serializers.ModelSerializer):
-    """Serializer for AI evaluations"""
-    question_text = serializers.CharField(source='question.question_text', read_only=True)
-    user_email = serializers.CharField(source='user.email', read_only=True)
-    
-    class Meta:
-        model = AIEvaluation
-        fields = [
-            'id', 'question', 'question_text', 'user', 'user_email',
-            'user_answer', 'ai_score', 'feedback', 'similarity_score',
-            'evaluation_details', 'ai_model_used', 'processing_time_ms',
-            'created_at'
-        ]
-        read_only_fields = ['id', 'user', 'created_at']
-
-
-class EvaluateAnswerSerializer(serializers.Serializer):
-    """Serializer for answer evaluation request"""
-    question_id = serializers.IntegerField()
-    user_answer = serializers.CharField()
-    
-    def validate_question_id(self, value):
-        """Validate that question exists"""
-        try:
-            AIQuestion.objects.get(id=value, is_active=True)
-        except AIQuestion.DoesNotExist:
-            raise serializers.ValidationError("Question not found or inactive")
-        return value
-
-
-class AnswerEvaluationResultSerializer(serializers.Serializer):
-    """Serializer for answer evaluation response"""
-    score = serializers.FloatField()
-    feedback = serializers.CharField()
-    similarity_score = serializers.FloatField(required=False)
-    evaluation_details = serializers.DictField(required=False)
-    ai_model_used = serializers.CharField(required=False)
-    processing_time_ms = serializers.IntegerField(required=False)
 
 
 class AIReviewSessionSerializer(serializers.ModelSerializer):
@@ -187,3 +149,27 @@ class BlurRegionsResponseSerializer(serializers.Serializer):
     concepts = serializers.ListField(child=serializers.CharField())
     ai_model_used = serializers.CharField(required=False)
     processing_time_ms = serializers.IntegerField(required=False)
+
+
+class AIChatRequestSerializer(serializers.Serializer):
+    """Serializer for AI chat request"""
+    content_id = serializers.IntegerField()
+    message = serializers.CharField(max_length=1000)
+    
+    def validate_content_id(self, value):
+        """Validate that content exists and belongs to the user"""
+        user = self.context['request'].user
+        try:
+            Content.objects.get(id=value, author=user)
+        except Content.DoesNotExist:
+            raise serializers.ValidationError("Content not found or access denied")
+        return value
+
+
+class AIChatResponseSerializer(serializers.Serializer):
+    """Serializer for AI chat response"""
+    message = serializers.CharField()
+    response = serializers.CharField()
+    ai_model_used = serializers.CharField(required=False)
+    processing_time_ms = serializers.IntegerField(required=False)
+    content_title = serializers.CharField(required=False)

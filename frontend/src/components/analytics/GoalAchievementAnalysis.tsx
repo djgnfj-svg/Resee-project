@@ -9,21 +9,21 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
+  // BarChart,
+  // Bar,
   PieChart,
   Pie,
   Cell,
-  RadialBarChart,
-  RadialBar
+  // RadialBarChart,
+  // RadialBar
 } from 'recharts';
 import { 
   FireIcon,
   TrophyIcon,
-  CalendarIcon,
+  // CalendarIcon,
   ClockIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
+  // ExclamationTriangleIcon,
   ChartBarIcon,
   StarIcon,
   BoltIcon
@@ -114,6 +114,7 @@ interface GoalAchievementAnalysisProps {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const STREAK_COLORS = {
   active: '#10b981',
   broken: '#ef4444',
@@ -125,36 +126,69 @@ const ACHIEVEMENT_COLORS = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6
 const GoalAchievementAnalysis: React.FC<GoalAchievementAnalysisProps> = ({ data }) => {
   const { streakAnalysis, goalTracking, motivationMetrics, predictions } = data;
 
-  // 스트릭 성과 지표 계산
-  const streakPerformance = useMemo(() => {
-    const recentStreaks = streakAnalysis.streakHistory.slice(-30);
-    const averagePerformance = recentStreaks.reduce((sum, streak) => sum + streak.performance, 0) / recentStreaks.length;
-    const consistencyScore = 100 - (recentStreaks.reduce((acc, streak) => {
-      return acc + Math.abs(streak.performance - averagePerformance);
-    }, 0) / recentStreaks.length);
+  // NaN 방지를 위한 숫자 정리 유틸리티
+  const sanitizeNumber = (value: any, fallback: number = 0): number => {
+    if (value === null || value === undefined) return fallback;
+    const num = Number(value);
+    return isNaN(num) || !isFinite(num) ? fallback : num;
+  };
 
+  // 배열 안전 체크
+  const safeArray = (arr: any[], fallback: any[] = []): any[] => {
+    return Array.isArray(arr) ? arr : fallback;
+  };
+
+  // 스트릭 성과 지표 계산
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const streakPerformance = useMemo(() => {
+    const safeStreakHistory = safeArray(streakAnalysis.streakHistory);
+    const recentStreaks = safeStreakHistory.slice(-30);
+    
+    // 빈 배열 처리
+    const averagePerformance = recentStreaks.length > 0 
+      ? sanitizeNumber(recentStreaks.reduce((sum, streak) => sum + sanitizeNumber(streak.performance, 0), 0) / recentStreaks.length)
+      : 0;
+      
+    const consistencyScore = recentStreaks.length > 0 
+      ? sanitizeNumber(100 - (recentStreaks.reduce((acc, streak) => {
+          return acc + Math.abs(sanitizeNumber(streak.performance, 0) - averagePerformance);
+        }, 0) / recentStreaks.length))
+      : 100;
+
+    const currentStreak = sanitizeNumber(streakAnalysis.currentStreak);
+    const longestStreak = sanitizeNumber(streakAnalysis.longestStreak, 1); // 1로 fallback로 나누기 0 방지
+    
     return {
-      averagePerformance: Math.round(averagePerformance),
-      consistencyScore: Math.round(Math.max(0, consistencyScore)),
-      streakEfficiency: Math.round((streakAnalysis.currentStreak / streakAnalysis.longestStreak) * 100),
-      breakRisk: predictions.streakPrediction.likelihoodToExtend
+      averagePerformance: Math.round(sanitizeNumber(averagePerformance)),
+      consistencyScore: Math.round(Math.max(0, sanitizeNumber(consistencyScore))),
+      streakEfficiency: Math.round(sanitizeNumber((currentStreak / longestStreak) * 100)),
+      breakRisk: sanitizeNumber(predictions.streakPrediction?.likelihoodToExtend, 50)
     };
   }, [streakAnalysis, predictions]);
 
   // 목표 달성 트렌드
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const goalTrends = useMemo(() => {
-    const recent = goalTracking.historicalPerformance.slice(-12);
+    const safeHistoricalPerformance = safeArray(goalTracking.historicalPerformance);
+    const recent = safeHistoricalPerformance.slice(-12);
+    
+    // 빈 배열이나 비교 불가능한 경우 처리
     const trendSlope = recent.length > 1 ? 
-      (recent[recent.length - 1].rate - recent[0].rate) / recent.length : 0;
+      sanitizeNumber((sanitizeNumber(recent[recent.length - 1].rate) - sanitizeNumber(recent[0].rate)) / recent.length) : 0;
+    
+    const averageConsistency = recent.length > 0 
+      ? sanitizeNumber(recent.reduce((sum, p) => sum + sanitizeNumber(p.consistency, 0), 0) / recent.length)
+      : 0;
     
     return {
       trend: trendSlope > 2 ? 'improving' : trendSlope < -2 ? 'declining' : 'stable',
-      trendValue: Math.abs(trendSlope).toFixed(1),
-      averageConsistency: Math.round(recent.reduce((sum, p) => sum + p.consistency, 0) / recent.length)
+      trendValue: sanitizeNumber(Math.abs(trendSlope)).toFixed(1),
+      averageConsistency: Math.round(averageConsistency)
     };
   }, [goalTracking.historicalPerformance]);
 
   // 배지 진행률 계산
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const badgeProgress = motivationMetrics.streakBadges.filter(badge => !badge.unlocked);
   const unlockedBadges = motivationMetrics.streakBadges.filter(badge => badge.unlocked);
 
@@ -414,13 +448,13 @@ const GoalAchievementAnalysis: React.FC<GoalAchievementAnalysisProps> = ({ data 
                     <div className="bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                       <div 
                         className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${Math.min(100, progress)}%` }}
+                        style={{ width: `${Math.min(100, sanitizeNumber(progress))}%` }}
                       />
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-gray-500 dark:text-gray-400">
-                      진행률: {progress.toFixed(0)}%
+                      진행률: {sanitizeNumber(progress).toFixed(0)}%
                     </span>
                     <span className="text-green-600 dark:text-green-400 font-medium">
                       🎁 {challenge.reward}

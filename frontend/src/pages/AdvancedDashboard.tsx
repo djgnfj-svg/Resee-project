@@ -125,9 +125,9 @@ const AdvancedDashboard: React.FC = () => {
     const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6'];
     const categoryDistribution = analyticsData.category_performance.map((category, index) => ({
       name: category.name,
-      value: category.content_count,
+      value: Math.max(0, category.content_count || 0),
       color: colors[index % colors.length],
-      masteryLevel: category.success_rate
+      masteryLevel: isNaN(category.success_rate) ? 0 : category.success_rate
     }));
 
     // 성과 지표
@@ -241,30 +241,33 @@ const AdvancedDashboard: React.FC = () => {
 
     return {
       categories: analyticsData.category_performance.map((cat, index) => ({
-        id: cat.id,
-        name: cat.name,
-        totalContent: cat.content_count,
-        masteredContent: Math.floor(cat.content_count * 0.6),
-        inProgressContent: Math.floor(cat.content_count * 0.3),
-        averageSuccessRate: cat.success_rate,
-        averageDifficulty: cat.difficulty_level,
-        totalReviews: cat.total_reviews,
+        id: cat.id || index + 1,
+        name: cat.name || 'Unknown Category',
+        totalContent: Math.max(0, cat.content_count || 0),
+        masteredContent: Math.floor((cat.content_count || 0) * 0.6),
+        inProgressContent: Math.floor((cat.content_count || 0) * 0.3),
+        averageSuccessRate: isNaN(cat.success_rate) ? 0 : Math.max(0, Math.min(100, cat.success_rate)),
+        averageDifficulty: isNaN(cat.difficulty_level) ? 1 : Math.max(1, Math.min(5, cat.difficulty_level)),
+        totalReviews: Math.max(0, cat.total_reviews || 0),
         averageReviewTime: Math.floor(Math.random() * 30) + 15,
         masteryProgress: Math.floor(Math.random() * 40) + 50,
-        retentionRate: cat.recent_success_rate,
+        retentionRate: isNaN(cat.recent_success_rate) ? 0 : Math.max(0, Math.min(100, cat.recent_success_rate)),
         lastActivity: new Date().toISOString(),
         learningVelocity: Math.random() * 5 + 1,
         categoryRank: index + 1
       })),
       performanceMatrix: analyticsData.category_performance.map(cat => ({
-        category: cat.name,
-        difficulty: cat.difficulty_level,
-        performance: cat.success_rate,
+        category: cat.name || 'Unknown Category',
+        difficulty: isNaN(cat.difficulty_level) ? 1 : Math.max(1, Math.min(5, cat.difficulty_level)),
+        performance: isNaN(cat.success_rate) ? 0 : Math.max(0, Math.min(100, cat.success_rate)),
         reviewFrequency: Math.floor(Math.random() * 10) + 5,
-        timeInvestment: Math.floor(Math.random() * 200) + 100,
-        masteryLevel: cat.success_rate >= 80 ? 'expert' : 
-                      cat.success_rate >= 65 ? 'advanced' :
-                      cat.success_rate >= 50 ? 'intermediate' : 'beginner' as 'beginner' | 'intermediate' | 'advanced' | 'expert'
+        timeInvestment: Math.max(1, Math.floor(Math.random() * 200) + 100),
+        masteryLevel: ((rate: number) => {
+          const safeRate = isNaN(rate) ? 0 : rate;
+          return safeRate >= 80 ? 'expert' : 
+                 safeRate >= 65 ? 'advanced' :
+                 safeRate >= 50 ? 'intermediate' : 'beginner';
+        })(cat.success_rate) as 'beginner' | 'intermediate' | 'advanced' | 'expert'
       })),
       improvementSuggestions: [
         {
