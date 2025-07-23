@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import { useSubscription } from '../hooks/useSubscription';
 import { SubscriptionTierCard } from './SubscriptionTierCard';
@@ -27,6 +27,17 @@ export const SubscriptionUpgradeModal: React.FC<SubscriptionUpgradeModalProps> =
   } = useSubscription();
 
   const [selectedTier, setSelectedTier] = useState<SubscriptionTier | null>(null);
+
+  // Close modal on successful upgrade
+  useEffect(() => {
+    if (upgradeSuccess) {
+      const timer = setTimeout(() => {
+        onClose();
+        setSelectedTier(null);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [upgradeSuccess, onClose]);
 
   if (!isOpen) return null;
 
@@ -57,16 +68,6 @@ export const SubscriptionUpgradeModal: React.FC<SubscriptionUpgradeModalProps> =
     return error.userMessage || '구독 업그레이드 중 오류가 발생했습니다.';
   };
 
-  // Close modal on successful upgrade
-  React.useEffect(() => {
-    if (upgradeSuccess) {
-      const timer = setTimeout(() => {
-        onClose();
-        setSelectedTier(null);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [upgradeSuccess, onClose]);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">

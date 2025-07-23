@@ -39,7 +39,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
         setQuestionTypes(types);
       } catch (error) {
         console.error('Failed to load question types:', error);
-        toast.error('질문 유형을 불러올 수 없습니다');
+        toast.error('Failed to load question types');
       }
     };
 
@@ -48,7 +48,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
 
   const handleGenerateQuestions = async () => {
     if (state.selectedTypes.length === 0) {
-      toast.error('최소 하나의 질문 유형을 선택해주세요');
+      toast.error('Please select at least one question type');
       return;
     }
 
@@ -67,10 +67,10 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
       setState(prev => ({ ...prev, questions }));
       onQuestionsGenerated?.(questions);
       
-      toast.success(`${questions.length}개의 AI 질문이 생성되었습니다! 🤖`);
+      toast.success(`${questions.length} AI questions generated successfully! 🤖`);
     } catch (error: any) {
       console.error('Question generation failed:', error);
-      const errorMessage = error.response?.data?.error || '질문 생성에 실패했습니다';
+      const errorMessage = error.response?.data?.error || 'Question generation failed';
       setState(prev => ({ ...prev, error: errorMessage }));
       toast.error(errorMessage);
     } finally {
@@ -94,21 +94,21 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
           🤖
         </div>
         <h3 className="text-lg font-semibold text-gray-900">
-          AI 질문 생성기
+          AI Question Generator
         </h3>
         <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
-          AI 기능
+          AI Feature
         </span>
       </div>
 
       <p className="text-gray-600 text-sm mb-4">
-        "{content.title}" 콘텐츠로부터 AI가 다양한 유형의 질문을 자동으로 생성합니다.
+        AI automatically generates various types of questions from the "{content.title}" content.
       </p>
 
       {/* Question Type Selection */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          질문 유형 선택
+          Select Question Types
         </label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {questionTypes.map((type) => (
@@ -143,36 +143,36 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            난이도 레벨
+            Difficulty Level
           </label>
           <select
             value={state.difficulty}
             onChange={(e) => setState(prev => ({ ...prev, difficulty: Number(e.target.value) }))}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
-            <option value={1}>1 - 매우 쉬움</option>
-            <option value={2}>2 - 쉬움</option>
-            <option value={3}>3 - 보통</option>
-            <option value={4}>4 - 어려움</option>
-            <option value={5}>5 - 매우 어려움</option>
+            <option value={1}>1 - Very Easy</option>
+            <option value={2}>2 - Easy</option>
+            <option value={3}>3 - Medium</option>
+            <option value={4}>4 - Hard</option>
+            <option value={5}>5 - Very Hard</option>
           </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            생성할 질문 수
+            Number of Questions
           </label>
           <select
             value={state.count}
             onChange={(e) => setState(prev => ({ ...prev, count: Number(e.target.value) }))}
             className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
-            <option value={1}>1개</option>
-            <option value={2}>2개</option>
-            <option value={3}>3개</option>
-            <option value={5}>5개</option>
-            <option value={7}>7개</option>
-            <option value={10}>10개</option>
+            <option value={1}>1</option>
+            <option value={2}>2</option>
+            <option value={3}>3</option>
+            <option value={5}>5</option>
+            <option value={7}>7</option>
+            <option value={10}>10</option>
           </select>
         </div>
       </div>
@@ -197,10 +197,10 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
         {state.isLoading ? (
           <div className="flex items-center justify-center gap-2">
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-            AI가 질문을 생성하고 있습니다...
+            AI is generating questions...
           </div>
         ) : (
-          `🧠 AI 질문 ${state.count}개 생성하기`
+          `🧠 Generate ${state.count} AI Questions`
         )}
       </button>
 
@@ -208,7 +208,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
       {state.questions.length > 0 && (
         <div className="mt-6">
           <h4 className="font-medium text-gray-900 mb-3">
-            생성된 질문 미리보기 ({state.questions.length}개)
+            Generated Questions Preview ({state.questions.length})
           </h4>
           <div className="space-y-3 max-h-64 overflow-y-auto">
             {state.questions.map((question, index) => (

@@ -22,7 +22,6 @@ import {
   ChartBarIcon,
   StarIcon
 } from '@heroicons/react/24/outline';
-
 interface LearningPatternsProps {
   data: {
     hourlyPattern: Array<{
@@ -67,6 +66,7 @@ interface LearningPatternsProps {
 }
 
 const WEEKDAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const DIFFICULTY_COLORS = {
   easy: '#10b981',
   medium: '#f59e0b', 
@@ -75,6 +75,13 @@ const DIFFICULTY_COLORS = {
 
 const LearningPatterns: React.FC<LearningPatternsProps> = ({ data }) => {
   const { hourlyPattern, weeklyPattern, streakAnalysis, difficultyProgression, learningVelocity } = data;
+
+  // NaN 방지를 위한 숫자 정리 유틸리티 함수
+  const sanitizeNumber = (value: any, fallback: number = 0): number => {
+    if (value === null || value === undefined) return fallback;
+    const num = Number(value);
+    return isNaN(num) || !isFinite(num) ? fallback : num;
+  };
 
   // 최적 학습 시간 계산
   const optimalStudyTime = useMemo(() => {
@@ -114,8 +121,8 @@ const LearningPatterns: React.FC<LearningPatternsProps> = ({ data }) => {
         const hourData = hourlyPattern[hour];
         // 요일과 시간대의 활동 강도를 조합
         const intensity = dayData && hourData ? 
-          ((dayData.studySessions * hourData.studySessions) / 10) : 0;
-        matrix[day][hour] = Math.min(100, intensity);
+          sanitizeNumber(((sanitizeNumber(dayData.studySessions) * sanitizeNumber(hourData.studySessions)) / 10)) : 0;
+        matrix[day][hour] = Math.min(100, sanitizeNumber(intensity));
       }
     }
     return matrix;

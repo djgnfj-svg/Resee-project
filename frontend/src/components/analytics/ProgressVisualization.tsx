@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import {
-  LineChart,
+  // LineChart,
   Line,
   AreaChart,
   Area,
@@ -24,7 +24,7 @@ import {
   MinusIcon,
   FireIcon,
   AcademicCapIcon,
-  ClockIcon,
+  // ClockIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
 
@@ -76,38 +76,63 @@ const COLORS = {
 const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) => {
   const { weeklyProgress, monthlyTrends, categoryDistribution, performanceMetrics } = data;
 
+  // NaN 방지를 위한 숫자 정리 유틸리티
+  const sanitizeNumber = (value: any, fallback: number = 0): number => {
+    if (value === null || value === undefined) return fallback;
+    const num = Number(value);
+    return isNaN(num) || !isFinite(num) ? fallback : num;
+  };
+
+  // 배열 안전 체크
+  const safeArray = (arr: any[], fallback: any[] = []): any[] => {
+    return Array.isArray(arr) ? arr : fallback;
+  };
+
   // 성과 지표 계산
   const performanceInsights = useMemo(() => {
-    const recent = weeklyProgress.slice(-7);
-    const previousWeek = weeklyProgress.slice(-14, -7);
+    const safeWeeklyProgress = safeArray(weeklyProgress);
+    const recent = safeWeeklyProgress.slice(-7);
+    const previousWeek = safeWeeklyProgress.slice(-14, -7);
     
-    const recentAvgSuccess = recent.reduce((sum, day) => sum + day.successRate, 0) / recent.length;
+    // 빈 배열 처리
+    const recentAvgSuccess = recent.length > 0 
+      ? sanitizeNumber(recent.reduce((sum, day) => sum + sanitizeNumber(day.successRate, 0), 0) / recent.length)
+      : 0;
+    
     const prevAvgSuccess = previousWeek.length > 0 
-      ? previousWeek.reduce((sum, day) => sum + day.successRate, 0) / previousWeek.length 
+      ? sanitizeNumber(previousWeek.reduce((sum, day) => sum + sanitizeNumber(day.successRate, 0), 0) / previousWeek.length)
       : recentAvgSuccess;
     
     const trend = recentAvgSuccess - prevAvgSuccess;
-    const trendPercent = ((recentAvgSuccess - prevAvgSuccess) / prevAvgSuccess * 100);
+    // prevAvgSuccess가 0이면 나누기 방지
+    const trendPercent = prevAvgSuccess !== 0 
+      ? sanitizeNumber((recentAvgSuccess - prevAvgSuccess) / prevAvgSuccess * 100)
+      : 0;
 
     return {
       trend: trend > 1 ? 'up' : trend < -1 ? 'down' : 'stable',
-      trendPercent: Math.abs(trendPercent),
-      recentSuccess: recentAvgSuccess,
-      totalReviewsThisWeek: recent.reduce((sum, day) => sum + day.reviews, 0)
+      trendPercent: sanitizeNumber(Math.abs(trendPercent)),
+      recentSuccess: sanitizeNumber(recentAvgSuccess),
+      totalReviewsThisWeek: recent.reduce((sum, day) => sum + sanitizeNumber(day.reviews, 0), 0)
     };
   }, [weeklyProgress]);
 
-  // 주간 목표 진행률
-  const weeklyProgressPercent = Math.min((performanceMetrics.weeklyProgress / performanceMetrics.weeklyGoal) * 100, 100);
+  // 주간 목표 진행률 (나누기 0 방지)
+  const weeklyProgressPercent = sanitizeNumber(
+    performanceMetrics.weeklyGoal > 0 
+      ? Math.min((sanitizeNumber(performanceMetrics.weeklyProgress) / sanitizeNumber(performanceMetrics.weeklyGoal)) * 100, 100)
+      : 0
+  );
 
   const formatTooltipValue = (value: number, name: string) => {
+    const safeValue = sanitizeNumber(value);
     if (name.includes('Rate') || name.includes('율')) {
-      return [`${value.toFixed(1)}%`, name];
+      return [`${safeValue.toFixed(1)}%`, name];
     }
     if (name.includes('Time') || name.includes('시간')) {
-      return [`${value}분`, name];
+      return [`${safeValue}분`, name];
     }
-    return [value, name];
+    return [safeValue, name];
   };
 
   return (
@@ -120,7 +145,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">연속 학습</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {performanceMetrics.currentStreak}일
+                {sanitizeNumber(performanceMetrics.currentStreak)}일
               </p>
             </div>
             <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
@@ -129,7 +154,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
           </div>
           <div className="mt-4">
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              최고 기록: {performanceMetrics.longestStreak}일
+              최고 기록: {sanitizeNumber(performanceMetrics.longestStreak)}일
             </div>
           </div>
         </div>
@@ -140,7 +165,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">주간 목표</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {weeklyProgressPercent.toFixed(0)}%
+                {sanitizeNumber(weeklyProgressPercent).toFixed(0)}%
               </p>
             </div>
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
@@ -155,7 +180,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
               />
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {performanceMetrics.weeklyProgress}/{performanceMetrics.weeklyGoal} 복습 완료
+              {sanitizeNumber(performanceMetrics.weeklyProgress)}/{sanitizeNumber(performanceMetrics.weeklyGoal)} 복습 완료
             </div>
           </div>
         </div>
@@ -166,7 +191,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">평균 정답률</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {performanceInsights.recentSuccess.toFixed(1)}%
+                {sanitizeNumber(performanceInsights.recentSuccess).toFixed(1)}%
               </p>
             </div>
             <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
@@ -195,7 +220,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             }`}>
               {performanceInsights.trend !== 'stable' && (
                 <>
-                  {performanceInsights.trend === 'up' ? '↗' : '↘'} {performanceInsights.trendPercent.toFixed(1)}% 
+                  {performanceInsights.trend === 'up' ? '↗' : '↘'} {sanitizeNumber(performanceInsights.trendPercent).toFixed(1)}% 
                   {performanceInsights.trend === 'up' ? '향상' : '감소'}
                 </>
               )}
@@ -210,7 +235,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">총 복습</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {performanceMetrics.totalReviews.toLocaleString()}
+                {sanitizeNumber(performanceMetrics.totalReviews).toLocaleString()}
               </p>
             </div>
             <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
@@ -219,7 +244,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
           </div>
           <div className="mt-4">
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              이번 주: {performanceInsights.totalReviewsThisWeek}회
+              이번 주: {sanitizeNumber(performanceInsights.totalReviewsThisWeek)}회
             </div>
           </div>
         </div>
@@ -232,7 +257,13 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={weeklyProgress}>
+            <AreaChart data={safeArray(weeklyProgress).map(item => ({
+              ...item,
+              reviews: sanitizeNumber(item.reviews),
+              successRate: sanitizeNumber(item.successRate),
+              newContent: sanitizeNumber(item.newContent),
+              masteredItems: sanitizeNumber(item.masteredItems)
+            }))}>
               <defs>
                 <linearGradient id="reviewsGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3}/>
@@ -299,7 +330,13 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyTrends}>
+              <BarChart data={safeArray(monthlyTrends).map(item => ({
+                ...item,
+                totalReviews: sanitizeNumber(item.totalReviews),
+                averageScore: sanitizeNumber(item.averageScore),
+                contentAdded: sanitizeNumber(item.contentAdded),
+                timeSpent: sanitizeNumber(item.timeSpent)
+              }))}>              
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
                   dataKey="month" 
@@ -338,7 +375,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={categoryDistribution}
+                  data={safeArray(categoryDistribution).map(item => ({
+                    ...item,
+                    value: sanitizeNumber(item.value),
+                    masteryLevel: sanitizeNumber(item.masteryLevel)
+                  }))}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -378,14 +419,14 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             <div className="relative w-24 h-24 mx-auto mb-3">
               <div className="w-24 h-24">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart data={[{ name: 'Retention', value: performanceMetrics.averageRetention, fill: COLORS.success }]}>
+                  <RadialBarChart data={[{ name: 'Retention', value: sanitizeNumber(performanceMetrics.averageRetention), fill: COLORS.success }]}>
                     <RadialBar dataKey="value" cornerRadius={10} fill={COLORS.success} />
                   </RadialBarChart>
                 </ResponsiveContainer>
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {performanceMetrics.averageRetention}%
+                  {sanitizeNumber(performanceMetrics.averageRetention)}%
                 </span>
               </div>
             </div>
@@ -396,14 +437,14 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             <div className="relative w-24 h-24 mx-auto mb-3">
               <div className="w-24 h-24">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart data={[{ name: 'Efficiency', value: performanceMetrics.studyEfficiency, fill: COLORS.purple }]}>
+                  <RadialBarChart data={[{ name: 'Efficiency', value: sanitizeNumber(performanceMetrics.studyEfficiency), fill: COLORS.purple }]}>
                     <RadialBar dataKey="value" cornerRadius={10} fill={COLORS.purple} />
                   </RadialBarChart>
                 </ResponsiveContainer>
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {performanceMetrics.studyEfficiency}%
+                  {sanitizeNumber(performanceMetrics.studyEfficiency)}%
                 </span>
               </div>
             </div>
@@ -414,14 +455,14 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             <div className="relative w-24 h-24 mx-auto mb-3">
               <div className="w-24 h-24">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart data={[{ name: 'Goal', value: weeklyProgressPercent, fill: COLORS.indigo }]}>
+                  <RadialBarChart data={[{ name: 'Goal', value: sanitizeNumber(weeklyProgressPercent), fill: COLORS.indigo }]}>
                     <RadialBar dataKey="value" cornerRadius={10} fill={COLORS.indigo} />
                   </RadialBarChart>
                 </ResponsiveContainer>
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {weeklyProgressPercent.toFixed(0)}%
+                  {sanitizeNumber(weeklyProgressPercent).toFixed(0)}%
                 </span>
               </div>
             </div>

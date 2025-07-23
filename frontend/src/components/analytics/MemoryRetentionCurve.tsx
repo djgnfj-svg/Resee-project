@@ -46,35 +46,60 @@ interface MemoryRetentionProps {
 const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
   const { retentionCurve, forgettingCurve, insights } = data;
 
+  // NaN 방지를 위한 숫자 정리 유틸리티
+  const sanitizeNumber = (value: any, fallback: number = 0): number => {
+    if (value === null || value === undefined) return fallback;
+    const num = Number(value);
+    return isNaN(num) || !isFinite(num) ? fallback : num;
+  };
+
+  // 배열 안전 체크
+  const safeArray = (arr: any[], fallback: any[] = []): any[] => {
+    return Array.isArray(arr) ? arr : fallback;
+  };
+
   // 성과 지표 계산
   const performanceIndicators = useMemo(() => {
-    const totalReviews = retentionCurve.reduce((sum, item) => sum + item.reviewCount, 0);
-    const weightedRetention = retentionCurve.reduce((sum, item) => 
-      sum + (item.retentionRate * item.reviewCount), 0) / totalReviews;
+    const safeRetentionCurve = safeArray(retentionCurve);
+    const totalReviews = safeRetentionCurve.reduce((sum, item) => sum + sanitizeNumber(item.reviewCount, 0), 0);
+    
+    // 빈 배열이나 totalReviews가 0인 경우 처리
+    const weightedRetention = totalReviews > 0 
+      ? safeRetentionCurve.reduce((sum, item) => 
+          sum + (sanitizeNumber(item.retentionRate, 0) * sanitizeNumber(item.reviewCount, 0)), 0) / totalReviews
+      : 0;
 
-    const efficiency = (weightedRetention / insights.optimalRetention) * 100;
-    const consistencyScore = 100 - (Math.max(...retentionCurve.map(r => r.retentionRate)) - 
-                                  Math.min(...retentionCurve.map(r => r.retentionRate)));
+    const optimalRetention = sanitizeNumber(insights.optimalRetention, 100);
+    const efficiency = optimalRetention > 0 
+      ? sanitizeNumber((weightedRetention / optimalRetention) * 100)
+      : 0;
+      
+    // 빈 배열 처리 - Math.max/min에서 NaN 방지
+    const retentionRates = safeRetentionCurve.map(r => sanitizeNumber(r.retentionRate, 0));
+    const consistencyScore = retentionRates.length > 0 
+      ? sanitizeNumber(100 - (Math.max(...retentionRates) - Math.min(...retentionRates)))
+      : 100;
 
     return {
-      efficiency: Math.round(efficiency),
-      consistency: Math.round(consistencyScore),
-      totalReviews,
-      weightedRetention: Math.round(weightedRetention)
+      efficiency: Math.round(sanitizeNumber(efficiency)),
+      consistency: Math.round(sanitizeNumber(consistencyScore)),
+      totalReviews: sanitizeNumber(totalReviews),
+      weightedRetention: Math.round(sanitizeNumber(weightedRetention))
     };
   }, [retentionCurve, insights]);
 
   const formatTooltip = (value: number, name: string) => {
+    const safeValue = sanitizeNumber(value);
     if (name.includes('Rate') || name.includes('율') || name.includes('Strength') || name.includes('강도')) {
-      return [`${value.toFixed(1)}%`, name];
+      return [`${safeValue.toFixed(1)}%`, name];
     }
     if (name.includes('Time') || name.includes('시간')) {
-      return [`${value}시간`, name];
+      return [`${safeValue}시간`, name];
     }
     if (name.includes('Interval') || name.includes('간격')) {
-      return [`${value}일`, name];
+      return [`${safeValue}일`, name];
     }
-    return [value, name];
+    return [safeValue, name];
   };
 
   return (
@@ -94,7 +119,7 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
             </div>
           </div>
           <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            목표: {insights.optimalRetention}%
+            목표: {sanitizeNumber(insights.optimalRetention)}%
           </div>
         </div>
 
@@ -149,7 +174,7 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">개선 가능성</p>
               <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                +{insights.improvementPotential}%
+                +{sanitizeNumber(insights.improvementPotential)}%
               </p>
             </div>
             <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
@@ -170,7 +195,13 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
           </h3>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={retentionCurve}>
+              <LineChart data={safeArray(retentionCurve).map(item => ({
+                ...item,
+                retentionRate: sanitizeNumber(item.retentionRate),
+                optimalRate: sanitizeNumber(item.optimalRate),
+                reviewCount: sanitizeNumber(item.reviewCount),
+                interval: sanitizeNumber(item.interval)
+              }))}>              
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
                   dataKey="interval" 
@@ -227,7 +258,13 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
           </h3>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={forgettingCurve}>
+              <AreaChart data={safeArray(forgettingCurve).map(item => ({
+                ...item,
+                timeElapsed: sanitizeNumber(item.timeElapsed),
+                memoryStrength: sanitizeNumber(item.memoryStrength),
+                withoutReview: sanitizeNumber(item.withoutReview),
+                withReview: sanitizeNumber(item.withReview)
+              }))}>              
                 <defs>
                   <linearGradient id="withReview" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -276,7 +313,7 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
                   name="복습 포함"
                 />
                 <ReferenceLine 
-                  x={insights.nextOptimalReview} 
+                  x={sanitizeNumber(insights.nextOptimalReview)} 
                   stroke="#8b5cf6" 
                   strokeDasharray="3 3"
                   label={{ value: "최적 복습 시점", position: "top" }}
@@ -303,7 +340,7 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
               <div>
                 <h5 className="font-medium text-blue-800 dark:text-blue-200 mb-2">강점</h5>
                 <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                  <li>• {insights.strongestInterval}일 간격에서 최고 성과 ({retentionCurve.find(r => r.interval === insights.strongestInterval)?.retentionRate.toFixed(1)}%)</li>
+                  <li>• {sanitizeNumber(insights.strongestInterval)}일 간격에서 최고 성과 ({sanitizeNumber(safeArray(retentionCurve).find(r => r.interval === insights.strongestInterval)?.retentionRate, 0).toFixed(1)}%)</li>
                   <li>• 평균 기억 유지율이 목표치 대비 양호</li>
                   <li>• 일관된 복습 패턴 유지</li>
                 </ul>
@@ -311,9 +348,9 @@ const MemoryRetentionCurve: React.FC<MemoryRetentionProps> = ({ data }) => {
               <div>
                 <h5 className="font-medium text-blue-800 dark:text-blue-200 mb-2">개선 영역</h5>
                 <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                  <li>• {insights.weakestInterval}일 간격 복습 강화 필요</li>
-                  <li>• 복습 타이밍을 {insights.nextOptimalReview}시간으로 최적화</li>
-                  <li>• {insights.improvementPotential}% 추가 성과 향상 가능</li>
+                  <li>• {sanitizeNumber(insights.weakestInterval)}일 간격 복습 강화 필요</li>
+                  <li>• 복습 타이밍을 {sanitizeNumber(insights.nextOptimalReview)}시간으로 최적화</li>
+                  <li>• {sanitizeNumber(insights.improvementPotential)}% 추가 성과 향상 가능</li>
                 </ul>
               </div>
             </div>

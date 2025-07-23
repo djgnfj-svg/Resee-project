@@ -173,18 +173,18 @@ class User(AbstractUser):
             SubscriptionTier.FREE: [],
             SubscriptionTier.BASIC: [
                 'multiple_choice',
-                'short_answer'
+                'ai_chat'
             ],
             SubscriptionTier.PREMIUM: [
                 'multiple_choice',
-                'short_answer',
-                'fill_blank'
+                'fill_blank',
+                'ai_chat'
             ],
             SubscriptionTier.PRO: [
                 'multiple_choice',
-                'short_answer', 
                 'fill_blank',
-                'blur_processing'
+                'blur_processing',
+                'ai_chat'
             ]
         }
         

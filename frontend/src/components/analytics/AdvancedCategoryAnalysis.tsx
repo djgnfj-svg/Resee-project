@@ -14,9 +14,9 @@ import {
 import { 
   BookOpenIcon,
   TrophyIcon,
-  ClockIcon,
-  FireIcon,
-  ChartBarIcon,
+  // ClockIcon,
+  // FireIcon,
+  // ChartBarIcon,
   AcademicCapIcon,
   LightBulbIcon,
   SparklesIcon
@@ -66,6 +66,7 @@ interface AdvancedCategoryAnalysisProps {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const DIFFICULTY_COLORS = {
   1: '#10b981', // 쉬움
   2: '#84cc16', // 약간 쉬움
@@ -74,6 +75,7 @@ const DIFFICULTY_COLORS = {
   5: '#ef4444'  // 매우 어려움
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const MASTERY_COLORS = {
   beginner: '#ef4444',
   intermediate: '#f59e0b',
@@ -81,10 +83,17 @@ const MASTERY_COLORS = {
   expert: '#10b981'
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const PRIORITY_COLORS = {
   high: '#ef4444',
   medium: '#f59e0b',
   low: '#10b981'
+};
+
+// Utility function to sanitize numeric values
+const sanitizeNumber = (value: any, fallback: number = 0): number => {
+  const num = Number(value);
+  return isNaN(num) || !isFinite(num) ? fallback : num;
 };
 
 const AdvancedCategoryAnalysis: React.FC<AdvancedCategoryAnalysisProps> = ({ data }) => {
@@ -92,56 +101,76 @@ const AdvancedCategoryAnalysis: React.FC<AdvancedCategoryAnalysisProps> = ({ dat
 
   // 카테고리별 종합 점수 계산
   const categoryScores = useMemo(() => {
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
+      return [];
+    }
+    
     return categories.map(category => {
-      const efficiencyScore = (category.averageSuccessRate / 100) * 100;
-      const progressScore = category.masteryProgress;
-      const velocityScore = Math.min(100, category.learningVelocity * 10);
-      const retentionScore = category.retentionRate;
+      const efficiencyScore = sanitizeNumber((sanitizeNumber(category.averageSuccessRate, 0) / 100) * 100, 0);
+      const progressScore = sanitizeNumber(category.masteryProgress, 0);
+      const velocityScore = sanitizeNumber(Math.min(100, sanitizeNumber(category.learningVelocity, 0) * 10), 0);
+      const retentionScore = sanitizeNumber(category.retentionRate, 0);
       
-      const overallScore = (efficiencyScore * 0.3 + progressScore * 0.3 + velocityScore * 0.2 + retentionScore * 0.2);
+      const overallScore = sanitizeNumber((efficiencyScore * 0.3 + progressScore * 0.3 + velocityScore * 0.2 + retentionScore * 0.2), 0);
       
       return {
         ...category,
-        overallScore: Math.round(overallScore),
-        efficiencyScore: Math.round(efficiencyScore),
-        progressScore: Math.round(progressScore),
-        velocityScore: Math.round(velocityScore),
-        retentionScore: Math.round(retentionScore)
+        name: category.name || 'Unknown Category',
+        averageSuccessRate: sanitizeNumber(category.averageSuccessRate, 0),
+        masteryProgress: sanitizeNumber(category.masteryProgress, 0),
+        learningVelocity: sanitizeNumber(category.learningVelocity, 0),
+        retentionRate: sanitizeNumber(category.retentionRate, 0),
+        totalContent: sanitizeNumber(category.totalContent, 1),
+        overallScore: sanitizeNumber(Math.round(overallScore), 0),
+        efficiencyScore: sanitizeNumber(Math.round(efficiencyScore), 0),
+        progressScore: sanitizeNumber(Math.round(progressScore), 0),
+        velocityScore: sanitizeNumber(Math.round(velocityScore), 0),
+        retentionScore: sanitizeNumber(Math.round(retentionScore), 0)
       };
     });
   }, [categories]);
 
-  // 최고/최저 성과 카테고리
-  const topCategory = categoryScores.reduce((best, current) => 
-    current.overallScore > best.overallScore ? current : best
-  );
-  const bottomCategory = categoryScores.reduce((worst, current) => 
-    current.overallScore < worst.overallScore ? current : worst
-  );
+  // 최고/최저 성과 카테고리 (빈 배열 처리)
+  const topCategory = categoryScores.length > 0 
+    ? categoryScores.reduce((best, current) => 
+        current.overallScore > best.overallScore ? current : best
+      )
+    : null;
+  const bottomCategory = categoryScores.length > 0
+    ? categoryScores.reduce((worst, current) => 
+        current.overallScore < worst.overallScore ? current : worst
+      )
+    : null;
 
   // 학습 효율성 매트릭스 데이터 준비
-  const efficiencyMatrix = performanceMatrix.map(item => ({
+  const efficiencyMatrix = (performanceMatrix || []).map(item => ({
     ...item,
-    efficiency: (item.performance / item.timeInvestment) * 100
+    category: item.category || 'Unknown',
+    difficulty: sanitizeNumber(item.difficulty, 1),
+    performance: sanitizeNumber(item.performance, 0),
+    timeInvestment: sanitizeNumber(item.timeInvestment, 1),
+    efficiency: sanitizeNumber(item.timeInvestment, 1) > 0 ? 
+      sanitizeNumber((sanitizeNumber(item.performance, 0) / sanitizeNumber(item.timeInvestment, 1)) * 100, 0) : 0
   }));
 
   // 트리맵을 위한 데이터 변환
-  const treemapData = categories.map(category => ({
-    name: category.name,
-    size: category.totalContent,
-    value: category.masteryProgress,
-    color: category.masteryProgress >= 80 ? '#10b981' : 
-           category.masteryProgress >= 60 ? '#f59e0b' : '#ef4444'
+  const treemapData = (categories || []).map(category => ({
+    name: category.name || 'Unknown',
+    size: Math.max(1, sanitizeNumber(category.totalContent, 1)),
+    value: Math.max(0, sanitizeNumber(category.masteryProgress, 0)),
+    color: sanitizeNumber(category.masteryProgress, 0) >= 80 ? '#10b981' : 
+           sanitizeNumber(category.masteryProgress, 0) >= 60 ? '#f59e0b' : '#ef4444'
   }));
 
   const formatTooltip = (value: number, name: string) => {
+    const safeValue = sanitizeNumber(value);
     if (name.includes('Rate') || name.includes('율') || name.includes('Score') || name.includes('점수')) {
-      return [`${value}%`, name];
+      return [`${safeValue}%`, name];
     }
     if (name.includes('Time') || name.includes('시간')) {
-      return [`${value}분`, name];
+      return [`${safeValue}분`, name];
     }
-    return [value, name];
+    return [safeValue, name];
   };
 
   return (
@@ -153,7 +182,7 @@ const AdvancedCategoryAnalysis: React.FC<AdvancedCategoryAnalysisProps> = ({ dat
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">최고 성과</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
-                {topCategory.name}
+                {topCategory ? topCategory.name : '데이터 없음'}
               </p>
             </div>
             <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
@@ -161,7 +190,7 @@ const AdvancedCategoryAnalysis: React.FC<AdvancedCategoryAnalysisProps> = ({ dat
             </div>
           </div>
           <div className="mt-2 text-xs text-green-600 dark:text-green-400">
-            종합 점수: {topCategory.overallScore}%
+            종합 점수: {topCategory ? topCategory.overallScore : 0}%
           </div>
         </div>
 
@@ -170,7 +199,7 @@ const AdvancedCategoryAnalysis: React.FC<AdvancedCategoryAnalysisProps> = ({ dat
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">개선 필요</p>
               <p className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
-                {bottomCategory.name}
+                {bottomCategory ? bottomCategory.name : '데이터 없음'}
               </p>
             </div>
             <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
@@ -178,7 +207,7 @@ const AdvancedCategoryAnalysis: React.FC<AdvancedCategoryAnalysisProps> = ({ dat
             </div>
           </div>
           <div className="mt-2 text-xs text-red-600 dark:text-red-400">
-            종합 점수: {bottomCategory.overallScore}%
+            종합 점수: {bottomCategory ? bottomCategory.overallScore : 0}%
           </div>
         </div>
 
@@ -204,7 +233,7 @@ const AdvancedCategoryAnalysis: React.FC<AdvancedCategoryAnalysisProps> = ({ dat
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">평균 숙달도</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {Math.round(categories.reduce((sum, cat) => sum + cat.masteryProgress, 0) / categories.length)}%
+                {categories.length > 0 ? Math.round(categories.reduce((sum, cat) => sum + cat.masteryProgress, 0) / categories.length) : 0}%
               </p>
             </div>
             <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
@@ -331,7 +360,7 @@ const AdvancedCategoryAnalysis: React.FC<AdvancedCategoryAnalysisProps> = ({ dat
           🎯 핵심 역량 발달 현황
         </h3>
         <div className="space-y-4">
-          {competencyMap.map((skill, index) => (
+          {(competencyMap || []).map((skill, index) => (
             <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium text-gray-900 dark:text-gray-100">{skill.skill}</h4>
@@ -371,7 +400,7 @@ const AdvancedCategoryAnalysis: React.FC<AdvancedCategoryAnalysisProps> = ({ dat
               🚀 스마트 개선 제안
             </h4>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {improvementSuggestions
+              {(improvementSuggestions || [])
                 .sort((a, b) => {
                   const priorityOrder = { high: 3, medium: 2, low: 1 };
                   return priorityOrder[b.priority] - priorityOrder[a.priority];

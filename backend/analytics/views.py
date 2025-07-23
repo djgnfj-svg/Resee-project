@@ -254,10 +254,10 @@ class ReviewStatsView(APIView):
 
 
 class AdvancedAnalyticsView(APIView):
-    """고급 학습 분석 데이터 제공"""
+    """Advanced learning analytics data provider"""
     
     def get(self, request):
-        """종합적인 학습 분석 데이터 반환"""
+        """Return comprehensive learning analytics data"""
         user = request.user
         
         return Response({
@@ -269,27 +269,27 @@ class AdvancedAnalyticsView(APIView):
         })
     
     def _get_learning_insights(self, user):
-        """학습 인사이트 데이터"""
+        """Learning insights data"""
         thirty_days_ago = timezone.now() - timedelta(days=30)
         seven_days_ago = timezone.now() - timedelta(days=7)
         
-        # 전체 통계
+        # Overall statistics
         total_content = user.contents.count()
         total_reviews = ReviewHistory.objects.filter(user=user).count()
         
-        # 최근 30일 활동
+        # Recent 30 days activity
         recent_reviews = ReviewHistory.objects.filter(
             user=user,
             review_date__gte=thirty_days_ago
         )
         
-        # 최근 7일 활동
+        # Recent 7 days activity
         week_reviews = ReviewHistory.objects.filter(
             user=user,
             review_date__gte=seven_days_ago
         )
         
-        # 성공률 계산
+        # Success rate calculation
         recent_success_rate = (
             recent_reviews.filter(result='remembered').count() / 
             recent_reviews.count() * 100
@@ -300,7 +300,7 @@ class AdvancedAnalyticsView(APIView):
             week_reviews.count() * 100
         ) if week_reviews.count() > 0 else 0
         
-        # 평균 복습 간격 계산
+        # Average review interval calculation
         avg_interval = self._calculate_average_interval(user)
         
         return {
@@ -315,15 +315,15 @@ class AdvancedAnalyticsView(APIView):
         }
     
     def _get_category_performance(self, user):
-        """카테고리별 성과 분석"""
+        """Category-wise performance analysis"""
         categories = Category.objects.filter(user=user)
         category_stats = []
         
         for category in categories:
-            # 카테고리별 콘텐츠 및 리뷰 통계
+            # Content and review statistics per category
             content_count = Content.objects.filter(category=category).count()
             
-            # 카테고리 콘텐츠의 모든 리뷰
+            # All reviews for category content
             category_reviews = ReviewHistory.objects.filter(
                 content__category=category
             )
@@ -333,7 +333,7 @@ class AdvancedAnalyticsView(APIView):
                 remembered_count = category_reviews.filter(result='remembered').count()
                 success_rate = (remembered_count / total_reviews * 100)
                 
-                # 최근 30일 성과
+                # Recent 30 days performance
                 recent_reviews = category_reviews.filter(
                     review_date__gte=timezone.now() - timedelta(days=30)
                 )
@@ -342,7 +342,7 @@ class AdvancedAnalyticsView(APIView):
                     recent_reviews.count() * 100
                 ) if recent_reviews.count() > 0 else 0
                 
-                # 난이도 계산 (실패율 기반)
+                # Difficulty calculation (based on failure rate)
                 difficulty = 100 - success_rate
                 
                 category_stats.append({
@@ -360,10 +360,10 @@ class AdvancedAnalyticsView(APIView):
         return sorted(category_stats, key=lambda x: x['success_rate'], reverse=True)
     
     def _get_study_patterns(self, user):
-        """학습 패턴 분석"""
+        """Study pattern analysis"""
         thirty_days_ago = timezone.now() - timedelta(days=30)
         
-        # 시간대별 학습 패턴
+        # Hourly learning patterns
         hourly_pattern = defaultdict(int)
         reviews = ReviewHistory.objects.filter(
             user=user,
@@ -374,25 +374,25 @@ class AdvancedAnalyticsView(APIView):
             hour = review.review_date.hour
             hourly_pattern[hour] += 1
         
-        # 요일별 학습 패턴
+        # Daily learning patterns
         daily_pattern = defaultdict(int)
         for review in reviews:
             weekday = review.review_date.weekday()  # 0=Monday, 6=Sunday
             daily_pattern[weekday] += 1
         
-        # 패턴 데이터 정리
+        # Pattern data organization
         hourly_data = [
             {'hour': hour, 'count': hourly_pattern[hour]}
             for hour in range(24)
         ]
         
-        daily_labels = ['월', '화', '수', '목', '금', '토', '일']
+        daily_labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         daily_data = [
             {'day': daily_labels[day], 'count': daily_pattern[day]}
             for day in range(7)
         ]
         
-        # 최적 학습 시간 추천
+        # Optimal study time recommendations
         best_hour = max(hourly_pattern.items(), key=lambda x: x[1])[0] if hourly_pattern else 9
         best_day = max(daily_pattern.items(), key=lambda x: x[1])[0] if daily_pattern else 0
         
@@ -405,19 +405,19 @@ class AdvancedAnalyticsView(APIView):
         }
     
     def _get_achievement_stats(self, user):
-        """성취 통계"""
-        # 연속 학습일 계산
+        """Achievement statistics"""
+        # Consecutive study days calculation
         current_streak = self._calculate_detailed_streak(user)
         max_streak = self._calculate_max_streak(user)
         
-        # 완벽한 복습 세션 (모두 기억함)
+        # Perfect review sessions (all remembered)
         perfect_sessions = self._count_perfect_sessions(user)
         
-        # 카테고리 마스터리 (성공률 90% 이상)
+        # Category mastery (90% or higher success rate)
         mastered_categories = self._count_mastered_categories(user)
         
-        # 월간 목표 달성률
-        monthly_target = 100  # 기본 목표: 월 100회 복습
+        # Monthly goal achievement rate
+        monthly_target = 100  # Default goal: 100 reviews per month
         current_month_reviews = ReviewHistory.objects.filter(
             user=user,
             review_date__month=timezone.now().month,
@@ -437,60 +437,71 @@ class AdvancedAnalyticsView(APIView):
         }
     
     def _get_recommendations(self, user):
-        """개인화된 학습 추천"""
+        """Personalized learning recommendations"""
         recommendations = []
         
-        # 카테고리별 성과 분석
+        # Category performance analysis
         category_performance = self._get_category_performance(user)
         
-        # 약한 카테고리 추천
+        # Weak category recommendations
         weak_categories = [cat for cat in category_performance if cat['success_rate'] < 70]
         if weak_categories:
             recommendations.append({
                 'type': 'weak_category',
-                'title': '집중 학습 필요',
-                'message': f"{weak_categories[0]['name']} 카테고리의 복습이 필요해 보여요.",
+                'title': 'Focus Study Required',
+                'message': f"{weak_categories[0]['name']} category needs more review.",
                 'action': 'review_category',
                 'category_id': weak_categories[0]['id'],
             })
         
-        # 학습 패턴 기반 추천
+        # Study pattern based recommendations
         study_patterns = self._get_study_patterns(user)
         if study_patterns['total_study_sessions'] > 0:
             recommendations.append({
                 'type': 'optimal_time',
-                'title': '최적 학습 시간',
-                'message': f"{study_patterns['recommended_hour']}시경이 가장 활발한 학습 시간대예요.",
+                'title': 'Optimal Study Time',
+                'message': f"Around {study_patterns['recommended_hour']}:00 is your most active study time.",
                 'action': 'schedule_reminder',
                 'hour': study_patterns['recommended_hour'],
             })
         
-        # 연속 학습일 격려
+        # Consecutive study day encouragement
         achievement_stats = self._get_achievement_stats(user)
         if achievement_stats['current_streak'] >= 7:
             recommendations.append({
                 'type': 'streak_celebration',
-                'title': '연속 학습 달성!',
-                'message': f"{achievement_stats['current_streak']}일 연속 학습 중이에요. 대단해요! 🎉",
+                'title': 'Study Streak Achievement!',
+                'message': f"You've been studying for {achievement_stats['current_streak']} consecutive days. Great job! 🎉",
                 'action': 'continue_streak',
             })
         
         return recommendations
     
     def _calculate_average_interval(self, user):
-        """평균 복습 간격 계산"""
-        schedules = ReviewSchedule.objects.filter(user=user, interval__isnull=False)
+        """Calculate average review interval"""
+        from review.utils import get_review_intervals
+        
+        schedules = ReviewSchedule.objects.filter(user=user)
         if schedules.exists():
-            total_interval = sum(schedule.interval for schedule in schedules)
-            return round(total_interval / schedules.count(), 1)
+            intervals = get_review_intervals(user)
+            total_interval = 0
+            valid_schedules = 0
+            
+            for schedule in schedules:
+                if schedule.interval_index < len(intervals):
+                    total_interval += intervals[schedule.interval_index]
+                    valid_schedules += 1
+            
+            if valid_schedules > 0:
+                return round(total_interval / valid_schedules, 1)
         return 0
     
     def _calculate_detailed_streak(self, user):
-        """상세한 연속 학습일 계산"""
+        """Calculate detailed consecutive study days"""
         today = timezone.now().date()
         streak = 0
         
-        for i in range(365):  # 최대 1년
+        for i in range(365):  # Maximum 1 year
             check_date = today - timedelta(days=i)
             has_review = ReviewHistory.objects.filter(
                 user=user,
@@ -505,7 +516,7 @@ class AdvancedAnalyticsView(APIView):
         return streak
     
     def _calculate_max_streak(self, user):
-        """최대 연속 학습일 계산"""
+        """Calculate maximum consecutive study days"""
         reviews = ReviewHistory.objects.filter(user=user).order_by('review_date')
         if not reviews.exists():
             return 0
@@ -526,8 +537,8 @@ class AdvancedAnalyticsView(APIView):
         return max(max_streak, current_streak)
     
     def _count_perfect_sessions(self, user):
-        """완벽한 복습 세션 수 계산"""
-        # 하루 단위로 모든 복습이 'remembered'인 날을 계산
+        """Count perfect review sessions"""
+        # Calculate days when all reviews were 'remembered'
         thirty_days_ago = timezone.now().date() - timedelta(days=30)
         perfect_days = 0
         
@@ -548,12 +559,12 @@ class AdvancedAnalyticsView(APIView):
         return perfect_days
     
     def _count_mastered_categories(self, user):
-        """마스터한 카테고리 수 (성공률 90% 이상)"""
+        """Count mastered categories (90% or higher success rate)"""
         category_performance = self._get_category_performance(user)
         return len([cat for cat in category_performance if cat['success_rate'] >= 90])
     
     def _calculate_mastery_level(self, success_rate):
-        """마스터리 레벨 계산"""
+        """Calculate mastery level"""
         if success_rate >= 90:
             return 'expert'
         elif success_rate >= 75:
@@ -567,20 +578,20 @@ class AdvancedAnalyticsView(APIView):
 
 
 class LearningCalendarView(APIView):
-    """학습 캘린더 및 히트맵 데이터"""
+    """Learning calendar and heatmap data"""
     
     def get(self, request):
-        """캘린더 히트맵 데이터 반환"""
+        """Return calendar heatmap data"""
         user = request.user
         
-        # 지난 365일 데이터
+        # Past 365 days data
         one_year_ago = timezone.now().date() - timedelta(days=365)
         calendar_data = []
         
         for i in range(365):
             date = one_year_ago + timedelta(days=i)
             
-            # 해당 날짜의 복습 데이터
+            # Review data for this date
             day_reviews = ReviewHistory.objects.filter(
                 user=user,
                 review_date__date=date
@@ -590,7 +601,7 @@ class LearningCalendarView(APIView):
             remembered_count = day_reviews.filter(result='remembered').count()
             success_rate = (remembered_count / total_reviews * 100) if total_reviews > 0 else 0
             
-            # 강도 계산 (0-4 레벨)
+            # Intensity calculation (0-4 levels)
             intensity = 0
             if total_reviews > 0:
                 if total_reviews >= 20:
@@ -612,7 +623,7 @@ class LearningCalendarView(APIView):
                 'forgot': day_reviews.filter(result='forgot').count(),
             })
         
-        # 월별 요약 통계
+        # Monthly summary statistics
         monthly_summary = self._get_monthly_summary(user, calendar_data)
         
         return Response({
@@ -623,7 +634,7 @@ class LearningCalendarView(APIView):
         })
     
     def _get_monthly_summary(self, user, calendar_data):
-        """월별 요약 통계"""
+        """Monthly summary statistics"""
         monthly_stats = defaultdict(lambda: {
             'total_reviews': 0,
             'active_days': 0,
@@ -639,7 +650,7 @@ class LearningCalendarView(APIView):
                 monthly_stats[month_key]['active_days'] += 1
             monthly_stats[month_key]['total_remembered'] += day_data['remembered']
         
-        # 최근 12개월만 반환
+        # Return only the most recent 12 months
         result = []
         for month_key in sorted(monthly_stats.keys())[-12:]:
             stats = monthly_stats[month_key]

@@ -24,8 +24,8 @@ export const BlurProcessingViewer: React.FC<BlurProcessingViewerProps> = ({
     concepts: [],
     isLoading: true
   });
-  const [showAllAnswers, setShowAllAnswers] = useState(false);
   const [gameMode, setGameMode] = useState(true);
+  const [hintsShown, setHintsShown] = useState<Set<number>>(new Set());
   const textRef = useRef<HTMLDivElement>(null);
 
   // Generate blur regions
@@ -82,10 +82,17 @@ export const BlurProcessingViewer: React.FC<BlurProcessingViewerProps> = ({
     });
   };
 
+  const handleShowHint = (regionIndex: number) => {
+    if (!gameMode) return;
+    
+    setHintsShown(prev => new Set([...prev, regionIndex]));
+    const region = state.blurRegions[regionIndex];
+    toast.success(`💡 힌트: 이것은 ${region.concept_type} 관련 내용입니다!`);
+  };
+
   const revealAll = () => {
     const allIndices = new Set(state.blurRegions.map((_, index) => index));
     setState(prev => ({ ...prev, revealedRegions: allIndices }));
-    setShowAllAnswers(true);
     setGameMode(false);
     
     onCompleted?.(allIndices.size, state.blurRegions.length);
@@ -93,7 +100,7 @@ export const BlurProcessingViewer: React.FC<BlurProcessingViewerProps> = ({
 
   const resetBlurs = () => {
     setState(prev => ({ ...prev, revealedRegions: new Set() }));
-    setShowAllAnswers(false);
+    setHintsShown(new Set());
     setGameMode(true);
   };
 
@@ -111,10 +118,14 @@ export const BlurProcessingViewer: React.FC<BlurProcessingViewerProps> = ({
       const { start_pos, end_pos, text, importance, concept_type } = region;
 
       // Create blur element
+      const isHintShown = hintsShown.has(regionIndex);
+      
       const blurElement = isRevealed ? (
         `<span class="revealed-concept ${getConceptTypeClass(concept_type)}" data-importance="${importance}" title="${concept_type} (중요도: ${Math.round(importance * 100)}%)">${text}</span>`
+      ) : isHintShown ? (
+        `<span class="blurred-concept hint-shown" data-region-index="${regionIndex}" data-importance="${importance}" title="힌트: ${concept_type} | 클릭하여 공개">${text.charAt(0)}${'█'.repeat(Math.max(1, Math.min(7, text.length - 1)))}</span>`
       ) : (
-        `<span class="blurred-concept" data-region-index="${regionIndex}" data-importance="${importance}" title="클릭하여 공개 (${concept_type})">${'█'.repeat(Math.max(2, Math.min(8, text.length)))}</span>`
+        `<span class="blurred-concept" data-region-index="${regionIndex}" data-importance="${importance}" title="클릭하여 공개 | 우클릭: 힌트">${'█'.repeat(Math.max(2, Math.min(8, text.length)))}</span>`
       );
 
       // Replace the text
@@ -129,6 +140,16 @@ export const BlurProcessingViewer: React.FC<BlurProcessingViewerProps> = ({
           if (target.classList.contains('blurred-concept')) {
             const regionIndex = parseInt(target.getAttribute('data-region-index') || '0');
             handleRegionClick(regionIndex);
+          }
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          const target = e.target as HTMLElement;
+          if (target.classList.contains('blurred-concept')) {
+            const regionIndex = parseInt(target.getAttribute('data-region-index') || '0');
+            if (!state.revealedRegions.has(regionIndex)) {
+              handleShowHint(regionIndex);
+            }
           }
         }}
         className="text-gray-800 leading-relaxed cursor-pointer select-none"
@@ -214,8 +235,8 @@ export const BlurProcessingViewer: React.FC<BlurProcessingViewerProps> = ({
       {/* Instructions */}
       <div className="mb-4 p-3 bg-purple-50 rounded-lg">
         <p className="text-purple-800 text-sm">
-          🎯 <strong>게임 방식:</strong> 블러 처리된 핵심 개념들을 클릭하여 공개해보세요. 
-          중요도가 높을수록 더 많은 점수를 얻습니다!
+          🎯 <strong>게임 방식:</strong> 블러 처리된 핵심 개념들을 클릭하여 공개해보세요.<br/>
+          💡 <strong>힌트:</strong> 우클릭하면 첫 글자와 개념 유형을 확인할 수 있습니다!
         </p>
       </div>
 
@@ -233,10 +254,19 @@ export const BlurProcessingViewer: React.FC<BlurProcessingViewerProps> = ({
             cursor: pointer;
             transition: all 0.3s ease;
             font-family: monospace;
+            position: relative;
           }
           .blurred-concept:hover {
             transform: scale(1.05);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
+          .blurred-concept.hint-shown {
+            background: linear-gradient(45deg, #f59e0b, #fbbf24);
+            color: #1f2937;
+            font-weight: 600;
+          }
+          .blurred-concept.hint-shown:hover {
+            background: linear-gradient(45deg, #d97706, #f59e0b);
           }
           .revealed-concept {
             border-radius: 4px;

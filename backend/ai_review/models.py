@@ -18,7 +18,6 @@ class AIQuestionType(models.Model):
     """
     QUESTION_TYPES = [
         ('multiple_choice', 'Multiple Choice'),
-        ('short_answer', 'Short Answer'),
         ('fill_blank', 'Fill in the Blank'),
         ('blur_processing', 'Blur Processing'),
     ]

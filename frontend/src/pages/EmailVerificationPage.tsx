@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { verifyEmail, resendVerificationEmail } from '../utils/api';
-import { useAuth } from '../contexts/AuthContext';
 
 interface VerificationStatus {
   loading: boolean;
@@ -13,7 +12,6 @@ interface VerificationStatus {
 const EmailVerificationPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [status, setStatus] = useState<VerificationStatus>({
     loading: true,
     success: false,
@@ -25,20 +23,7 @@ const EmailVerificationPage: React.FC = () => {
   const token = searchParams.get('token');
   const email = searchParams.get('email');
 
-  useEffect(() => {
-    if (token && email) {
-      verifyEmailWithToken(token, email);
-    } else {
-      setStatus({
-        loading: false,
-        success: false,
-        error: '유효하지 않은 인증 링크입니다.',
-        message: '',
-      });
-    }
-  }, [token, email]);
-
-  const verifyEmailWithToken = async (token: string, email: string) => {
+  const verifyEmailWithToken = useCallback(async (token: string, email: string) => {
     try {
       setStatus(prev => ({ ...prev, loading: true }));
       const response = await verifyEmail(token, email);
@@ -69,7 +54,20 @@ const EmailVerificationPage: React.FC = () => {
         message: '',
       });
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (token && email) {
+      verifyEmailWithToken(token, email);
+    } else {
+      setStatus({
+        loading: false,
+        success: false,
+        error: '유효하지 않은 인증 링크입니다.',
+        message: '',
+      });
+    }
+  }, [token, email, verifyEmailWithToken]);
 
   const handleResendEmail = async () => {
     if (!email) return;

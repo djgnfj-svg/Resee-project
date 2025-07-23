@@ -10,14 +10,14 @@ export function extractResults<T>(data: PaginatedResponse<T> | T[]): T[] {
 }
 
 /**
- * Format date to Korean locale string
+ * Format date to localized string
  */
 export function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString('ko-KR');
 }
 
 /**
- * Format date and time to Korean locale string
+ * Format date and time to localized string
  */
 export function formatDateTime(date: string | Date): string {
   return new Date(date).toLocaleString('ko-KR');
@@ -28,9 +28,9 @@ export function formatDateTime(date: string | Date): string {
  */
 export function getPriorityInfo(priority: 'low' | 'medium' | 'high') {
   const priorityMap = {
-    high: { label: '높음', color: 'red', emoji: '🔴', className: 'bg-red-100 text-red-700' },
-    medium: { label: '보통', color: 'yellow', emoji: '🟡', className: 'bg-yellow-100 text-yellow-700' },
-    low: { label: '낮음', color: 'green', emoji: '🟢', className: 'bg-green-100 text-green-700' }
+    high: { label: 'High', color: 'red', emoji: '🔴', className: 'bg-red-100 text-red-700' },
+    medium: { label: 'Medium', color: 'yellow', emoji: '🟡', className: 'bg-yellow-100 text-yellow-700' },
+    low: { label: 'Low', color: 'green', emoji: '🟢', className: 'bg-green-100 text-green-700' }
   };
   return priorityMap[priority];
 }
@@ -40,4 +40,15 @@ export function getPriorityInfo(priority: 'low' | 'medium' | 'high') {
  */
 export function truncateText(text: string, maxLength: number): string {
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+}
+
+/**
+ * Sanitize a number value to prevent NaN and null/undefined issues in charts
+ * Returns 0 for invalid numbers
+ */
+export function sanitizeNumber(value: number | null | undefined): number {
+  if (value === null || value === undefined || isNaN(value) || !isFinite(value)) {
+    return 0;
+  }
+  return value;
 }

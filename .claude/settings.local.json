@@ -70,7 +70,11 @@
       "Bash(openssl rand:*)",
       "Bash(cp:*)",
       "Bash(./start.sh:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "mcp__playwright__browser_network_requests",
+      "mcp__playwright__browser_console_messages",
+      "Bash(npm run lint)",
+      "Bash(flake8:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

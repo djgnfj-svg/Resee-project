@@ -27,4 +27,7 @@ urlpatterns = [
     
     # Blur regions identification
     path('identify-blur-regions/', views.IdentifyBlurRegionsView.as_view(), name='identify-blur-regions'),
+    
+    # AI Chat
+    path('chat/', views.AIChatView.as_view(), name='ai-chat'),
 ]

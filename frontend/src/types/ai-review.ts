@@ -36,47 +36,6 @@ export interface GenerateQuestionsRequest {
   count: number;
 }
 
-// Answer Evaluation Request
-export interface EvaluateAnswerRequest {
-  question_id: number;
-  user_answer: string;
-}
-
-// Answer Evaluation Result
-export interface AnswerEvaluationResult {
-  evaluation_id: number;
-  score: number;
-  feedback: string;
-  similarity_score?: number;
-  evaluation_details?: {
-    strengths: string[];
-    weaknesses: string[];
-    suggestions: string[];
-  };
-  ai_model_used?: string;
-  processing_time_ms?: number;
-}
-
-// AI Evaluation
-export interface AIEvaluation {
-  id: number;
-  question: number;
-  question_text: string;
-  user: number;
-  user_email: string;
-  user_answer: string;
-  ai_score: number;
-  feedback: string;
-  similarity_score?: number;
-  evaluation_details?: {
-    strengths: string[];
-    weaknesses: string[];
-    suggestions: string[];
-  };
-  ai_model_used?: string;
-  processing_time_ms?: number;
-  created_at: string;
-}
 
 // Fill-in-blank Request/Response
 export interface FillBlankRequest {
@@ -112,6 +71,28 @@ export interface BlurRegionsResponse {
   processing_time_ms?: number;
 }
 
+// AI Chat Request/Response
+export interface AIChatRequest {
+  content_id: number;
+  message: string;
+}
+
+export interface AIChatResponse {
+  message: string;
+  response: string;
+  content_title?: string;
+  ai_model_used?: string;
+  processing_time_ms?: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  message: string;
+  response: string;
+  timestamp: Date;
+  isLoading?: boolean;
+}
+
 // UI State Types
 export interface QuestionGenerationState {
   isLoading: boolean;
@@ -122,15 +103,6 @@ export interface QuestionGenerationState {
   error?: string;
 }
 
-export interface ReviewSessionState {
-  currentQuestionIndex: number;
-  questions: AIQuestion[];
-  answers: Record<number, string>;
-  evaluations: Record<number, AnswerEvaluationResult>;
-  isEvaluating: boolean;
-  sessionComplete: boolean;
-  score?: number;
-}
 
 export interface BlurProcessingState {
   blurredText: string;
@@ -152,7 +124,6 @@ export interface FillBlankState {
 // Question Type Names (matching backend)
 export const QUESTION_TYPES = {
   MULTIPLE_CHOICE: 'multiple_choice',
-  SHORT_ANSWER: 'short_answer', 
   FILL_BLANK: 'fill_blank',
   BLUR_PROCESSING: 'blur_processing'
 } as const;

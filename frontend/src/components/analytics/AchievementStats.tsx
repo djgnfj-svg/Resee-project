@@ -5,7 +5,6 @@ import {
   StarIcon,
   ChartBarIcon,
   CalendarDaysIcon,
-  AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 import {
   TrophyIcon as TrophyIconSolid,
