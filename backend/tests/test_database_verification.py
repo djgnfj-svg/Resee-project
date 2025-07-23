@@ -81,11 +81,11 @@ class DatabaseVerificationTestCase(TransactionTestCase):
             self.assertEqual(timezone_str, 'Asia/Seoul')
             self.assertEqual(notification_enabled, (i % 2 == 0))
         
-        print(f"   ✅ {len(db_users)}명 사용자 데이터 저장/조회 검증 완료")
+        print(f"   {len(db_users)} user data storage/retrieval verification completed")
     
     def test_content_data_persistence(self):
         """콘텐츠 데이터 저장 및 조회 검증"""
-        print("\n📝 콘텐츠 데이터 저장/조회 검증")
+        print("\nContent data storage/retrieval verification")
         
         # 다양한 우선순위의 콘텐츠 생성
         priorities = ['low', 'medium', 'high']
@@ -158,12 +158,12 @@ def test_function_{i+1}():
         for priority, count in priority_counts.items():
             self.assertEqual(count, 5, f"Priority {priority} should have 5 contents, got {count}")
         
-        print(f"   ✅ {len(db_contents)}개 콘텐츠 데이터 저장/조회 검증 완료")
-        print(f"   📊 우선순위별 분포: {priority_counts}")
+        print(f"   {len(db_contents)} content data storage/retrieval verification completed")
+        print(f"   Priority distribution: {priority_counts}")
     
     def test_review_schedule_data_persistence(self):
         """복습 스케줄 데이터 저장 및 조회 검증"""
-        print("\n📅 복습 스케줄 데이터 저장/조회 검증")
+        print("\nReview schedule data storage/retrieval verification")
         
         # 테스트용 콘텐츠 생성
         test_contents = []
@@ -235,11 +235,11 @@ def test_function_{i+1}():
             time_diff = abs((next_review_date - expected_date).total_seconds())
             self.assertLess(time_diff, 3600, f"Schedule {i} date mismatch")
         
-        print(f"   ✅ {len(db_schedules)}개 복습 스케줄 데이터 저장/조회 검증 완료")
+        print(f"   {len(db_schedules)} review schedule data storage/retrieval verification completed")
     
     def test_review_history_data_persistence(self):
         """복습 기록 데이터 저장 및 조회 검증"""
-        print("\n📊 복습 기록 데이터 저장/조회 검증")
+        print("\nReview history data storage/retrieval verification")
         
         # 테스트용 콘텐츠 생성
         content = Content.objects.create(
@@ -316,13 +316,13 @@ def test_function_{i+1}():
         
         average_time = total_time_spent / 30
         
-        print(f"   ✅ {len(db_histories)}개 복습 기록 데이터 저장/조회 검증 완료")
-        print(f"   📊 결과별 분포: {result_counts}")
-        print(f"   ⏱️ 평균 복습 시간: {average_time:.1f}초")
+        print(f"   {len(db_histories)} review history data storage/retrieval verification completed")
+        print(f"   Result distribution: {result_counts}")
+        print(f"   Average review time: {average_time:.1f}sec")
     
     def test_database_constraints_and_indexes(self):
         """데이터베이스 제약조건 및 인덱스 검증"""
-        print("\n🔒 데이터베이스 제약조건 및 인덱스 검증")
+        print("\nDatabase constraints and indexes verification")
         
         with connection.cursor() as cursor:
             # 1. 유니크 제약조건 검증
@@ -386,14 +386,14 @@ def test_function_{i+1}():
             self.assertIn((table, column, foreign_table), found_relations,
                          f"중요한 외래키 관계가 누락됨: {table}.{column} -> {foreign_table}")
         
-        print(f"   ✅ 유니크 제약조건: {len(unique_constraints)}개")
-        print(f"   ✅ 외래키 제약조건: {len(foreign_keys)}개")
-        print(f"   ✅ 인덱스: {len(indexes)}개")
-        print(f"   ✅ 중요 외래키 관계: {len(important_fk_relations)}개 확인됨")
+        print(f"   Unique constraints: {len(unique_constraints)} items")
+        print(f"   Foreign key constraints: {len(foreign_keys)} items")
+        print(f"   Indexes: {len(indexes)} items")
+        print(f"   Important foreign key relationships: {len(important_fk_relations)} items confirmed")
     
     def test_data_integrity_across_operations(self):
         """연속 작업에서의 데이터 무결성 검증"""
-        print("\n🔄 데이터 무결성 검증 (연속 작업)")
+        print("\nData integrity verification (continuous operations)")
         
         # 1. 사용자-콘텐츠-복습 데이터 연쇄 생성
         user = User.objects.create_user(
@@ -481,13 +481,13 @@ def test_function_{i+1}():
         self.assertEqual(final_schedule_count, initial_schedule_count - 1)
         self.assertEqual(final_history_count, initial_history_count - 1)
         
-        print("   ✅ 데이터 연쇄 생성 및 관계 확인 완료")
-        print("   ✅ 복습 완료 후 상태 변경 확인 완료")
-        print("   ✅ 카스케이드 삭제 동작 확인 완료")
+        print("   Data chain creation and relationship verification completed")
+        print("   Review completion status change verification completed")
+        print("   Cascade delete operation verification completed")
     
     def test_database_performance_under_load(self):
         """부하 상황에서의 데이터베이스 성능 검증"""
-        print("\n⚡ 데이터베이스 성능 검증 (부하 테스트)")
+        print("\nDatabase performance verification (load test)")
         
         start_time = time.time()
         
@@ -575,11 +575,11 @@ def test_function_{i+1}():
         self.assertGreater(len(aggregation_results), 0, "집계 쿼리 결과가 있어야 함")
         self.assertEqual(len(join_results), 50, "조인 쿼리 결과가 50개여야 함")
         
-        print(f"   ✅ 대량 데이터 생성: {creation_time:.2f}초 (500개 콘텐츠)")
-        print(f"   ✅ 복잡한 쿼리 실행: {query_time:.2f}초")
-        print(f"   ✅ 전체 처리 시간: {total_time:.2f}초")
-        print(f"   📊 집계 쿼리 결과: {len(aggregation_results)}개")
-        print(f"   📊 조인 쿼리 결과: {len(join_results)}개")
+        print(f"   Large data creation: {creation_time:.2f}sec (500 contents)")
+        print(f"   Complex query execution: {query_time:.2f}sec")
+        print(f"   Total processing time: {total_time:.2f}sec")
+        print(f"   Aggregation query results: {len(aggregation_results)} items")
+        print(f"   Join query results: {len(join_results)} items")
 
 
 class DatabaseAnalyticsVerificationTestCase(TransactionTestCase):
@@ -599,7 +599,7 @@ class DatabaseAnalyticsVerificationTestCase(TransactionTestCase):
     
     def test_analytics_data_accuracy(self):
         """분석 데이터 정확성 검증"""
-        print("\n📈 분석 데이터 정확성 검증")
+        print("\nAnalytics data accuracy verification")
         
         # 테스트 데이터 생성
         contents = []
@@ -688,15 +688,15 @@ class DatabaseAnalyticsVerificationTestCase(TransactionTestCase):
         expected_distribution = {'forgot': 1, 'partial': 1, 'remembered': 8}
         self.assertEqual(result_distribution, expected_distribution)
         
-        print(f"   ✅ 총 콘텐츠: {db_total_content}개")
-        print(f"   ✅ 총 복습: {db_total_reviews}개")
-        print(f"   ✅ 성공률: {db_success_rate}%")
-        print(f"   ✅ 결과 분포: {result_distribution}")
-        print("   ✅ 모든 분석 데이터가 정확함")
+        print(f"   Total content: {db_total_content} items")
+        print(f"   Total reviews: {db_total_reviews} items")
+        print(f"   Success rate: {db_success_rate}%")
+        print(f"   Result distribution: {result_distribution}")
+        print("   All analytics data is accurate")
 
 
 if __name__ == '__main__':
-    print("🗄️ 데이터베이스 검증 테스트 실행")
+    print("Database verification test execution")
     print("Docker 환경에서 PostgreSQL이 실행 중인지 확인하세요.")
     
     import django

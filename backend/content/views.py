@@ -9,6 +9,8 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import Category, Content
 from .serializers import CategorySerializer, ContentSerializer
+from resee.pagination import ContentPagination, OptimizedPageNumberPagination
+from resee.structured_logging import log_api_call, log_performance, performance_logger
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class CategoryViewSet(viewsets.ModelViewSet):
     """
-    📂 카테고리 관리
+    카테고리 관리
     
     학습 콘텐츠를 분류하기 위한 카테고리를 관리합니다.
     전역 카테고리와 사용자별 커스텀 카테고리를 지원합니다.
@@ -54,20 +56,24 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 class ContentViewSet(viewsets.ModelViewSet):
     """
-    📖 학습 콘텐츠 관리
+    학습 콘텐츠 관리
     
     사용자의 학습 콘텐츠를 생성, 수정, 삭제, 조회할 수 있습니다.
     필터링, 정렬 기능을 지원합니다.
     """
     queryset = Content.objects.all()
     serializer_class = ContentSerializer
+    pagination_class = ContentPagination
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['category', 'priority']
     ordering_fields = ['created_at', 'updated_at', 'title']
     ordering = ['-created_at']
     
     def get_queryset(self):
-        queryset = Content.objects.filter(author=self.request.user)
+        # Optimize queries with select_related and prefetch_related
+        queryset = Content.objects.filter(author=self.request.user)\
+            .select_related('category', 'author')\
+            .prefetch_related('ai_questions', 'review_schedules')
         
         # Category filter
         category_slug = self.request.query_params.get('category_slug', None)
@@ -87,6 +93,8 @@ class ContentViewSet(viewsets.ModelViewSet):
         ],
         responses={200: ContentSerializer(many=True)}
     )
+    @log_api_call
+    @log_performance('content_list')
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
     
@@ -147,19 +155,34 @@ class ContentViewSet(viewsets.ModelViewSet):
     def by_category(self, request):
         """Get contents grouped by category - optimized version with error handling"""
         try:
-            # Get user-accessible categories with user filtering
+            # Import at method level to avoid circular imports
+            from django.db import connection
+            from django.conf import settings
+            
+            # Log query count in development
+            if settings.DEBUG:
+                initial_queries = len(connection.queries)
+            # Optimize: Get user-accessible categories 
             user_categories = Category.objects.filter(
                 models.Q(user=None) | models.Q(user=self.request.user)
-            )
+            ).only('id', 'name', 'slug', 'user')  # Only select needed fields
             
-            # Get all user's contents with category data in one query using select_related
-            user_contents = self.get_queryset().select_related('category')
+            # Optimize: Get all user's contents with category data prefetched
+            user_contents = self.get_queryset()
             
             result = {}
             
-            # Group contents by category efficiently
+            # Group contents by category efficiently using in-memory grouping
+            contents_by_category = {}
+            for content in user_contents:
+                category_id = content.category_id if content.category else None
+                if category_id not in contents_by_category:
+                    contents_by_category[category_id] = []
+                contents_by_category[category_id].append(content)
+            
+            # Build result for each category
             for category in user_categories:
-                category_contents = [content for content in user_contents if content.category_id == category.id]
+                category_contents = contents_by_category.get(category.id, [])
                 if category_contents or category.user == self.request.user:  # Include user's custom categories even if empty
                     result[category.slug] = {
                         'category': CategorySerializer(category).data,
@@ -168,13 +191,19 @@ class ContentViewSet(viewsets.ModelViewSet):
                     }
             
             # Add uncategorized content
-            uncategorized_contents = [content for content in user_contents if content.category is None]
+            uncategorized_contents = contents_by_category.get(None, [])
             if uncategorized_contents:
                 result['uncategorized'] = {
                     'category': {'name': '미분류', 'slug': 'uncategorized'},
                     'contents': ContentSerializer(uncategorized_contents, many=True).data,
                     'count': len(uncategorized_contents)
                 }
+            
+            # Log performance metrics in development
+            if settings.DEBUG:
+                final_queries = len(connection.queries)
+                query_count = final_queries - initial_queries
+                logger.info(f"by_category API - Query count: {query_count}, Categories: {len(user_categories)}, Contents: {len(user_contents)}")
             
             return Response(result)
             
