@@ -49,7 +49,7 @@ class PerformanceTestCase(TransactionTestCase):
     
     def test_content_creation_performance(self):
         """콘텐츠 생성 성능 테스트"""
-        print("\n📝 콘텐츠 생성 성능 테스트")
+        print("\nContent creation performance test")
         
         user = self.users[0]
         headers = self.get_auth_headers(user)
@@ -81,15 +81,15 @@ class PerformanceTestCase(TransactionTestCase):
         
         creation_time = time.time() - start_time
         
-        print(f"   📊 100개 콘텐츠 생성: {creation_time:.2f}초")
-        print(f"   📊 평균 생성 시간: {creation_time/100:.3f}초/개")
+        print(f"   100 content creation: {creation_time:.2f}sec")
+        print(f"   Average creation time: {creation_time/100:.3f}sec/item")
         
         # 성능 기준 검증 (2초 이내)
         self.assertLess(creation_time, 2.0, f"콘텐츠 생성이 너무 느림: {creation_time:.2f}초")
     
     def test_content_retrieval_performance(self):
         """콘텐츠 조회 성능 테스트"""
-        print("\n🔍 콘텐츠 조회 성능 테스트")
+        print("\nContent retrieval performance test")
         
         user = self.users[0]
         headers = self.get_auth_headers(user)
@@ -126,10 +126,10 @@ class PerformanceTestCase(TransactionTestCase):
         
         detail_retrieval_time = time.time() - start_time
         
-        print(f"   📊 목록 조회 10회: {list_retrieval_time:.2f}초")
-        print(f"   📊 평균 목록 조회: {list_retrieval_time/10:.3f}초/회")
-        print(f"   📊 개별 조회 50회: {detail_retrieval_time:.2f}초")
-        print(f"   📊 평균 개별 조회: {detail_retrieval_time/50:.3f}초/회")
+        print(f"   List retrieval 10 times: {list_retrieval_time:.2f}sec")
+        print(f"   Average list retrieval: {list_retrieval_time/10:.3f}sec/time")
+        print(f"   Detail retrieval 50 times: {detail_retrieval_time:.2f}sec")
+        print(f"   Average detail retrieval: {detail_retrieval_time/50:.3f}sec/time")
         
         # 성능 기준 검증
         self.assertLess(list_retrieval_time/10, 0.5, "목록 조회가 너무 느림")
@@ -137,7 +137,7 @@ class PerformanceTestCase(TransactionTestCase):
     
     def test_review_completion_performance(self):
         """복습 완료 성능 테스트"""
-        print("\n🧠 복습 완료 성능 테스트")
+        print("\nReview completion performance test")
         
         user = self.users[0]
         headers = self.get_auth_headers(user)
@@ -183,15 +183,15 @@ class PerformanceTestCase(TransactionTestCase):
         
         completion_time = time.time() - start_time
         
-        print(f"   📊 50개 복습 완료: {completion_time:.2f}초")
-        print(f"   📊 평균 복습 완료: {completion_time/50:.3f}초/개")
+        print(f"   50 review completion: {completion_time:.2f}sec")
+        print(f"   Average review completion: {completion_time/50:.3f}sec/item")
         
         # 성능 기준 검증
         self.assertLess(completion_time, 5.0, f"복습 완료가 너무 느림: {completion_time:.2f}초")
     
     def test_database_query_performance(self):
         """데이터베이스 쿼리 성능 테스트"""
-        print("\n🗄️ 데이터베이스 쿼리 성능 테스트")
+        print("\nDatabase query performance test")
         
         user = self.users[0]
         
@@ -267,10 +267,10 @@ class PerformanceTestCase(TransactionTestCase):
         
         join_time = time.time() - start_time
         
-        print(f"   📊 집계 쿼리: {aggregation_time:.3f}초")
-        print(f"   📊 조인 쿼리: {join_time:.3f}초")
-        print(f"   📊 집계 결과: {len(results)}개")
-        print(f"   📊 조인 결과: {len(join_results)}개")
+        print(f"   Aggregation query: {aggregation_time:.3f}sec")
+        print(f"   Join query: {join_time:.3f}sec")
+        print(f"   Aggregation results: {len(results)} items")
+        print(f"   Join results: {len(join_results)} items")
         
         # 성능 기준 검증
         self.assertLess(aggregation_time, 1.0, "집계 쿼리가 너무 느림")
@@ -380,13 +380,13 @@ class StressTestCase(TransactionTestCase):
     
     def test_concurrent_user_load(self):
         """동시 사용자 부하 테스트"""
-        print("\n⚡ 동시 사용자 부하 테스트")
+        print("\nConcurrent user load test")
         
         num_concurrent_users = 10
         test_duration = 20  # 20초
         
-        print(f"   👥 동시 사용자: {num_concurrent_users}명")
-        print(f"   ⏱️ 테스트 시간: {test_duration}초")
+        print(f"   Concurrent users: {num_concurrent_users} users")
+        print(f"   Test duration: {test_duration} seconds")
         
         start_time = time.time()
         
@@ -416,15 +416,15 @@ class StressTestCase(TransactionTestCase):
             successful_ops = sum(r['successful_operations'] for r in successful_users)
             avg_success_rate = sum(r['success_rate'] for r in successful_users) / len(successful_users)
             
-            print(f"   ✅ 성공한 사용자: {len(successful_users)}/{num_concurrent_users}")
-            print(f"   📊 총 작업 수: {total_ops}")
-            print(f"   📊 성공한 작업: {successful_ops}")
-            print(f"   📊 평균 성공률: {avg_success_rate:.1f}%")
-            print(f"   📊 총 소요 시간: {total_time:.2f}초")
-            print(f"   📊 초당 작업 처리: {total_ops/total_time:.1f}개/초")
+            print(f"   Successful users: {len(successful_users)}/{num_concurrent_users}")
+            print(f"   Total operations: {total_ops}")
+            print(f"   Successful operations: {successful_ops}")
+            print(f"   Average success rate: {avg_success_rate:.1f}%")
+            print(f"   Total time taken: {total_time:.2f}sec")
+            print(f"   Operations per second: {total_ops/total_time:.1f} ops/sec")
             
             if failed_users:
-                print(f"   ❌ 실패한 사용자: {len(failed_users)}명")
+                print(f"   Failed users: {len(failed_users)} users")
                 for failed in failed_users[:3]:  # 처음 3개만 표시
                     print(f"      - 오류: {failed.get('error', 'Unknown error')}")
             
@@ -438,7 +438,7 @@ class StressTestCase(TransactionTestCase):
     
     def test_database_connection_stress(self):
         """데이터베이스 연결 스트레스 테스트"""
-        print("\n🗄️ 데이터베이스 연결 스트레스 테스트")
+        print("\nDatabase connection stress test")
         
         def execute_db_operations():
             """데이터베이스 작업 실행"""
@@ -496,14 +496,14 @@ class StressTestCase(TransactionTestCase):
         successful_ops = sum(1 for op in all_operations if len(op) >= 2 and op[1])
         error_ops = [op for op in all_operations if len(op) > 2]
         
-        print(f"   📊 총 DB 작업: {total_ops}")
-        print(f"   📊 성공한 작업: {successful_ops}")
-        print(f"   📊 성공률: {(successful_ops/total_ops*100):.1f}%")
-        print(f"   📊 실행 시간: {execution_time:.2f}초")
-        print(f"   📊 초당 작업: {total_ops/execution_time:.1f}개/초")
+        print(f"   Total DB operations: {total_ops}")
+        print(f"   Successful operations: {successful_ops}")
+        print(f"   Success rate: {(successful_ops/total_ops*100):.1f}%")
+        print(f"   Execution time: {execution_time:.2f}sec")
+        print(f"   Operations per second: {total_ops/execution_time:.1f} ops/sec")
         
         if error_ops:
-            print(f"   ❌ 오류 발생: {len(error_ops)}개")
+            print(f"   Errors occurred: {len(error_ops)} errors")
             for error in error_ops[:3]:
                 print(f"      - {error[2]}")
         
@@ -513,7 +513,7 @@ class StressTestCase(TransactionTestCase):
     
     def test_memory_usage_under_load(self):
         """부하 상황에서 메모리 사용량 테스트"""
-        print("\n💾 메모리 사용량 테스트")
+        print("\nMemory usage test")
         
         import psutil
         import os
@@ -561,11 +561,11 @@ class StressTestCase(TransactionTestCase):
         max_memory = max(memory_readings)
         memory_increase = final_memory - initial_memory
         
-        print(f"   📊 초기 메모리: {initial_memory:.1f}MB")
-        print(f"   📊 최종 메모리: {final_memory:.1f}MB")
-        print(f"   📊 최대 메모리: {max_memory:.1f}MB")
-        print(f"   📊 메모리 증가: {memory_increase:.1f}MB")
-        print(f"   📊 증가율: {(memory_increase/initial_memory*100):.1f}%")
+        print(f"   Initial memory: {initial_memory:.1f}MB")
+        print(f"   Final memory: {final_memory:.1f}MB")
+        print(f"   Peak memory: {max_memory:.1f}MB")
+        print(f"   Memory increase: {memory_increase:.1f}MB")
+        print(f"   Increase rate: {(memory_increase/initial_memory*100):.1f}%")
         
         # 메모리 사용량이 과도하게 증가하지 않았는지 확인
         self.assertLess(memory_increase, 500, "메모리 증가가 500MB를 초과함")
@@ -573,7 +573,7 @@ class StressTestCase(TransactionTestCase):
 
 
 if __name__ == '__main__':
-    print("⚡ 성능 및 스트레스 테스트 실행")
+    print("Performance and stress test execution")
     print("Docker 환경에서 모든 서비스가 실행 중인지 확인하세요.")
     
     import django

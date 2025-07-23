@@ -20,21 +20,21 @@ schema_view = get_schema_view(
         title="Resee API",
         default_version='v1',
         description="""
-        # 📚 Resee - 과학적 복습 플랫폼 API
+        # Resee - 과학적 복습 플랫폼 API
         
         **에빙하우스 망각곡선에 기반한 스마트 복습 시스템 API 문서**
         
-        ## 🎯 주요 기능
+        ## 주요 기능
         - **인증 시스템**: JWT 토큰 기반 인증
         - **콘텐츠 관리**: 학습 콘텐츠 CRUD
         - **복습 시스템**: 스마트 복습 스케줄링
         - **분석 기능**: 학습 통계 및 대시보드
         
-        ## 🔐 인증 방법
+        ## 인증 방법
         1. `/api/auth/token/` 엔드포인트로 로그인
         2. 받은 `access` 토큰을 헤더에 포함: `Authorization: Bearer <token>`
         
-        ## 📖 복습 간격
+        ## 복습 간격
         - 1일 → 3일 → 7일 → 14일 → 30일 (에빙하우스 망각곡선 기반)
         """,
         terms_of_service="https://www.google.com/policies/terms/",
@@ -70,6 +70,7 @@ urlpatterns = [
     path('api/review/', include('review.urls')),
     path('api/analytics/', include('analytics.urls')),
     path('api/ai-review/', include('ai_review.urls')),
+    path('api/monitoring/', include('monitoring.urls')),
 ]
 
 if settings.DEBUG:

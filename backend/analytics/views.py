@@ -471,7 +471,7 @@ class AdvancedAnalyticsView(APIView):
             recommendations.append({
                 'type': 'streak_celebration',
                 'title': 'Study Streak Achievement!',
-                'message': f"You've been studying for {achievement_stats['current_streak']} consecutive days. Great job! 🎉",
+                'message': f"You've been studying for {achievement_stats['current_streak']} consecutive days. Great job!",
                 'action': 'continue_streak',
             })
         

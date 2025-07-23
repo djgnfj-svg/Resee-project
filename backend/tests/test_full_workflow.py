@@ -40,7 +40,7 @@ class FullWorkflowTestCase(APITestCase):
     
     def test_complete_user_journey(self):
         """완전한 사용자 여정 테스트: 회원가입 → 로그인 → 콘텐츠 생성 → 복습 완료"""
-        print("\n🚀 완전한 사용자 여정 테스트 시작")
+        print("\nComplete user journey test starting")
         
         # Step 1: 회원가입
         print("1. 회원가입 테스트")
@@ -49,7 +49,7 @@ class FullWorkflowTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('id', response.data)
         user_id = response.data['id']
-        print(f"   ✅ 사용자 생성 완료 (ID: {user_id})")
+        print(f"   User creation completed (ID: {user_id})")
         
         # Step 2: 로그인 및 JWT 토큰 획득
         print("2. 로그인 및 JWT 토큰 획득")
@@ -66,7 +66,7 @@ class FullWorkflowTestCase(APITestCase):
         access_token = response.data['access']
         refresh_token = response.data['refresh']
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
-        print(f"   ✅ JWT 토큰 획득 완료")
+        print(f"    JWT 토큰 획득 완료")
         
         # Step 3: 카테고리 생성
         print("3. 카테고리 생성")
@@ -78,7 +78,7 @@ class FullWorkflowTestCase(APITestCase):
         response = self.client.post(category_url, category_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         category_id = response.data['id']
-        print(f"   ✅ 카테고리 생성 완료 (ID: {category_id})")
+        print(f"    카테고리 생성 완료 (ID: {category_id})")
         
         # Step 4: 학습 콘텐츠 생성
         print("4. 학습 콘텐츠 생성")
@@ -108,7 +108,7 @@ is_student = True
         response = self.client.post(content_url, content_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         content_id = response.data['id']
-        print(f"   ✅ 콘텐츠 생성 완료 (ID: {content_id})")
+        print(f"    콘텐츠 생성 완료 (ID: {content_id})")
         
         # Step 5: 복습 스케줄 자동 생성 확인
         print("5. 복습 스케줄 자동 생성 확인")
@@ -121,7 +121,7 @@ is_student = True
         self.assertIsNotNone(schedule)
         self.assertFalse(schedule.initial_review_completed)
         self.assertEqual(schedule.interval_index, 0)
-        print(f"   ✅ 복습 스케줄 자동 생성 확인 (다음 복습: {schedule.next_review_date})")
+        print(f"    복습 스케줄 자동 생성 확인 (다음 복습: {schedule.next_review_date})")
         
         # Step 6: 즉시 복습 가능한 콘텐츠 조회
         print("6. 오늘의 복습 목록 조회")
@@ -130,7 +130,7 @@ is_student = True
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['content']['id'], content_id)
-        print(f"   ✅ 오늘의 복습 목록에서 콘텐츠 확인")
+        print(f"    오늘의 복습 목록에서 콘텐츠 확인")
         
         # Step 7: 첫 번째 복습 완료 (기억함)
         print("7. 첫 번째 복습 완료")
@@ -143,7 +143,7 @@ is_student = True
         }
         response = self.client.post(complete_review_url, review_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        print(f"   ✅ 첫 번째 복습 완료 (결과: 기억함)")
+        print(f"    첫 번째 복습 완료 (결과: 기억함)")
         
         # Step 8: 복습 기록 확인
         print("8. 복습 기록 확인")
@@ -154,7 +154,7 @@ is_student = True
         self.assertIsNotNone(history)
         self.assertEqual(history.result, 'remembered')
         self.assertEqual(history.time_spent, 120)
-        print(f"   ✅ 복습 기록 저장 확인")
+        print(f"    복습 기록 저장 확인")
         
         # Step 9: 복습 스케줄 업데이트 확인
         print("9. 복습 스케줄 업데이트 확인")
@@ -166,7 +166,7 @@ is_student = True
         expected_next_review = timezone.now() + timedelta(days=1)
         time_diff = abs((schedule.next_review_date - expected_next_review).total_seconds())
         self.assertLess(time_diff, 60)  # 1분 이내 오차 허용
-        print(f"   ✅ 스케줄 업데이트 확인 (다음 복습: {schedule.next_review_date})")
+        print(f"    스케줄 업데이트 확인 (다음 복습: {schedule.next_review_date})")
         
         # Step 10: 대시보드 데이터 확인
         print("10. 대시보드 데이터 확인")
@@ -178,9 +178,9 @@ is_student = True
         self.assertEqual(dashboard_data['total_content'], 1)
         self.assertEqual(dashboard_data['total_reviews_30_days'], 1)
         self.assertEqual(dashboard_data['success_rate'], 100.0)  # 1/1 = 100%
-        print(f"   ✅ 대시보드 데이터 확인 (성공률: {dashboard_data['success_rate']}%)")
+        print(f"    대시보드 데이터 확인 (성공률: {dashboard_data['success_rate']}%)")
         
-        print("\n✅ 완전한 사용자 여정 테스트 성공!")
+        print("\n 완전한 사용자 여정 테스트 성공!")
         return {
             'user_id': user_id,
             'content_id': content_id,
@@ -191,7 +191,7 @@ is_student = True
     
     def test_multiple_content_review_workflow(self):
         """여러 콘텐츠 복습 워크플로우 테스트"""
-        print("\n📚 여러 콘텐츠 복습 워크플로우 테스트")
+        print("\n 여러 콘텐츠 복습 워크플로우 테스트")
         
         # 초기 설정
         result = self.test_complete_user_journey()
@@ -219,7 +219,7 @@ is_student = True
             response = self.client.post(content_url, content_data, format='json')
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
             content_list.append(response.data['id'])
-            print(f"   ✅ '{title}' 생성 완료")
+            print(f"    '{title}' 생성 완료")
         
         # 모든 콘텐츠에 대한 복습 스케줄 확인
         print("2. 복습 스케줄 생성 확인")
@@ -227,7 +227,7 @@ is_student = True
         
         total_schedules = ReviewSchedule.objects.filter(user_id=user_id).count()
         self.assertEqual(total_schedules, 5)  # 기존 1개 + 새로운 4개
-        print(f"   ✅ 총 {total_schedules}개 복습 스케줄 생성 확인")
+        print(f"    총 {total_schedules}개 복습 스케줄 생성 확인")
         
         # 오늘의 복습 목록 확인
         print("3. 오늘의 복습 목록 확인")
@@ -235,7 +235,7 @@ is_student = True
         response = self.client.get(today_reviews_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)  # 새로 생성된 4개 (기존 1개는 이미 복습 완료)
-        print(f"   ✅ 오늘 복습할 콘텐츠 {len(response.data)}개 확인")
+        print(f"    오늘 복습할 콘텐츠 {len(response.data)}개 확인")
         
         # 배치 복습 완료
         print("4. 배치 복습 완료")
@@ -251,7 +251,7 @@ is_student = True
             }
             response = self.client.post(complete_review_url, review_data, format='json')
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-            print(f"   ✅ '{content_titles[i]}' 복습 완료 (결과: {results[i]})")
+            print(f"    '{content_titles[i]}' 복습 완료 (결과: {results[i]})")
         
         # 복습 통계 확인
         print("5. 복습 통계 확인")
@@ -264,13 +264,13 @@ is_student = True
         self.assertEqual(dashboard_data['total_reviews_30_days'], 5)
         expected_success_rate = (3 / 5) * 100  # remembered: 3개, partial: 1개, forgot: 1개
         self.assertEqual(dashboard_data['success_rate'], expected_success_rate)
-        print(f"   ✅ 통계 확인 - 총 콘텐츠: {dashboard_data['total_content']}, 성공률: {dashboard_data['success_rate']}%")
+        print(f"    통계 확인 - 총 콘텐츠: {dashboard_data['total_content']}, 성공률: {dashboard_data['success_rate']}%")
         
-        print("\n✅ 여러 콘텐츠 복습 워크플로우 테스트 성공!")
+        print("\n 여러 콘텐츠 복습 워크플로우 테스트 성공!")
     
     def test_jwt_token_lifecycle(self):
         """JWT 토큰 전체 라이프사이클 테스트"""
-        print("\n🔐 JWT 토큰 라이프사이클 테스트")
+        print("\n JWT 토큰 라이프사이클 테스트")
         
         # 사용자 생성
         user = User.objects.create_user(
@@ -290,7 +290,7 @@ is_student = True
         
         access_token = response.data['access']
         refresh_token = response.data['refresh']
-        print(f"   ✅ 토큰 발급 완료")
+        print(f"    토큰 발급 완료")
         
         # 2. 액세스 토큰으로 API 호출
         print("2. 액세스 토큰으로 API 호출")
@@ -298,7 +298,7 @@ is_student = True
         response = self.client.get(reverse('accounts:profile'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['email'], 'tokentest@example.com')
-        print(f"   ✅ 액세스 토큰으로 프로필 조회 성공")
+        print(f"    액세스 토큰으로 프로필 조회 성공")
         
         # 3. 토큰 검증
         print("3. 토큰 검증")
@@ -306,7 +306,7 @@ is_student = True
         verify_data = {'token': access_token}
         response = self.client.post(verify_url, verify_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        print(f"   ✅ 토큰 검증 성공")
+        print(f"    토큰 검증 성공")
         
         # 4. 리프레시 토큰으로 새 액세스 토큰 발급
         print("4. 리프레시 토큰으로 새 액세스 토큰 발급")
@@ -317,27 +317,27 @@ is_student = True
         
         new_access_token = response.data['access']
         self.assertNotEqual(access_token, new_access_token)
-        print(f"   ✅ 새 액세스 토큰 발급 성공")
+        print(f"    새 액세스 토큰 발급 성공")
         
         # 5. 새 토큰으로 API 호출
         print("5. 새 토큰으로 API 호출")
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {new_access_token}')
         response = self.client.get(reverse('accounts:profile'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        print(f"   ✅ 새 토큰으로 API 호출 성공")
+        print(f"    새 토큰으로 API 호출 성공")
         
         # 6. 잘못된 토큰으로 API 호출
         print("6. 잘못된 토큰으로 API 호출")
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer invalid_token')
         response = self.client.get(reverse('accounts:profile'))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        print(f"   ✅ 잘못된 토큰 거부 확인")
+        print(f"    잘못된 토큰 거부 확인")
         
-        print("\n✅ JWT 토큰 라이프사이클 테스트 성공!")
+        print("\n JWT 토큰 라이프사이클 테스트 성공!")
     
     def test_spaced_repetition_algorithm(self):
         """에빙하우스 망각곡선 기반 복습 알고리즘 테스트"""
-        print("\n🧠 복습 알고리즘 정확성 테스트")
+        print("\n 복습 알고리즘 정확성 테스트")
         
         # 사용자 및 콘텐츠 생성
         user = User.objects.create_user(
@@ -383,12 +383,12 @@ is_student = True
                 # 다음 간격 확인
                 next_interval = schedule.get_next_interval()
                 self.assertEqual(next_interval, expected_intervals[i + 1])
-                print(f"   ✅ 다음 간격: {next_interval}일")
+                print(f"    다음 간격: {next_interval}일")
             else:
                 # 마지막 간격에서는 더 이상 증가하지 않음
                 next_interval = schedule.get_next_interval()
                 self.assertEqual(next_interval, expected_intervals[-1])
-                print(f"   ✅ 최대 간격 유지: {next_interval}일")
+                print(f"    최대 간격 유지: {next_interval}일")
         
         print("2. 복습 실패 시 리셋 테스트")
         # 복습 실패
@@ -404,9 +404,9 @@ is_student = True
         self.assertEqual(schedule.interval_index, 0)
         next_interval = schedule.get_next_interval()
         self.assertEqual(next_interval, expected_intervals[0])
-        print(f"   ✅ 스케줄 리셋 확인 (다음 간격: {next_interval}일)")
+        print(f"    스케줄 리셋 확인 (다음 간격: {next_interval}일)")
         
-        print("\n✅ 복습 알고리즘 정확성 테스트 성공!")
+        print("\n 복습 알고리즘 정확성 테스트 성공!")
 
 
 class CeleryTaskTestCase(TransactionTestCase):
@@ -425,7 +425,7 @@ class CeleryTaskTestCase(TransactionTestCase):
     @patch('review.tasks.send_daily_review_notifications.delay')
     def test_daily_notification_task(self, mock_task):
         """일일 복습 알림 작업 테스트"""
-        print("\n📧 일일 복습 알림 작업 테스트")
+        print("\n 일일 복습 알림 작업 테스트")
         
         # 복습할 콘텐츠 생성
         content = Content.objects.create(
@@ -446,11 +446,11 @@ class CeleryTaskTestCase(TransactionTestCase):
         # 알림 작업 실행
         result = send_daily_review_notifications()
         
-        print(f"   ✅ 알림 작업 실행 완료: {result}")
+        print(f"    알림 작업 실행 완료: {result}")
         
     def test_review_schedule_creation_signal(self):
         """콘텐츠 생성 시 복습 스케줄 자동 생성 시그널 테스트"""
-        print("\n⚡ 복습 스케줄 자동 생성 시그널 테스트")
+        print("\n 복습 스케줄 자동 생성 시그널 테스트")
         
         # 콘텐츠 생성 전 스케줄 수 확인
         initial_count = ReviewSchedule.objects.count()
@@ -477,8 +477,8 @@ class CeleryTaskTestCase(TransactionTestCase):
         self.assertFalse(schedule.initial_review_completed)
         self.assertEqual(schedule.interval_index, 0)
         
-        print(f"   ✅ 복습 스케줄 자동 생성 확인")
-        print(f"   ✅ 초기 설정 올바름 (initial_review_completed: {schedule.initial_review_completed})")
+        print(f"    복습 스케줄 자동 생성 확인")
+        print(f"    초기 설정 올바름 (initial_review_completed: {schedule.initial_review_completed})")
 
 
 class PerformanceTestCase(APITestCase):
@@ -498,7 +498,7 @@ class PerformanceTestCase(APITestCase):
     
     def test_large_content_creation(self):
         """대용량 콘텐츠 생성 성능 테스트"""
-        print("\n⚡ 대용량 콘텐츠 생성 성능 테스트")
+        print("\n 대용량 콘텐츠 생성 성능 테스트")
         
         content_count = 100
         start_time = time.time()
@@ -519,9 +519,9 @@ class PerformanceTestCase(APITestCase):
         total_time = end_time - start_time
         avg_time = total_time / content_count
         
-        print(f"   ✅ {content_count}개 콘텐츠 생성 완료")
-        print(f"   ✅ 총 소요 시간: {total_time:.2f}초")
-        print(f"   ✅ 평균 생성 시간: {avg_time:.3f}초/개")
+        print(f"   {content_count} content creation completed")
+        print(f"   Total time taken: {total_time:.2f}sec")
+        print(f"   Average creation time: {avg_time:.3f}sec/item")
         
         # 성능 기준: 평균 0.5초 미만이어야 함
         self.assertLess(avg_time, 0.5, f"성능 기준 미달: {avg_time:.3f}초 > 0.5초")
@@ -529,11 +529,11 @@ class PerformanceTestCase(APITestCase):
         # 생성된 스케줄 확인
         schedule_count = ReviewSchedule.objects.filter(user=self.user).count()
         self.assertEqual(schedule_count, content_count)
-        print(f"   ✅ {schedule_count}개 복습 스케줄 자동 생성 확인")
+        print(f"    {schedule_count}개 복습 스케줄 자동 생성 확인")
     
     def test_large_scale_review_completion(self):
         """대규모 복습 완료 성능 테스트"""
-        print("\n⚡ 대규모 복습 완료 성능 테스트")
+        print("\n 대규모 복습 완료 성능 테스트")
         
         # 100개 콘텐츠와 스케줄 미리 생성
         contents = []
@@ -566,9 +566,9 @@ class PerformanceTestCase(APITestCase):
         total_time = end_time - start_time
         avg_time = total_time / len(contents)
         
-        print(f"   ✅ {len(contents)}개 복습 완료")
-        print(f"   ✅ 총 소요 시간: {total_time:.2f}초")
-        print(f"   ✅ 평균 복습 시간: {avg_time:.3f}초/개")
+        print(f"   {len(contents)} reviews completed")
+        print(f"   Total time taken: {total_time:.2f}sec")
+        print(f"   Average review time: {avg_time:.3f}sec/item")
         
         # 성능 기준: 평균 0.3초 미만이어야 함
         self.assertLess(avg_time, 0.3, f"성능 기준 미달: {avg_time:.3f}초 > 0.3초")
@@ -576,4 +576,4 @@ class PerformanceTestCase(APITestCase):
         # 복습 기록 확인
         history_count = ReviewHistory.objects.filter(user=self.user).count()
         self.assertEqual(history_count, len(contents))
-        print(f"   ✅ {history_count}개 복습 기록 저장 확인")
+        print(f"    {history_count}개 복습 기록 저장 확인")
