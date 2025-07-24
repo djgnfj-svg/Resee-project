@@ -124,32 +124,9 @@ def send_verification_email_task(self, user_id: int):
                 f"Manual intervention required. User email: {user.email}"
             )
             # 관리자용 슬랙/이메일 알림은 실무 환경에서 설정 필요
-            # from django.core.mail import mail_admins
-            # mail_admins(
-            #     f'Email Verification Failed - User {user_id}',
-            #     f'User {user.email} email verification failed after max retries.'
-            # )
             raise
 
 
-# 실무용 이메일 상태 추적
-class EmailLog:
-    """이메일 발송 로그 (실무에서는 DB 모델로 구현)"""
-    
-    @classmethod
-    def log_email_sent(cls, user_email: str, email_type: str, success: bool, error_message: str = None):
-        """이메일 발송 로그 기록"""
-        # 실무에서는 DB에 저장하여 추적
-        log_data = {
-            'user_email': user_email,
-            'email_type': email_type,
-            'success': success,
-            'error_message': error_message,
-            'timestamp': 'now()'
-        }
-        
-        # 예: EmailSendLog.objects.create(**log_data)
-        logger.info(f"Email log: {log_data}")
 
 
 # 실무용 이메일 템플릿 관리
