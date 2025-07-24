@@ -27,6 +27,9 @@ LOGGING = {
             'style': '{',
             'datefmt': '%Y-%m-%d %H:%M:%S'
         },
+        'structured': {
+            '()': 'resee.structured_logging.StructuredFormatter',
+        },
     },
     'filters': {
         'require_debug_false': {
@@ -135,9 +138,25 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        # Structured logging for different components
+        'api': {
+            'handlers': ['console', 'production_console', 'file_info'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'performance': {
+            'handlers': ['console', 'production_console', 'file_info'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'security': {
-            'handlers': ['security_file', 'mail_admins'],
+            'handlers': ['console', 'production_console', 'security_file'],
             'level': 'WARNING',
+            'propagate': False,
+        },
+        'ai': {
+            'handlers': ['console', 'production_console', 'file_info'],
+            'level': 'INFO',
             'propagate': False,
         },
         # Silence some noisy loggers in production

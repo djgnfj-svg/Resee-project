@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'review',
     'analytics',
     'ai_review',
+    'monitoring',
 ]
 
 # Environment-based configuration
@@ -73,6 +74,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'allauth.account.middleware.AccountMiddleware',  # Add allauth middleware
     'accounts.middleware.EmailVerificationMiddleware',  # Add email verification middleware after auth
+    'monitoring.middleware.MetricsCollectionMiddleware',  # Add metrics collection
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -284,6 +286,27 @@ CELERY_BEAT_SCHEDULE = {
     'update-review-schedules': {
         'task': 'review.tasks.update_review_schedules',
         'schedule': crontab(hour=3, minute=0),  # 매일 새벽 3시
+    },
+    # Monitoring tasks
+    'collect-system-health': {
+        'task': 'monitoring.collect_system_health',
+        'schedule': 60.0,  # 매 1분마다
+    },
+    'process-batched-metrics': {
+        'task': 'monitoring.process_batched_metrics',
+        'schedule': 300.0,  # 매 5분마다
+    },
+    'cleanup-old-monitoring-data': {
+        'task': 'monitoring.cleanup_old_monitoring_data',
+        'schedule': crontab(hour=1, minute=0),  # 매일 새벽 1시
+    },
+    'generate-performance-report': {
+        'task': 'monitoring.generate_performance_report',
+        'schedule': crontab(hour=8, minute=0),  # 매일 오전 8시
+    },
+    'alert-on-errors': {
+        'task': 'monitoring.alert_on_errors',
+        'schedule': 600.0,  # 매 10분마다
     },
 }
 

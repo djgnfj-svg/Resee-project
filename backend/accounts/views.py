@@ -14,6 +14,8 @@ from .serializers import (
 )
 from .google_auth import GoogleAuthSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 import logging
 
 User = get_user_model()
@@ -23,6 +25,49 @@ logger = logging.getLogger(__name__)
 class EmailTokenObtainPairView(TokenObtainPairView):
     """Custom JWT token view that uses email instead of username"""
     serializer_class = EmailTokenObtainPairSerializer
+    
+    @swagger_auto_schema(
+        operation_summary="로그인 (JWT 토큰 획득)",
+        operation_description="""이메일과 비밀번호로 로그인하여 JWT 토큰을 획득합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "email": "user@example.com",
+          "password": "password123"
+        }
+        ```
+        
+        **응답 예시:**
+        ```json
+        {
+          "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+          "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+        }
+        ```
+        
+        받은 `access` 토큰을 다음과 같이 헤더에 포함하여 API 요청을 보내세요:
+        `Authorization: Bearer <access_token>`
+        """,
+        tags=['Authentication'],
+        request_body=EmailTokenObtainPairSerializer,
+        responses={
+            200: openapi.Response(
+                description="로그인 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'access': openapi.Schema(type=openapi.TYPE_STRING, description="액세스 토큰 (60분 유효)"),
+                        'refresh': openapi.Schema(type=openapi.TYPE_STRING, description="리프레시 토큰 (7일 유효)"),
+                    }
+                )
+            ),
+            400: "잘못된 요청 - 이메일 또는 비밀번호 오류",
+            401: "인증 실패 - 이메일 또는 비밀번호가 틀림",
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -35,6 +80,42 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserRegistrationSerializer
         return UserSerializer
     
+    @swagger_auto_schema(
+        method='post',
+        operation_summary="회원가입",
+        operation_description="""새로운 사용자 계정을 생성합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "email": "user@example.com",
+          "password": "password123",
+          "password_confirm": "password123",
+          "first_name": "홍",
+          "last_name": "길동"
+        }
+        ```
+        
+        개발 환경에서는 이메일 인증이 자동으로 완료되며, 프로덕션 환경에서는 인증 이메일이 발송됩니다.
+        """,
+        tags=['Authentication'],
+        request_body=UserRegistrationSerializer,
+        responses={
+            201: openapi.Response(
+                description="회원가입 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
+                        'user': openapi.Schema(type=openapi.TYPE_OBJECT, description="생성된 사용자 정보"),
+                        'requires_email_verification': openapi.Schema(type=openapi.TYPE_BOOLEAN, description="이메일 인증 필요 여부"),
+                    }
+                )
+            ),
+            400: "잘못된 요청 - 유효성 검사 실패",
+            500: "서버 오류",
+        }
+    )
     @action(detail=False, methods=['post'], permission_classes=[])
     def register(self, request):
         """User registration endpoint"""
@@ -107,11 +188,42 @@ class ProfileView(APIView):
     """User profile view"""
     permission_classes = [IsAuthenticated]
     
+    @swagger_auto_schema(
+        operation_summary="프로필 조회",
+        operation_description="현재 로그인된 사용자의 프로필 정보를 조회합니다.",
+        tags=['User Profile'],
+        responses={
+            200: ProfileSerializer,
+            401: "인증 필요",
+        }
+    )
     def get(self, request):
         """Get user profile"""
         serializer = ProfileSerializer(request.user)
         return Response(serializer.data)
     
+    @swagger_auto_schema(
+        operation_summary="프로필 수정",
+        operation_description="""현재 로그인된 사용자의 프로필 정보를 수정합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "first_name": "홍",
+          "last_name": "길동",
+          "timezone": "Asia/Seoul",
+          "notification_enabled": true
+        }
+        ```
+        """,
+        tags=['User Profile'],
+        request_body=ProfileSerializer,
+        responses={
+            200: ProfileSerializer,
+            400: "잘못된 요청 - 유효성 검사 실패",
+            401: "인증 필요",
+        }
+    )
     def put(self, request):
         """Update user profile"""
         serializer = ProfileSerializer(request.user, data=request.data)
@@ -125,6 +237,36 @@ class PasswordChangeView(APIView):
     """Password change view"""
     permission_classes = [IsAuthenticated]
     
+    @swagger_auto_schema(
+        operation_summary="비밀번호 변경",
+        operation_description="""현재 로그인된 사용자의 비밀번호를 변경합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "current_password": "old_password123",
+          "new_password": "new_password123",
+          "new_password_confirm": "new_password123"
+        }
+        ```
+        """,
+        tags=['User Profile'],
+        request_body=PasswordChangeSerializer,
+        responses={
+            200: openapi.Response(
+                description="비밀번호 변경 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
+                    }
+                )
+            ),
+            400: "잘못된 요청 - 유효성 검사 실패",
+            401: "인증 필요",
+            500: "서버 오류",
+        }
+    )
     def post(self, request):
         """Change user password"""
         serializer = PasswordChangeSerializer(data=request.data, context={'request': request})
@@ -149,6 +291,37 @@ class AccountDeleteView(APIView):
     """Account deletion view"""
     permission_classes = [IsAuthenticated]
     
+    @swagger_auto_schema(
+        operation_summary="계정 삭제",
+        operation_description="""현재 로그인된 사용자의 계정을 완전히 삭제합니다.
+        
+        **주의:** 이 작업은 되돌릴 수 없으며, 모든 사용자 데이터가 영구적으로 삭제됩니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "password": "current_password123",
+          "confirmation": "DELETE"
+        }
+        ```
+        """,
+        tags=['User Profile'],
+        request_body=AccountDeleteSerializer,
+        responses={
+            200: openapi.Response(
+                description="계정 삭제 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
+                    }
+                )
+            ),
+            400: "잘못된 요청 - 유효성 검사 실패",
+            401: "인증 필요",
+            500: "서버 오류",
+        }
+    )
     def post(self, request):
         """Delete user account"""
         serializer = AccountDeleteSerializer(data=request.data, context={'request': request})
@@ -182,6 +355,44 @@ class EmailVerificationView(APIView):
     """Email verification view"""
     permission_classes = [AllowAny]
     
+    @swagger_auto_schema(
+        operation_summary="이메일 인증",
+        operation_description="""이메일 인증 토큰으로 사용자 이메일을 인증합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "email": "user@example.com",
+          "token": "verification_token_here"
+        }
+        ```
+        
+        토큰은 24시간 동안 유효합니다.
+        """,
+        tags=['Email Verification'],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description="사용자 이메일"),
+                'token': openapi.Schema(type=openapi.TYPE_STRING, description="인증 토큰"),
+            },
+            required=['email', 'token']
+        ),
+        responses={
+            200: openapi.Response(
+                description="이메일 인증 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
+                        'user': openapi.Schema(type=openapi.TYPE_OBJECT, description="사용자 정보"),
+                    }
+                )
+            ),
+            400: "잘못된 요청 - 토큰 만료 또는 유효하지 않음",
+            500: "서버 오류",
+        }
+    )
     def post(self, request):
         """Verify email with token"""
         token = request.data.get('token')
@@ -243,6 +454,44 @@ class ResendVerificationView(APIView):
     """Resend email verification"""
     permission_classes = [AllowAny]
     
+    @swagger_auto_schema(
+        operation_summary="인증 이메일 재발송",
+        operation_description="""이메일 인증을 위한 인증 이메일을 재발송합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "email": "user@example.com"
+        }
+        ```
+        
+        **제한사항:**
+        - 5분 간격으로만 재발송 가능
+        - 이미 인증된 계정은 재발송 불가
+        """,
+        tags=['Email Verification'],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description="사용자 이메일"),
+            },
+            required=['email']
+        ),
+        responses={
+            200: openapi.Response(
+                description="인증 이메일 재발송 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
+                    }
+                )
+            ),
+            400: "잘못된 요청 - 이미 인증된 계정 또는 존재하지 않는 이메일",
+            429: "너무 많은 요청 - 5분 후 재시도",
+            500: "서버 오류",
+        }
+    )
     def post(self, request):
         """Resend verification email"""
         email = request.data.get('email')
@@ -301,6 +550,43 @@ class GoogleOAuthView(APIView):
     """Google OAuth 로그인 뷰"""
     permission_classes = [AllowAny]
     
+    @swagger_auto_schema(
+        operation_summary="Google OAuth 로그인",
+        operation_description="""Google OAuth 토큰을 사용하여 로그인하거나 회원가입합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "credential": "google_oauth2_credential_token"
+        }
+        ```
+        
+        **특징:**
+        - 기존 계정이 있으면 로그인
+        - 없으면 자동으로 계정 생성
+        - 이메일 인증이 자동으로 완료됨
+        """,
+        tags=['Authentication'],
+        request_body=GoogleAuthSerializer,
+        responses={
+            200: openapi.Response(
+                description="Google OAuth 로그인 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
+                        'access': openapi.Schema(type=openapi.TYPE_STRING, description="액세스 토큰"),
+                        'refresh': openapi.Schema(type=openapi.TYPE_STRING, description="리프레시 토큰"),
+                        'user': openapi.Schema(type=openapi.TYPE_OBJECT, description="사용자 정보"),
+                        'is_new_user': openapi.Schema(type=openapi.TYPE_BOOLEAN, description="신규 사용자 여부"),
+                        'google_user_info': openapi.Schema(type=openapi.TYPE_OBJECT, description="Google 사용자 정보"),
+                    }
+                )
+            ),
+            400: "잘못된 요청 - 유효하지 않은 Google 토큰",
+            500: "서버 오류",
+        }
+    )
     def post(self, request):
         """Google OAuth 토큰으로 로그인"""
         serializer = GoogleAuthSerializer(data=request.data)
