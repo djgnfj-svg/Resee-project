@@ -43,7 +43,7 @@ bleach==6.1.0
 drf-yasg==1.21.7
 
 # AI Services
-openai==1.7.1
+anthropic==0.7.8
 
 # Email Services
 django-ses==3.5.2

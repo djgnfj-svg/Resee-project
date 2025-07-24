@@ -8,16 +8,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### v0.5.0 AI 기반 학습 시스템 및 구독 모델 구현 (2025-07-22)
 - **✅ 구독 기반 시스템**: Free(7일) → Basic(30일) → Premium(60일) → Pro(90일) 복습 간격 확장
-- **✅ AI 질문 자동 생성**: OpenAI GPT-4 기반 4가지 문제 유형 자동 생성
+- **✅ AI 질문 자동 생성**: Claude API 기반 3가지 문제 유형 자동 생성
   - 객관식 (Multiple Choice): 4개 선택지 중 정답 선택
-  - 주관식 (Short Answer): 개방형 질문과 모범 답안 제공
   - 빈칸 채우기 (Fill Blank): 핵심 개념을 빈칸으로 처리하여 학습
   - 블러 처리 (Blur Processing): 중요 영역을 블러 처리하여 게임형 학습
+  - AI 채팅 (AI Chat): 학습 내용에 대한 대화형 튜터링
 - **✅ 구독 티어별 AI 기능 제한**:
   - Free: AI 기능 사용 불가 (기존 복습 시스템만)
-  - Basic: 객관식/주관식, 일 10개 질문 생성
-  - Premium: 객관식/주관식/빈칸채우기, 일 50개 질문 생성
-  - Pro: 모든 AI 기능, 일 200개 질문 생성
+  - Basic: 객관식/AI채팅, 일 10개 질문 생성
+  - Premium: 객관식/빈칸채우기/AI채팅, 일 50개 질문 생성
+  - Pro: 모든 AI 기능 (객관식/빈칸채우기/블러처리/AI채팅), 일 200개 질문 생성
 - **✅ AI 사용량 추적**: AIUsageTracking 모델로 일일 질문 생성 한도 관리
 - **✅ 읽기 전용 학습**: AI 질문과 정답을 보며 자가 학습 (자동 평가 기능 제외)
 
@@ -188,6 +188,7 @@ docker-compose exec celery celery -A resee inspect scheduled
 - `review/` - Spaced repetition system with ReviewSchedule and ReviewHistory
 - `analytics/` - Dashboard metrics and statistics
 - `ai_review/` - AI-powered question generation and learning tools
+- `monitoring/` - Performance monitoring and alerting
 
 ### Frontend (React + TypeScript)
 - **React 18** with TypeScript for type safety
@@ -286,6 +287,7 @@ resee/
 │   ├── review/             # Spaced repetition system
 │   ├── analytics/          # Statistics and analytics
 │   ├── ai_review/          # AI question generation and tools
+│   ├── monitoring/         # Performance monitoring
 │   ├── resee/              # Django project settings
 │   └── tests/              # Test files (including AI tests)
 ├── frontend/               # React frontend
@@ -344,9 +346,9 @@ ALLOWED_HOSTS=localhost,127.0.0.1,backend
 GOOGLE_OAUTH2_CLIENT_ID=your-google-client-id
 GOOGLE_OAUTH2_CLIENT_SECRET=your-google-client-secret
 
-# AI Features (OpenAI)
-OPENAI_API_KEY=your-openai-api-key
-OPENAI_MODEL=gpt-4
+# AI Features (Claude)
+ANTHROPIC_API_KEY=your-anthropic-api-key  
+CLAUDE_MODEL=claude-3-haiku-20240307
 AI_MAX_RETRIES=3
 AI_CACHE_TIMEOUT=3600
 ```
