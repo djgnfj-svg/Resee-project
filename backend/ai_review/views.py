@@ -7,7 +7,7 @@ from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -28,6 +28,7 @@ from .serializers import (
     AIChatResponseSerializer
 )
 from .services import ai_service, AIServiceError
+from resee.structured_logging import log_api_call, log_performance, ai_logger
 
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,8 @@ class GenerateQuestionsView(APIView):
         },
         operation_description="Generate AI questions for content using specified types and difficulty"
     )
+    @log_api_call
+    @log_performance('ai_question_generation')
     def post(self, request):
         """Generate questions for content"""
         # Check AI feature access
@@ -127,6 +130,15 @@ class GenerateQuestionsView(APIView):
         content = get_object_or_404(Content, id=content_id, author=request.user)
         
         try:
+            # Log AI question generation attempt
+            ai_logger.log_question_generation(
+                user_id=request.user.id,
+                content_id=content_id,
+                question_types=question_types,
+                count=count,
+                success=False  # Will update to True if successful
+            )
+            
             # Generate questions using AI service
             generated_questions = ai_service.generate_questions(
                 content=content,
@@ -166,6 +178,18 @@ class GenerateQuestionsView(APIView):
             # Serialize response
             response_serializer = AIQuestionSerializer(saved_questions, many=True)
             
+            # Log successful generation
+            ai_logger.log_question_generation(
+                user_id=request.user.id,
+                content_id=content_id,
+                question_types=question_types,
+                count=len(saved_questions),
+                success=True,
+                generated_count=len(saved_questions),
+                subscription_tier=request.user.subscription.tier,
+                processing_time_ms=sum(q.get('processing_time_ms', 0) for q in generated_questions)
+            )
+            
             logger.info(
                 f"Generated {len(saved_questions)} AI questions for content {content.id} "
                 f"(user: {request.user.email}, tier: {request.user.subscription.tier})"
@@ -196,6 +220,29 @@ class ContentQuestionsView(ListAPIView):
     serializer_class = AIQuestionSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    @swagger_auto_schema(
+        operation_summary="콘텐츠별 AI 질문 조회",
+        operation_description="""
+        특정 콘텐츠에 대해 생성된 AI 질문들을 조회합니다.
+        
+        **응답 데이터:**
+        - 해당 콘텐츠에 대해 생성된 모든 AI 질문
+        - 질문 유형, 난이도, 생성 시간 등 메타데이터 포함
+        - 비활성화된 질문은 제외
+        
+        **권한:**
+        - 본인이 작성한 콘텐츠의 질문만 조회 가능
+        """,
+        tags=['AI Review'],
+        responses={
+            200: AIQuestionSerializer(many=True),
+            401: "인증 필요",
+            404: "콘텐츠를 찾을 수 없음",
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
     def get_queryset(self):
         content_id = self.kwargs['content_id']
         # Ensure user owns the content
@@ -204,7 +251,9 @@ class ContentQuestionsView(ListAPIView):
         return AIQuestion.objects.filter(
             content=content,
             is_active=True
-        ).order_by('-created_at')
+        ).select_related('content', 'question_type')\
+         .prefetch_related('feedback')\
+         .order_by('-created_at')
 
 
 
@@ -216,11 +265,39 @@ class AIReviewSessionListView(ListAPIView):
     serializer_class = AIReviewSessionSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    @swagger_auto_schema(
+        operation_summary="AI 복습 세션 목록 조회",
+        operation_description="""
+        사용자의 AI 복습 세션 목록을 조회합니다.
+        
+        **응답 데이터:**
+        - AI 복습 세션 내역 (생성된 질문 수, 답변한 질문 수 등)
+        - 세션 지속 시간 및 AI 처리 시간
+        - 평균 점수 및 완료율
+        - 관련 콘텐츠 및 카테고리 정보
+        
+        **정렬:**
+        - 최근 세션부터 정렬 (생성 시간 역순)
+        """,
+        tags=['AI Review'],
+        responses={
+            200: AIReviewSessionSerializer(many=True),
+            401: "인증 필요",
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+    
     def get_queryset(self):
         return AIReviewSession.objects.filter(
             review_history__user=self.request.user
         ).select_related(
-            'review_history', 'review_history__content'
+            'review_history', 
+            'review_history__content',
+            'review_history__content__category',
+            'review_history__user'
+        ).prefetch_related(
+            'review_history__content__ai_questions'
         ).order_by('-created_at')
 
 
@@ -231,12 +308,42 @@ class GenerateFillBlanksView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     @swagger_auto_schema(
+        operation_summary="빈칸 채우기 문제 생성",
+        operation_description="""
+        콘텐츠에서 중요한 부분을 뺈칸으로 처리하여 학습 문제를 생성합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "content_id": 123,
+          "num_blanks": 3
+        }
+        ```
+        
+        **응답 예시:**
+        ```json
+        {
+          "blanked_text": "Python은 _____(빈칸1)이며, _____(빈칸2) 언어입니다.",
+          "answers": {
+            "빈칸1": "해석형 언어",
+            "빈칸2": "객체지향"
+          },
+          "keywords": ["Python", "해석형", "객체지향"]
+        }
+        ```
+        
+        **구독 티어 제한:**
+        - Premium 이상 티어에서만 사용 가능
+        """,
+        tags=['AI Review'],
         request_body=FillBlankRequestSerializer,
         responses={
             200: FillBlankResponseSerializer,
-            400: 'Bad Request',
-            404: 'Content not found',
-            500: 'AI service error'
+            400: '잘못된 요청 - 유효성 검사 실패',
+            403: '구독 티어 부족 - Premium 이상 필요',
+            404: '콘텐츠를 찾을 수 없음',
+            503: 'AI 서비스 일시적 사용 불가',
+            500: 'AI 서비스 오류'
         }
     )
     def post(self, request):
@@ -293,12 +400,50 @@ class IdentifyBlurRegionsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     @swagger_auto_schema(
+        operation_summary="블러 처리 영역 식별",
+        operation_description="""
+        콘텐츠에서 블러 처리할 중요 영역을 AI로 식별합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "content_id": 123
+        }
+        ```
+        
+        **응답 예시:**
+        ```json
+        {
+          "blur_regions": [
+            {
+              "text": "해석형 언어",
+              "start_pos": 15,
+              "end_pos": 21,
+              "importance": 0.9,
+              "concept_type": "definition"
+            }
+          ],
+          "concepts": ["Python", "해석형 언어", "객체지향"]
+        }
+        ```
+        
+        **기능 설명:**
+        - 중요한 개념, 정의, 예시 등을 자동 식별
+        - 중요도 점수를 통한 블러 우선순위 제공
+        - 게임형 학습으로 기억 효과 증대
+        
+        **구독 티어 제한:**
+        - Pro 티어에서만 사용 가능
+        """,
+        tags=['AI Review'],
         request_body=BlurRegionsRequestSerializer,
         responses={
             200: BlurRegionsResponseSerializer,
-            400: 'Bad Request',
-            404: 'Content not found',
-            500: 'AI service error'
+            400: '잘못된 요청 - 유효성 검사 실패',
+            403: '구독 티어 부족 - Pro 티어 필요',
+            404: '콘텐츠를 찾을 수 없음',
+            503: 'AI 서비스 일시적 사용 불가',
+            500: 'AI 서비스 오류'
         }
     )
     def post(self, request):

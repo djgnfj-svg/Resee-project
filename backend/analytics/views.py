@@ -1,17 +1,51 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Count, Q, Avg, F, Case, When, IntegerField
+from django.db.models import Count
 from django.utils import timezone
 from datetime import timedelta, datetime
 from review.models import ReviewHistory, ReviewSchedule
 from review.utils import calculate_success_rate, get_today_reviews_count, get_pending_reviews_count
 from content.models import Content, Category
 from collections import defaultdict
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 class DashboardView(APIView):
     """Dashboard analytics view"""
     
+    @swagger_auto_schema(
+        operation_summary="대시보드 데이터 조회",
+        operation_description="""
+        사용자의 대시보드 분석 데이터를 제공합니다.
+        
+        **응답 데이터:**
+        - `today_reviews`: 오늘 예정된 복습 수
+        - `pending_reviews`: 밀린 복습 수
+        - `total_content`: 총 학습 콘텐츠 수
+        - `success_rate`: 30일간 복습 성공률 (%)
+        - `total_reviews_30_days`: 30일간 총 복습 수
+        - `streak_days`: 연속 학습 일수
+        """,
+        tags=['Analytics'],
+        responses={
+            200: openapi.Response(
+                description="대시보드 데이터",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'today_reviews': openapi.Schema(type=openapi.TYPE_INTEGER, description="오늘 예정된 복습 수"),
+                        'pending_reviews': openapi.Schema(type=openapi.TYPE_INTEGER, description="밀린 복습 수"),
+                        'total_content': openapi.Schema(type=openapi.TYPE_INTEGER, description="총 학습 콘텐츠 수"),
+                        'success_rate': openapi.Schema(type=openapi.TYPE_NUMBER, description="30일간 복습 성공률 (%)"),
+                        'total_reviews_30_days': openapi.Schema(type=openapi.TYPE_INTEGER, description="30일간 총 복습 수"),
+                        'streak_days': openapi.Schema(type=openapi.TYPE_INTEGER, description="연속 학습 일수"),
+                    }
+                )
+            ),
+            401: "인증 필요",
+        }
+    )
     def get(self, request):
         """Get dashboard data - optimized version"""
         user = request.user
@@ -56,6 +90,34 @@ class DashboardView(APIView):
 class ReviewStatsView(APIView):
     """Enhanced review statistics view"""
     
+    @swagger_auto_schema(
+        operation_summary="복습 통계 조회",
+        operation_description="""
+        포괄적인 복습 통계 데이터를 제공합니다.
+        
+        **응답 데이터:**
+        - `result_distribution`: 복습 결과 분포 (전체 기간 / 최근 30일)
+        - `daily_reviews`: 일별 복습 데이터 (최근 30일)
+        - `weekly_performance`: 주간 성과 지표 (최근 4주)
+        - `trends`: 복습 트렌드 분석
+        """,
+        tags=['Analytics'],
+        responses={
+            200: openapi.Response(
+                description="복습 통계 데이터",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'result_distribution': openapi.Schema(type=openapi.TYPE_OBJECT, description="복습 결과 분포"),
+                        'daily_reviews': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT), description="일별 복습 데이터"),
+                        'weekly_performance': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT), description="주간 성과 지표"),
+                        'trends': openapi.Schema(type=openapi.TYPE_OBJECT, description="복습 트렌드 분석"),
+                    }
+                )
+            ),
+            401: "인증 필요",
+        }
+    )
     def get(self, request):
         """Get comprehensive review statistics"""
         user = request.user
@@ -256,6 +318,36 @@ class ReviewStatsView(APIView):
 class AdvancedAnalyticsView(APIView):
     """Advanced learning analytics data provider"""
     
+    @swagger_auto_schema(
+        operation_summary="고급 학습 분석 데이터 조회",
+        operation_description="""
+        종합적인 학습 분석 데이터를 제공합니다.
+        
+        **응답 데이터:**
+        - `learning_insights`: 학습 인사이트 (총 콘텐츠, 총 복습, 성공률 등)
+        - `category_performance`: 카테고리별 성과 분석
+        - `study_patterns`: 학습 패턴 분석 (시간대별, 요일별)
+        - `achievement_stats`: 성취 통계 (연속 학습, 완벽 세션 등)
+        - `recommendations`: 개인화된 학습 추천사항
+        """,
+        tags=['Analytics'],
+        responses={
+            200: openapi.Response(
+                description="고급 학습 분석 데이터",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'learning_insights': openapi.Schema(type=openapi.TYPE_OBJECT, description="학습 인사이트"),
+                        'category_performance': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT), description="카테고리별 성과"),
+                        'study_patterns': openapi.Schema(type=openapi.TYPE_OBJECT, description="학습 패턴"),
+                        'achievement_stats': openapi.Schema(type=openapi.TYPE_OBJECT, description="성취 통계"),
+                        'recommendations': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT), description="학습 추천사항"),
+                    }
+                )
+            ),
+            401: "인증 필요",
+        }
+    )
     def get(self, request):
         """Return comprehensive learning analytics data"""
         user = request.user
@@ -580,6 +672,56 @@ class AdvancedAnalyticsView(APIView):
 class LearningCalendarView(APIView):
     """Learning calendar and heatmap data"""
     
+    @swagger_auto_schema(
+        operation_summary="학습 캘린더 데이터 조회",
+        operation_description="""
+        GitHub 스타일의 학습 캘린더 히트맵 데이터를 제공합니다.
+        
+        **응답 데이터:**
+        - `calendar_data`: 365일간의 일별 학습 데이터
+        - `monthly_summary`: 월별 요약 통계 (최근 12개월)
+        - `total_active_days`: 총 활성 학습일 수
+        - `best_day`: 최고 복습 수를 기록한 날
+        
+        **강도 레벨:**
+        - 0: 복습 없음
+        - 1: 1-9개 복습
+        - 2: 10-14개 복습  
+        - 3: 15-19개 복습
+        - 4: 20개 이상 복습
+        """,
+        tags=['Analytics'],
+        responses={
+            200: openapi.Response(
+                description="학습 캘린더 데이터",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'calendar_data': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    'date': openapi.Schema(type=openapi.TYPE_STRING, description="날짜 (ISO 형식)"),
+                                    'count': openapi.Schema(type=openapi.TYPE_INTEGER, description="복습 수"),
+                                    'success_rate': openapi.Schema(type=openapi.TYPE_NUMBER, description="성공률 (%)"),
+                                    'intensity': openapi.Schema(type=openapi.TYPE_INTEGER, description="강도 레벨 (0-4)"),
+                                    'remembered': openapi.Schema(type=openapi.TYPE_INTEGER, description="기억함 수"),
+                                    'partial': openapi.Schema(type=openapi.TYPE_INTEGER, description="애매함 수"),
+                                    'forgot': openapi.Schema(type=openapi.TYPE_INTEGER, description="모름 수"),
+                                }
+                            ),
+                            description="365일간의 일별 학습 데이터"
+                        ),
+                        'monthly_summary': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT), description="월별 요약 통계"),
+                        'total_active_days': openapi.Schema(type=openapi.TYPE_INTEGER, description="총 활성 학습일 수"),
+                        'best_day': openapi.Schema(type=openapi.TYPE_OBJECT, description="최고 복습 수를 기록한 날"),
+                    }
+                )
+            ),
+            401: "인증 필요",
+        }
+    )
     def get(self, request):
         """Return calendar heatmap data"""
         user = request.user

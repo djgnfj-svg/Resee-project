@@ -136,6 +136,7 @@ class AIQuestion(models.Model):
                 raise ValidationError("Correct answer must be one of the options")
 
 
+
 class AIEvaluation(models.Model):
     """
     AI evaluation of user answers to questions
