@@ -274,7 +274,11 @@ export const FillBlankQuestion: React.FC<FillBlankQuestionProps> = ({
           {Object.keys(state.answers).length}개 빈칸
         </span>
         {state.score !== undefined && (
-          <span className={`px-2 py-1 text-xs rounded font-medium ${aiReviewAPI.getScoreColor(state.score)}`}>
+          <span className={`px-2 py-1 text-xs rounded font-medium ${
+            state.score >= 0.8 ? 'bg-green-100 text-green-700' :
+            state.score >= 0.6 ? 'bg-yellow-100 text-yellow-700' :
+            'bg-red-100 text-red-700'
+          }`}>
             점수: {Math.round(state.score * 100)}점
           </span>
         )}

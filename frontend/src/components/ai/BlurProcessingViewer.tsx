@@ -85,7 +85,7 @@ export const BlurProcessingViewer: React.FC<BlurProcessingViewerProps> = ({
   const handleShowHint = (regionIndex: number) => {
     if (!gameMode) return;
     
-    setHintsShown(prev => new Set([...prev, regionIndex]));
+    setHintsShown(prev => new Set(Array.from(prev).concat([regionIndex])));
     const region = state.blurRegions[regionIndex];
     toast.success(`💡 힌트: 이것은 ${region.concept_type} 관련 내용입니다!`);
   };
