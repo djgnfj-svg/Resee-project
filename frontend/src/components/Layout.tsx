@@ -63,7 +63,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <div className="sm:hidden">
                   <button
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+                    className="btn btn-ghost btn-sm touch-target"
                     aria-expanded="false"
                   >
                     <span className="sr-only">메인 메뉴 열기</span>
@@ -97,7 +97,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </button>
 
                   {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                    <div className="absolute right-0 mt-2 w-48 card card-elevated z-50">
                       <Link
                         to="/profile"
                         onClick={() => setUserMenuOpen(false)}
@@ -134,7 +134,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </Link>
                   <Link
                     to="/register"
-                    className="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                    className="btn btn-primary btn-sm"
                   >
                     회원가입
                   </Link>
