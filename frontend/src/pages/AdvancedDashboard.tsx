@@ -101,24 +101,24 @@ const AdvancedDashboard: React.FC = () => {
   const progressData = useMemo(() => {
     if (!analyticsData || !calendarData) return null;
 
-    // 주간 진도 데이터 (최근 30일)
+    // 주간 진도 데이터 (최근 30일) - NaN 방지
     const weeklyProgress = calendarData.calendar_data
       .slice(-30)
       .map((day, index) => ({
         date: new Date(day.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
-        reviews: day.count,
-        successRate: day.success_rate,
+        reviews: Math.max(0, day.count || 0),
+        successRate: isNaN(day.success_rate) ? 0 : Math.max(0, Math.min(100, day.success_rate || 0)),
         newContent: Math.floor(Math.random() * 3),
-        masteredItems: day.remembered
+        masteredItems: Math.max(0, day.remembered || 0)
       }));
 
-    // 월간 트렌드 데이터
+    // 월간 트렌드 데이터 - NaN 방지
     const monthlyTrends = calendarData.monthly_summary.map(month => ({
-      month: month.month,
-      totalReviews: month.total_reviews,
-      averageScore: month.success_rate,
+      month: month.month || 'Unknown',
+      totalReviews: Math.max(0, month.total_reviews || 0),
+      averageScore: isNaN(month.success_rate) ? 0 : Math.max(0, Math.min(100, month.success_rate || 0)),
       contentAdded: Math.floor(Math.random() * 20),
-      timeSpent: Math.floor(month.total_reviews * 2.5)
+      timeSpent: Math.floor((month.total_reviews || 0) * 2.5)
     }));
 
     // 카테고리별 분포
@@ -130,18 +130,21 @@ const AdvancedDashboard: React.FC = () => {
       masteryLevel: isNaN(category.success_rate) ? 0 : category.success_rate
     }));
 
-    // 성과 지표
+    // 성과 지표 - NaN 방지
     const performanceMetrics = {
-      currentStreak: analyticsData.achievement_stats.current_streak,
-      longestStreak: analyticsData.achievement_stats.max_streak,
-      totalReviews: analyticsData.learning_insights.total_reviews,
-      averageRetention: Math.round(analyticsData.learning_insights.recent_success_rate),
-      studyEfficiency: Math.min(95, Math.round(
-        (analyticsData.learning_insights.recent_success_rate / 100) * 
-        (analyticsData.achievement_stats.current_streak / Math.max(1, analyticsData.achievement_stats.max_streak)) * 100
-      )),
-      weeklyGoal: Math.max(50, analyticsData.achievement_stats.monthly_target / 4),
-      weeklyProgress: analyticsData.learning_insights.recent_7d_reviews
+      currentStreak: Math.max(0, analyticsData.achievement_stats.current_streak || 0),
+      longestStreak: Math.max(0, analyticsData.achievement_stats.max_streak || 0),
+      totalReviews: Math.max(0, analyticsData.learning_insights.total_reviews || 0),
+      averageRetention: Math.max(0, Math.min(100, Math.round(analyticsData.learning_insights.recent_success_rate || 0))),
+      studyEfficiency: (() => {
+        const successRate = analyticsData.learning_insights.recent_success_rate || 0;
+        const currentStreak = analyticsData.achievement_stats.current_streak || 0;
+        const maxStreak = Math.max(1, analyticsData.achievement_stats.max_streak || 1);
+        const efficiency = (successRate / 100) * (currentStreak / maxStreak) * 100;
+        return Math.max(0, Math.min(95, Math.round(isNaN(efficiency) ? 0 : efficiency)));
+      })(),
+      weeklyGoal: Math.max(50, (analyticsData.achievement_stats.monthly_target || 100) / 4),
+      weeklyProgress: Math.max(0, analyticsData.learning_insights.recent_7d_reviews || 0)
     };
 
     return {

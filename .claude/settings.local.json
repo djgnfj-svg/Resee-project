@@ -74,7 +74,8 @@
       "mcp__playwright__browser_network_requests",
       "mcp__playwright__browser_console_messages",
       "Bash(npm run lint)",
-      "Bash(flake8:*)"
+      "Bash(flake8:*)",
+      "mcp__playwright__browser_evaluate"
     ]
   },
   "enableAllProjectMcpServers": true,

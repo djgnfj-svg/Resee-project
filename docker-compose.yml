@@ -57,6 +57,7 @@ services:
       - DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
       - CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/0
       - DEBUG=True
       - SECRET_KEY=your-secret-key-for-development
       - ALLOWED_HOSTS=*
@@ -79,7 +80,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:8000/api
+      - REACT_APP_API_URL=http://localhost/api
       - REACT_APP_GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID:-}
 
   celery:

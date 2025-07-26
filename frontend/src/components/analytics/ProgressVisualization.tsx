@@ -103,11 +103,12 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
       ? sanitizeNumber(previousWeek.reduce((sum, day) => sum + sanitizeNumber(day.successRate, 0), 0) / previousWeek.length)
       : recentAvgSuccess;
     
-    const trend = recentAvgSuccess - prevAvgSuccess;
-    // prevAvgSuccess가 0이면 나누기 방지
-    const trendPercent = prevAvgSuccess !== 0 
-      ? sanitizeNumber((recentAvgSuccess - prevAvgSuccess) / prevAvgSuccess * 100)
-      : 0;
+    const trend = sanitizeNumber(recentAvgSuccess - prevAvgSuccess);
+    // 안전한 백분율 계산 - 모든 경우에 대해 NaN 방지
+    let trendPercent = 0;
+    if (prevAvgSuccess !== 0 && !isNaN(prevAvgSuccess) && !isNaN(recentAvgSuccess)) {
+      trendPercent = sanitizeNumber((recentAvgSuccess - prevAvgSuccess) / prevAvgSuccess * 100);
+    }
 
     return {
       trend: trend > 1 ? 'up' : trend < -1 ? 'down' : 'stable',
@@ -126,13 +127,17 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
 
   const formatTooltipValue = (value: number, name: string) => {
     const safeValue = sanitizeNumber(value);
+    // 추가 NaN 체크
+    if (isNaN(safeValue) || !isFinite(safeValue)) {
+      return ['0', name];
+    }
     if (name.includes('Rate') || name.includes('율')) {
       return [`${safeValue.toFixed(1)}%`, name];
     }
     if (name.includes('Time') || name.includes('시간')) {
       return [`${safeValue}분`, name];
     }
-    return [safeValue, name];
+    return [Math.round(safeValue), name];
   };
 
   return (
@@ -372,38 +377,50 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             🎯 카테고리별 학습 분포
           </h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={safeArray(categoryDistribution).map(item => ({
-                    ...item,
-                    value: sanitizeNumber(item.value),
-                    masteryLevel: sanitizeNumber(item.masteryLevel)
-                  }))}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {categoryDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value: number) => [value, '콘텐츠 수']}
-                  contentStyle={{
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Legend 
-                  wrapperStyle={{ fontSize: '12px' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            {safeArray(categoryDistribution).filter(item => (item.value || 0) > 0).length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={safeArray(categoryDistribution)
+                      .map(item => ({
+                        ...item,
+                        value: Math.max(0, sanitizeNumber(item.value || 0)),
+                        masteryLevel: sanitizeNumber(item.masteryLevel || 0)
+                      }))
+                      .filter(item => item.value > 0) // 값이 0인 항목 제거
+                    }
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {safeArray(categoryDistribution).filter(item => (item.value || 0) > 0).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color || '#3b82f6'} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => [sanitizeNumber(value), '콘텐츠 수']}
+                    contentStyle={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '12px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center text-gray-500 dark:text-gray-400">
+                  <p className="text-sm">아직 학습 데이터가 없습니다</p>
+                  <p className="text-xs mt-1">콘텐츠를 추가하고 복습을 시작해보세요</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
