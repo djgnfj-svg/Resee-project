@@ -63,8 +63,8 @@ interface ProgressVisualizationProps {
 }
 
 const COLORS = {
-  primary: '#3b82f6',
-  success: '#10b981', 
+  primary: '#0ea5e9',
+  success: '#22c55e', 
   warning: '#f59e0b',
   danger: '#ef4444',
   purple: '#8b5cf6',
@@ -145,11 +145,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
       {/* 핵심 성과 지표 카드들 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 현재 스트릭 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="card card-raised card-body">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">연속 학습</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <p className="heading-4">
                 {sanitizeNumber(performanceMetrics.currentStreak)}일
               </p>
             </div>
@@ -165,11 +165,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         </div>
 
         {/* 주간 진행률 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="card card-raised card-body">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">주간 목표</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <p className="heading-4">
                 {sanitizeNumber(weeklyProgressPercent).toFixed(0)}%
               </p>
             </div>
@@ -191,11 +191,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         </div>
 
         {/* 성공률 트렌드 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="card card-raised card-body">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">평균 정답률</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <p className="heading-4">
                 {sanitizeNumber(performanceInsights.recentSuccess).toFixed(1)}%
               </p>
             </div>
@@ -235,11 +235,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         </div>
 
         {/* 총 복습 횟수 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="card card-raised card-body">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">총 복습</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <p className="heading-4">
                 {sanitizeNumber(performanceMetrics.totalReviews).toLocaleString()}
               </p>
             </div>
@@ -256,8 +256,8 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
       </div>
 
       {/* 주간 학습 진도 차트 */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <div className="card card-raised card-body">
+        <h3 className="heading-5">
           📈 주간 학습 진도
         </h3>
         <div className="h-80">
@@ -329,8 +329,8 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 월간 학습 패턴 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        <div className="card card-raised card-body">
+          <h3 className="heading-5">
             📊 월간 학습 패턴
           </h3>
           <div className="h-64">
@@ -372,8 +372,8 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         </div>
 
         {/* 카테고리별 분포 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        <div className="card card-raised card-body">
+          <h3 className="heading-5">
             🎯 카테고리별 학습 분포
           </h3>
           <div className="h-64">
@@ -426,8 +426,8 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
       </div>
 
       {/* 학습 효율성 레이더 차트 */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <div className="card card-raised card-body">
+        <h3 className="heading-5">
           ⚡ 학습 효율성 분석
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

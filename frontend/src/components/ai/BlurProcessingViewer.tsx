@@ -179,17 +179,17 @@ export const BlurProcessingViewer: React.FC<BlurProcessingViewerProps> = ({
 
   if (state.isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="card card-raised card-body">
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent mr-3"></div>
-          <span className="text-gray-600">AI가 핵심 개념을 분석하고 있습니다...</span>
+          <span className="body-normal">AI가 핵심 개념을 분석하고 있습니다...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="card card-raised card-body">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -204,10 +204,10 @@ export const BlurProcessingViewer: React.FC<BlurProcessingViewerProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={gameMode ? revealAll : resetBlurs}
-            className={`px-3 py-1 text-xs rounded font-medium ${
+            className={`btn btn-sm ${
               gameMode
-                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                ? 'btn-error'
+                : 'btn-primary'
             }`}
           >
             {gameMode ? '모든 답안 공개' : '다시 숨기기'}
