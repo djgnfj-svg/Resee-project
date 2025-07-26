@@ -2,858 +2,394 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## 🎯 해야할 것 (TODO)
 
-**Resee** is a scientific review platform implementing spaced repetition learning based on the Ebbinghaus forgetting curve. It consists of a Django REST API backend with PostgreSQL/Redis/RabbitMQ and a React TypeScript frontend using Tiptap editor.
-
-### v0.5.0 AI 기반 학습 시스템 및 구독 모델 구현 (2025-07-22)
-- **✅ 구독 기반 시스템**: Free(7일) → Basic(30일) → Premium(60일) → Pro(90일) 복습 간격 확장
-- **✅ AI 질문 자동 생성**: Claude API 기반 3가지 문제 유형 자동 생성
-  - 객관식 (Multiple Choice): 4개 선택지 중 정답 선택
-  - 빈칸 채우기 (Fill Blank): 핵심 개념을 빈칸으로 처리하여 학습
-  - 블러 처리 (Blur Processing): 중요 영역을 블러 처리하여 게임형 학습
-  - AI 채팅 (AI Chat): 학습 내용에 대한 대화형 튜터링
-- **✅ 구독 티어별 AI 기능 제한**:
-  - Free: AI 기능 사용 불가 (기존 복습 시스템만)
-  - Basic: 객관식/AI채팅, 일 10개 질문 생성
-  - Premium: 객관식/빈칸채우기/AI채팅, 일 50개 질문 생성
-  - Pro: 모든 AI 기능 (객관식/빈칸채우기/블러처리/AI채팅), 일 200개 질문 생성
-- **✅ AI 사용량 추적**: AIUsageTracking 모델로 일일 질문 생성 한도 관리
-- **✅ 읽기 전용 학습**: AI 질문과 정답을 보며 자가 학습 (자동 평가 기능 제외)
-
-### v0.4.0 PWA 구현 및 모바일 최적화 (2025-07-21)
-- **✅ PWA 기본 구조**: manifest.json, service worker, 오프라인 지원
-- **✅ 모바일 최적화**: 반응형 디자인, 터치 최적화, 안전 영역 지원
-- **✅ 설치 기능**: 앱 설치 프롬프트, 홈 화면 추가 지원
-- **✅ 오프라인 캐싱**: 정적 자원 및 API 캐싱 전략 구현
-- **✅ 네트워크 상태**: 온/오프라인 상태 추적 및 사용자 알림
-- **✅ 푸시 알림 구조**: 복습 알림, 로컬 알림 시스템 기반 구축
-
-### v0.3.2 Google OAuth 소셜 로그인 구현 (2025-07-21)
-- **✅ Google OAuth 2.0 통합**: Google Identity Services를 통한 소셜 로그인 구현
-- **✅ 백엔드 OAuth 처리**: JWT 토큰 생성 및 사용자 자동 생성 시스템
-- **✅ 프론트엔드 소셜 로그인**: Google Sign-In 버튼 및 콜백 처리
-- **✅ 환경 변수 설정**: Google APIs Console 설정 가이드 및 환경 변수 구성
-- **✅ 사용자 경험 개선**: 기존/신규 사용자 구분 및 적절한 페이지 리다이렉트
-
-### v0.3.1 이메일 인증 시스템 완성 (2025-07-19)
-- **✅ 이메일 전용 로그인 시스템**: username 필드 완전 제거, 이메일만으로 인증
-- **✅ 개발 환경 단순화**: 복잡한 설정 파일들 제거, docker-compose 중심으로 간소화
-- **✅ SSL/HTTP 유연한 지원**: 개발환경에서 HTTP, 프로덕션에서 SSL 선택적 활성화
-- **✅ Celery 서비스 안정화**: 백그라운드 작업 및 스케줄링 완전 동작
-- **✅ 프론트엔드 타입 안전성**: TypeScript 컴파일 오류 완전 해결
-- **✅ 코드 정리 및 최적화**: 불필요한 파일 제거, 환경 변수 정리 완료
-
-### v0.3 배포 준비 완료 (2025-07-18)
-- **✅ 프론트엔드 빌드 오류 수정**: BlockNote 의존성 문제 해결, 커스텀 마크다운 에디터로 교체
-- **✅ 백엔드 의존성 문제 해결**: `django-ipware` 라이브러리 추가, 미들웨어 설정 최적화
-- **✅ 테스트 계정 생성**: admin, testuser, demo 계정 자동 생성 스크립트 완성
-- **✅ 샘플 데이터**: 각 계정별 5개씩 총 16개 학습 콘텐츠 자동 생성
-- **✅ 회원가입 에러 개선**: 한국어 상세 에러 메시지, 필드별 유효성 검사 강화
-- **✅ 포괄적인 테스트 스위트**: 백엔드 203개 테스트, 프론트엔드/E2E 테스트 완성
-- **✅ 보안 강화**: JWT 인증, CORS, 레이트 리미팅, SQL 인젝션 방지 미들웨어
-- **✅ 코드 품질**: ESLint, Prettier, Black, TypeScript 타입 안전성 확보
-
-### v0.2 Previous Updates
-- **✅ Immediate Review Feature**: Content can be reviewed immediately after creation
-- **✅ Initial Review Tracking**: Added `initial_review_completed` field to distinguish first reviews
-- **✅ Enhanced Review Flow**: Seamless transition from immediate review to spaced repetition
-- **✅ Playwright Testing**: Full workflow automated testing implemented
-
-## Development Commands
-
-### Docker Environment (Development)
+### 1. 새로운 기능 개발 시
 ```bash
-# Start all services
-docker-compose up -d
+# 1. 브랜치 생성
+git checkout -b feature/새기능명
 
-# Stop services
-docker-compose down
+# 2. 백엔드 앱 생성 (필요시)
+docker-compose exec backend python manage.py startapp 앱이름
+# resee/settings.py의 INSTALLED_APPS에 추가
 
-# Rebuild services
-docker-compose build
-
-# View logs
-docker-compose logs -f backend
-docker-compose logs -f frontend
-```
-
-# Note: Production deployment configuration is not included in this repository.
-# Deployment scripts and production configurations will be added later.
-
-### Backend (Django)
-```bash
-# Access backend container
-docker-compose exec backend bash
-
-# Database migrations
+# 3. 모델 생성 후
 docker-compose exec backend python manage.py makemigrations
 docker-compose exec backend python manage.py migrate
 
-# Create superuser
-docker-compose exec backend python manage.py createsuperuser
+# 4. 테스트 작성 및 실행
+docker-compose exec backend pytest -k "test_새기능" -v
 
-# Run tests
-docker-compose exec backend python manage.py test
-docker-compose exec backend pytest
-docker-compose exec backend pytest --cov=.
-
-# Django shell
-docker-compose exec backend python manage.py shell
-
-# Collect static files
-docker-compose exec backend python manage.py collectstatic
-
-# Run specific test file
-docker-compose exec backend python manage.py test tests.test_content
-
-# Run pytest with specific markers
-docker-compose exec backend pytest -m unit
-docker-compose exec backend pytest -m "not slow"
-
-# Code quality checks
-docker-compose exec backend flake8
-docker-compose exec backend black .
-docker-compose exec backend isort .
-
-# Debug mode Django shell
-docker-compose exec backend python manage.py shell_plus --ipython
+# 5. 프론트엔드 타입 체크
+docker-compose exec frontend npx tsc --noEmit
 ```
 
-### Frontend (React)
+### 2. 버그 수정 시
 ```bash
-# Access frontend container
-docker-compose exec frontend bash
+# 1. 재현 가능한 테스트 작성
+docker-compose exec backend pytest -k "test_버그재현" -v --pdb
 
-# Install dependencies
-docker-compose exec frontend npm install
+# 2. 로그 확인
+docker-compose logs -f backend --since "10m"
+docker-compose exec backend tail -f logs/django.log
 
-# Run tests
-docker-compose exec frontend npm test
+# 3. 디버깅
+# 코드에 추가: import ipdb; ipdb.set_trace()
+docker-compose exec backend python manage.py shell_plus
+```
 
-# Build production
-docker-compose exec frontend npm run build
-
-# Run linting
+### 3. 배포 전
+```bash
+# 1. 코드 품질 체크
+docker-compose exec backend black . --check
+docker-compose exec backend flake8
 docker-compose exec frontend npm run lint
 
-# Test with coverage
-docker-compose exec frontend npm test -- --coverage --watchAll=false
+# 2. 전체 테스트 실행
+docker-compose exec backend pytest
+docker-compose exec frontend npm test -- --watchAll=false
 
-# Type checking
-docker-compose exec frontend npx tsc --noEmit
+# 3. 프로덕션 빌드 테스트
+docker-compose exec frontend npm run build
 
-# Build and analyze bundle size
-docker-compose exec frontend npm run build -- --stats
-
-# PWA 관련 명령어
-docker-compose exec frontend npm run pwa:icons    # PWA 아이콘 생성
-docker-compose exec frontend npm run pwa:test     # Lighthouse PWA 테스트
+# 4. 마이그레이션 확인
+docker-compose exec backend python manage.py showmigrations
 ```
 
-### Celery (Background Tasks)
+## 🔧 수정해야할 것 (FIX)
+
+### 1. 일반적인 오류들
+
+#### TypeError/AttributeError
 ```bash
-# Monitor celery worker
-docker-compose exec celery celery -A resee worker -l info
+# 1. 모델 필드 확인
+docker-compose exec backend python manage.py shell
+>>> from content.models import Content
+>>> Content._meta.get_fields()
 
-# Monitor celery beat scheduler
-docker-compose exec celery-beat celery -A resee beat -l info
-
-# Celery monitoring (flower)
-docker-compose exec celery celery -A resee flower
-
-# Purge all tasks from queue
-docker-compose exec celery celery -A resee purge -f
-
-# Inspect active tasks
-docker-compose exec celery celery -A resee inspect active
-
-# Inspect scheduled tasks
-docker-compose exec celery celery -A resee inspect scheduled
+# 2. 시리얼라이저 필드 확인
+>>> from content.serializers import ContentSerializer
+>>> ContentSerializer().fields.keys()
 ```
 
-## Architecture Overview
-
-### Backend (Django)
-- **Django 4.2** with DRF for RESTful APIs
-- **PostgreSQL** for main database
-- **Redis** for caching and Celery results
-- **RabbitMQ** for Celery message broker
-- **JWT authentication** with SimpleJWT
-- **Celery** for background tasks (review scheduling, notifications)
-
-**Core Apps:**
-- `accounts/` - User management with custom User model and subscription system
-- `content/` - Learning content with categories, tags, and priority levels
-- `review/` - Spaced repetition system with ReviewSchedule and ReviewHistory
-- `analytics/` - Dashboard metrics and statistics
-- `ai_review/` - AI-powered question generation and learning tools
-- `monitoring/` - Performance monitoring and alerting
-
-### Frontend (React + TypeScript)
-- **React 18** with TypeScript for type safety
-- **TipTap Editor** for rich text editing with real-time markdown rendering
-- **React Query** for server state management
-- **React Hook Form** for form validation
-- **Tailwind CSS** for styling
-- **Recharts** for data visualization
-
-**Key Components:**
-- `AuthContext` - Global authentication state
-- `ProtectedRoute` - Route protection wrapper
-- `ContentFormV2` - Content creation/editing with TipTap editor
-- `TipTapEditor` - Rich text editor with markdown shortcuts support
-- `Layout` - Main application layout with navigation
-
-## Database Models
-
-### Core Models
-- **User** - Custom user with timezone and notification settings
-- **Content** - Learning materials with title, markdown content, category, priority (low/medium/high)
-- **Category** - Per-user + global content categories with slug and description
-- **ReviewSchedule** - Spaced repetition scheduling (intervals: 1, 3, 7, 14, 30 days)
-- **ReviewHistory** - Review session records with results (remembered/partial/forgot)
-- **Subscription** - User subscription tiers (Free/Basic/Premium/Pro) with AI feature limits
-- **AIQuestion** - AI-generated questions with type, difficulty, and options
-- **AIUsageTracking** - Daily AI feature usage tracking per user
-
-### Key Relationships
-- User has many Content, ReviewSchedule, ReviewHistory, Category
-- Content belongs to Category with priority levels
-- ReviewSchedule links User and Content with timing logic
-- Category has unique slug per user for SEO-friendly URLs
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/token/` - Login with email/password (JWT)
-- `POST /api/auth/token/refresh/` - Refresh JWT
-- `POST /api/accounts/users/register/` - Register new user
-- `GET/PUT /api/accounts/profile/` - Profile management
-- `POST /api/accounts/users/google-auth/` - Google OAuth authentication
-- `POST /api/accounts/users/resend-verification/` - Resend email verification
-- `GET /api/accounts/users/verify-email/?token=` - Verify email address
-
-### Content Management
-- `GET/POST /api/content/contents/` - Content CRUD with priority filtering
-- `GET /api/content/contents/by_category/` - Grouped by category
-- `GET/POST /api/content/categories/` - Category management with slug support
-
-### Review System
-- `GET /api/review/today/` - Today's due reviews
-- `POST /api/review/complete/` - Complete review session
-- `GET /api/review/category-stats/` - Category statistics
-- `GET /api/review/schedules/` - Review schedule management
-- `GET /api/review/history/` - Review history
-
-### Analytics
-- `GET /api/analytics/dashboard/` - Dashboard overview
-- `GET /api/analytics/review-stats/` - Review statistics
-
-### AI Review System
-- `GET /api/ai-review/health/` - AI system health check
-- `GET /api/ai-review/question-types/` - Available AI question types
-- `POST /api/ai-review/generate-questions/` - Generate AI questions for content
-- `GET /api/ai-review/content/<id>/questions/` - Get AI questions for specific content
-- `POST /api/ai-review/generate-fill-blanks/` - Generate fill-in-blank exercises
-- `POST /api/ai-review/identify-blur-regions/` - Identify blur regions for content
-- `GET /api/ai-review/sessions/` - AI review session history
-
-## Spaced Repetition Logic
-
-**Review Intervals:** [immediate, 1, 3, 7, 14, 30] days
-
-**Review Flow:**
-1. **Immediate Review**: Content available for review immediately after creation (`initial_review_completed = false`)
-2. **Spaced Repetition**: After first review completion, standard intervals apply
-
-**Review Results:**
-- **Remembered** - Advance to next interval
-- **Partial** - Repeat current interval  
-- **Forgot** - Reset to first interval (1 day)
-
-**Background Tasks:**
-- `create_review_schedule_for_content` - Auto-creates schedules with immediate availability
-- `send_daily_review_notifications` - Daily 9AM reminders
-- `cleanup_old_review_history` - Weekly cleanup of old history
-
-## File Structure
-
-```
-resee/
-├── backend/                 # Django backend
-│   ├── accounts/           # User management and subscriptions
-│   ├── content/            # Content management
-│   ├── review/             # Spaced repetition system
-│   ├── analytics/          # Statistics and analytics
-│   ├── ai_review/          # AI question generation and tools
-│   ├── monitoring/         # Performance monitoring
-│   ├── resee/              # Django project settings
-│   └── tests/              # Test files (including AI tests)
-├── frontend/               # React frontend
-│   ├── src/
-│   │   ├── components/     # Reusable components
-│   │   │   └── ai/         # AI-specific components
-│   │   ├── pages/          # Page components
-│   │   ├── contexts/       # React contexts
-│   │   ├── utils/          # Utilities (API client, AI API)
-│   │   └── types/          # TypeScript types (including AI types)
-│   └── public/             # Static assets
-└── docker-compose.yml      # Docker services
-```
-
-## Development Notes
-
-### Backend Patterns
-- Use Django signals for automatic review schedule creation
-- Celery tasks for background processing
-- JWT tokens with automatic refresh
-- Per-user data isolation with proper filtering
-- Content priority system (low/medium/high) for study planning
-- Category slugs for SEO-friendly URLs
-- `initial_review_completed` field for immediate review tracking
-
-### Frontend Patterns
-- React Query for server state with caching
-- Context API for global authentication state
-- React Hook Form for form validation
-- Tailwind CSS utility classes
-- TypeScript interfaces for all data contracts
-- TipTap editor with markdown shortcuts for rich content creation
-- Priority-based content organization (low/medium/high)
-- Category-based content filtering and navigation
-- Conditional rendering for "첫 번째 복습" vs "N번째 복습"
-
-### Testing
-- Backend: Django TestCase and pytest with factory-boy
-- Frontend: React Testing Library with Jest
-- E2E Testing: Playwright for full workflow testing
-- Test database isolation and cleanup
-- Test coverage with pytest-cov
-
-## Environment Variables
-
-### Backend (.env)
-```
-DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
-CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
-CELERY_RESULT_BACKEND=redis://redis:6379/0
-SECRET_KEY=your-secret-key
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1,backend
-
-# Google OAuth 2.0
-GOOGLE_OAUTH2_CLIENT_ID=your-google-client-id
-GOOGLE_OAUTH2_CLIENT_SECRET=your-google-client-secret
-
-# AI Features (Claude)
-ANTHROPIC_API_KEY=your-anthropic-api-key  
-CLAUDE_MODEL=claude-3-haiku-20240307
-AI_MAX_RETRIES=3
-AI_CACHE_TIMEOUT=3600
-```
-
-### Frontend
-```
-REACT_APP_API_URL=http://localhost:8000/api
-REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
-```
-
-### Google OAuth 2.0 Setup
-1. **Google APIs Console 설정**: `docs/GOOGLE_OAUTH_SETUP.md` 가이드 참고
-2. **환경 변수 설정**: Google Client ID와 Secret을 환경 변수에 설정
-3. **테스트**: 로그인/회원가입 페이지에서 "Google로 로그인" 버튼 확인
-
-## Service URLs (Docker Development)
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000/api
-- **Django Admin**: http://localhost:8000/admin
-- **RabbitMQ Management**: http://localhost:15672 (guest/guest)
-
-## PWA 기능
-
-### 설치 및 오프라인 지원
-- **앱 설치**: 브라우저에서 "앱 설치" 버튼 클릭 또는 주소창의 설치 아이콘
-- **오프라인 사용**: Service Worker를 통한 캐싱으로 네트워크 없이도 기본 기능 사용 가능
-- **자동 업데이트**: 새 버전 감지 시 자동 업데이트 프롬프트
-
-### 모바일 최적화
-- **반응형 디자인**: 모든 화면 크기에서 최적화된 UI/UX
-- **터치 최적화**: 44px 최소 터치 영역, 햅틱 피드백
-- **iOS Safari 지원**: Safe Area 지원, 홈 화면 추가 최적화
-
-### PWA 개발 도구
+#### 마이그레이션 충돌
 ```bash
-# PWA 아이콘 생성 (Sharp 필요: npm install sharp)
-npm run pwa:icons
+# 1. 충돌하는 마이그레이션 제거
+docker-compose exec backend python manage.py showmigrations
+docker-compose exec backend rm app_name/migrations/0002_*.py
 
-# PWA 성능 테스트 (Lighthouse 필요)  
-npm run pwa:test
+# 2. 다시 생성
+docker-compose exec backend python manage.py makemigrations
 
-# 수동 아이콘 생성 대안
-# 1. https://www.pwabuilder.com/imageGenerator
-# 2. 1024x1024 마스터 이미지 업로드
-# 3. 생성된 파일들을 frontend/public/icons/ 에 저장
+# 3. fake 적용 (이미 적용된 경우)
+docker-compose exec backend python manage.py migrate --fake app_name 0001
 ```
 
-## 테스트 계정 정보
-
-**자동 생성된 테스트 계정들:**
-
-### 관리자 계정
-- **사용자명**: `admin`
-- **비밀번호**: `admin123!` 
-- **이메일**: `admin@resee.com`
-- **권한**: 슈퍼유저, Django 관리자 접근 가능
-
-### 일반 사용자 계정
-- **사용자명**: `testuser`
-- **비밀번호**: `test123!`
-- **이메일**: `test@resee.com` 
-- **권한**: 일반 사용자
-
-### 데모 계정
-- **사용자명**: `demo`
-- **비밀번호**: `demo123!`
-- **이메일**: `demo@resee.com`
-- **권한**: 일반 사용자
-
-**자동 생성된 샘플 데이터:**
-- 각 계정별 5개씩 총 **16개 학습 콘텐츠**
-- **4개 카테고리**: 프로그래밍, 과학, 언어학습, 일반상식
-- **샘플 콘텐츠**: Python 기초, 메모리 관리, 영어 불규칙동사, 뉴턴 법칙, 세계 수도 등
-
-**테스트 계정 생성 명령어:**
+#### JWT 인증 오류
 ```bash
-# 테스트 계정 및 샘플 데이터 생성
-docker-compose exec -T backend python create_test_accounts.py
-```
-
-## Security Considerations
-
-### Production Deployment Checklist
-- **Environment Variables**: Never commit `.env` file - use `.env.example` as template
-- **Secret Key**: Generate with `openssl rand -base64 32` or Django's `get_random_secret_key()`
-- **DEBUG**: Must be `False` in production
-- **ALLOWED_HOSTS**: Configure with actual domain names
-- **Database**: Use strong passwords and SSL connections
-- **CORS**: Restrict to specific origins in production
-- **HTTPS**: Always use SSL/TLS in production
-
-See `README_SECURITY.md` for detailed security setup instructions.
-
-## Korean Localization
-- Default timezone: Asia/Seoul
-- Korean language support in documentation
-- User timezone setting in User model
-- 회원가입/로그인 한국어 에러 메시지 지원
-- 상세한 필드별 유효성 검사 메시지
-
-## E2E Testing with Playwright
-
-### Running E2E Tests
-```bash
-# Install Playwright browsers (first time only)
-npx playwright install
-
-# Run all E2E tests
-npx playwright test
-
-# Run specific test file
-npx playwright test e2e/auth.spec.ts
-
-# Run tests in headed mode (see browser)
-npx playwright test --headed
-
-# Run tests in UI mode (interactive)
-npx playwright test --ui
-
-# Debug a specific test
-npx playwright test --debug
-
-# Generate test reports
-npx playwright show-report
-```
-
-### E2E Test Files
-- `e2e/auth.spec.ts` - Login, registration, logout flows
-- `e2e/content-management.spec.ts` - CRUD operations for learning content
-- `e2e/review-workflow.spec.ts` - Spaced repetition review process
-
-## API Documentation
-
-### Interactive API Documentation
-- **Swagger UI**: http://localhost:8000/swagger/
-- **ReDoc**: http://localhost:8000/redoc/
-
-### Quick API Testing
-```bash
-# Get JWT token (using email instead of username)
+# 1. 토큰 확인
 curl -X POST http://localhost:8000/api/auth/token/ \
   -H "Content-Type: application/json" \
   -d '{"email": "test@resee.com", "password": "test123!"}'
 
-# Use token for authenticated requests
-curl -X GET http://localhost:8000/api/content/contents/ \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+# 2. 토큰 디코드 확인
+docker-compose exec backend python manage.py shell
+>>> import jwt
+>>> token = "YOUR_TOKEN"
+>>> jwt.decode(token, options={"verify_signature": False})
 ```
 
-## Continuous Integration (CI)
+### 2. 프론트엔드 오류
 
-### CI Pipeline
-- **Automated Testing**: Backend (Django + pytest) and Frontend (React + Jest) tests
-- **Code Quality**: Black, Flake8, ESLint, TypeScript compilation checks
-- **Build Testing**: Docker image build verification
-- **Coverage Reports**: Codecov integration for test coverage tracking
-
-### Health Check Endpoints
+#### 타입스크립트 오류
 ```bash
-# Check backend health
+# 1. 타입 정의 확인
+docker-compose exec frontend npx tsc --noEmit --listFiles | grep "\.d\.ts"
+
+# 2. 타입 생성 (백엔드 모델 기반)
+# backend/content/types.py 생성 후
+docker-compose exec backend python manage.py generate_typescript_types > frontend/src/types/generated.ts
+```
+
+#### React Query 캐시 문제
+```typescript
+// 캐시 무효화
+queryClient.invalidateQueries(['contents']);
+
+// 특정 쿼리만 새로고침
+queryClient.refetchQueries(['contents', { category: 'programming' }]);
+```
+
+## ✅ 확인해야할 것 (CHECK)
+
+### 1. 개발 시작 전
+```bash
+# 1. 환경 변수 확인
+docker-compose exec backend python -c "import os; print('ANTHROPIC_API_KEY:', 'Set' if os.environ.get('ANTHROPIC_API_KEY') else 'Not set')"
+docker-compose exec backend python -c "import os; print('GOOGLE_OAUTH2_CLIENT_ID:', 'Set' if os.environ.get('GOOGLE_OAUTH2_CLIENT_ID') else 'Not set')"
+
+# 2. 서비스 상태 확인
+docker-compose ps
 curl http://localhost:8000/api/health/
 
-# Detailed health check (includes DB, Redis, Celery status)
-curl http://localhost:8000/api/health/detailed/
-```
-
-### CI Workflow Triggers
-- **Push to main/develop**: Full CI pipeline runs
-- **Pull Requests**: All checks must pass before merge
-- **Manual Testing**: E2E tests with Playwright (separate workflow)
-
-## Debugging & Troubleshooting
-
-### Container Management
-```bash
-# View all container logs
-docker-compose logs
-
-# Follow specific service logs
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f celery
-
-# Restart a specific service
-docker-compose restart backend
-docker-compose restart frontend
-
-# Rebuild containers after dependency changes
-docker-compose build --no-cache backend
-docker-compose build --no-cache frontend
-
-# Check container health
-docker-compose ps
-```
-
-### Database Operations
-```bash
-# Access PostgreSQL directly
-docker-compose exec db psql -U resee_user -d resee_db
-
-# Backup database
-docker-compose exec db pg_dump -U resee_user resee_db > backup.sql
-
-# Reset database (CAUTION: destroys all data)
-docker-compose exec backend python manage.py flush --no-input
-docker-compose exec backend python manage.py migrate
-
-# Show migration status
-docker-compose exec backend python manage.py showmigrations
-
-# Create empty migration
-docker-compose exec backend python manage.py makemigrations --empty content
-
-# Load test data
-docker-compose exec -T backend python create_test_accounts.py
-```
-
-### Debugging Tools
-```bash
-# Django debug toolbar (available in DEBUG mode)
-# Access at http://localhost:8000/__debug__/
-
-# Interactive debugging with ipdb
-# Add to code: import ipdb; ipdb.set_trace()
-
-# Django shell with enhanced features
-docker-compose exec backend python manage.py shell_plus
-
-# Print SQL queries for a view
-docker-compose exec backend python manage.py debugsqlshell
-
-# Check Redis connection
-docker-compose exec redis redis-cli ping
-
-# Monitor Redis in real-time
-docker-compose exec redis redis-cli monitor
-```
-
-### Common Issues & Solutions
-
-**Frontend not updating:**
-```bash
-# Clear node_modules and reinstall
-docker-compose exec frontend rm -rf node_modules
-docker-compose exec frontend npm install
-
-# Clear React cache
-docker-compose exec frontend npm start -- --reset-cache
-```
-
-**Backend API errors:**
-```bash
-# Check for missing migrations
-docker-compose exec backend python manage.py makemigrations --check
-
-# Validate models
-docker-compose exec backend python manage.py validate_models
-
-# Check static files
-docker-compose exec backend python manage.py findstatic admin/css/base.css
-```
-
-**Celery tasks not running:**
-```bash
-# Check RabbitMQ connection
-docker-compose exec backend python -c "from resee.celery import app; print(app.control.inspect().active())"
-
-# Manually trigger a task
-docker-compose exec backend python manage.py shell
->>> from review.tasks import send_daily_review_notifications
->>> send_daily_review_notifications.delay()
-```
-
-## Quick Reference
-
-### Review Interface Keyboard Shortcuts
-- **Space** or **Enter**: Show answer
-- **1**: Forgot (review again tomorrow)
-- **2**: Partial (review at same interval)
-- **3**: Remembered (advance to next interval)
-- **→** or **N**: Next review item
-
-### Common Development Tasks
-
-#### Running a single test
-```bash
-# Backend - specific test class or method
-docker-compose exec backend python manage.py test content.tests.ContentModelTest.test_create_content
-docker-compose exec backend pytest backend/content/tests/test_models.py::ContentModelTest::test_create_content
-
-# Frontend - specific test file
-docker-compose exec frontend npm test -- content.test.tsx --watchAll=false
-```
-
-#### Checking code quality before commit
-```bash
-# Backend
-docker-compose exec backend black . --check
-docker-compose exec backend flake8
-docker-compose exec backend python manage.py test
-
-# Frontend  
-docker-compose exec frontend npm run lint
-docker-compose exec frontend npx tsc --noEmit
-docker-compose exec frontend npm test -- --watchAll=false
-```
-
-#### Creating a new Django app
-```bash
-docker-compose exec backend python manage.py startapp app_name
-# Then add to INSTALLED_APPS in resee/settings.py
-```
-
-#### Updating dependencies
-```bash
-# Backend
-docker-compose exec backend pip install package_name
-docker-compose exec backend pip freeze > requirements.txt
-
-# Frontend
-docker-compose exec frontend npm install package_name
-# package.json is automatically updated
-```
-
-### Performance Optimization Tips
-- Use `select_related()` and `prefetch_related()` for Django ORM queries
-- Implement pagination for list endpoints (already set in DRF settings)
-- Use React.memo() for expensive component re-renders
-- Leverage React Query's caching for API responses
-- Monitor Celery task performance with Flower
-
-## Important Code Patterns & Architecture Decisions
-
-### Authentication Flow (v0.3.1)
-- **Email-only authentication**: Username field completely removed
-- **JWT tokens**: Access token (5 minutes) + Refresh token (7 days)
-- **Auto-refresh**: Frontend automatically refreshes tokens before expiry
-- **Login endpoint**: Uses email instead of username
-
-### API Request Pattern
-```typescript
-// Frontend API calls use the centralized API client
-import { api } from '../utils/api';
-
-// Automatic JWT token handling
-const response = await api.get('/content/contents/');
-```
-
-### Content Priority System
-- **Three levels**: low (green), medium (yellow), high (red)
-- **Filtering**: API supports `?priority=high` query parameter
-- **UI indicators**: Color-coded badges in content lists
-
-### Review Scheduling
-- **Immediate availability**: New content has `initial_review_completed=false`
-- **First review**: Shows "첫 번째 복습" in UI
-- **Subsequent reviews**: Follow spaced repetition intervals
-- **Background sync**: Celery creates schedules automatically via signals
-
-### Error Handling
-- **Backend**: Returns structured error responses with field-specific messages
-- **Frontend**: Toast notifications for user-friendly error display
-- **Korean localization**: Error messages support Korean language
-
-### State Management
-- **Authentication**: React Context (AuthContext)
-- **Server data**: React Query with 5-minute cache
-- **Forms**: React Hook Form with Zod validation
-- **Theme**: Local storage persistence
-
-### Testing Strategy
-- **Backend**: pytest for unit tests, Django TestCase for integration
-- **Frontend**: React Testing Library for components
-- **E2E**: Playwright for critical user flows
-- **Coverage**: Backend >80%, Frontend >70%
-
-## Additional Development Patterns
-
-### Email Verification Flow
-```bash
-# Check email verification status for a user
+# 3. 테스트 데이터 확인
 docker-compose exec backend python manage.py shell
 >>> from django.contrib.auth import get_user_model
 >>> User = get_user_model()
->>> user = User.objects.get(email='test@resee.com')
->>> print(f"Email verified: {user.email_verified}")
->>> print(f"Verification token: {user.email_verification_token}")
-
-# Manually verify a user's email (for testing)
->>> user.email_verified = True
->>> user.save()
+>>> User.objects.filter(email__in=['admin@resee.com', 'test@resee.com', 'demo@resee.com']).exists()
 ```
 
-### Common Django Management Commands
+### 2. AI 기능 작업 시
 ```bash
-# Check for security issues
-docker-compose exec backend python manage.py check --deploy
-
-# Generate a new SECRET_KEY
-docker-compose exec backend python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-
-# List all available management commands
-docker-compose exec backend python manage.py help
-
-# Show URLs configuration
-docker-compose exec backend python manage.py show_urls
-
-# Database inspection
-docker-compose exec backend python manage.py inspectdb
-
-# Clear cache
-docker-compose exec backend python manage.py clear_cache
-```
-
-### Monitoring and Performance
-```bash
-# Check database query count for a specific view
+# 1. AI 사용량 확인
 docker-compose exec backend python manage.py shell
->>> from django.test.utils import override_settings
->>> from django.db import connection
->>> from django.test import RequestFactory
->>> # Make request and check queries
+>>> from ai_review.models import AIUsageTracking
+>>> from django.contrib.auth import get_user_model
+>>> user = get_user_model().objects.get(email='test@resee.com')
+>>> usage = AIUsageTracking.get_daily_usage(user)
+>>> print(f"Today: {usage['used']}/{usage['limit']} (Tier: {user.subscription.tier})")
 
-# Monitor Celery task execution time
-docker-compose exec celery celery -A resee events
-
-# Redis memory usage
-docker-compose exec redis redis-cli info memory
-
-# PostgreSQL connection count
-docker-compose exec db psql -U resee_user -d resee_db -c "SELECT count(*) FROM pg_stat_activity;"
+# 2. Claude API 연결 테스트
+>>> from ai_review.services import AIQuestionService
+>>> service = AIQuestionService()
+>>> service.test_connection()  # True면 정상
 ```
 
-### Data Management Scripts
+### 3. 복습 시스템 작업 시
 ```bash
-# Export user content to JSON
-docker-compose exec backend python manage.py dumpdata content.Content --indent 2 > content_backup.json
+# 1. 복습 스케줄 확인
+docker-compose exec backend python manage.py shell
+>>> from review.models import ReviewSchedule
+>>> from django.utils import timezone
+>>> today = timezone.now().date()
+>>> ReviewSchedule.objects.filter(next_review_date=today).count()
 
-# Import content from JSON
-docker-compose exec backend python manage.py loaddata content_backup.json
-
-# Create custom management command
-docker-compose exec backend python manage.py startapp management
-# Then create: management/commands/your_command.py
+# 2. Celery 작업 확인
+docker-compose exec celery celery -A resee inspect active
+docker-compose exec celery celery -A resee inspect scheduled
 ```
 
-### Frontend Development Patterns
-```typescript
-// Using the API client with TypeScript
-import { api } from '../utils/api';
-import { Content } from '../types';
+## 📋 기능별 플로우 정리
 
-// Type-safe API calls
-const contents = await api.get<Content[]>('/content/contents/');
+### 1. 사용자 인증 플로우
 
-// Handle loading and error states with React Query
-const { data, isLoading, error } = useQuery({
-  queryKey: ['contents'],
-  queryFn: () => api.get<Content[]>('/content/contents/')
-});
-
-// Optimistic updates with React Query
-const mutation = useMutation({
-  mutationFn: (newContent: Partial<Content>) => 
-    api.post('/content/contents/', newContent),
-  onMutate: async (newContent) => {
-    await queryClient.cancelQueries(['contents']);
-    const previousContents = queryClient.getQueryData(['contents']);
-    queryClient.setQueryData(['contents'], old => [...old, newContent]);
-    return { previousContents };
-  }
-});
+#### 회원가입
+```
+Frontend (RegisterPage) 
+    → POST /api/accounts/users/register/
+    → Backend (UserViewSet.register)
+    → 이메일 인증 토큰 생성
+    → Celery: send_verification_email 태스크
+    → 사용자에게 인증 이메일 발송
 ```
 
-### Docker Development Tips
+#### 이메일 인증
+```
+이메일 링크 클릭
+    → GET /api/accounts/users/verify-email/?token=xxx
+    → Backend (UserViewSet.verify_email)
+    → user.email_verified = True
+    → 로그인 페이지로 리다이렉트
+```
+
+#### Google OAuth 로그인
+```
+Google 로그인 버튼 클릭
+    → Google OAuth 동의 화면
+    → 콜백: POST /api/accounts/users/google-auth/
+    → Backend: ID 토큰 검증
+    → 신규/기존 사용자 처리
+    → JWT 토큰 발급
+    → Frontend: 토큰 저장 및 대시보드 이동
+```
+
+### 2. 콘텐츠 생성 및 복습 플로우
+
+#### 콘텐츠 생성
+```
+ContentForm (TipTap Editor)
+    → POST /api/content/contents/
+    → Django Signal: post_save
+    → Celery: create_review_schedule_for_content
+    → ReviewSchedule 생성 (initial_review_completed=False)
+    → 즉시 복습 가능 상태
+```
+
+#### 복습 프로세스
+```
+복습 페이지 접속
+    → GET /api/review/today/
+    → 오늘 복습할 콘텐츠 목록
+    → 사용자 복습 수행
+    → POST /api/review/complete/
+    → ReviewHistory 생성
+    → ReviewSchedule 업데이트 (다음 간격으로)
+```
+
+### 3. AI 질문 생성 플로우
+
+#### 질문 생성
+```
+콘텐츠 상세 페이지
+    → "AI 질문 생성" 버튼
+    → POST /api/ai-review/generate-questions/
+    → AIQuestionService.generate_questions()
+    → Claude API 호출
+    → AIQuestion 모델에 저장
+    → AIUsageTracking 업데이트
+    → Frontend에 질문 표시
+```
+
+#### 사용량 제한 체크
+```
+요청 전:
+    → AIUsageTracking.can_generate() 체크
+    → 구독 티어별 일일 한도 확인
+    → 초과 시 에러 반환
+    → 정상 시 질문 생성 진행
+```
+
+### 4. 구독 시스템 플로우
+
+#### 구독 업그레이드
+```
+구독 페이지
+    → 플랜 선택
+    → POST /api/accounts/subscription/upgrade/
+    → Subscription 모델 업데이트
+    → 새로운 기능 한도 적용
+    → Celery: 구독 만료 스케줄링
+```
+
+## 🚀 필수 명령어 Quick Reference
+
+### 개발 환경
 ```bash
-# Run commands without entering container
-docker-compose run --rm backend python manage.py migrate
+# 시작/중지
+docker-compose up -d
+docker-compose down
 
-# Copy files from container
-docker cp $(docker-compose ps -q backend):/app/file.txt ./file.txt
+# 로그 확인
+docker-compose logs -f backend
+docker-compose logs -f frontend
 
-# View real-time container resource usage
-docker stats $(docker-compose ps -q)
-
-# Clean up Docker resources
-docker-compose down -v  # Remove volumes too
-docker system prune -a  # Clean everything (careful!)
-
-# Build with no cache for troubleshooting
-docker-compose build --no-cache --pull
+# 쉘 접속
+docker-compose exec backend bash
+docker-compose exec frontend bash
 ```
 
-### Debugging Production Issues
+### 데이터베이스
 ```bash
-# Connect to production database (via SSH tunnel)
-ssh -L 5432:localhost:5432 production-server
-psql -h localhost -U resee_user -d resee_db
+# 마이그레이션
+docker-compose exec backend python manage.py makemigrations
+docker-compose exec backend python manage.py migrate
 
-# Export production logs
-docker-compose logs --since "2025-01-20" > production_logs.txt
+# DB 쉘
+docker-compose exec db psql -U resee_user -d resee_db
 
-# Check for slow queries
-docker-compose exec backend python manage.py dbshell
-> SELECT query, calls, total_time, mean_time 
-> FROM pg_stat_statements 
-> ORDER BY mean_time DESC LIMIT 10;
+# 백업
+docker-compose exec db pg_dump -U resee_user resee_db > backup.sql
+```
+
+### 테스트
+```bash
+# 백엔드
+docker-compose exec backend pytest -v
+docker-compose exec backend pytest -k "특정테스트" -v
+
+# 프론트엔드
+docker-compose exec frontend npm test
+docker-compose exec frontend npm test -- --coverage
+```
+
+### 프로덕션
+```bash
+# 배포
+./ops.sh deploy
+
+# 상태 확인
+./ops.sh status
+./ops.sh health --detailed
+
+# 백업
+./ops.sh backup daily
+```
+
+## 🏗️ 아키텍처 핵심 요약
+
+### 백엔드 구조
+```
+backend/
+├── accounts/      # 사용자, 구독 관리
+├── content/       # 학습 콘텐츠
+├── review/        # 복습 시스템
+├── ai_review/     # AI 기능
+└── resee/         # 설정
+```
+
+### 프론트엔드 구조
+```
+frontend/src/
+├── components/    # 재사용 컴포넌트
+├── pages/         # 페이지 컴포넌트
+├── contexts/      # 전역 상태 (Auth)
+├── utils/         # API 클라이언트
+└── types/         # TypeScript 타입
+```
+
+### 핵심 모델 관계
+- User → Content (1:N)
+- User → ReviewSchedule (1:N)
+- Content → ReviewSchedule (1:1)
+- Content → AIQuestion (1:N)
+- User → Subscription (1:1)
+
+### API 인증
+- JWT (Access: 5분, Refresh: 7일)
+- 이메일 기반 로그인
+- Google OAuth 2.0 지원
+
+### 복습 간격
+- 즉시 → 1일 → 3일 → 7일 → 14일 → 30일
+- 구독 티어별 최대 간격 제한
+
+## 🔍 디버깅 팁
+
+### 1. 500 에러 발생 시
+```bash
+# 1. Django 로그 확인
+docker-compose logs backend --tail=50
+
+# 2. Sentry 또는 로컬 로그 파일
+docker-compose exec backend tail -f logs/error.log
+
+# 3. DEBUG 모드로 상세 확인
+# .env에서 DEBUG=True 설정 후 재시작
+```
+
+### 2. Celery 태스크 실패 시
+```bash
+# 1. Worker 로그 확인
+docker-compose logs celery -f
+
+# 2. RabbitMQ 상태 확인
+docker-compose exec rabbitmq rabbitmqctl list_queues
+
+# 3. 수동 실행 테스트
+docker-compose exec backend python manage.py shell
+>>> from review.tasks import send_daily_review_notifications
+>>> send_daily_review_notifications.apply_async()
+```
+
+### 3. 프론트엔드 빌드 실패 시
+```bash
+# 1. 의존성 정리
+docker-compose exec frontend rm -rf node_modules package-lock.json
+docker-compose exec frontend npm install
+
+# 2. 타입 오류 확인
+docker-compose exec frontend npx tsc --noEmit
+
+# 3. 환경 변수 확인
+docker-compose exec frontend printenv | grep REACT_APP_
 ```
