@@ -189,11 +189,41 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
       : 0
   );
 
-  // 데이터 유효성 검증 (hooks 호출 후)
-  if (!data || !data.weeklyProgress || !data.monthlyTrends || !data.categoryDistribution || !data.performanceMetrics) {
+  // 실제 데이터가 있는지 확인 (빈 배열도 처리)
+  const hasWeeklyData = safeData.weeklyProgress && safeData.weeklyProgress.length > 0;
+  const hasMonthlyData = safeData.monthlyTrends && safeData.monthlyTrends.length > 0;
+  const hasCategoryData = safeData.categoryDistribution && safeData.categoryDistribution.length > 0;
+  
+  // 데이터가 전혀 없는 경우 안내 메시지 표시
+  if (!hasWeeklyData && !hasMonthlyData && !hasCategoryData) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        데이터를 불러오는 중입니다...
+      <div className="text-center py-16 text-gray-500">
+        <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
+          <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          분석할 데이터가 부족합니다
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          콘텐츠를 추가하고 복습을 진행하면 상세한 학습 분석을 확인할 수 있습니다.
+        </p>
+        <div className="space-x-4">
+          <a 
+            href="/content" 
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            콘텐츠 추가하기
+          </a>
+          <a 
+            href="/review" 
+            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            복습 시작하기
+          </a>
+        </div>
       </div>
     );
   }
