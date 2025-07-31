@@ -206,7 +206,10 @@ const AdvancedDashboard: React.FC = () => {
 
   // 학습 패턴 데이터
   const learningPatternsData = useMemo(() => {
-    if (!analyticsData || !calendarData) return null;
+    if (!analyticsData || !calendarData || 
+        !analyticsData.category_performance || analyticsData.category_performance.length === 0) {
+      return null; // 빈 데이터일 때는 null 반환
+    }
 
     const hourlyPattern = Array.from({ length: 24 }, (_, hour) => ({
       hour,
@@ -244,19 +247,30 @@ const AdvancedDashboard: React.FC = () => {
         hard: Math.floor(Math.random() * 10) + 3,
         averageScore: sanitizeValue(month.success_rate, 0)
       })),
-      learningVelocity: analyticsData.category_performance.map(cat => ({
-        category: cat.name,
-        masterySpeed: Math.floor(Math.random() * 15) + 5,
-        retentionRate: sanitizeValue(cat.success_rate, 0),
-        difficultyLevel: Math.floor(Math.random() * 5) + 1,
-        totalContent: sanitizeValue(cat.content_count, 0)
-      }))
+      learningVelocity: analyticsData.category_performance.length > 0 ? 
+        analyticsData.category_performance.map(cat => ({
+          category: cat.name,
+          masterySpeed: Math.floor(Math.random() * 15) + 5,
+          retentionRate: sanitizeValue(cat.success_rate, 0),
+          difficultyLevel: Math.floor(Math.random() * 5) + 1,
+          totalContent: sanitizeValue(cat.content_count, 0)
+        })) : [
+          {
+            category: '프로그래밍',
+            masterySpeed: 10,
+            retentionRate: 80,
+            difficultyLevel: 3,
+            totalContent: 5
+          }
+        ]
     };
   }, [analyticsData, calendarData]);
 
   // 고급 카테고리 분석 데이터
   const advancedCategoryData = useMemo(() => {
-    if (!analyticsData) return null;
+    if (!analyticsData || !analyticsData.category_performance || analyticsData.category_performance.length === 0) {
+      return null; // 빈 데이터일 때는 null 반환하여 컴포넌트 렌더링 방지
+    }
 
     return {
       categories: analyticsData.category_performance.map((cat, index) => ({
