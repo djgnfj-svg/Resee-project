@@ -86,10 +86,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
                   >
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
-                      {user?.first_name ? user.first_name[0].toUpperCase() : user?.email[0].toUpperCase()}
+                      {user?.email[0].toUpperCase()}
                     </div>
                     <span className="hidden md:block text-gray-900 dark:text-gray-100">
-                      안녕하세요, {user?.email.split('@')[0]}님
+                      안녕하세요, {user?.username || user?.email.split('@')[0]}님
                     </span>
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -167,10 +167,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center px-3 py-2">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
-                    {user?.first_name ? user.first_name[0].toUpperCase() : user?.email[0].toUpperCase()}
+                    {user?.email[0].toUpperCase()}
                   </div>
                   <div className="ml-3">
-                    <div className="text-base font-medium text-gray-800 dark:text-gray-200">{user?.email.split('@')[0]}</div>
+                    <div className="text-base font-medium text-gray-800 dark:text-gray-200">{user?.username || user?.email.split('@')[0]}</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">사용자</div>
                   </div>
                 </div>
@@ -215,7 +215,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <WelcomeModal
         isOpen={showWelcome}
         onClose={() => setShowWelcome(false)}
-        userName={user?.first_name}
+        userName={user?.username || user?.email.split('@')[0]}
       />
     </div>
   );

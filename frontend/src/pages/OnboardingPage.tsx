@@ -19,7 +19,7 @@ const OnboardingPage: React.FC = () => {
   const steps = [
     {
       id: 0,
-      title: `안녕하세요, ${user?.first_name}님! 🎉`,
+      title: `안녕하세요, ${user?.username || user?.email.split('@')[0]}님! 🎉`,
       subtitle: 'Resee에 오신 것을 환영합니다',
       description: '과학적인 간격 반복 학습으로 더 효과적으로 기억하세요.',
       icon: SparklesIcon,

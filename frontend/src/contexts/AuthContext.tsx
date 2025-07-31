@@ -36,6 +36,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isAuthenticated = !!user;
 
   useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userData = await authAPI.getProfile();
+        setUser(userData);
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     const token = localStorage.getItem('access_token');
     if (token) {
       fetchUser();
@@ -44,25 +58,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const fetchUser = async () => {
-    try {
-      const userData = await authAPI.getProfile();
-      setUser(userData);
-    } catch (error) {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      setUser(null); // Properly clear user state
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const login = async (data: LoginData) => {
     try {
       const tokens = await authAPI.login(data);
       localStorage.setItem('access_token', tokens.access);
       localStorage.setItem('refresh_token', tokens.refresh);
-      await fetchUser();
+      
+      // Fetch user data after successful login
+      const userData = await authAPI.getProfile();
+      setUser(userData);
     } catch (error: any) {
       // Clean up any partial state
       localStorage.removeItem('access_token');
