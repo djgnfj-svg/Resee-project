@@ -120,6 +120,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
       };
     }
 
+    return {
       weeklyProgress: sanitizeChartData(data.weeklyProgress || []),
       monthlyTrends: sanitizeChartData(data.monthlyTrends || []),
       categoryDistribution: sanitizeChartData((data.categoryDistribution || []).map(item => ({
@@ -136,7 +137,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         weeklyGoal: sanitizeNumber(data.performanceMetrics?.weeklyGoal, 50),
         weeklyProgress: sanitizeNumber(data.performanceMetrics?.weeklyProgress, 0)
       }
-    });
+    };
   }, [data]);
 
   // 성과 지표 계산 (hooks는 항상 같은 순서로 호출되어야 함)
@@ -169,10 +170,12 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
     };
   }, [safeData.weeklyProgress]);
 
+  const { weeklyProgress, monthlyTrends, categoryDistribution, performanceMetrics } = safeData;
+
   // 주간 목표 진행률 (나누기 0 방지)
   const weeklyProgressPercent = sanitizeNumber(
-    safeData.performanceMetrics.weeklyGoal > 0 
-      ? Math.min((sanitizeNumber(safeData.performanceMetrics.weeklyProgress) / sanitizeNumber(safeData.performanceMetrics.weeklyGoal)) * 100, 100)
+    performanceMetrics.weeklyGoal > 0 
+      ? Math.min((sanitizeNumber(performanceMetrics.weeklyProgress) / sanitizeNumber(performanceMetrics.weeklyGoal)) * 100, 100)
       : 0
   );
 
@@ -184,8 +187,6 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
       </div>
     );
   }
-
-  const { weeklyProgress, monthlyTrends, categoryDistribution, performanceMetrics } = safeData;
 
   // 배열 안전 체크
   const safeArray = (arr: any[], fallback: any[] = []): any[] => {
