@@ -183,7 +183,11 @@ class ContentPagination(OptimizedPageNumberPagination):
             
             for item in data:
                 if 'category' in item and item['category']:
-                    categories.add(item['category'].get('name', 'Unknown'))
+                    # Handle both dict (nested serializer) and int (just ID) cases
+                    if isinstance(item['category'], dict):
+                        categories.add(item['category'].get('name', 'Unknown'))
+                    else:
+                        categories.add(f'Category {item["category"]}')
                 if 'priority' in item:
                     priorities[item['priority']] = priorities.get(item['priority'], 0) + 1
             

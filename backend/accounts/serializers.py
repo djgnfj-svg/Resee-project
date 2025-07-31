@@ -58,9 +58,8 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 
-                 'timezone', 'notification_enabled', 'date_joined', 'is_email_verified')
-        read_only_fields = ('id', 'date_joined', 'is_email_verified')
+        fields = ('id', 'email', 'username', 'is_email_verified', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'is_email_verified')
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -68,9 +67,17 @@ class ProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('email', 'first_name', 'last_name', 
-                 'timezone', 'notification_enabled', 'is_email_verified')
+        fields = ('email', 'username', 'is_email_verified')
         read_only_fields = ('email', 'is_email_verified')
+    
+    def validate_username(self, value):
+        """Validate username"""
+        if value:  # Only validate if username is provided
+            # Check if username is already taken by another user
+            user = self.instance
+            if User.objects.filter(username=value).exclude(id=user.id).exists():
+                raise serializers.ValidationError("이미 사용 중인 사용자명입니다.")
+        return value
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -80,8 +87,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('email', 'password', 'password_confirm',
-                 'first_name', 'last_name', 'timezone', 'notification_enabled')
+        fields = ('email', 'password', 'password_confirm')
     
     def validate_email(self, value):
         """Validate email"""

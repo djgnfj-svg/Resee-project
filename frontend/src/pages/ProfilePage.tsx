@@ -7,10 +7,7 @@ import { User, DashboardData } from '../types';
 
 interface ProfileFormData {
   email: string;
-  first_name: string;
-  last_name: string;
-  timezone: string;
-  notification_enabled: boolean;
+  username?: string;
 }
 
 const ProfilePage: React.FC = () => {
@@ -33,10 +30,7 @@ const ProfilePage: React.FC = () => {
   const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm<ProfileFormData>({
     defaultValues: user ? {
       email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      timezone: user.timezone,
-      notification_enabled: user.notification_enabled,
+      username: user.username || '',
     } : undefined,
   });
 
@@ -61,24 +55,12 @@ const ProfilePage: React.FC = () => {
     if (user) {
       reset({
         email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        timezone: user.timezone,
-        notification_enabled: user.notification_enabled,
+        username: user.username || '',
       });
     }
     setIsEditing(false);
   };
 
-  const timezones = [
-    { value: 'Asia/Seoul', label: '한국 (KST)' },
-    { value: 'America/New_York', label: '뉴욕 (EST)' },
-    { value: 'America/Los_Angeles', label: '로스앤젤레스 (PST)' },
-    { value: 'Europe/London', label: '런던 (GMT)' },
-    { value: 'Europe/Paris', label: '파리 (CET)' },
-    { value: 'Asia/Tokyo', label: '도쿄 (JST)' },
-    { value: 'Australia/Sydney', label: '시드니 (AEDT)' },
-  ];
 
   if (isLoading) {
     return (
@@ -113,17 +95,14 @@ const ProfilePage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="text-center">
               <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold mb-4">
-                {user.first_name ? user.first_name[0].toUpperCase() : user.email[0].toUpperCase()}
+                {user.username ? user.username[0].toUpperCase() : user.email[0].toUpperCase()}
               </div>
               <h2 className="text-xl font-semibold text-gray-900">
-                {user.first_name && user.last_name 
-                  ? `${user.first_name} ${user.last_name}`
-                  : user.email.split('@')[0]
-                }
+                {user.username || user.email.split('@')[0]}
               </h2>
               <p className="text-gray-600">{user.email}</p>
               <p className="text-sm text-gray-500 mt-2">
-                가입일: {new Date(user.date_joined).toLocaleDateString()}
+                가입일: {new Date(user.created_at).toLocaleDateString()}
               </p>
             </div>
           </div>
@@ -185,73 +164,36 @@ const ProfilePage: React.FC = () => {
                 )}
               </div>
 
-              {/* Name */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-2">
-                    이름
-                  </label>
-                  <input
-                    type="text"
-                    id="first_name"
-                    {...register('first_name')}
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-2">
-                    성
-                  </label>
-                  <input
-                    type="text"
-                    id="last_name"
-                    {...register('last_name')}
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-                  />
-                </div>
-              </div>
-
-              {/* Timezone */}
+              {/* Username */}
               <div>
-                <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-2">
-                  시간대
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                  사용자명 (선택사항)
                 </label>
-                <select
-                  id="timezone"
-                  {...register('timezone', { required: '시간대를 선택해주세요' })}
+                <input
+                  type="text"
+                  id="username"
+                  {...register('username', {
+                    maxLength: {
+                      value: 150,
+                      message: '사용자명은 150자 이하여야 합니다'
+                    },
+                    pattern: {
+                      value: /^[a-zA-Z0-9_-]+$/,
+                      message: '사용자명은 영문, 숫자, -, _만 사용 가능합니다'
+                    }
+                  })}
                   disabled={!isEditing}
+                  placeholder="사용자명을 입력하세요"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-                >
-                  {timezones.map((tz) => (
-                    <option key={tz.value} value={tz.value}>
-                      {tz.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.timezone && (
-                  <p className="mt-1 text-sm text-red-600">{errors.timezone.message}</p>
+                />
+                {errors.username && (
+                  <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
                 )}
-              </div>
-
-              {/* Notification Settings */}
-              <div>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    {...register('notification_enabled')}
-                    disabled={!isEditing}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">
-                    복습 알림 받기
-                  </span>
-                </label>
                 <p className="mt-1 text-xs text-gray-500">
-                  매일 오전 9시에 복습할 콘텐츠가 있을 때 알림을 받습니다.
+                  사용자명은 프로필에 표시되며, 언제든지 변경할 수 있습니다.
                 </p>
               </div>
+
             </form>
           </div>
 

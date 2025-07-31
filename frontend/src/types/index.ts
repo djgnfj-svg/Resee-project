@@ -1,12 +1,10 @@
 export interface User {
   id: number;
   email: string;
-  first_name: string;
-  last_name: string;
-  timezone: string;
-  notification_enabled: boolean;
-  date_joined: string;
+  username?: string;
   is_email_verified: boolean;
+  created_at: string;
+  updated_at: string;
   subscription?: Subscription;
 }
 
@@ -19,8 +17,6 @@ export interface RegisterData {
   email: string;
   password: string;
   password_confirm: string;
-  first_name?: string;
-  last_name?: string;
 }
 
 export interface RegisterResponse {

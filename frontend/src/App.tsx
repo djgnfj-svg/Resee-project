@@ -7,7 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
-import EnhancedRegisterPage from './pages/EnhancedRegisterPage';
+import RegisterPage from './pages/RegisterPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
 import VerificationPendingPage from './pages/VerificationPendingPage';
 import OnboardingPage from './pages/OnboardingPage';
@@ -41,7 +41,7 @@ function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<EnhancedRegisterPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               <Route path="/verify-email" element={<EmailVerificationPage />} />
               <Route path="/verification-pending" element={<VerificationPendingPage />} />
               <Route path="/onboarding" element={<OnboardingPage />} />
