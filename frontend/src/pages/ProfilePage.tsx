@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
+import { Link } from 'react-router-dom';
 // import toast from 'react-hot-toast';
 import { authAPI, analyticsAPI } from '../utils/api';
 import { User, DashboardData } from '../types';
+import { CreditCardIcon } from '@heroicons/react/24/outline';
 
 interface ProfileFormData {
   email: string;
@@ -105,6 +107,65 @@ const ProfilePage: React.FC = () => {
                 가입일: {new Date(user.created_at).toLocaleDateString()}
               </p>
             </div>
+          </div>
+
+          {/* Subscription Card */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">구독 정보</h3>
+            {user.subscription ? (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">현재 플랜</span>
+                  <span className="font-medium text-gray-900">
+                    {user.subscription.tier_display}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">상태</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    user.subscription.is_active 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {user.subscription.is_active ? '활성' : '비활성'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">최대 복습 간격</span>
+                  <span className="font-medium text-gray-900">
+                    {user.subscription.max_interval_days}일
+                  </span>
+                </div>
+                {user.subscription.days_remaining && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">남은 기간</span>
+                    <span className="font-medium text-gray-900">
+                      {user.subscription.days_remaining}일
+                    </span>
+                  </div>
+                )}
+                <div className="pt-3 border-t">
+                  <Link
+                    to="/subscription"
+                    className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
+                  >
+                    <CreditCardIcon className="w-4 h-4 mr-2" />
+                    구독 관리
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-gray-500 mb-4">구독 정보가 없습니다</p>
+                <Link
+                  to="/subscription"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                >
+                  <CreditCardIcon className="w-4 h-4 mr-2" />
+                  구독하기
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
