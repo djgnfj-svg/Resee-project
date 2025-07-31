@@ -28,6 +28,32 @@ import {
   ChartBarIcon
 } from '@heroicons/react/24/outline';
 
+// NaN 값을 안전하게 처리하는 헬퍼 함수
+const sanitizeNumber = (value: any, defaultValue: number = 0): number => {
+  if (typeof value !== 'number' || !isFinite(value) || isNaN(value)) {
+    return defaultValue;
+  }
+  return value;
+};
+
+// 데이터 배열의 모든 수치 값을 안전하게 처리
+const sanitizeChartData = <T extends Record<string, any>>(data: T[]): T[] => {
+  if (!Array.isArray(data)) return [];
+  
+  return data.map(item => {
+    if (!item || typeof item !== 'object') return {} as T;
+    
+    const sanitizedItem = { ...item } as T;
+    Object.keys(sanitizedItem).forEach((key: keyof T) => {
+      const value = sanitizedItem[key];
+      if (typeof value === 'number' || value === null || value === undefined) {
+        (sanitizedItem[key] as any) = sanitizeNumber(value, 0);
+      }
+    });
+    return sanitizedItem;
+  });
+};
+
 interface ProgressVisualizationProps {
   data: {
     weeklyProgress: Array<{
@@ -74,14 +100,36 @@ const COLORS = {
 };
 
 const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) => {
-  const { weeklyProgress, monthlyTrends, categoryDistribution, performanceMetrics } = data;
+  // 데이터 유효성 검증
+  if (!data || !data.weeklyProgress || !data.monthlyTrends || !data.categoryDistribution || !data.performanceMetrics) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        데이터를 불러오는 중입니다...
+      </div>
+    );
+  }
 
-  // NaN 방지를 위한 숫자 정리 유틸리티
-  const sanitizeNumber = (value: any, fallback: number = 0): number => {
-    if (value === null || value === undefined) return fallback;
-    const num = Number(value);
-    return isNaN(num) || !isFinite(num) ? fallback : num;
-  };
+  // 모든 데이터를 안전하게 처리
+  const safeData = useMemo(() => ({
+    weeklyProgress: sanitizeChartData(data.weeklyProgress || []),
+    monthlyTrends: sanitizeChartData(data.monthlyTrends || []),
+    categoryDistribution: sanitizeChartData((data.categoryDistribution || []).map(item => ({
+      ...item,
+      value: sanitizeNumber(item.value, 0),
+      masteryLevel: sanitizeNumber(item.masteryLevel, 0)
+    }))),
+    performanceMetrics: {
+      currentStreak: sanitizeNumber(data.performanceMetrics?.currentStreak, 0),
+      longestStreak: sanitizeNumber(data.performanceMetrics?.longestStreak, 0),
+      totalReviews: sanitizeNumber(data.performanceMetrics?.totalReviews, 0),
+      averageRetention: sanitizeNumber(data.performanceMetrics?.averageRetention, 0),
+      studyEfficiency: sanitizeNumber(data.performanceMetrics?.studyEfficiency, 0),
+      weeklyGoal: sanitizeNumber(data.performanceMetrics?.weeklyGoal, 50),
+      weeklyProgress: sanitizeNumber(data.performanceMetrics?.weeklyProgress, 0)
+    }
+  }), [data]);
+
+  const { weeklyProgress, monthlyTrends, categoryDistribution, performanceMetrics } = safeData;
 
   // 배열 안전 체크
   const safeArray = (arr: any[], fallback: any[] = []): any[] => {
@@ -261,15 +309,17 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
           📈 주간 학습 진도
         </h3>
         <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={safeArray(weeklyProgress).map(item => ({
-              ...item,
-              reviews: sanitizeNumber(item.reviews),
-              successRate: sanitizeNumber(item.successRate),
-              newContent: sanitizeNumber(item.newContent),
-              masteredItems: sanitizeNumber(item.masteredItems)
-            }))}>
-              <defs>
+          {safeArray(weeklyProgress).length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={safeArray(weeklyProgress).length > 0 ? safeArray(weeklyProgress).map(item => ({
+                ...item,
+                date: item.date || '',
+                reviews: sanitizeNumber(item?.reviews, 0),
+                successRate: sanitizeNumber(item?.successRate, 0),
+                newContent: sanitizeNumber(item?.newContent, 0),
+                masteredItems: sanitizeNumber(item?.masteredItems, 0)
+              })) : [{date: 'No Data', reviews: 0, successRate: 0, newContent: 0, masteredItems: 0}]}>
+                <defs>
                 <linearGradient id="reviewsGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3}/>
                   <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0}/>
@@ -289,12 +339,17 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
                 yAxisId="left"
                 tick={{ fontSize: 12 }}
                 stroke="#9ca3af"
+                domain={[0, 'auto']}
+                allowDataOverflow={false}
+                allowDecimals={false}
               />
               <YAxis 
                 yAxisId="right"
                 orientation="right"
                 tick={{ fontSize: 12 }}
                 stroke="#9ca3af"
+                domain={[0, 100]}
+                allowDataOverflow={false}
               />
               <Tooltip 
                 formatter={formatTooltipValue}
@@ -324,6 +379,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
               />
             </AreaChart>
           </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              데이터가 없습니다
+            </div>
+          )}
         </div>
       </div>
 
@@ -334,15 +394,17 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             📊 월간 학습 패턴
           </h3>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={safeArray(monthlyTrends).map(item => ({
-                ...item,
-                totalReviews: sanitizeNumber(item.totalReviews),
-                averageScore: sanitizeNumber(item.averageScore),
-                contentAdded: sanitizeNumber(item.contentAdded),
-                timeSpent: sanitizeNumber(item.timeSpent)
-              }))}>              
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            {safeArray(monthlyTrends).length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={safeArray(monthlyTrends).length > 0 ? safeArray(monthlyTrends).map(item => ({
+                  ...item,
+                  month: item?.month || '',
+                  totalReviews: sanitizeNumber(item?.totalReviews, 0),
+                  averageScore: sanitizeNumber(item?.averageScore, 0),
+                  contentAdded: sanitizeNumber(item?.contentAdded, 0),
+                  timeSpent: sanitizeNumber(item?.timeSpent, 0)
+                })) : [{month: 'No Data', totalReviews: 0, averageScore: 0, contentAdded: 0, timeSpent: 0}]}>              
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
                   dataKey="month" 
                   tick={{ fontSize: 12 }}
@@ -351,6 +413,9 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
                 <YAxis 
                   tick={{ fontSize: 12 }}
                   stroke="#9ca3af"
+                  domain={[0, 'auto']}
+                  allowDataOverflow={false}
+                  allowDecimals={false}
                 />
                 <Tooltip 
                   formatter={formatTooltipValue}
@@ -368,6 +433,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
                 />
               </BarChart>
             </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                데이터가 없습니다
+              </div>
+            )}
           </div>
         </div>
 

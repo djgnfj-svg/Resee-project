@@ -97,54 +97,70 @@ const AdvancedDashboard: React.FC = () => {
     queryFn: () => api.get('/analytics/calendar/').then(res => res.data),
   });
 
+  // NaN 값을 안전하게 처리하는 헬퍼 함수
+  const sanitizeValue = (value: any, defaultValue: number = 0): number => {
+    if (value === null || value === undefined) return defaultValue;
+    const num = Number(value);
+    if (!isFinite(num) || isNaN(num)) return defaultValue;
+    return num;
+  };
+
   // ProgressVisualization을 위한 데이터 변환
   const progressData = useMemo(() => {
     if (!analyticsData || !calendarData) return null;
 
-    // 주간 진도 데이터 (최근 30일) - NaN 방지
-    const weeklyProgress = calendarData.calendar_data
+    // 안전한 배열 접근
+    const safeCalendarData = Array.isArray(calendarData.calendar_data) ? calendarData.calendar_data : [];
+    const safeMonthlyData = Array.isArray(calendarData.monthly_summary) ? calendarData.monthly_summary : [];
+    const safeCategoryData = Array.isArray(analyticsData.category_performance) ? analyticsData.category_performance : [];
+
+    // 주간 진도 데이터 (최근 30일) - NaN 방지 강화
+    const weeklyProgress = safeCalendarData
       .slice(-30)
       .map((day, index) => ({
-        date: new Date(day.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
-        reviews: Math.max(0, day.count || 0),
-        successRate: isNaN(day.success_rate) ? 0 : Math.max(0, Math.min(100, day.success_rate || 0)),
+        date: day?.date ? new Date(day.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }) : `Day ${index + 1}`,
+        reviews: sanitizeValue(day?.count, 0),
+        successRate: sanitizeValue(day?.success_rate, 0),
         newContent: 0, // 실제 신규 콘텐츠 데이터가 없으므로 0으로 설정
-        masteredItems: Math.max(0, day.remembered || 0)
+        masteredItems: sanitizeValue(day?.remembered, 0)
       }));
 
-    // 월간 트렌드 데이터 - NaN 방지
-    const monthlyTrends = calendarData.monthly_summary.map(month => ({
-      month: month.month || 'Unknown',
-      totalReviews: Math.max(0, month.total_reviews || 0),
-      averageScore: isNaN(month.success_rate) ? 0 : Math.max(0, Math.min(100, month.success_rate || 0)),
+    // 월간 트렌드 데이터 - NaN 방지 강화
+    const monthlyTrends = safeMonthlyData.map(month => ({
+      month: month?.month || 'Unknown',
+      totalReviews: sanitizeValue(month?.total_reviews, 0),
+      averageScore: sanitizeValue(month?.success_rate, 0),
       contentAdded: 0, // 실제 월간 콘텐츠 추가 데이터가 없으므로 0으로 설정
-      timeSpent: Math.floor((month.total_reviews || 0) * 2.5) // 복습 횟수 기반 추정
+      timeSpent: sanitizeValue((month?.total_reviews || 0) * 2.5, 0) // 복습 횟수 기반 추정
     }));
 
-    // 카테고리별 분포
+    // 카테고리별 분포 - NaN 방지 강화
     const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6'];
-    const categoryDistribution = analyticsData.category_performance.map((category, index) => ({
-      name: category.name,
-      value: Math.max(0, category.content_count || 0),
+    const categoryDistribution = safeCategoryData.map((category, index) => ({
+      name: category?.name || 'Unknown',
+      value: sanitizeValue(category?.content_count, 0),
       color: colors[index % colors.length],
-      masteryLevel: isNaN(category.success_rate) ? 0 : category.success_rate
+      masteryLevel: sanitizeValue(category?.success_rate, 0)
     }));
 
-    // 성과 지표 - NaN 방지
+    // 성과 지표 - NaN 방지 강화
+    const safeAchievementStats = analyticsData?.achievement_stats || {};
+    const safeLearningInsights = analyticsData?.learning_insights || {};
+    
     const performanceMetrics = {
-      currentStreak: Math.max(0, analyticsData.achievement_stats.current_streak || 0),
-      longestStreak: Math.max(0, analyticsData.achievement_stats.max_streak || 0),
-      totalReviews: Math.max(0, analyticsData.learning_insights.total_reviews || 0),
-      averageRetention: Math.max(0, Math.min(100, Math.round(analyticsData.learning_insights.recent_success_rate || 0))),
+      currentStreak: sanitizeValue(safeAchievementStats.current_streak, 0),
+      longestStreak: sanitizeValue(safeAchievementStats.max_streak, 0),
+      totalReviews: sanitizeValue(safeLearningInsights.total_reviews, 0),
+      averageRetention: sanitizeValue(safeLearningInsights.recent_success_rate, 0),
       studyEfficiency: (() => {
-        const successRate = analyticsData.learning_insights.recent_success_rate || 0;
-        const currentStreak = analyticsData.achievement_stats.current_streak || 0;
-        const maxStreak = Math.max(1, analyticsData.achievement_stats.max_streak || 1);
+        const successRate = sanitizeValue(safeLearningInsights.recent_success_rate, 0);
+        const currentStreak = sanitizeValue(safeAchievementStats.current_streak, 0);
+        const maxStreak = Math.max(1, sanitizeValue(safeAchievementStats.max_streak, 1));
         const efficiency = (successRate / 100) * (currentStreak / maxStreak) * 100;
-        return Math.max(0, Math.min(95, Math.round(isNaN(efficiency) ? 0 : efficiency)));
+        return sanitizeValue(efficiency, 0);
       })(),
-      weeklyGoal: Math.max(50, (analyticsData.achievement_stats.monthly_target || 100) / 4),
-      weeklyProgress: Math.max(0, analyticsData.learning_insights.recent_7d_reviews || 0)
+      weeklyGoal: Math.max(50, sanitizeValue(safeAchievementStats.monthly_target, 100) / 4),
+      weeklyProgress: sanitizeValue(safeLearningInsights.recent_7d_reviews, 0)
     };
 
     return {
@@ -169,16 +185,16 @@ const AdvancedDashboard: React.FC = () => {
 
     const forgettingCurve = Array.from({ length: 24 }, (_, i) => ({
       timeElapsed: i,
-      memoryStrength: Math.max(20, 100 - (i * 3.5)),
-      withoutReview: Math.max(10, 100 - (i * 8)),
-      withReview: Math.max(50, 100 - (i * 2))
+      memoryStrength: sanitizeValue(Math.max(20, 100 - (i * 3.5)), 20),
+      withoutReview: sanitizeValue(Math.max(10, 100 - (i * 8)), 10),
+      withReview: sanitizeValue(Math.max(50, 100 - (i * 2)), 50)
     }));
 
     return {
       retentionCurve,
       forgettingCurve,
       insights: {
-        averageRetention: analyticsData.learning_insights.recent_success_rate,
+        averageRetention: sanitizeValue(analyticsData.learning_insights.recent_success_rate, 0),
         optimalRetention: 75,
         improvementPotential: 15,
         strongestInterval: 1,
@@ -194,31 +210,31 @@ const AdvancedDashboard: React.FC = () => {
 
     const hourlyPattern = Array.from({ length: 24 }, (_, hour) => ({
       hour,
-      studySessions: Math.floor(Math.random() * 10) + 1,
-      averagePerformance: 60 + Math.random() * 30,
-      totalTimeSpent: Math.floor(Math.random() * 120) + 30,
-      efficiency: 50 + Math.random() * 40
+      studySessions: sanitizeValue(Math.floor(Math.random() * 10) + 1, 1),
+      averagePerformance: sanitizeValue(60 + Math.random() * 30, 60),
+      totalTimeSpent: sanitizeValue(Math.floor(Math.random() * 120) + 30, 30),
+      efficiency: sanitizeValue(50 + Math.random() * 40, 50)
     }));
 
     const weeklyPattern = ['월', '화', '수', '목', '금', '토', '일'].map((day, index) => ({
       day,
       dayOfWeek: index + 1,
-      studySessions: Math.floor(Math.random() * 15) + 5,
-      averagePerformance: 65 + Math.random() * 25,
-      totalReviews: Math.floor(Math.random() * 50) + 20,
-      timeSpent: Math.floor(Math.random() * 180) + 60
+      studySessions: sanitizeValue(Math.floor(Math.random() * 15) + 5, 5),
+      averagePerformance: sanitizeValue(65 + Math.random() * 25, 65),
+      totalReviews: sanitizeValue(Math.floor(Math.random() * 50) + 20, 20),
+      timeSpent: sanitizeValue(Math.floor(Math.random() * 180) + 60, 60)
     }));
 
     return {
       hourlyPattern,
       weeklyPattern,
       streakAnalysis: {
-        currentStreak: analyticsData.achievement_stats.current_streak,
-        longestStreak: analyticsData.achievement_stats.max_streak,
+        currentStreak: sanitizeValue(analyticsData.achievement_stats.current_streak, 0),
+        longestStreak: sanitizeValue(analyticsData.achievement_stats.max_streak, 0),
         streakHistory: calendarData.calendar_data.slice(-30).map(day => ({
           date: day.date,
           streakLength: Math.floor(Math.random() * 20) + 1,
-          performance: day.success_rate
+          performance: sanitizeValue(day.success_rate, 0)
         }))
       },
       difficultyProgression: calendarData.monthly_summary.map(month => ({
@@ -226,14 +242,14 @@ const AdvancedDashboard: React.FC = () => {
         easy: Math.floor(Math.random() * 15) + 5,
         medium: Math.floor(Math.random() * 20) + 10,
         hard: Math.floor(Math.random() * 10) + 3,
-        averageScore: month.success_rate
+        averageScore: sanitizeValue(month.success_rate, 0)
       })),
       learningVelocity: analyticsData.category_performance.map(cat => ({
         category: cat.name,
         masterySpeed: Math.floor(Math.random() * 15) + 5,
-        retentionRate: cat.success_rate,
+        retentionRate: sanitizeValue(cat.success_rate, 0),
         difficultyLevel: Math.floor(Math.random() * 5) + 1,
-        totalContent: cat.content_count
+        totalContent: sanitizeValue(cat.content_count, 0)
       }))
     };
   }, [analyticsData, calendarData]);
@@ -246,27 +262,27 @@ const AdvancedDashboard: React.FC = () => {
       categories: analyticsData.category_performance.map((cat, index) => ({
         id: cat.id || index + 1,
         name: cat.name || 'Unknown Category',
-        totalContent: Math.max(0, cat.content_count || 0),
-        masteredContent: Math.floor((cat.content_count || 0) * 0.6),
-        inProgressContent: Math.floor((cat.content_count || 0) * 0.3),
-        averageSuccessRate: isNaN(cat.success_rate) ? 0 : Math.max(0, Math.min(100, cat.success_rate)),
-        averageDifficulty: isNaN(cat.difficulty_level) ? 1 : Math.max(1, Math.min(5, cat.difficulty_level)),
-        totalReviews: Math.max(0, cat.total_reviews || 0),
+        totalContent: sanitizeValue(cat.content_count, 0),
+        masteredContent: Math.floor(sanitizeValue(cat.content_count, 0) * 0.6),
+        inProgressContent: Math.floor(sanitizeValue(cat.content_count, 0) * 0.3),
+        averageSuccessRate: sanitizeValue(cat.success_rate, 0),
+        averageDifficulty: Math.max(1, Math.min(5, sanitizeValue(cat.difficulty_level, 1))),
+        totalReviews: sanitizeValue(cat.total_reviews, 0),
         averageReviewTime: Math.floor(Math.random() * 30) + 15,
         masteryProgress: Math.floor(Math.random() * 40) + 50,
-        retentionRate: isNaN(cat.recent_success_rate) ? 0 : Math.max(0, Math.min(100, cat.recent_success_rate)),
+        retentionRate: sanitizeValue(cat.recent_success_rate, 0),
         lastActivity: new Date().toISOString(),
         learningVelocity: Math.random() * 5 + 1,
         categoryRank: index + 1
       })),
       performanceMatrix: analyticsData.category_performance.map(cat => ({
         category: cat.name || 'Unknown Category',
-        difficulty: isNaN(cat.difficulty_level) ? 1 : Math.max(1, Math.min(5, cat.difficulty_level)),
-        performance: isNaN(cat.success_rate) ? 0 : Math.max(0, Math.min(100, cat.success_rate)),
+        difficulty: Math.max(1, Math.min(5, sanitizeValue(cat.difficulty_level, 1))),
+        performance: sanitizeValue(cat.success_rate, 0),
         reviewFrequency: Math.floor(Math.random() * 10) + 5,
         timeInvestment: Math.max(1, Math.floor(Math.random() * 200) + 100),
         masteryLevel: ((rate: number) => {
-          const safeRate = isNaN(rate) ? 0 : rate;
+          const safeRate = sanitizeValue(rate, 0);
           return safeRate >= 80 ? 'expert' : 
                  safeRate >= 65 ? 'advanced' :
                  safeRate >= 50 ? 'intermediate' : 'beginner';
@@ -300,13 +316,13 @@ const AdvancedDashboard: React.FC = () => {
 
     return {
       streakAnalysis: {
-        currentStreak: analyticsData.achievement_stats.current_streak,
-        longestStreak: analyticsData.achievement_stats.max_streak,
+        currentStreak: sanitizeValue(analyticsData.achievement_stats.current_streak, 0),
+        longestStreak: sanitizeValue(analyticsData.achievement_stats.max_streak, 0),
         averageStreak: 12,
         streakHistory: calendarData.calendar_data.slice(-30).map(day => ({
           date: day.date,
           streakLength: Math.floor(Math.random() * 20) + 1,
-          performance: day.success_rate,
+          performance: sanitizeValue(day.success_rate, 0),
           type: Math.random() > 0.8 ? 'broken' : 'active' as 'active' | 'broken' | 'extended'
         })),
         streakBreakReasons: [
@@ -322,28 +338,32 @@ const AdvancedDashboard: React.FC = () => {
       goalTracking: {
         dailyGoal: 20,
         weeklyGoal: 140,
-        monthlyGoal: analyticsData.achievement_stats.monthly_target,
+        monthlyGoal: sanitizeValue(analyticsData.achievement_stats.monthly_target, 100),
         currentProgress: {
           daily: 15,
           weekly: 95,
-          monthly: analyticsData.achievement_stats.monthly_completed
+          monthly: sanitizeValue(analyticsData.achievement_stats.monthly_completed, 0)
         },
         achievementRate: {
           daily: 75,
           weekly: 68,
-          monthly: (analyticsData.achievement_stats.monthly_completed / analyticsData.achievement_stats.monthly_target) * 100
+          monthly: (() => {
+            const completed = sanitizeValue(analyticsData.achievement_stats.monthly_completed, 0);
+            const target = sanitizeValue(analyticsData.achievement_stats.monthly_target, 100);
+            return target > 0 ? (completed / target) * 100 : 0;
+          })()
         },
         historicalPerformance: calendarData.monthly_summary.map(month => ({
           period: month.month,
           target: 100,
-          achieved: month.total_reviews,
-          rate: Math.min(100, (month.total_reviews / 100) * 100),
+          achieved: sanitizeValue(month.total_reviews, 0),
+          rate: Math.min(100, sanitizeValue((month.total_reviews / 100) * 100, 0)),
           consistency: 85
         }))
       },
       motivationMetrics: {
         totalAchievements: 24,
-        perfectDays: analyticsData.achievement_stats.perfect_sessions,
+        perfectDays: sanitizeValue(analyticsData.achievement_stats.perfect_sessions, 0),
         streakBadges: [
           { name: '일주일 마스터', description: '7일 연속 학습', unlocked: true, unlockedDate: '2024-01-15' },
           { name: '한달 챔피언', description: '30일 연속 학습', unlocked: false, progress: 60 }
@@ -388,9 +408,10 @@ const AdvancedDashboard: React.FC = () => {
   }
 
   // 데이터가 없는 경우 처리
-  const hasNoData = !analyticsData || 
+  const hasNoData = !analyticsData || !calendarData ||
     (analyticsData.learning_insights.total_reviews === 0 && 
-     analyticsData.category_performance.length === 0);
+     analyticsData.category_performance.length === 0 &&
+     (!calendarData.calendar_data || calendarData.calendar_data.length === 0));
 
   if (hasNoData) {
     return (
