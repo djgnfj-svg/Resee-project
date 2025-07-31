@@ -30,7 +30,7 @@ const SettingsPage: React.FC = () => {
   // Notification settings form
   const notificationForm = useForm<NotificationSettings>({
     defaultValues: {
-      notification_enabled: user?.notification_enabled || false,
+      notification_enabled: false,
       daily_reminder_time: '09:00',
       email_notifications: false,
     },
@@ -58,9 +58,8 @@ const SettingsPage: React.FC = () => {
   });
 
   const onNotificationSubmit = (data: NotificationSettings) => {
-    updateProfileMutation.mutate({
-      notification_enabled: data.notification_enabled,
-    });
+    // Notification settings are not supported in current User model
+    alert('알림 설정은 현재 지원되지 않습니다.');
   };
 
   // Password change mutation
