@@ -28,12 +28,22 @@ import {
   ChartBarIcon
 } from '@heroicons/react/24/outline';
 
-// NaN 값을 안전하게 처리하는 헬퍼 함수
+// NaN 값을 안전하게 처리하는 헬퍼 함수 (강화된 버전)
 const sanitizeNumber = (value: any, defaultValue: number = 0): number => {
-  if (typeof value !== 'number' || !isFinite(value) || isNaN(value)) {
+  // null, undefined, empty string 처리
+  if (value === null || value === undefined || value === '') {
     return defaultValue;
   }
-  return value;
+  
+  // 문자열을 숫자로 변환 시도
+  const num = typeof value === 'string' ? parseFloat(value) : Number(value);
+  
+  // NaN, Infinity, -Infinity 처리
+  if (isNaN(num) || !isFinite(num)) {
+    return defaultValue;
+  }
+  
+  return num;
 };
 
 // 데이터 배열의 모든 수치 값을 안전하게 처리
@@ -331,14 +341,19 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         <div className="h-80">
           {safeArray(weeklyProgress).length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={safeArray(weeklyProgress).length > 0 ? safeArray(weeklyProgress).map(item => ({
-                ...item,
-                date: item.date || '',
-                reviews: sanitizeNumber(item?.reviews, 0),
-                successRate: sanitizeNumber(item?.successRate, 0),
-                newContent: sanitizeNumber(item?.newContent, 0),
-                masteredItems: sanitizeNumber(item?.masteredItems, 0)
-              })) : [{date: 'No Data', reviews: 0, successRate: 0, newContent: 0, masteredItems: 0}]}>
+              <AreaChart data={(() => {
+                const rawData = safeArray(weeklyProgress);
+                if (rawData.length === 0) {
+                  return [{date: 'No Data', reviews: 0, successRate: 0, newContent: 0, masteredItems: 0}];
+                }
+                return rawData.map(item => ({
+                  date: item?.date || 'Unknown',
+                  reviews: Math.max(0, sanitizeNumber(item?.reviews, 0)),
+                  successRate: Math.max(0, Math.min(100, sanitizeNumber(item?.successRate, 0))),
+                  newContent: Math.max(0, sanitizeNumber(item?.newContent, 0)),
+                  masteredItems: Math.max(0, sanitizeNumber(item?.masteredItems, 0))
+                }));
+              })()}>
                 <defs>
                 <linearGradient id="reviewsGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.3}/>
@@ -359,9 +374,10 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
                 yAxisId="left"
                 tick={{ fontSize: 12 }}
                 stroke="#9ca3af"
-                domain={[0, 'auto']}
+                domain={[0, 'dataMax + 10']}
                 allowDataOverflow={false}
                 allowDecimals={false}
+                type="number"
               />
               <YAxis 
                 yAxisId="right"
@@ -370,6 +386,8 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
                 stroke="#9ca3af"
                 domain={[0, 100]}
                 allowDataOverflow={false}
+                allowDecimals={false}
+                type="number"
               />
               <Tooltip 
                 formatter={formatTooltipValue}
@@ -416,14 +434,19 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
           <div className="h-64">
             {safeArray(monthlyTrends).length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={safeArray(monthlyTrends).length > 0 ? safeArray(monthlyTrends).map(item => ({
-                  ...item,
-                  month: item?.month || '',
-                  totalReviews: sanitizeNumber(item?.totalReviews, 0),
-                  averageScore: sanitizeNumber(item?.averageScore, 0),
-                  contentAdded: sanitizeNumber(item?.contentAdded, 0),
-                  timeSpent: sanitizeNumber(item?.timeSpent, 0)
-                })) : [{month: 'No Data', totalReviews: 0, averageScore: 0, contentAdded: 0, timeSpent: 0}]}>              
+                <BarChart data={(() => {
+                const rawData = safeArray(monthlyTrends);
+                if (rawData.length === 0) {
+                  return [{month: 'No Data', totalReviews: 0, averageScore: 0, contentAdded: 0, timeSpent: 0}];
+                }
+                return rawData.map(item => ({
+                  month: item?.month || 'Unknown',
+                  totalReviews: Math.max(0, sanitizeNumber(item?.totalReviews, 0)),
+                  averageScore: Math.max(0, Math.min(100, sanitizeNumber(item?.averageScore, 0))),
+                  contentAdded: Math.max(0, sanitizeNumber(item?.contentAdded, 0)),
+                  timeSpent: Math.max(0, sanitizeNumber(item?.timeSpent, 0))
+                }));
+              })()}>              
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis 
                   dataKey="month" 
@@ -433,9 +456,10 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
                 <YAxis 
                   tick={{ fontSize: 12 }}
                   stroke="#9ca3af"
-                  domain={[0, 'auto']}
+                  domain={[0, 'dataMax + 5']}
                   allowDataOverflow={false}
                   allowDecimals={false}
+                  type="number"
                 />
                 <Tooltip 
                   formatter={formatTooltipValue}
@@ -471,14 +495,17 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={safeArray(categoryDistribution)
-                      .map(item => ({
-                        ...item,
-                        value: Math.max(0, sanitizeNumber(item.value || 0)),
-                        masteryLevel: sanitizeNumber(item.masteryLevel || 0)
-                      }))
-                      .filter(item => item.value > 0) // 값이 0인 항목 제거
-                    }
+                    data={(() => {
+                      const rawData = safeArray(categoryDistribution);
+                      return rawData
+                        .map(item => ({
+                          name: item?.name || 'Unknown',
+                          value: Math.max(1, sanitizeNumber(item?.value, 1)), // 최소값 1로 설정
+                          color: item?.color || '#3b82f6',
+                          masteryLevel: Math.max(0, Math.min(100, sanitizeNumber(item?.masteryLevel, 0)))
+                        }))
+                        .filter(item => item.value > 0 && item.name !== 'Unknown');
+                    })()}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -526,7 +553,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             <div className="relative w-24 h-24 mx-auto mb-3">
               <div className="w-24 h-24">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart data={[{ name: 'Retention', value: sanitizeNumber(performanceMetrics.averageRetention), fill: COLORS.success }]}>
+                  <RadialBarChart data={[{ 
+                    name: 'Retention', 
+                    value: Math.max(0, Math.min(100, sanitizeNumber(performanceMetrics.averageRetention, 0))), 
+                    fill: COLORS.success 
+                  }]}>
                     <RadialBar dataKey="value" cornerRadius={10} fill={COLORS.success} />
                   </RadialBarChart>
                 </ResponsiveContainer>
@@ -544,7 +575,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             <div className="relative w-24 h-24 mx-auto mb-3">
               <div className="w-24 h-24">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart data={[{ name: 'Efficiency', value: sanitizeNumber(performanceMetrics.studyEfficiency), fill: COLORS.purple }]}>
+                  <RadialBarChart data={[{ 
+                    name: 'Efficiency', 
+                    value: Math.max(0, Math.min(100, sanitizeNumber(performanceMetrics.studyEfficiency, 0))), 
+                    fill: COLORS.purple 
+                  }]}>
                     <RadialBar dataKey="value" cornerRadius={10} fill={COLORS.purple} />
                   </RadialBarChart>
                 </ResponsiveContainer>
@@ -562,7 +597,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
             <div className="relative w-24 h-24 mx-auto mb-3">
               <div className="w-24 h-24">
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart data={[{ name: 'Goal', value: sanitizeNumber(weeklyProgressPercent), fill: COLORS.indigo }]}>
+                  <RadialBarChart data={[{ 
+                    name: 'Goal', 
+                    value: Math.max(0, Math.min(100, sanitizeNumber(weeklyProgressPercent, 0))), 
+                    fill: COLORS.indigo 
+                  }]}>
                     <RadialBar dataKey="value" cornerRadius={10} fill={COLORS.indigo} />
                   </RadialBarChart>
                 </ResponsiveContainer>
