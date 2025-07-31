@@ -100,45 +100,48 @@ const COLORS = {
 };
 
 const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) => {
-  // 데이터 유효성 검증
-  if (!data || !data.weeklyProgress || !data.monthlyTrends || !data.categoryDistribution || !data.performanceMetrics) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        데이터를 불러오는 중입니다...
-      </div>
-    );
-  }
-
-  // 모든 데이터를 안전하게 처리
-  const safeData = useMemo(() => ({
-    weeklyProgress: sanitizeChartData(data.weeklyProgress || []),
-    monthlyTrends: sanitizeChartData(data.monthlyTrends || []),
-    categoryDistribution: sanitizeChartData((data.categoryDistribution || []).map(item => ({
-      ...item,
-      value: sanitizeNumber(item.value, 0),
-      masteryLevel: sanitizeNumber(item.masteryLevel, 0)
-    }))),
-    performanceMetrics: {
-      currentStreak: sanitizeNumber(data.performanceMetrics?.currentStreak, 0),
-      longestStreak: sanitizeNumber(data.performanceMetrics?.longestStreak, 0),
-      totalReviews: sanitizeNumber(data.performanceMetrics?.totalReviews, 0),
-      averageRetention: sanitizeNumber(data.performanceMetrics?.averageRetention, 0),
-      studyEfficiency: sanitizeNumber(data.performanceMetrics?.studyEfficiency, 0),
-      weeklyGoal: sanitizeNumber(data.performanceMetrics?.weeklyGoal, 50),
-      weeklyProgress: sanitizeNumber(data.performanceMetrics?.weeklyProgress, 0)
+  // 모든 데이터를 안전하게 처리 (hooks는 항상 같은 순서로 호출되어야 함)
+  const safeData = useMemo(() => {
+    // 데이터 유효성 검증
+    if (!data || !data.weeklyProgress || !data.monthlyTrends || !data.categoryDistribution || !data.performanceMetrics) {
+      return {
+        weeklyProgress: [],
+        monthlyTrends: [],
+        categoryDistribution: [],
+        performanceMetrics: {
+          currentStreak: 0,
+          longestStreak: 0,
+          totalReviews: 0,
+          averageRetention: 0,
+          studyEfficiency: 0,
+          weeklyGoal: 50,
+          weeklyProgress: 0
+        }
+      };
     }
-  }), [data]);
 
-  const { weeklyProgress, monthlyTrends, categoryDistribution, performanceMetrics } = safeData;
+      weeklyProgress: sanitizeChartData(data.weeklyProgress || []),
+      monthlyTrends: sanitizeChartData(data.monthlyTrends || []),
+      categoryDistribution: sanitizeChartData((data.categoryDistribution || []).map(item => ({
+        ...item,
+        value: sanitizeNumber(item.value, 0),
+        masteryLevel: sanitizeNumber(item.masteryLevel, 0)
+      }))),
+      performanceMetrics: {
+        currentStreak: sanitizeNumber(data.performanceMetrics?.currentStreak, 0),
+        longestStreak: sanitizeNumber(data.performanceMetrics?.longestStreak, 0),
+        totalReviews: sanitizeNumber(data.performanceMetrics?.totalReviews, 0),
+        averageRetention: sanitizeNumber(data.performanceMetrics?.averageRetention, 0),
+        studyEfficiency: sanitizeNumber(data.performanceMetrics?.studyEfficiency, 0),
+        weeklyGoal: sanitizeNumber(data.performanceMetrics?.weeklyGoal, 50),
+        weeklyProgress: sanitizeNumber(data.performanceMetrics?.weeklyProgress, 0)
+      }
+    });
+  }, [data]);
 
-  // 배열 안전 체크
-  const safeArray = (arr: any[], fallback: any[] = []): any[] => {
-    return Array.isArray(arr) ? arr : fallback;
-  };
-
-  // 성과 지표 계산
+  // 성과 지표 계산 (hooks는 항상 같은 순서로 호출되어야 함)
   const performanceInsights = useMemo(() => {
-    const safeWeeklyProgress = safeArray(weeklyProgress);
+    const safeWeeklyProgress = Array.isArray(safeData.weeklyProgress) ? safeData.weeklyProgress : [];
     const recent = safeWeeklyProgress.slice(-7);
     const previousWeek = safeWeeklyProgress.slice(-14, -7);
     
@@ -164,14 +167,30 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
       recentSuccess: sanitizeNumber(recentAvgSuccess),
       totalReviewsThisWeek: recent.reduce((sum, day) => sum + sanitizeNumber(day.reviews, 0), 0)
     };
-  }, [weeklyProgress]);
+  }, [safeData.weeklyProgress]);
 
   // 주간 목표 진행률 (나누기 0 방지)
   const weeklyProgressPercent = sanitizeNumber(
-    performanceMetrics.weeklyGoal > 0 
-      ? Math.min((sanitizeNumber(performanceMetrics.weeklyProgress) / sanitizeNumber(performanceMetrics.weeklyGoal)) * 100, 100)
+    safeData.performanceMetrics.weeklyGoal > 0 
+      ? Math.min((sanitizeNumber(safeData.performanceMetrics.weeklyProgress) / sanitizeNumber(safeData.performanceMetrics.weeklyGoal)) * 100, 100)
       : 0
   );
+
+  // 데이터 유효성 검증 (hooks 호출 후)
+  if (!data || !data.weeklyProgress || !data.monthlyTrends || !data.categoryDistribution || !data.performanceMetrics) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        데이터를 불러오는 중입니다...
+      </div>
+    );
+  }
+
+  const { weeklyProgress, monthlyTrends, categoryDistribution, performanceMetrics } = safeData;
+
+  // 배열 안전 체크
+  const safeArray = (arr: any[], fallback: any[] = []): any[] => {
+    return Array.isArray(arr) ? arr : fallback;
+  };
 
   const formatTooltipValue = (value: number, name: string) => {
     const safeValue = sanitizeNumber(value);
