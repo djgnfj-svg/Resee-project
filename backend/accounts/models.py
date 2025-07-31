@@ -44,15 +44,6 @@ class User(AbstractUser):
         null=True,
         help_text='Optional username field'
     )
-    timezone = models.CharField(
-        max_length=50,
-        default='Asia/Seoul',
-        help_text='User timezone for scheduling'
-    )
-    notification_enabled = models.BooleanField(
-        default=True,
-        help_text='Whether to send review notifications'
-    )
     
     # 이메일 인증 관련 필드
     is_email_verified = models.BooleanField(
@@ -70,6 +61,10 @@ class User(AbstractUser):
         null=True,
         help_text='When the verification email was sent'
     )
+    
+    # 생성일자, 업데이트일자
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     objects = UserManager()
     

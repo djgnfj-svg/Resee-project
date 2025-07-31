@@ -163,7 +163,7 @@ const StudyPatterns: React.FC<StudyPatternsProps> = ({ patterns }) => {
                   />
                   <PolarRadiusAxis 
                     angle={90} 
-                    domain={[0, Math.max(...dailyData.map(d => d.count)) || 10]}
+                    domain={[0, Math.max(...dailyData.map(d => d.count || 0)) || 10]}
                     className="text-xs text-gray-600 dark:text-gray-400"
                   />
                   <Radar

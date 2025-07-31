@@ -14,6 +14,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class ContentSerializer(serializers.ModelSerializer):
     """Content serializer"""
     author = serializers.StringRelatedField(read_only=True)
+    category = CategorySerializer(read_only=True)
     
     class Meta:
         model = Content

@@ -85,18 +85,27 @@ const LearningPatterns: React.FC<LearningPatternsProps> = ({ data }) => {
 
   // 최적 학습 시간 계산
   const optimalStudyTime = useMemo(() => {
+    if (!hourlyPattern || hourlyPattern.length === 0 || !weeklyPattern || weeklyPattern.length === 0) {
+      return {
+        hour: 0,
+        hourEfficiency: 0,
+        day: '월',
+        dayPerformance: 0
+      };
+    }
+    
     const bestHour = hourlyPattern.reduce((best, current) => 
-      current.efficiency > best.efficiency ? current : best
+      sanitizeNumber(current.efficiency) > sanitizeNumber(best.efficiency) ? current : best
     );
     const bestDay = weeklyPattern.reduce((best, current) => 
-      current.averagePerformance > best.averagePerformance ? current : best
+      sanitizeNumber(current.averagePerformance) > sanitizeNumber(best.averagePerformance) ? current : best
     );
     
     return {
-      hour: bestHour.hour,
-      hourEfficiency: bestHour.efficiency,
-      day: bestDay.day,
-      dayPerformance: bestDay.averagePerformance
+      hour: sanitizeNumber(bestHour.hour),
+      hourEfficiency: sanitizeNumber(bestHour.efficiency),
+      day: bestDay.day || '월',
+      dayPerformance: sanitizeNumber(bestDay.averagePerformance)
     };
   }, [hourlyPattern, weeklyPattern]);
 

@@ -16,7 +16,7 @@ const ContentPage: React.FC = () => {
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('created_desc');
+  const [sortBy, setSortBy] = useState<string>('-created_at');
   const [aiReviewContent, setAIReviewContent] = useState<Content | null>(null);
 
   // Check if user can access AI features
@@ -253,11 +253,11 @@ const ContentPage: React.FC = () => {
               onChange={(e) => setSortBy(e.target.value)}
               className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition-all duration-200"
             >
-              <option value="created_desc">최신순</option>
-              <option value="created_asc">오래된순</option>
-              <option value="title_asc">제목순</option>
-              <option value="priority_desc">우선순위 높은순</option>
-              <option value="priority_asc">우선순위 낮은순</option>
+              <option value="-created_at">최신순</option>
+              <option value="created_at">오래된순</option>
+              <option value="title">제목순</option>
+              <option value="-priority">우선순위 높은순</option>
+              <option value="priority">우선순위 낮은순</option>
             </select>
           </div>
         </div>

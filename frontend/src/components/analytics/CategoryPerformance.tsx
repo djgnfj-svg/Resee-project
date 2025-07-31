@@ -36,14 +36,14 @@ const CategoryPerformance: React.FC<CategoryPerformanceProps> = ({ categories })
     novice: '입문',
   };
 
-  // 차트 데이터 준비
+  // 차트 데이터 준비 (NaN 방지)
   const chartData = categories.map(cat => ({
     name: cat.name.length > 8 ? cat.name.substring(0, 8) + '...' : cat.name,
     fullName: cat.name,
-    success_rate: cat.success_rate,
-    recent_success_rate: cat.recent_success_rate,
-    total_reviews: cat.total_reviews,
-    mastery_level: cat.mastery_level,
+    success_rate: isNaN(cat.success_rate) ? 0 : cat.success_rate,
+    recent_success_rate: isNaN(cat.recent_success_rate) ? 0 : cat.recent_success_rate,
+    total_reviews: cat.total_reviews || 0,
+    mastery_level: cat.mastery_level || 'novice',
   }));
 
   // 마스터리 레벨 분포 데이터
@@ -111,6 +111,7 @@ const CategoryPerformance: React.FC<CategoryPerformanceProps> = ({ categories })
                 <YAxis 
                   className="text-xs text-gray-600 dark:text-gray-400"
                   domain={[0, 100]}
+                  allowDataOverflow={false}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar 
