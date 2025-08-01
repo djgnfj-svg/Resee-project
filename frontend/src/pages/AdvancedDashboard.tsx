@@ -10,8 +10,6 @@ import AchievementStats from '../components/analytics/AchievementStats';
 import LearningCalendar from '../components/analytics/LearningCalendar';
 import Recommendations from '../components/analytics/Recommendations';
 import ProgressVisualization from '../components/analytics/ProgressVisualization';
-import LearningPatterns from '../components/analytics/LearningPatterns';
-import AdvancedCategoryAnalysis from '../components/analytics/AdvancedCategoryAnalysis';
 import WeeklyGoalEditor from '../components/WeeklyGoalEditor';
 
 interface AdvancedAnalyticsData {
@@ -205,156 +203,6 @@ const AdvancedDashboard: React.FC = () => {
   }, [analyticsData, calendarData]);
 
 
-  // 학습 패턴 데이터
-  const learningPatternsData = useMemo(() => {
-    if (!analyticsData || 
-        !analyticsData.category_performance || analyticsData.category_performance.length === 0) {
-      return null; // 빈 데이터일 때는 null 반환
-    }
-
-    // 안전한 배열 접근 - learningPatternsData 내부에서도 동일하게
-    const safeCalendarData = (calendarData && Array.isArray(calendarData.calendar_data)) ? calendarData.calendar_data : [];
-    const safeMonthlyData = (calendarData && Array.isArray(calendarData.monthly_summary)) ? calendarData.monthly_summary : [];
-
-    // 백엔드 데이터 사용 - 랜덤 데이터 제거
-    const backendHourlyPattern = analyticsData.study_patterns?.hourly_pattern || [];
-    const hourlyPattern = Array.from({ length: 24 }, (_, hour) => {
-      const backendData = backendHourlyPattern.find(item => item.hour === hour) || { count: 0 };
-      return {
-        hour,
-        studySessions: sanitizeValue(backendData.count, 0),
-        averagePerformance: sanitizeValue(backendData.count > 0 ? 70 + (backendData.count * 2) : 0, 0),
-        totalTimeSpent: sanitizeValue(backendData.count * 3, 0), // 복습당 약 3분 추정
-        efficiency: sanitizeValue(backendData.count > 0 ? Math.min(90, 50 + (backendData.count * 5)) : 0, 0)
-      };
-    });
-
-    // 백엔드 데이터 사용 - 요일별 패턴
-    const backendDailyPattern = analyticsData.study_patterns?.daily_pattern || [];
-    const weeklyPattern = ['월', '화', '수', '목', '금', '토', '일'].map((day, index) => {
-      const backendData = backendDailyPattern.find(item => item.day === ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]) || { count: 0 };
-      return {
-        day,
-        dayOfWeek: index + 1,
-        studySessions: sanitizeValue(backendData.count, 0),
-        averagePerformance: sanitizeValue(backendData.count > 0 ? 65 + (backendData.count * 1.5) : 0, 0),
-        totalReviews: sanitizeValue(backendData.count, 0),
-        timeSpent: sanitizeValue(backendData.count * 4, 0) // 복습당 약 4분 추정
-      };
-    });
-
-    return {
-      hourlyPattern,
-      weeklyPattern,
-      streakAnalysis: {
-        currentStreak: sanitizeValue(analyticsData.achievement_stats.current_streak, 0),
-        longestStreak: sanitizeValue(analyticsData.achievement_stats.max_streak, 0),
-        streakHistory: safeCalendarData.slice(-30).map((day: any, index: number) => ({
-          date: day.date,
-          streakLength: day.count > 0 ? Math.min(index + 1, sanitizeValue(analyticsData.achievement_stats.current_streak, 0)) : 0,
-          performance: sanitizeValue(day.success_rate, 0)
-        }))
-      },
-      difficultyProgression: safeMonthlyData.map((month: any) => {
-        const totalReviews = sanitizeValue(month.total_reviews, 0);
-        const successRate = sanitizeValue(month.success_rate, 0);
-        // 성공률을 기반으로 난이도 분포 추정
-        const easyRatio = successRate > 80 ? 0.6 : successRate > 60 ? 0.4 : 0.2;
-        const hardRatio = successRate < 40 ? 0.5 : successRate < 70 ? 0.3 : 0.1;
-        const mediumRatio = 1 - easyRatio - hardRatio;
-        
-        return {
-          week: month.month,
-          easy: Math.round(totalReviews * easyRatio),
-          medium: Math.round(totalReviews * mediumRatio),
-          hard: Math.round(totalReviews * hardRatio),
-          averageScore: successRate
-        };
-      }),
-      learningVelocity: analyticsData.category_performance.length > 0 ? 
-        analyticsData.category_performance.map(cat => {
-          const successRate = sanitizeValue(cat.success_rate, 0);
-          const totalReviews = sanitizeValue(cat.total_reviews, 0);
-          const contentCount = sanitizeValue(cat.content_count, 0);
-          
-          return {
-            category: cat.name,
-            masterySpeed: contentCount > 0 ? Math.max(1, Math.round(totalReviews / contentCount)) : 1,
-            retentionRate: successRate,
-            difficultyLevel: Math.max(1, Math.min(5, Math.round((100 - successRate) / 20) + 1)),
-            totalContent: contentCount
-          };
-        }) : [
-          {
-            category: '프로그래밍',
-            masterySpeed: 10,
-            retentionRate: 80,
-            difficultyLevel: 3,
-            totalContent: 5
-          }
-        ]
-    };
-  }, [analyticsData, calendarData]);
-
-  // 고급 카테고리 분석 데이터
-  const advancedCategoryData = useMemo(() => {
-    if (!analyticsData || !analyticsData.category_performance || analyticsData.category_performance.length === 0) {
-      return null; // 빈 데이터일 때는 null 반환하여 컴포넌트 렌더링 방지
-    }
-
-    return {
-      categories: analyticsData.category_performance.map((cat, index) => ({
-        id: cat.id || index + 1,
-        name: cat.name || 'Unknown Category',
-        totalContent: sanitizeValue(cat.content_count, 0),
-        masteredContent: Math.floor(sanitizeValue(cat.content_count, 0) * 0.6),
-        inProgressContent: Math.floor(sanitizeValue(cat.content_count, 0) * 0.3),
-        averageSuccessRate: sanitizeValue(cat.success_rate, 0),
-        averageDifficulty: Math.max(1, Math.min(5, sanitizeValue(cat.difficulty_level, 1))),
-        totalReviews: sanitizeValue(cat.total_reviews, 0),
-        averageReviewTime: Math.max(1, Math.round(sanitizeValue(cat.total_reviews, 0) * 2.5)), // 복습당 평균 2.5분 추정
-        masteryProgress: Math.min(100, Math.max(0, sanitizeValue(cat.success_rate, 0))),
-        retentionRate: sanitizeValue(cat.recent_success_rate, 0),
-        lastActivity: new Date().toISOString(),
-        learningVelocity: Math.max(0.1, sanitizeValue(cat.total_reviews, 0) / Math.max(1, sanitizeValue(cat.content_count, 0))),
-        categoryRank: index + 1
-      })),
-      performanceMatrix: analyticsData.category_performance.map(cat => ({
-        category: cat.name || 'Unknown Category',
-        difficulty: Math.max(1, Math.min(5, sanitizeValue(cat.difficulty_level, 1))),
-        performance: sanitizeValue(cat.success_rate, 0),
-        reviewFrequency: Math.max(1, Math.round(sanitizeValue(cat.total_reviews, 0) / 7)), // 주당 평균 복습 빈도
-        timeInvestment: Math.max(1, Math.round(sanitizeValue(cat.total_reviews, 0) * 3)), // 총 투자 시간 (분)
-        masteryLevel: ((rate: number) => {
-          const safeRate = sanitizeValue(rate, 0);
-          return safeRate >= 80 ? 'expert' : 
-                 safeRate >= 65 ? 'advanced' :
-                 safeRate >= 50 ? 'intermediate' : 'beginner';
-        })(cat.success_rate) as 'beginner' | 'intermediate' | 'advanced' | 'expert'
-      })),
-      improvementSuggestions: [
-        {
-          categoryId: 1,
-          categoryName: '프로그래밍',
-          issue: '복습 간격이 너무 길어 기억 유지율 저하',
-          suggestion: '복습 주기를 2-3일로 단축하여 기억 강화',
-          priority: 'high' as 'high' | 'medium' | 'low',
-          expectedImprovement: 15
-        }
-      ],
-      competencyMap: [
-        {
-          skill: '문제 해결 능력',
-          currentLevel: 75,
-          targetLevel: 90,
-          categories: ['프로그래밍', '수학'],
-          progress: 83
-        }
-      ]
-    };
-  }, [analyticsData]);
-
-
   if (analyticsLoading || calendarLoading) {
     return (
       <div className="flex justify-center items-center min-h-96">
@@ -500,39 +348,6 @@ const AdvancedDashboard: React.FC = () => {
 
 
 
-      {/* 고급 학습 패턴 분석 */}
-      {learningPatternsData && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                📈 고급 학습 패턴 분석
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                시간대별, 요일별 학습 패턴과 효율성을 종합 분석합니다
-              </p>
-            </div>
-          </div>
-          <LearningPatterns data={learningPatternsData} />
-        </div>
-      )}
-
-      {/* 고급 카테고리 분석 */}
-      {advancedCategoryData && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                📚 고급 카테고리 성과 분석
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                카테고리별 상세 성과 지표와 스마트 개선 제안
-              </p>
-            </div>
-          </div>
-          <AdvancedCategoryAnalysis data={advancedCategoryData} />
-        </div>
-      )}
 
       {/* 학습 캘린더 히트맵 */}
       {process.env.NODE_ENV === 'development' && (
