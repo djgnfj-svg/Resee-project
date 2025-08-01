@@ -14,10 +14,10 @@ interface StudyPatternsProps {
 const StudyPatterns: React.FC<StudyPatternsProps> = ({ patterns }) => {
   // 시간대별 라벨
   const getHourLabel = (hour: number) => {
-    if (hour === 0) return '12AM';
-    if (hour < 12) return `${hour}AM`;
-    if (hour === 12) return '12PM';
-    return `${hour - 12}PM`;
+    if (hour === 0) return '오전 12시';
+    if (hour < 12) return `오전 ${hour}시`;
+    if (hour === 12) return '오후 12시';
+    return `오후 ${hour - 12}시`;
   };
 
   // 요일 한글 변환
