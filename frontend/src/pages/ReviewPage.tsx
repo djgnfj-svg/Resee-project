@@ -40,6 +40,9 @@ const ReviewPage: React.FC = () => {
       // Invalidate cache and refetch to get updated review list
       queryClient.invalidateQueries({ queryKey: ['todayReviews'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      // 캘린더 및 분석 데이터도 무효화하여 실시간 업데이트
+      queryClient.invalidateQueries({ queryKey: ['learning-calendar'] });
+      queryClient.invalidateQueries({ queryKey: ['advanced-analytics'] });
       
       // Wait for data to be refreshed
       const { data: updatedReviews } = await refetch();
