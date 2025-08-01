@@ -279,6 +279,10 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data, onG
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">주간 목표</p>
               <div className="flex items-center space-x-2">
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {sanitizeNumber(performanceMetrics.weeklyProgress)}
+                </span>
+                <span className="text-lg text-gray-500 dark:text-gray-400">/</span>
                 <WeeklyGoalEditor 
                   currentGoal={sanitizeNumber(performanceMetrics.weeklyGoal, 7)}
                   onGoalUpdate={onGoalUpdate || (async () => {})}
