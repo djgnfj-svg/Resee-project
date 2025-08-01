@@ -105,7 +105,12 @@ const AdvancedDashboard: React.FC = () => {
 
   const { data: calendarData, isLoading: calendarLoading, error: calendarError } = useQuery<CalendarData>({
     queryKey: ['learning-calendar'],
-    queryFn: () => api.get('/analytics/calendar/').then(res => res.data),
+    queryFn: () => api.get('/analytics/calendar/').then(res => {
+      console.log('캘린더 API 응답:', res.data);
+      return res.data;
+    }),
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // 주간 목표 업데이트 함수
@@ -530,6 +535,14 @@ const AdvancedDashboard: React.FC = () => {
       )}
 
       {/* 학습 캘린더 히트맵 */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-3 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+          <div>캘린더 로딩: {calendarLoading ? 'true' : 'false'}</div>
+          <div>캘린더 에러: {calendarError ? 'true' : 'false'}</div>
+          <div>캘린더 데이터 존재: {calendarData ? 'true' : 'false'}</div>
+          <div>캘린더 데이터 배열 길이: {calendarData?.calendar_data?.length || 0}</div>
+        </div>
+      )}
       {calendarData && calendarData.calendar_data ? (
         <LearningCalendar calendarData={calendarData} />
       ) : calendarLoading ? (
