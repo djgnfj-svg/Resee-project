@@ -74,12 +74,13 @@ const LearningInsights: React.FC<LearningInsightsProps> = ({ insights }) => {
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-xl border border-gray-200/60 dark:border-gray-700/60 p-8 hover:shadow-2xl transition-all duration-300">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+          <span className="text-3xl mr-3">💡</span>
           학습 인사이트
         </h2>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-base text-gray-600 dark:text-gray-300 font-medium">
           최근 30일 기준
         </div>
       </div>

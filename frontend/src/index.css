@@ -5,6 +5,23 @@
 /* PWA 및 모바일 최적화 스타일 */
 @import './styles/pwa.css';
 
+/* 차트 다크모드 지원을 위한 CSS 변수 */
+:root {
+  --tooltip-bg: #ffffff;
+  --tooltip-border: #e5e7eb;
+  --tooltip-text: #374151;
+  --grid-color: #e5e7eb;
+  --axis-color: #9ca3af;
+}
+
+.dark {
+  --tooltip-bg: rgba(31, 41, 55, 0.95);
+  --tooltip-border: rgba(75, 85, 99, 0.8);
+  --tooltip-text: #f3f4f6;
+  --grid-color: rgba(75, 85, 99, 0.4);
+  --axis-color: #9ca3af;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

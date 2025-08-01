@@ -9,10 +9,8 @@ import AchievementStats from '../components/analytics/AchievementStats';
 import LearningCalendar from '../components/analytics/LearningCalendar';
 import Recommendations from '../components/analytics/Recommendations';
 import ProgressVisualization from '../components/analytics/ProgressVisualization';
-import MemoryRetentionCurve from '../components/analytics/MemoryRetentionCurve';
 import LearningPatterns from '../components/analytics/LearningPatterns';
 import AdvancedCategoryAnalysis from '../components/analytics/AdvancedCategoryAnalysis';
-import GoalAchievementAnalysis from '../components/analytics/GoalAchievementAnalysis';
 
 interface AdvancedAnalyticsData {
   learning_insights: {
@@ -171,38 +169,6 @@ const AdvancedDashboard: React.FC = () => {
     };
   }, [analyticsData, calendarData]);
 
-  // 메모리 유지율 곡선 데이터
-  const memoryRetentionData = useMemo(() => {
-    if (!analyticsData) return null;
-
-    const retentionCurve = [
-      { interval: 1, retentionRate: 85, reviewCount: 45, optimalRate: 80 },
-      { interval: 3, retentionRate: 78, reviewCount: 32, optimalRate: 75 },
-      { interval: 7, retentionRate: 72, reviewCount: 28, optimalRate: 70 },
-      { interval: 14, retentionRate: 68, reviewCount: 24, optimalRate: 65 },
-      { interval: 30, retentionRate: 62, reviewCount: 18, optimalRate: 60 }
-    ];
-
-    const forgettingCurve = Array.from({ length: 24 }, (_, i) => ({
-      timeElapsed: i,
-      memoryStrength: sanitizeValue(Math.max(20, 100 - (i * 3.5)), 20),
-      withoutReview: sanitizeValue(Math.max(10, 100 - (i * 8)), 10),
-      withReview: sanitizeValue(Math.max(50, 100 - (i * 2)), 50)
-    }));
-
-    return {
-      retentionCurve,
-      forgettingCurve,
-      insights: {
-        averageRetention: sanitizeValue(analyticsData.learning_insights.recent_success_rate, 0),
-        optimalRetention: 75,
-        improvementPotential: 15,
-        strongestInterval: 1,
-        weakestInterval: 30,
-        nextOptimalReview: 4
-      }
-    };
-  }, [analyticsData]);
 
   // 학습 패턴 데이터
   const learningPatternsData = useMemo(() => {
@@ -324,94 +290,6 @@ const AdvancedDashboard: React.FC = () => {
     };
   }, [analyticsData]);
 
-  // 목표 달성 분석 데이터
-  const goalAchievementData = useMemo(() => {
-    if (!analyticsData || !calendarData) return null;
-
-    return {
-      streakAnalysis: {
-        currentStreak: sanitizeValue(analyticsData.achievement_stats.current_streak, 0),
-        longestStreak: sanitizeValue(analyticsData.achievement_stats.max_streak, 0),
-        averageStreak: 12,
-        streakHistory: calendarData.calendar_data.slice(-30).map(day => ({
-          date: day.date,
-          streakLength: Math.floor(Math.random() * 20) + 1,
-          performance: sanitizeValue(day.success_rate, 0),
-          type: Math.random() > 0.8 ? 'broken' : 'active' as 'active' | 'broken' | 'extended'
-        })),
-        streakBreakReasons: [
-          { reason: '시간 부족', frequency: 8, averageBreakLength: 3 },
-          { reason: '동기 저하', frequency: 5, averageBreakLength: 5 },
-          { reason: '건강 문제', frequency: 3, averageBreakLength: 7 }
-        ],
-        milestones: [
-          { streakLength: 7, achievedDate: '2024-01-15', nextTarget: 14 },
-          { streakLength: 30, achievedDate: null, nextTarget: 60 }
-        ]
-      },
-      goalTracking: {
-        dailyGoal: 20,
-        weeklyGoal: 140,
-        monthlyGoal: sanitizeValue(analyticsData.achievement_stats.monthly_target, 100),
-        currentProgress: {
-          daily: 15,
-          weekly: 95,
-          monthly: sanitizeValue(analyticsData.achievement_stats.monthly_completed, 0)
-        },
-        achievementRate: {
-          daily: 75,
-          weekly: 68,
-          monthly: (() => {
-            const completed = sanitizeValue(analyticsData.achievement_stats.monthly_completed, 0);
-            const target = sanitizeValue(analyticsData.achievement_stats.monthly_target, 100);
-            return target > 0 ? (completed / target) * 100 : 0;
-          })()
-        },
-        historicalPerformance: calendarData.monthly_summary.map(month => ({
-          period: month.month,
-          target: 100,
-          achieved: sanitizeValue(month.total_reviews, 0),
-          rate: Math.min(100, sanitizeValue((month.total_reviews / 100) * 100, 0)),
-          consistency: 85
-        }))
-      },
-      motivationMetrics: {
-        totalAchievements: 24,
-        perfectDays: sanitizeValue(analyticsData.achievement_stats.perfect_sessions, 0),
-        streakBadges: [
-          { name: '일주일 마스터', description: '7일 연속 학습', unlocked: true, unlockedDate: '2024-01-15' },
-          { name: '한달 챔피언', description: '30일 연속 학습', unlocked: false, progress: 60 }
-        ],
-        personalBests: {
-          longestStudySession: 180,
-          mostReviewsInDay: 45,
-          highestSuccessRate: 98,
-          fastestMastery: 5
-        },
-        challenges: [
-          {
-            name: '이번 주 목표 달성',
-            description: '주간 복습 목표 140회 달성하기',
-            target: 140,
-            current: 95,
-            reward: '스페셜 배지'
-          }
-        ]
-      },
-      predictions: {
-        streakPrediction: {
-          likelihoodToExtend: 78,
-          predictedBreakDate: null,
-          riskFactors: ['주말 활동 감소', '최근 성과 하락']
-        },
-        goalAchievement: {
-          monthlyForecast: 85,
-          recommendedDailyTarget: 22,
-          adjustmentNeeded: false
-        }
-      }
-    };
-  }, [analyticsData, calendarData]);
 
   if (analyticsLoading || calendarLoading) {
     return (
@@ -464,13 +342,18 @@ const AdvancedDashboard: React.FC = () => {
 
   if (analyticsError || calendarError) {
     return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
-        <div className="flex">
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+      <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 border border-red-200 dark:border-red-700/50 rounded-xl p-6 shadow-lg backdrop-blur-sm">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg className="w-6 h-6 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div className="ml-4">
+            <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">
               데이터를 불러오는 중 오류가 발생했습니다
             </h3>
-            <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+            <div className="mt-2 text-red-700 dark:text-red-300">
               잠시 후 다시 시도해 주세요.
             </div>
           </div>
@@ -481,8 +364,13 @@ const AdvancedDashboard: React.FC = () => {
 
   if (!analyticsData || !calendarData) {
     return (
-      <div className="text-center py-12">
-        <div className="text-gray-500 dark:text-gray-400">데이터가 없습니다.</div>
+      <div className="text-center py-16">
+        <div className="mx-auto w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+          <svg className="w-12 h-12 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          </svg>
+        </div>
+        <div className="text-xl font-semibold text-gray-600 dark:text-gray-300">데이터가 없습니다.</div>
       </div>
     );
   }
@@ -515,17 +403,19 @@ const AdvancedDashboard: React.FC = () => {
 
       {/* 고급 진도 시각화 */}
       {progressData && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-xl border border-gray-200/60 dark:border-gray-700/60 p-8 hover:shadow-2xl transition-all duration-300">
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                📊 상세 학습 분석
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                <span className="text-3xl mr-3">📊</span>
+                상세 학습 분석
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-gray-600 dark:text-gray-300 mt-2 text-base">
                 학습 패턴과 성과 지표를 종합적으로 분석한 결과입니다
               </p>
             </div>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">
+            <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 text-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-700/50 shadow-md">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
               실시간 데이터
             </span>
           </div>
@@ -545,39 +435,7 @@ const AdvancedDashboard: React.FC = () => {
         <StudyPatterns patterns={analyticsData.study_patterns} />
       </div>
 
-      {/* 목표 달성 및 스트릭 분석 */}
-      {goalAchievementData && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                🎯 목표 달성 & 스트릭 분석
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                학습 목표 달성률과 연속 학습 기록을 상세 분석합니다
-              </p>
-            </div>
-          </div>
-          <GoalAchievementAnalysis data={goalAchievementData} />
-        </div>
-      )}
 
-      {/* 메모리 유지율 및 망각 곡선 */}
-      {memoryRetentionData && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                🧠 메모리 유지율 & 망각 곡선
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                에빙하우스 망각곡선 기반 개인 기억 유지 패턴 분석
-              </p>
-            </div>
-          </div>
-          <MemoryRetentionCurve data={memoryRetentionData} />
-        </div>
-      )}
 
       {/* 고급 학습 패턴 분석 */}
       {learningPatternsData && (

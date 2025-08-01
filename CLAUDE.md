@@ -22,6 +22,9 @@ docker-compose exec backend pytest -k "test_새기능" -v
 
 # 5. 프론트엔드 타입 체크
 docker-compose exec frontend npx tsc --noEmit
+
+# 6. E2E 테스트 실행
+docker-compose exec frontend npx playwright test
 ```
 
 ### 2. 버그 수정 시
@@ -300,6 +303,10 @@ docker-compose exec backend pytest -k "특정테스트" -v
 # 프론트엔드
 docker-compose exec frontend npm test
 docker-compose exec frontend npm test -- --coverage
+
+# E2E 테스트
+docker-compose exec frontend npx playwright test
+docker-compose exec frontend npx playwright test --ui
 ```
 
 ### 프로덕션
@@ -315,6 +322,17 @@ docker-compose exec frontend npm test -- --coverage
 ./ops.sh backup daily
 ```
 
+## 🧪 테스트 데이터 생성
+
+### 샘플 데이터 생성
+```bash
+# 테스트 사용자 생성
+docker-compose exec backend python manage.py create_test_users
+
+# 샘플 콘텐츠 생성
+docker-compose exec backend python manage.py create_sample_data
+```
+
 ## 🏗️ 아키텍처 핵심 요약
 
 ### 백엔드 구조
@@ -324,6 +342,8 @@ backend/
 ├── content/       # 학습 콘텐츠
 ├── review/        # 복습 시스템
 ├── ai_review/     # AI 기능
+├── analytics/     # 학습 분석
+├── monitoring/    # 시스템 모니터링
 └── resee/         # 설정
 ```
 
@@ -331,10 +351,14 @@ backend/
 ```
 frontend/src/
 ├── components/    # 재사용 컴포넌트
+│   ├── ai/       # AI 관련 컴포넌트
+│   └── analytics/ # 분석 차트 컴포넌트
 ├── pages/         # 페이지 컴포넌트
-├── contexts/      # 전역 상태 (Auth)
+├── contexts/      # 전역 상태 (Auth, Theme)
+├── hooks/         # 커스텀 훅
 ├── utils/         # API 클라이언트
-└── types/         # TypeScript 타입
+├── types/         # TypeScript 타입
+└── styles/        # 전역 스타일
 ```
 
 ### 핵심 모델 관계
@@ -392,4 +416,55 @@ docker-compose exec frontend npx tsc --noEmit
 
 # 3. 환경 변수 확인
 docker-compose exec frontend printenv | grep REACT_APP_
+```
+
+## 🌐 환경 변수 설정
+
+### 필수 환경 변수
+```bash
+# Backend (.env)
+SECRET_KEY=your-secret-key
+DEBUG=False
+DATABASE_URL=postgres://resee_user:resee_password@db:5432/resee_db
+CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
+REDIS_URL=redis://redis:6379/0
+
+# AI 서비스
+ANTHROPIC_API_KEY=your-anthropic-api-key
+
+# Google OAuth
+GOOGLE_OAUTH2_CLIENT_ID=your-client-id
+GOOGLE_OAUTH2_CLIENT_SECRET=your-client-secret
+
+# Email (AWS SES)
+AWS_ACCESS_KEY_ID=your-aws-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret
+AWS_SES_REGION_NAME=us-east-1
+
+# Frontend (.env)
+REACT_APP_API_URL=http://localhost:8000
+REACT_APP_GOOGLE_CLIENT_ID=your-client-id
+```
+
+## 🔐 인증 및 보안
+
+### JWT 토큰 설정
+- Access Token: 5분 (자동 갱신)
+- Refresh Token: 7일
+- 토큰은 httpOnly 쿠키로 저장
+
+### CORS 설정
+개발 환경에서는 `http://localhost:3000`에서의 요청을 허용합니다.
+프로덕션에서는 실제 도메인으로 변경 필요.
+
+## 📱 PWA 기능
+
+### PWA 아이콘 생성
+```bash
+docker-compose exec frontend npm run pwa:icons
+```
+
+### PWA 테스트
+```bash
+docker-compose exec frontend npm run pwa:test
 ```
