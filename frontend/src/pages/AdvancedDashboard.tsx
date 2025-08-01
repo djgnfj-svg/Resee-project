@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../utils/api';
+import { weeklyGoalAPI } from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import LearningInsights from '../components/analytics/LearningInsights';
 import CategoryPerformance from '../components/analytics/CategoryPerformance';
@@ -11,6 +12,7 @@ import Recommendations from '../components/analytics/Recommendations';
 import ProgressVisualization from '../components/analytics/ProgressVisualization';
 import LearningPatterns from '../components/analytics/LearningPatterns';
 import AdvancedCategoryAnalysis from '../components/analytics/AdvancedCategoryAnalysis';
+import WeeklyGoalEditor from '../components/WeeklyGoalEditor';
 
 interface AdvancedAnalyticsData {
   learning_insights: {
@@ -50,6 +52,15 @@ interface AdvancedAnalyticsData {
     monthly_target: number;
     monthly_completed: number;
   };
+  performance_metrics?: {
+    currentStreak: number;
+    longestStreak: number;
+    totalReviews: number;
+    averageRetention: number;
+    studyEfficiency: number;
+    weeklyGoal: number;
+    weeklyProgress: number;
+  };
   recommendations: Array<{
     type: string;
     title: string;
@@ -85,6 +96,8 @@ interface CalendarData {
 }
 
 const AdvancedDashboard: React.FC = () => {
+  const queryClient = useQueryClient();
+  
   const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useQuery<AdvancedAnalyticsData>({
     queryKey: ['advanced-analytics'],
     queryFn: () => api.get('/analytics/advanced/').then(res => res.data),
@@ -94,6 +107,17 @@ const AdvancedDashboard: React.FC = () => {
     queryKey: ['learning-calendar'],
     queryFn: () => api.get('/analytics/calendar/').then(res => res.data),
   });
+
+  // 주간 목표 업데이트 함수
+  const handleGoalUpdate = async (newGoal: number): Promise<void> => {
+    try {
+      await weeklyGoalAPI.updateWeeklyGoal(newGoal);
+      // 데이터 새로고침
+      await queryClient.invalidateQueries({ queryKey: ['advanced-analytics'] });
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || '목표 업데이트에 실패했습니다.');
+    }
+  };
 
   // NaN 값을 안전하게 처리하는 헬퍼 함수
   const sanitizeValue = (value: any, defaultValue: number = 0): number => {
@@ -141,24 +165,30 @@ const AdvancedDashboard: React.FC = () => {
       masteryLevel: sanitizeValue(category?.success_rate, 0)
     }));
 
-    // 성과 지표 - NaN 방지 강화
-    const safeAchievementStats = analyticsData?.achievement_stats || {};
-    const safeLearningInsights = analyticsData?.learning_insights || {};
-    
-    const performanceMetrics = {
-      currentStreak: sanitizeValue(safeAchievementStats.current_streak, 0),
-      longestStreak: sanitizeValue(safeAchievementStats.max_streak, 0),
-      totalReviews: sanitizeValue(safeLearningInsights.total_reviews, 0),
-      averageRetention: sanitizeValue(safeLearningInsights.recent_success_rate, 0),
+    // 성과 지표 - 백엔드 데이터 우선 사용
+    const performanceMetrics = analyticsData?.performance_metrics ? {
+      currentStreak: sanitizeValue(analyticsData.performance_metrics.currentStreak, 0),
+      longestStreak: sanitizeValue(analyticsData.performance_metrics.longestStreak, 0),
+      totalReviews: sanitizeValue(analyticsData.performance_metrics.totalReviews, 0),
+      averageRetention: sanitizeValue(analyticsData.performance_metrics.averageRetention, 0),
+      studyEfficiency: sanitizeValue(analyticsData.performance_metrics.studyEfficiency, 0),
+      weeklyGoal: sanitizeValue(analyticsData.performance_metrics.weeklyGoal, 7),
+      weeklyProgress: sanitizeValue(analyticsData.performance_metrics.weeklyProgress, 0)
+    } : {
+      // 폴백 로직 (백엔드 데이터가 없는 경우)
+      currentStreak: sanitizeValue(analyticsData?.achievement_stats?.current_streak, 0),
+      longestStreak: sanitizeValue(analyticsData?.achievement_stats?.max_streak, 0),
+      totalReviews: sanitizeValue(analyticsData?.learning_insights?.total_reviews, 0),
+      averageRetention: sanitizeValue(analyticsData?.learning_insights?.recent_success_rate, 0),
       studyEfficiency: (() => {
-        const successRate = sanitizeValue(safeLearningInsights.recent_success_rate, 0);
-        const currentStreak = sanitizeValue(safeAchievementStats.current_streak, 0);
-        const maxStreak = Math.max(1, sanitizeValue(safeAchievementStats.max_streak, 1));
+        const successRate = sanitizeValue(analyticsData?.learning_insights?.recent_success_rate, 0);
+        const currentStreak = sanitizeValue(analyticsData?.achievement_stats?.current_streak, 0);
+        const maxStreak = Math.max(1, sanitizeValue(analyticsData?.achievement_stats?.max_streak, 1));
         const efficiency = (successRate / 100) * (currentStreak / maxStreak) * 100;
         return sanitizeValue(efficiency, 0);
       })(),
-      weeklyGoal: Math.max(50, sanitizeValue(safeAchievementStats.monthly_target, 100) / 4),
-      weeklyProgress: sanitizeValue(safeLearningInsights.recent_7d_reviews, 0)
+      weeklyGoal: Math.max(7, sanitizeValue(analyticsData?.achievement_stats?.monthly_target, 28) / 4),
+      weeklyProgress: sanitizeValue(analyticsData?.learning_insights?.recent_7d_reviews, 0)
     };
 
     return {
@@ -419,7 +449,7 @@ const AdvancedDashboard: React.FC = () => {
               실시간 데이터
             </span>
           </div>
-          <ProgressVisualization data={progressData} />
+          <ProgressVisualization data={progressData} onGoalUpdate={handleGoalUpdate} />
         </div>
       )}
 

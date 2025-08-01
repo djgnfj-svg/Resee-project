@@ -58,7 +58,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'is_email_verified', 'created_at', 'updated_at')
+        fields = ('id', 'email', 'username', 'is_email_verified', 'weekly_goal', 'created_at', 'updated_at')
         read_only_fields = ('id', 'created_at', 'updated_at', 'is_email_verified')
 
 
@@ -67,7 +67,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('email', 'username', 'is_email_verified')
+        fields = ('email', 'username', 'is_email_verified', 'weekly_goal')
         read_only_fields = ('email', 'is_email_verified')
     
     def validate_username(self, value):
@@ -77,6 +77,15 @@ class ProfileSerializer(serializers.ModelSerializer):
             user = self.instance
             if User.objects.filter(username=value).exclude(id=user.id).exists():
                 raise serializers.ValidationError("이미 사용 중인 사용자명입니다.")
+        return value
+    
+    def validate_weekly_goal(self, value):
+        """Validate weekly goal"""
+        if value is not None:
+            if value < 1:
+                raise serializers.ValidationError("주간 목표는 최소 1회 이상이어야 합니다.")
+            if value > 1000:
+                raise serializers.ValidationError("주간 목표는 최대 1000회까지 설정 가능합니다.")
         return value
 
 

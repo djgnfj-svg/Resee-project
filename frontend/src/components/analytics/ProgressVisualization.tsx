@@ -25,6 +25,7 @@ import {
   // ClockIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
+import WeeklyGoalEditor from '../WeeklyGoalEditor';
 
 // NaN 값을 안전하게 처리하는 헬퍼 함수 (강화된 버전)
 const sanitizeNumber = (value: any, defaultValue: number = 0): number => {
@@ -94,6 +95,7 @@ interface ProgressVisualizationProps {
       weeklyProgress: number;
     };
   };
+  onGoalUpdate?: (newGoal: number) => Promise<void>;
 }
 
 const COLORS = {
@@ -107,7 +109,7 @@ const COLORS = {
   teal: '#14b8a6'
 };
 
-const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) => {
+const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data, onGoalUpdate }) => {
   // 모든 데이터를 안전하게 처리 (hooks는 항상 같은 순서로 호출되어야 함)
   const safeData = useMemo(() => {
     // 데이터 유효성 검증
@@ -122,7 +124,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
           totalReviews: 0,
           averageRetention: 0,
           studyEfficiency: 0,
-          weeklyGoal: 50,
+          weeklyGoal: 7,
           weeklyProgress: 0
         }
       };
@@ -142,7 +144,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         totalReviews: sanitizeNumber(data.performanceMetrics?.totalReviews, 0),
         averageRetention: sanitizeNumber(data.performanceMetrics?.averageRetention, 0),
         studyEfficiency: sanitizeNumber(data.performanceMetrics?.studyEfficiency, 0),
-        weeklyGoal: sanitizeNumber(data.performanceMetrics?.weeklyGoal, 50),
+        weeklyGoal: sanitizeNumber(data.performanceMetrics?.weeklyGoal, 7),
         weeklyProgress: sanitizeNumber(data.performanceMetrics?.weeklyProgress, 0)
       }
     };
@@ -275,9 +277,16 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">주간 목표</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {sanitizeNumber(weeklyProgressPercent).toFixed(0)}%
-              </p>
+              <div className="flex items-center space-x-2">
+                <WeeklyGoalEditor 
+                  currentGoal={sanitizeNumber(performanceMetrics.weeklyGoal, 7)}
+                  onGoalUpdate={onGoalUpdate || (async () => {})}
+                  disabled={!onGoalUpdate}
+                />
+                <span className="text-lg text-gray-500 dark:text-gray-400">
+                  ({sanitizeNumber(weeklyProgressPercent).toFixed(0)}%)
+                </span>
+              </div>
             </div>
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
               <ChartBarIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />

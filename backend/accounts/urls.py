@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     UserViewSet, ProfileView, PasswordChangeView, AccountDeleteView,
-    EmailVerificationView, ResendVerificationView, GoogleOAuthView
+    EmailVerificationView, ResendVerificationView, GoogleOAuthView,
+    WeeklyGoalUpdateView
 )
 from .subscription_views import (
     subscription_detail, subscription_tiers, subscription_upgrade
@@ -21,6 +22,7 @@ urlpatterns = [
     path('verify-email/', EmailVerificationView.as_view(), name='verify-email'),
     path('resend-verification/', ResendVerificationView.as_view(), name='resend-verification'),
     path('google-oauth/', GoogleOAuthView.as_view(), name='google-oauth'),
+    path('weekly-goal/', WeeklyGoalUpdateView.as_view(), name='weekly-goal-update'),
     # Subscription endpoints
     path('subscription/', subscription_detail, name='subscription-detail'),
     path('subscription/tiers/', subscription_tiers, name='subscription-tiers'),
