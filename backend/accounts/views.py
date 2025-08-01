@@ -618,3 +618,40 @@ class GoogleOAuthView(APIView):
             return Response(response_data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class WeeklyGoalUpdateView(APIView):
+    """주간 목표 설정 API"""
+    permission_classes = [IsAuthenticated]
+    
+    def patch(self, request):
+        """주간 목표 업데이트"""
+        user = request.user
+        weekly_goal = request.data.get('weekly_goal')
+        
+        if weekly_goal is None:
+            return Response(
+                {'error': '주간 목표를 입력해주세요.'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            weekly_goal = int(weekly_goal)
+            if weekly_goal < 1 or weekly_goal > 1000:
+                return Response(
+                    {'error': '주간 목표는 1회 이상 1000회 이하로 설정해주세요.'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except ValueError:
+            return Response(
+                {'error': '올바른 숫자를 입력해주세요.'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user.weekly_goal = weekly_goal
+        user.save()
+        
+        return Response({
+            'message': '주간 목표가 성공적으로 업데이트되었습니다.',
+            'weekly_goal': weekly_goal
+        }, status=status.HTTP_200_OK)

@@ -357,6 +357,7 @@ class AdvancedAnalyticsView(APIView):
             'category_performance': self._get_category_performance(user),
             'study_patterns': self._get_study_patterns(user),
             'achievement_stats': self._get_achievement_stats(user),
+            'performance_metrics': self._get_performance_metrics(user),
             'recommendations': self._get_recommendations(user),
         })
     
@@ -667,6 +668,53 @@ class AdvancedAnalyticsView(APIView):
             return 'beginner'
         else:
             return 'novice'
+    
+    def _get_performance_metrics(self, user):
+        """Performance metrics for dashboard"""
+        # Get current streak
+        current_streak = self._calculate_detailed_streak(user)
+        longest_streak = self._calculate_max_streak(user)
+        
+        # Get total reviews
+        total_reviews = ReviewHistory.objects.filter(user=user).count()
+        
+        # Calculate average retention (remembered / total)
+        total_remembered = ReviewHistory.objects.filter(
+            user=user, 
+            result='remembered'
+        ).count()
+        average_retention = (total_remembered / total_reviews * 100) if total_reviews > 0 else 0
+        
+        # Calculate study efficiency (success rate in recent 30 days)
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        recent_reviews = ReviewHistory.objects.filter(
+            user=user,
+            review_date__gte=thirty_days_ago
+        )
+        study_efficiency = (
+            recent_reviews.filter(result='remembered').count() / 
+            recent_reviews.count() * 100
+        ) if recent_reviews.count() > 0 else 0
+        
+        # Get weekly goal from user settings
+        weekly_goal = user.weekly_goal
+        
+        # Calculate current week progress
+        week_start = timezone.now().date() - timedelta(days=timezone.now().weekday())
+        week_reviews = ReviewHistory.objects.filter(
+            user=user,
+            review_date__gte=week_start
+        ).count()
+        
+        return {
+            'currentStreak': current_streak,
+            'longestStreak': longest_streak,
+            'totalReviews': total_reviews,
+            'averageRetention': round(average_retention, 1),
+            'studyEfficiency': round(study_efficiency, 1),
+            'weeklyGoal': weekly_goal,
+            'weeklyProgress': week_reviews,
+        }
 
 
 class LearningCalendarView(APIView):

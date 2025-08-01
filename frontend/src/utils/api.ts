@@ -298,4 +298,12 @@ export const subscriptionAPI = {
   },
 };
 
+// Weekly Goal API
+export const weeklyGoalAPI = {
+  updateWeeklyGoal: async (weeklyGoal: number): Promise<{ message: string; weekly_goal: number }> => {
+    const response = await api.patch('/accounts/weekly-goal/', { weekly_goal: weeklyGoal });
+    return response.data;
+  },
+};
+
 export default api;

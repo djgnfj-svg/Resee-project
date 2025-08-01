@@ -62,6 +62,12 @@ class User(AbstractUser):
         help_text='When the verification email was sent'
     )
     
+    # 학습 목표 설정
+    weekly_goal = models.IntegerField(
+        default=7,
+        help_text='주간 복습 목표 횟수'
+    )
+    
     # 생성일자, 업데이트일자
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
