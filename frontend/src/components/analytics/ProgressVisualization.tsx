@@ -15,8 +15,6 @@ import {
   BarChart,
   Bar,
   Legend,
-  RadialBarChart,
-  RadialBar
 } from 'recharts';
 import { 
   ArrowTrendingUpIcon, 
@@ -253,11 +251,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
       {/* 핵심 성과 지표 카드들 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 현재 스트릭 */}
-        <div className="card card-raised card-body">
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-lg transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">연속 학습</p>
-              <p className="heading-4">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {sanitizeNumber(performanceMetrics.currentStreak)}일
               </p>
             </div>
@@ -273,11 +271,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         </div>
 
         {/* 주간 진행률 */}
-        <div className="card card-raised card-body">
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-lg transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">주간 목표</p>
-              <p className="heading-4">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {sanitizeNumber(weeklyProgressPercent).toFixed(0)}%
               </p>
             </div>
@@ -299,11 +297,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         </div>
 
         {/* 성공률 트렌드 */}
-        <div className="card card-raised card-body">
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-lg transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">평균 정답률</p>
-              <p className="heading-4">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {sanitizeNumber(performanceInsights.recentSuccess).toFixed(1)}%
               </p>
             </div>
@@ -343,11 +341,11 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         </div>
 
         {/* 총 복습 횟수 */}
-        <div className="card card-raised card-body">
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-lg transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">총 복습</p>
-              <p className="heading-4">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {sanitizeNumber(performanceMetrics.totalReviews).toLocaleString()}
               </p>
             </div>
@@ -364,8 +362,8 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
       </div>
 
       {/* 주간 학습 진도 차트 */}
-      <div className="card card-raised card-body">
-        <h3 className="heading-5">
+      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 dark:border-gray-700/50 p-6 hover:shadow-lg transition-all duration-200">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
           📈 주간 학습 진도
         </h3>
         <div className="h-80">
@@ -400,16 +398,18 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
                   <stop offset="95%" stopColor={COLORS.success} stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="opacity-50 dark:opacity-30" />
               <XAxis 
                 dataKey="date" 
                 tick={{ fontSize: 12 }}
                 stroke="#9ca3af"
+                className="dark:!stroke-gray-400"
               />
               <YAxis 
                 yAxisId="left"
                 tick={{ fontSize: 12 }}
                 stroke="#9ca3af"
+                className="dark:!stroke-gray-400"
                 domain={[0, (dataMax: number) => {
                   const safeMax = sanitizeNumber(dataMax, 10);
                   return Math.max(10, safeMax + 10);
@@ -423,6 +423,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
                 orientation="right"
                 tick={{ fontSize: 12 }}
                 stroke="#9ca3af"
+                className="dark:!stroke-gray-400"
                 domain={[0, 100]}
                 allowDataOverflow={false}
                 allowDecimals={false}
@@ -431,10 +432,13 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
               <Tooltip 
                 formatter={formatTooltipValue}
                 contentStyle={{
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px'
+                  backgroundColor: 'rgb(255 255 255 / 0.95)',
+                  backdropFilter: 'blur(8px)',
+                  border: '1px solid rgb(229 231 235 / 0.8)',
+                  borderRadius: '8px',
+                  color: '#374151'
                 }}
+                wrapperClassName="dark:!bg-gray-800/95 dark:!border-gray-600/80 dark:!text-gray-100"
               />
               <Legend />
               <Area
@@ -466,8 +470,8 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 월간 학습 패턴 */}
-        <div className="card card-raised card-body">
-          <h3 className="heading-5">
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-lg transition-all duration-200">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             📊 월간 학습 패턴
           </h3>
           <div className="h-64">
@@ -492,15 +496,17 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
                   timeSpent: Math.max(0, sanitizeNumber(item?.timeSpent, 10))
                 }));
               })()}>              
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="opacity-50 dark:opacity-30" />
                 <XAxis 
                   dataKey="month" 
                   tick={{ fontSize: 12 }}
                   stroke="#9ca3af"
+                className="dark:!stroke-gray-400"
                 />
                 <YAxis 
                   tick={{ fontSize: 12 }}
                   stroke="#9ca3af"
+                className="dark:!stroke-gray-400"
                   domain={[0, (dataMax: number) => {
                     const safeMax = sanitizeNumber(dataMax, 5);
                     return Math.max(5, safeMax + 5);
@@ -534,8 +540,8 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         </div>
 
         {/* 카테고리별 분포 */}
-        <div className="card card-raised card-body">
-          <h3 className="heading-5">
+        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-lg transition-all duration-200">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             🎯 카테고리별 학습 분포
           </h3>
           <div className="h-64">
@@ -590,80 +596,6 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data }) =
         </div>
       </div>
 
-      {/* 학습 효율성 레이더 차트 */}
-      <div className="card card-raised card-body">
-        <h3 className="heading-5">
-          ⚡ 학습 효율성 분석
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* 원형 진행률 표시기들 */}
-          <div className="text-center">
-            <div className="relative w-24 h-24 mx-auto mb-3">
-              <div className="w-24 h-24">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart data={[{ 
-                    name: 'Retention', 
-                    value: Math.max(0, Math.min(100, sanitizeNumber(performanceMetrics.averageRetention, 0))), 
-                    fill: COLORS.success 
-                  }]}>
-                    <RadialBar dataKey="value" cornerRadius={10} fill={COLORS.success} />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {sanitizeNumber(performanceMetrics.averageRetention)}%
-                </span>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">평균 기억 유지율</p>
-          </div>
-
-          <div className="text-center">
-            <div className="relative w-24 h-24 mx-auto mb-3">
-              <div className="w-24 h-24">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart data={[{ 
-                    name: 'Efficiency', 
-                    value: Math.max(0, Math.min(100, sanitizeNumber(performanceMetrics.studyEfficiency, 0))), 
-                    fill: COLORS.purple 
-                  }]}>
-                    <RadialBar dataKey="value" cornerRadius={10} fill={COLORS.purple} />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {sanitizeNumber(performanceMetrics.studyEfficiency)}%
-                </span>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">학습 효율성</p>
-          </div>
-
-          <div className="text-center">
-            <div className="relative w-24 h-24 mx-auto mb-3">
-              <div className="w-24 h-24">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadialBarChart data={[{ 
-                    name: 'Goal', 
-                    value: Math.max(0, Math.min(100, sanitizeNumber(weeklyProgressPercent, 0))), 
-                    fill: COLORS.indigo 
-                  }]}>
-                    <RadialBar dataKey="value" cornerRadius={10} fill={COLORS.indigo} />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {sanitizeNumber(weeklyProgressPercent).toFixed(0)}%
-                </span>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">목표 달성률</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

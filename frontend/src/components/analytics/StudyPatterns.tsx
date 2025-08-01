@@ -20,6 +20,27 @@ const StudyPatterns: React.FC<StudyPatternsProps> = ({ patterns }) => {
     return `${hour - 12}PM`;
   };
 
+  // 요일 한글 변환
+  const getDayLabel = (day: string) => {
+    const dayMap: { [key: string]: string } = {
+      'Mon': '월',
+      'Tue': '화', 
+      'Wed': '수',
+      'Thu': '목',
+      'Fri': '금',
+      'Sat': '토',
+      'Sun': '일',
+      'Monday': '월',
+      'Tuesday': '화',
+      'Wednesday': '수', 
+      'Thursday': '목',
+      'Friday': '금',
+      'Saturday': '토',
+      'Sunday': '일'
+    };
+    return dayMap[day] || day;
+  };
+
   // 시간대별 데이터 정리
   const hourlyData = patterns.hourly_pattern.map(item => ({
     hour: getHourLabel(item.hour),
@@ -61,12 +82,13 @@ const StudyPatterns: React.FC<StudyPatternsProps> = ({ patterns }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-xl shadow-xl border border-gray-200/60 dark:border-gray-700/60 p-8 hover:shadow-2xl transition-all duration-300">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+          <span className="text-3xl mr-3">⏰</span>
           학습 패턴 분석
         </h2>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-base text-gray-600 dark:text-gray-300 font-medium">
           최근 30일 기준
         </div>
       </div>
@@ -98,7 +120,7 @@ const StudyPatterns: React.FC<StudyPatternsProps> = ({ patterns }) => {
                 최적 학습 요일
               </div>
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {patterns.recommended_day}
+                {getDayLabel(patterns.recommended_day)}요일
               </div>
               <div className="text-xs text-green-600 dark:text-green-400 mt-1">
                 {peakDay.count}회 학습
@@ -197,7 +219,7 @@ const StudyPatterns: React.FC<StudyPatternsProps> = ({ patterns }) => {
                 • {patterns.recommended_hour < 12 ? '오전' : '오후'} {getHourLabel(patterns.recommended_hour)}에 가장 활발하게 학습하고 있어요
               </div>
               <div>
-                • {patterns.recommended_day}요일이 주요 학습일이에요
+                • {getDayLabel(patterns.recommended_day)}요일이 주요 학습일이에요
               </div>
               <div>
                 • {patterns.total_study_sessions > 50 ? '매우 규칙적인' : 
