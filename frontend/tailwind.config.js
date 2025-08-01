@@ -80,5 +80,88 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Typography 플러그인 대신 커스텀 prose 스타일
+    function({ addUtilities }) {
+      const newUtilities = {
+        '.prose': {
+          color: '#374151',
+          maxWidth: '65ch',
+          '& p': {
+            marginTop: '1.25em',
+            marginBottom: '1.25em',
+          },
+          '& h1': {
+            color: '#111827',
+            fontWeight: '800',
+            fontSize: '2.25em',
+            marginTop: '0',
+            marginBottom: '0.8888889em',
+            lineHeight: '1.1111111',
+          },
+          '& h2': {
+            color: '#111827',
+            fontWeight: '700',
+            fontSize: '1.5em',
+            marginTop: '2em',
+            marginBottom: '1em',
+            lineHeight: '1.3333333',
+          },
+          '& h3': {
+            color: '#111827',
+            fontWeight: '600',
+            fontSize: '1.25em',
+            marginTop: '1.6em',
+            marginBottom: '0.6em',
+            lineHeight: '1.6',
+          },
+          '& strong': {
+            color: '#111827',
+            fontWeight: '600',
+          },
+          '& code': {
+            color: '#111827',
+            fontWeight: '600',
+            fontSize: '0.875em',
+          },
+          '& ul': {
+            marginTop: '1.25em',
+            marginBottom: '1.25em',
+            paddingLeft: '1.625em',
+          },
+          '& ol': {
+            marginTop: '1.25em',
+            marginBottom: '1.25em',
+            paddingLeft: '1.625em',
+          },
+          '& li': {
+            marginTop: '0.5em',
+            marginBottom: '0.5em',
+          },
+        },
+        '.dark .prose-invert': {
+          color: '#d1d5db',
+          '& p': {
+            color: '#d1d5db',
+          },
+          '& h1': {
+            color: '#f9fafb',
+          },
+          '& h2': {
+            color: '#f9fafb',
+          },
+          '& h3': {
+            color: '#f9fafb',
+          },
+          '& strong': {
+            color: '#f9fafb',
+          },
+          '& code': {
+            color: '#f9fafb',
+          },
+        }
+      }
+      addUtilities(newUtilities)
+    }
+  ],
 }

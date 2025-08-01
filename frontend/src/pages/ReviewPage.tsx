@@ -32,20 +32,29 @@ const ReviewPage: React.FC = () => {
   // Complete review mutation
   const completeReviewMutation = useMutation({
     mutationFn: reviewAPI.completeReview,
-    onSuccess: () => {
+    onSuccess: async () => {
+      setReviewsCompleted(prev => prev + 1);
+      setShowContent(false);
+      setIsFlipped(false);
+      
+      // Invalidate cache and refetch to get updated review list
       queryClient.invalidateQueries({ queryKey: ['todayReviews'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       
-      // Move to next review
-      if (currentReviewIndex < reviews.length - 1) {
-        setCurrentReviewIndex(prev => prev + 1);
-        setShowContent(false);
+      // Wait for data to be refreshed
+      const { data: updatedReviews } = await refetch();
+      
+      // Update state based on new review list
+      if (updatedReviews && updatedReviews.length > 0) {
+        // If there are still reviews left, stay at current index or adjust
+        const newIndex = Math.min(currentReviewIndex, updatedReviews.length - 1);
+        setCurrentReviewIndex(newIndex);
       } else {
-        // All reviews completed
+        // No more reviews, reset to 0
         setCurrentReviewIndex(0);
-        setShowContent(false);
-        refetch();
       }
+      
+      setStartTime(Date.now());
     },
   });
 
@@ -53,11 +62,6 @@ const ReviewPage: React.FC = () => {
     const currentReview = reviews[currentReviewIndex];
     if (currentReview) {
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-      completeReviewMutation.mutate({
-        content_id: currentReview.content.id,
-        result: result,
-        time_spent: timeSpent,
-      });
       
       // Show appropriate toast message
       const messages = {
@@ -67,8 +71,11 @@ const ReviewPage: React.FC = () => {
       };
       alert('Success: ' + messages[result]);
       
-      setReviewsCompleted(prev => prev + 1);
-      setStartTime(Date.now());
+      completeReviewMutation.mutate({
+        content_id: currentReview.content.id,
+        result: result,
+        time_spent: timeSpent,
+      });
     }
   }, [reviews, currentReviewIndex, startTime, completeReviewMutation]);
 
@@ -181,6 +188,8 @@ const ReviewPage: React.FC = () => {
               setSelectedCategory(e.target.value);
               setCurrentReviewIndex(0);
               setShowContent(false);
+              setIsFlipped(false);
+              setReviewsCompleted(0);
             }}
             className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:focus:border-primary-400 dark:focus:ring-primary-400"
           >
