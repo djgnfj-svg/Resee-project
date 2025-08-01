@@ -18,6 +18,7 @@ const ContentPage: React.FC = () => {
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('-created_at');
   const [aiReviewContent, setAIReviewContent] = useState<Content | null>(null);
+  const [expandedContents, setExpandedContents] = useState<Set<number>>(new Set());
 
   // Check if user can access AI features
   const canUseAI = user?.subscription?.is_active && user?.is_email_verified;
@@ -114,6 +115,30 @@ const ContentPage: React.FC = () => {
 
   const handleAIReviewComplete = () => {
     setAIReviewContent(null);
+  };
+
+  const toggleContentExpansion = (contentId: number) => {
+    const newExpanded = new Set(expandedContents);
+    if (newExpanded.has(contentId)) {
+      newExpanded.delete(contentId);
+    } else {
+      newExpanded.add(contentId);
+    }
+    setExpandedContents(newExpanded);
+  };
+
+  const getFirstLinePreview = (content: string, maxLength: number = 30): string => {
+    if (!content) return '';
+    
+    // 첫 번째 줄 가져오기
+    const firstLine = content.split('\n')[0];
+    
+    // 30글자로 자르기
+    if (firstLine.length <= maxLength) {
+      return firstLine;
+    }
+    
+    return firstLine.substring(0, maxLength) + '...';
   };
 
   const getPriorityColor = (priority: string) => {
@@ -365,13 +390,38 @@ const ContentPage: React.FC = () => {
               </div>
               
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                >
-                  {content.content.length > 200 
-                    ? content.content.substring(0, 200) + '...' 
-                    : content.content}
-                </ReactMarkdown>
+                <div className={`transition-all duration-300 ${expandedContents.has(content.id) ? '' : 'max-h-32 overflow-hidden'}`}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                  >
+                    {expandedContents.has(content.id) 
+                      ? content.content 
+                      : getFirstLinePreview(content.content)}
+                  </ReactMarkdown>
+                </div>
+                
+                {content.content.length > 30 && (
+                  <button
+                    onClick={() => toggleContentExpansion(content.id)}
+                    className="mt-3 inline-flex items-center text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 transition-colors"
+                  >
+                    {expandedContents.has(content.id) ? (
+                      <>
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                        접기
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                        더 보기
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
             </div>
