@@ -34,12 +34,12 @@ const LearningCalendar: React.FC<LearningCalendarProps> = ({ calendarData }) => 
   const [selectedDay, setSelectedDay] = useState<any>(null);
   const [hoveredDay, setHoveredDay] = useState<any>(null);
 
-  // 현재 연도의 모든 날짜 생성
-  const currentYear = new Date().getFullYear();
-  const yearStart = startOfYear(new Date(currentYear, 0, 1));
-  const yearEnd = endOfYear(new Date(currentYear, 11, 31));
+  // API 데이터의 실제 날짜 범위 사용 (365일)
+  const apiDates = calendarData.calendar_data.map(item => new Date(item.date)).sort((a, b) => a.getTime() - b.getTime());
+  const dateRangeStart = apiDates[0];
+  const dateRangeEnd = apiDates[apiDates.length - 1];
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const allDays = eachDayOfInterval({ start: yearStart, end: yearEnd });
+  const allDays = eachDayOfInterval({ start: dateRangeStart, end: dateRangeEnd });
 
   // 날짜별 데이터 맵 생성
   const dataMap = new Map(
@@ -58,23 +58,38 @@ const LearningCalendar: React.FC<LearningCalendarProps> = ({ calendarData }) => 
     }
   };
 
-  // 월별 그리드 생성
+  // API 데이터 범위에 맞는 월별 그리드 생성
   const generateCalendarGrid = () => {
     const months = [];
+    const startYear = dateRangeStart.getFullYear();
+    const endYear = dateRangeEnd.getFullYear();
     
-    for (let month = 0; month < 12; month++) {
-      const monthStart = new Date(currentYear, month, 1);
-      const monthEnd = new Date(currentYear, month + 1, 0);
-      const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    // 시작 년도부터 끝 년도까지의 모든 월 처리
+    for (let year = startYear; year <= endYear; year++) {
+      const startMonth = year === startYear ? dateRangeStart.getMonth() : 0;
+      const endMonth = year === endYear ? dateRangeEnd.getMonth() : 11;
       
-      // 첫 주의 빈 칸 계산
-      const firstDayOfWeek = getDay(monthStart);
-      const emptyDays = Array(firstDayOfWeek).fill(null);
-      
-      months.push({
-        name: format(monthStart, 'MMM', { locale: ko }),
-        days: [...emptyDays, ...monthDays],
-      });
+      for (let month = startMonth; month <= endMonth; month++) {
+        const monthStart = new Date(year, month, 1);
+        const monthEnd = new Date(year, month + 1, 0);
+        
+        // 실제 데이터 범위와 교집합 계산
+        const actualStart = monthStart < dateRangeStart ? dateRangeStart : monthStart;
+        const actualEnd = monthEnd > dateRangeEnd ? dateRangeEnd : monthEnd;
+        
+        if (actualStart <= actualEnd) {
+          const monthDays = eachDayOfInterval({ start: actualStart, end: actualEnd });
+          
+          // 첫 주의 빈 칸 계산 (월의 첫날 기준)
+          const firstDayOfWeek = getDay(monthStart);
+          const emptyDays = actualStart.getDate() === 1 ? Array(firstDayOfWeek).fill(null) : [];
+          
+          months.push({
+            name: format(monthStart, 'yyyy년 MMM', { locale: ko }),
+            days: [...emptyDays, ...monthDays],
+          });
+        }
+      }
     }
     
     return months;
@@ -82,13 +97,15 @@ const LearningCalendar: React.FC<LearningCalendarProps> = ({ calendarData }) => 
 
   const months = generateCalendarGrid();
 
-  // 통계 계산
-  const totalReviews = calendarData.calendar_data.reduce((sum, day) => sum + day.count, 0);
+  // 통계 계산 - 안전성 검사 추가
+  const totalReviews = calendarData.calendar_data?.reduce((sum, day) => sum + (day.count || 0), 0) || 0;
   const averageDaily = totalReviews / 365;
-  const bestMonth = calendarData.monthly_summary.reduce((best, month) => 
-    month.total_reviews > (best?.total_reviews || 0) ? month : best, 
-    calendarData.monthly_summary[0]
-  );
+  const bestMonth = calendarData.monthly_summary?.length > 0 
+    ? calendarData.monthly_summary.reduce((best, month) => 
+        (month.total_reviews || 0) > (best?.total_reviews || 0) ? month : best, 
+        calendarData.monthly_summary[0]
+      )
+    : null;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -97,7 +114,7 @@ const LearningCalendar: React.FC<LearningCalendarProps> = ({ calendarData }) => 
           학습 캘린더 히트맵
         </h2>
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          {currentYear}년
+          {format(dateRangeStart, 'yyyy.MM.dd')} - {format(dateRangeEnd, 'yyyy.MM.dd')}
         </div>
       </div>
 
@@ -240,20 +257,26 @@ const LearningCalendar: React.FC<LearningCalendarProps> = ({ calendarData }) => 
         <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">
           월별 학습 통계
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {calendarData.monthly_summary.slice(-12).map((month, index) => (
+        {(!calendarData.monthly_summary || calendarData.monthly_summary.length === 0) ? (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div className="text-2xl mb-2">📊</div>
+            <div className="text-sm">월별 데이터가 없습니다.</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {calendarData.monthly_summary.slice(-12).map((month, index) => (
             <div
               key={month.month}
               className={`
                 p-3 rounded-lg border transition-all duration-200 hover:shadow-md
-                ${month === bestMonth 
+                ${bestMonth && month.month === bestMonth.month
                   ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' 
                   : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
                 }
               `}
             >
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                {month.month}
+                {format(new Date(month.month + '-01'), 'yyyy년 MM월', { locale: ko })}
               </div>
               <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
                 {month.total_reviews}회
@@ -264,14 +287,15 @@ const LearningCalendar: React.FC<LearningCalendarProps> = ({ calendarData }) => 
               <div className="text-xs text-gray-500 dark:text-gray-400">
                 성공률 {month.success_rate}%
               </div>
-              {month === bestMonth && (
+              {bestMonth && month.month === bestMonth.month && (
                 <div className="text-xs text-green-600 dark:text-green-400 font-medium mt-1">
                   🏆 최고
                 </div>
               )}
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

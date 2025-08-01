@@ -774,8 +774,9 @@ class LearningCalendarView(APIView):
         """Return calendar heatmap data"""
         user = request.user
         
-        # Past 365 days data
-        one_year_ago = timezone.now().date() - timedelta(days=365)
+        # Past 365 days data (including today)
+        today = timezone.now().date()
+        one_year_ago = today - timedelta(days=364)  # 364 days ago + today = 365 days
         calendar_data = []
         
         for i in range(365):
