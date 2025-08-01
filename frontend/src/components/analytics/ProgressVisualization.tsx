@@ -150,35 +150,33 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data, onG
     };
   }, [data]);
 
-  // 성과 지표 계산 (hooks는 항상 같은 순서로 호출되어야 함)
+  // 성과 지표 계산 - 백엔드 데이터 우선 사용
   const performanceInsights = useMemo(() => {
+    // 백엔드에서 제공하는 실제 성공률 데이터 사용
+    const currentSuccess = sanitizeNumber(performanceMetrics.studyEfficiency, 0);
+    const averageRetention = sanitizeNumber(performanceMetrics.averageRetention, 0);
+    
+    // 실제 정답률은 averageRetention 사용 (전체 기간 평균)
+    const recentAvgSuccess = averageRetention;
+    
+    // 주간 복습 수 계산
     const safeWeeklyProgress = Array.isArray(safeData.weeklyProgress) ? safeData.weeklyProgress : [];
     const recent = safeWeeklyProgress.slice(-7);
-    const previousWeek = safeWeeklyProgress.slice(-14, -7);
+    const totalReviewsThisWeek = recent.reduce((sum, day) => sum + sanitizeNumber(day.reviews, 0), 0);
     
-    // 빈 배열 처리
-    const recentAvgSuccess = recent.length > 0 
-      ? sanitizeNumber(recent.reduce((sum, day) => sum + sanitizeNumber(day.successRate, 0), 0) / recent.length)
-      : 0;
-    
-    const prevAvgSuccess = previousWeek.length > 0 
-      ? sanitizeNumber(previousWeek.reduce((sum, day) => sum + sanitizeNumber(day.successRate, 0), 0) / previousWeek.length)
-      : recentAvgSuccess;
-    
-    const trend = sanitizeNumber(recentAvgSuccess - prevAvgSuccess);
-    // 안전한 백분율 계산 - 모든 경우에 대해 NaN 방지
-    let trendPercent = 0;
-    if (prevAvgSuccess !== 0 && !isNaN(prevAvgSuccess) && !isNaN(recentAvgSuccess)) {
-      trendPercent = sanitizeNumber((recentAvgSuccess - prevAvgSuccess) / prevAvgSuccess * 100);
-    }
+    // 트렌드 계산 (현재 효율성과 평균 유지율 비교)
+    const trend = currentSuccess > averageRetention ? 'up' : 
+                  currentSuccess < averageRetention ? 'down' : 'stable';
+    const trendPercent = averageRetention > 0 ? 
+      sanitizeNumber(Math.abs(currentSuccess - averageRetention) / averageRetention * 100) : 0;
 
     return {
-      trend: trend > 1 ? 'up' : trend < -1 ? 'down' : 'stable',
-      trendPercent: sanitizeNumber(Math.abs(trendPercent)),
-      recentSuccess: sanitizeNumber(recentAvgSuccess),
-      totalReviewsThisWeek: recent.reduce((sum, day) => sum + sanitizeNumber(day.reviews, 0), 0)
+      trend,
+      trendPercent: sanitizeNumber(trendPercent),
+      recentSuccess: sanitizeNumber(recentAvgSuccess), // 실제 전체 평균 정답률
+      totalReviewsThisWeek
     };
-  }, [safeData.weeklyProgress]);
+  }, [safeData.weeklyProgress, performanceMetrics]);
 
   const { weeklyProgress, monthlyTrends, categoryDistribution, performanceMetrics } = safeData;
 
