@@ -129,11 +129,11 @@ const AdvancedDashboard: React.FC = () => {
 
   // ProgressVisualization을 위한 데이터 변환
   const progressData = useMemo(() => {
-    if (!analyticsData || !calendarData) return null;
+    if (!analyticsData) return null;
 
-    // 안전한 배열 접근
-    const safeCalendarData = Array.isArray(calendarData.calendar_data) ? calendarData.calendar_data : [];
-    const safeMonthlyData = Array.isArray(calendarData.monthly_summary) ? calendarData.monthly_summary : [];
+    // 안전한 배열 접근 - calendarData가 없어도 동작하도록
+    const safeCalendarData = (calendarData && Array.isArray(calendarData.calendar_data)) ? calendarData.calendar_data : [];
+    const safeMonthlyData = (calendarData && Array.isArray(calendarData.monthly_summary)) ? calendarData.monthly_summary : [];
     const safeCategoryData = Array.isArray(analyticsData.category_performance) ? analyticsData.category_performance : [];
 
     // 주간 진도 데이터 (최근 30일) - NaN 방지 강화
@@ -202,27 +202,41 @@ const AdvancedDashboard: React.FC = () => {
 
   // 학습 패턴 데이터
   const learningPatternsData = useMemo(() => {
-    if (!analyticsData || !calendarData || 
+    if (!analyticsData || 
         !analyticsData.category_performance || analyticsData.category_performance.length === 0) {
       return null; // 빈 데이터일 때는 null 반환
     }
 
-    const hourlyPattern = Array.from({ length: 24 }, (_, hour) => ({
-      hour,
-      studySessions: sanitizeValue(Math.floor(Math.random() * 10) + 1, 1),
-      averagePerformance: sanitizeValue(60 + Math.random() * 30, 60),
-      totalTimeSpent: sanitizeValue(Math.floor(Math.random() * 120) + 30, 30),
-      efficiency: sanitizeValue(50 + Math.random() * 40, 50)
-    }));
+    // 안전한 배열 접근 - learningPatternsData 내부에서도 동일하게
+    const safeCalendarData = (calendarData && Array.isArray(calendarData.calendar_data)) ? calendarData.calendar_data : [];
+    const safeMonthlyData = (calendarData && Array.isArray(calendarData.monthly_summary)) ? calendarData.monthly_summary : [];
 
-    const weeklyPattern = ['월', '화', '수', '목', '금', '토', '일'].map((day, index) => ({
-      day,
-      dayOfWeek: index + 1,
-      studySessions: sanitizeValue(Math.floor(Math.random() * 15) + 5, 5),
-      averagePerformance: sanitizeValue(65 + Math.random() * 25, 65),
-      totalReviews: sanitizeValue(Math.floor(Math.random() * 50) + 20, 20),
-      timeSpent: sanitizeValue(Math.floor(Math.random() * 180) + 60, 60)
-    }));
+    // 백엔드 데이터 사용 - 랜덤 데이터 제거
+    const backendHourlyPattern = analyticsData.study_patterns?.hourly_pattern || [];
+    const hourlyPattern = Array.from({ length: 24 }, (_, hour) => {
+      const backendData = backendHourlyPattern.find(item => item.hour === hour) || { count: 0 };
+      return {
+        hour,
+        studySessions: sanitizeValue(backendData.count, 0),
+        averagePerformance: sanitizeValue(backendData.count > 0 ? 70 + (backendData.count * 2) : 0, 0),
+        totalTimeSpent: sanitizeValue(backendData.count * 3, 0), // 복습당 약 3분 추정
+        efficiency: sanitizeValue(backendData.count > 0 ? Math.min(90, 50 + (backendData.count * 5)) : 0, 0)
+      };
+    });
+
+    // 백엔드 데이터 사용 - 요일별 패턴
+    const backendDailyPattern = analyticsData.study_patterns?.daily_pattern || [];
+    const weeklyPattern = ['월', '화', '수', '목', '금', '토', '일'].map((day, index) => {
+      const backendData = backendDailyPattern.find(item => item.day === ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]) || { count: 0 };
+      return {
+        day,
+        dayOfWeek: index + 1,
+        studySessions: sanitizeValue(backendData.count, 0),
+        averagePerformance: sanitizeValue(backendData.count > 0 ? 65 + (backendData.count * 1.5) : 0, 0),
+        totalReviews: sanitizeValue(backendData.count, 0),
+        timeSpent: sanitizeValue(backendData.count * 4, 0) // 복습당 약 4분 추정
+      };
+    });
 
     return {
       hourlyPattern,
@@ -230,27 +244,42 @@ const AdvancedDashboard: React.FC = () => {
       streakAnalysis: {
         currentStreak: sanitizeValue(analyticsData.achievement_stats.current_streak, 0),
         longestStreak: sanitizeValue(analyticsData.achievement_stats.max_streak, 0),
-        streakHistory: calendarData.calendar_data.slice(-30).map(day => ({
+        streakHistory: safeCalendarData.slice(-30).map((day: any, index: number) => ({
           date: day.date,
-          streakLength: Math.floor(Math.random() * 20) + 1,
+          streakLength: day.count > 0 ? Math.min(index + 1, sanitizeValue(analyticsData.achievement_stats.current_streak, 0)) : 0,
           performance: sanitizeValue(day.success_rate, 0)
         }))
       },
-      difficultyProgression: calendarData.monthly_summary.map(month => ({
-        week: month.month,
-        easy: Math.floor(Math.random() * 15) + 5,
-        medium: Math.floor(Math.random() * 20) + 10,
-        hard: Math.floor(Math.random() * 10) + 3,
-        averageScore: sanitizeValue(month.success_rate, 0)
-      })),
+      difficultyProgression: safeMonthlyData.map((month: any) => {
+        const totalReviews = sanitizeValue(month.total_reviews, 0);
+        const successRate = sanitizeValue(month.success_rate, 0);
+        // 성공률을 기반으로 난이도 분포 추정
+        const easyRatio = successRate > 80 ? 0.6 : successRate > 60 ? 0.4 : 0.2;
+        const hardRatio = successRate < 40 ? 0.5 : successRate < 70 ? 0.3 : 0.1;
+        const mediumRatio = 1 - easyRatio - hardRatio;
+        
+        return {
+          week: month.month,
+          easy: Math.round(totalReviews * easyRatio),
+          medium: Math.round(totalReviews * mediumRatio),
+          hard: Math.round(totalReviews * hardRatio),
+          averageScore: successRate
+        };
+      }),
       learningVelocity: analyticsData.category_performance.length > 0 ? 
-        analyticsData.category_performance.map(cat => ({
-          category: cat.name,
-          masterySpeed: Math.floor(Math.random() * 15) + 5,
-          retentionRate: sanitizeValue(cat.success_rate, 0),
-          difficultyLevel: Math.floor(Math.random() * 5) + 1,
-          totalContent: sanitizeValue(cat.content_count, 0)
-        })) : [
+        analyticsData.category_performance.map(cat => {
+          const successRate = sanitizeValue(cat.success_rate, 0);
+          const totalReviews = sanitizeValue(cat.total_reviews, 0);
+          const contentCount = sanitizeValue(cat.content_count, 0);
+          
+          return {
+            category: cat.name,
+            masterySpeed: contentCount > 0 ? Math.max(1, Math.round(totalReviews / contentCount)) : 1,
+            retentionRate: successRate,
+            difficultyLevel: Math.max(1, Math.min(5, Math.round((100 - successRate) / 20) + 1)),
+            totalContent: contentCount
+          };
+        }) : [
           {
             category: '프로그래밍',
             masterySpeed: 10,
@@ -278,19 +307,19 @@ const AdvancedDashboard: React.FC = () => {
         averageSuccessRate: sanitizeValue(cat.success_rate, 0),
         averageDifficulty: Math.max(1, Math.min(5, sanitizeValue(cat.difficulty_level, 1))),
         totalReviews: sanitizeValue(cat.total_reviews, 0),
-        averageReviewTime: Math.floor(Math.random() * 30) + 15,
-        masteryProgress: Math.floor(Math.random() * 40) + 50,
+        averageReviewTime: Math.max(1, Math.round(sanitizeValue(cat.total_reviews, 0) * 2.5)), // 복습당 평균 2.5분 추정
+        masteryProgress: Math.min(100, Math.max(0, sanitizeValue(cat.success_rate, 0))),
         retentionRate: sanitizeValue(cat.recent_success_rate, 0),
         lastActivity: new Date().toISOString(),
-        learningVelocity: Math.random() * 5 + 1,
+        learningVelocity: Math.max(0.1, sanitizeValue(cat.total_reviews, 0) / Math.max(1, sanitizeValue(cat.content_count, 0))),
         categoryRank: index + 1
       })),
       performanceMatrix: analyticsData.category_performance.map(cat => ({
         category: cat.name || 'Unknown Category',
         difficulty: Math.max(1, Math.min(5, sanitizeValue(cat.difficulty_level, 1))),
         performance: sanitizeValue(cat.success_rate, 0),
-        reviewFrequency: Math.floor(Math.random() * 10) + 5,
-        timeInvestment: Math.max(1, Math.floor(Math.random() * 200) + 100),
+        reviewFrequency: Math.max(1, Math.round(sanitizeValue(cat.total_reviews, 0) / 7)), // 주당 평균 복습 빈도
+        timeInvestment: Math.max(1, Math.round(sanitizeValue(cat.total_reviews, 0) * 3)), // 총 투자 시간 (분)
         masteryLevel: ((rate: number) => {
           const safeRate = sanitizeValue(rate, 0);
           return safeRate >= 80 ? 'expert' : 
@@ -330,10 +359,9 @@ const AdvancedDashboard: React.FC = () => {
   }
 
   // 데이터가 없는 경우 처리
-  const hasNoData = !analyticsData || !calendarData ||
+  const hasNoData = !analyticsData ||
     (analyticsData.learning_insights.total_reviews === 0 && 
-     analyticsData.category_performance.length === 0 &&
-     (!calendarData.calendar_data || calendarData.calendar_data.length === 0));
+     analyticsData.category_performance.length === 0);
 
   if (hasNoData) {
     return (
@@ -392,7 +420,7 @@ const AdvancedDashboard: React.FC = () => {
     );
   }
 
-  if (!analyticsData || !calendarData) {
+  if (!analyticsData) {
     return (
       <div className="text-center py-16">
         <div className="mx-auto w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
@@ -502,7 +530,76 @@ const AdvancedDashboard: React.FC = () => {
       )}
 
       {/* 학습 캘린더 히트맵 */}
-      <LearningCalendar calendarData={calendarData} />
+      {calendarData && calendarData.calendar_data ? (
+        <LearningCalendar calendarData={calendarData} />
+      ) : calendarLoading ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 dark:border-primary-400"></div>
+          </div>
+        </div>
+      ) : calendarError ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-red-200 dark:border-red-700 p-6">
+          <div className="text-center py-8">
+            <div className="text-red-600 dark:text-red-400 mb-4">
+              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              캘린더 로딩 실패
+            </h3>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              캘린더 데이터를 불러오는 중 오류가 발생했습니다.
+            </div>
+            <button 
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['learning-calendar'] })}
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              다시 시도
+            </button>
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-left">
+                <div className="text-xs text-red-800 dark:text-red-200 font-mono">
+                  Error: {calendarError?.message || 'Unknown error'}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="text-center py-12">
+            <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              캘린더가 비어있습니다
+            </h3>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+              복습을 시작하면 캘린더에 학습 기록이 표시됩니다!
+            </div>
+            <div className="space-x-3">
+              <a 
+                href="/content" 
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                콘텐츠 추가
+              </a>
+              <a 
+                href="/review" 
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                복습 시작
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -182,12 +182,15 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data, onG
 
   const { weeklyProgress, monthlyTrends, categoryDistribution, performanceMetrics } = safeData;
 
-  // 주간 목표 진행률 (나누기 0 방지)
+  // 주간 목표 진행률 (나누기 0 방지) - 100% 초과 허용
   const weeklyProgressPercent = sanitizeNumber(
     performanceMetrics.weeklyGoal > 0 
-      ? Math.min((sanitizeNumber(performanceMetrics.weeklyProgress) / sanitizeNumber(performanceMetrics.weeklyGoal)) * 100, 100)
+      ? (sanitizeNumber(performanceMetrics.weeklyProgress) / sanitizeNumber(performanceMetrics.weeklyGoal)) * 100
       : 0
   );
+  
+  // 목표 초과 여부 확인
+  const isGoalExceeded = weeklyProgressPercent > 100;
 
   // 실제 데이터가 있는지 확인 (빈 배열도 처리)
   const hasWeeklyData = safeData.weeklyProgress && safeData.weeklyProgress.length > 0;
@@ -283,24 +286,50 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data, onG
                   onGoalUpdate={onGoalUpdate || (async () => {})}
                   disabled={!onGoalUpdate}
                 />
-                <span className="text-lg text-gray-500 dark:text-gray-400">
+                <span className={`text-lg font-semibold ${
+                  isGoalExceeded 
+                    ? 'text-orange-600 dark:text-orange-400' 
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}>
                   ({sanitizeNumber(weeklyProgressPercent).toFixed(0)}%)
                 </span>
               </div>
             </div>
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-              <ChartBarIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+              isGoalExceeded 
+                ? 'bg-orange-100 dark:bg-orange-900/30' 
+                : 'bg-blue-100 dark:bg-blue-900/30'
+            }`}>
+              <ChartBarIcon className={`w-6 h-6 ${
+                isGoalExceeded 
+                  ? 'text-orange-600 dark:text-orange-400' 
+                  : 'text-blue-600 dark:text-blue-400'
+              }`} />
             </div>
           </div>
           <div className="mt-4">
-            <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2 relative overflow-hidden">
               <div 
-                className="bg-blue-600 rounded-full h-2 transition-all duration-300"
-                style={{ width: `${weeklyProgressPercent}%` }}
+                className={`rounded-full h-2 transition-all duration-300 ${
+                  isGoalExceeded 
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500' 
+                    : 'bg-blue-600'
+                }`}
+                style={{ width: `${Math.min(weeklyProgressPercent, 100)}%` }}
               />
+              {isGoalExceeded && (
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-200/50 to-red-200/50 dark:from-orange-800/50 dark:to-red-800/50 rounded-full animate-pulse" />
+              )}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {sanitizeNumber(performanceMetrics.weeklyProgress)}/{sanitizeNumber(performanceMetrics.weeklyGoal)} 복습 완료
+            <div className="flex items-center justify-between mt-1">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {sanitizeNumber(performanceMetrics.weeklyProgress)}/{sanitizeNumber(performanceMetrics.weeklyGoal)} 복습 완료
+              </div>
+              {isGoalExceeded && (
+                <div className="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center">
+                  🎉 목표 초과!
+                </div>
+              )}
             </div>
           </div>
         </div>
