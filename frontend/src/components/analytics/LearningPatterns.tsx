@@ -138,7 +138,10 @@ const LearningPatterns: React.FC<LearningPatternsProps> = ({ data }) => {
   }, [weeklyPattern, hourlyPattern]);
 
   const formatHour = (hour: number) => {
-    return hour === 0 ? '12AM' : hour < 12 ? `${hour}AM` : hour === 12 ? '12PM' : `${hour-12}PM`;
+    if (hour === 0) return '오전 12시';
+    if (hour < 12) return `오전 ${hour}시`;
+    if (hour === 12) return '오후 12시';
+    return `오후 ${hour - 12}시`;
   };
 
   const getIntensityColor = (intensity: number) => {

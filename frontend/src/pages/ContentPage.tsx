@@ -347,7 +347,7 @@ const ContentPage: React.FC = () => {
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(content.priority)}`}>
                       {getPriorityText(content.priority)}
                     </span>
-                    <span>{new Date(content.created_at).toLocaleDateString()}</span>
+                    <span>{new Date(content.created_at).toLocaleDateString('ko-KR')}</span>
                   </div>
                 </div>
                 <div className="flex space-x-2 ml-4">
