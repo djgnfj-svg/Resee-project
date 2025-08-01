@@ -150,6 +150,8 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data, onG
     };
   }, [data]);
 
+  const { weeklyProgress, monthlyTrends, categoryDistribution, performanceMetrics } = safeData;
+
   // 성과 지표 계산 - 백엔드 데이터 우선 사용
   const performanceInsights = useMemo(() => {
     // 백엔드에서 제공하는 실제 성공률 데이터 사용
@@ -177,8 +179,6 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data, onG
       totalReviewsThisWeek
     };
   }, [safeData.weeklyProgress, performanceMetrics]);
-
-  const { weeklyProgress, monthlyTrends, categoryDistribution, performanceMetrics } = safeData;
 
   // 주간 목표 진행률 (나누기 0 방지) - 100% 초과 허용
   const weeklyProgressPercent = sanitizeNumber(
