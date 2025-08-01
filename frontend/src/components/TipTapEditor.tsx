@@ -182,99 +182,147 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
   }
 
   return (
-    <div className={`tiptap-editor ${className}`}>
+    <div className={`border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden bg-white dark:bg-gray-700 ${className}`}>
       {/* 툴바 */}
-      <div className="tiptap-toolbar">
-        <div className="toolbar-group">
+      <div className="flex flex-wrap items-center gap-1 p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">
+        <div className="flex items-center gap-1">
           <button
             onClick={() => editor.commands.toggleBold()}
-            className={`toolbar-btn ${editor.isActive('bold') ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('bold')
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="굵게 (Ctrl+B)"
           >
             <strong>B</strong>
           </button>
           <button
             onClick={() => editor.commands.toggleItalic()}
-            className={`toolbar-btn ${editor.isActive('italic') ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('italic')
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="기울임 (Ctrl+I)"
           >
             <em>I</em>
           </button>
           <button
             onClick={() => editor.commands.toggleStrike()}
-            className={`toolbar-btn ${editor.isActive('strike') ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('strike')
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="취소선"
           >
             <s>S</s>
           </button>
           <button
             onClick={() => editor.commands.toggleCode()}
-            className={`toolbar-btn ${editor.isActive('code') ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('code')
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="인라인 코드"
           >
             {'</>'}
           </button>
         </div>
         
-        <div className="toolbar-group">
+        <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-300 dark:border-gray-600">
           <button
             onClick={() => editor.commands.toggleHeading({ level: 1 })}
-            className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('heading', { level: 1 })
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="제목 1"
           >
             H1
           </button>
           <button
             onClick={() => editor.commands.toggleHeading({ level: 2 })}
-            className={`toolbar-btn ${editor.isActive('heading', { level: 2 }) ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('heading', { level: 2 })
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="제목 2"
           >
             H2
           </button>
           <button
             onClick={() => editor.commands.toggleHeading({ level: 3 })}
-            className={`toolbar-btn ${editor.isActive('heading', { level: 3 }) ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('heading', { level: 3 })
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="제목 3"
           >
             H3
           </button>
         </div>
         
-        <div className="toolbar-group">
+        <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-300 dark:border-gray-600">
           <button
             onClick={() => editor.commands.toggleBulletList()}
-            className={`toolbar-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('bulletList')
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="불릿 목록"
           >
             •
           </button>
           <button
             onClick={() => editor.commands.toggleOrderedList()}
-            className={`toolbar-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('orderedList')
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="번호 목록"
           >
             1.
           </button>
           <button
             onClick={() => editor.commands.toggleBlockquote()}
-            className={`toolbar-btn ${editor.isActive('blockquote') ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('blockquote')
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="인용문"
           >
             "
           </button>
         </div>
         
-        <div className="toolbar-group">
+        <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-300 dark:border-gray-600">
           <button
             onClick={() => editor.commands.toggleCodeBlock()}
-            className={`toolbar-btn ${editor.isActive('codeBlock') ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('codeBlock')
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="코드 블록"
           >
             {'{ }'}
           </button>
           <button
             onClick={addLink}
-            className={`toolbar-btn ${editor.isActive('link') ? 'active' : ''}`}
+            className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+              editor.isActive('link')
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
             title="링크"
           >
             🔗
@@ -287,10 +335,10 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
 
 
       {/* 도움말 */}
-      <div className="tiptap-help">
-        <details>
-          <summary>마크다운 단축키</summary>
-          <div className="help-content">
+      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600">
+        <details className="text-sm">
+          <summary className="cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">마크다운 단축키</summary>
+          <div className="mt-2 space-y-1 text-gray-700 dark:text-gray-300">
             <p><strong># 제목1</strong> | <strong>## 제목2</strong> | <strong>### 제목3</strong></p>
             <p><strong>**굵게**</strong> | <strong>*기울임*</strong> | <strong>~~취소선~~</strong></p>
             <p><strong>- 목록</strong> | <strong>1. 번호목록</strong> | <strong>{'>'} 인용문</strong></p>
@@ -300,69 +348,6 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
       </div>
 
       <style>{`
-        .tiptap-editor {
-          border: 1px solid #e5e7eb;
-          border-radius: 0.75rem;
-          background: white;
-          overflow: hidden;
-          min-height: 400px;
-        }
-
-        .tiptap-toolbar {
-          display: flex;
-          align-items: center;
-          padding: 0.5rem;
-          background: #f9fafb;
-          border-bottom: 1px solid #e5e7eb;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-
-        .toolbar-group {
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-          border-right: 1px solid #e5e7eb;
-          padding-right: 0.5rem;
-        }
-
-        .toolbar-group:last-child {
-          border-right: none;
-          padding-right: 0;
-        }
-
-        .toolbar-btn {
-          padding: 0.375rem 0.75rem;
-          border: 1px solid #d1d5db;
-          background: white;
-          border-radius: 0.375rem;
-          cursor: pointer;
-          font-size: 0.875rem;
-          transition: all 0.2s;
-          min-width: 36px;
-          height: 36px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 500;
-        }
-
-        .toolbar-btn:hover {
-          background: #f3f4f6;
-          border-color: #9ca3af;
-        }
-
-        .toolbar-btn.active {
-          background: #3b82f6;
-          border-color: #3b82f6;
-          color: white;
-        }
-
-        .toolbar-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
         .tiptap-content {
           min-height: 350px;
         }
@@ -377,6 +362,10 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           color: #1f2937;
         }
 
+        .dark .tiptap-editor-content {
+          color: #f3f4f6;
+        }
+
         .tiptap-editor-content p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
@@ -384,6 +373,10 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           font-style: italic;
           pointer-events: none;
           height: 0;
+        }
+
+        .dark .tiptap-editor-content p.is-editor-empty:first-child::before {
+          color: #6b7280;
         }
 
         /* 제목 스타일 */
@@ -396,6 +389,11 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           padding-bottom: 0.5rem;
         }
 
+        .dark .tiptap-editor-content h1 {
+          color: #f3f4f6;
+          border-bottom-color: #374151;
+        }
+
         .tiptap-editor-content h2 {
           font-size: 1.875rem;
           font-weight: 700;
@@ -405,11 +403,20 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           padding-bottom: 0.25rem;
         }
 
+        .dark .tiptap-editor-content h2 {
+          color: #f3f4f6;
+          border-bottom-color: #374151;
+        }
+
         .tiptap-editor-content h3 {
           font-size: 1.5rem;
           font-weight: 600;
           color: #1f2937;
           margin: 1rem 0 0.5rem 0;
+        }
+
+        .dark .tiptap-editor-content h3 {
+          color: #f3f4f6;
         }
 
         /* 텍스트 스타일 */
@@ -418,9 +425,17 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           color: #374151;
         }
 
+        .dark .tiptap-editor-content p {
+          color: #d1d5db;
+        }
+
         .tiptap-editor-content strong {
           font-weight: 700;
           color: #1f2937;
+        }
+
+        .dark .tiptap-editor-content strong {
+          color: #f3f4f6;
         }
 
         .tiptap-editor-content em {
@@ -428,9 +443,17 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           color: #374151;
         }
 
+        .dark .tiptap-editor-content em {
+          color: #d1d5db;
+        }
+
         .tiptap-editor-content s {
           text-decoration: line-through;
           color: #6b7280;
+        }
+
+        .dark .tiptap-editor-content s {
+          color: #9ca3af;
         }
 
         .tiptap-editor-content code {
@@ -443,6 +466,11 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           font-weight: 500;
         }
 
+        .dark .tiptap-editor-content code {
+          background: #374151;
+          color: #f87171;
+        }
+
         .tiptap-editor-content pre {
           background: #1e293b;
           color: #e2e8f0;
@@ -450,6 +478,11 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           border-radius: 0.5rem;
           overflow-x: auto;
           margin: 1rem 0;
+        }
+
+        .dark .tiptap-editor-content pre {
+          background: #111827;
+          color: #e5e7eb;
         }
 
         .tiptap-editor-content pre code {
@@ -479,6 +512,10 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           color: #374151;
         }
 
+        .dark .tiptap-editor-content li {
+          color: #d1d5db;
+        }
+
         .tiptap-editor-content li p {
           margin: 0;
         }
@@ -493,6 +530,12 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           color: #475569;
         }
 
+        .dark .tiptap-editor-content blockquote {
+          background: #1f2937;
+          color: #9ca3af;
+          border-left-color: #60a5fa;
+        }
+
         /* 링크 스타일 */
         .tiptap-editor-content a {
           color: #3b82f6;
@@ -500,58 +543,23 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
           text-decoration-color: #93c5fd;
         }
 
+        .dark .tiptap-editor-content a {
+          color: #60a5fa;
+          text-decoration-color: #3b82f6;
+        }
+
         .tiptap-editor-content a:hover {
           color: #1d4ed8;
           text-decoration-color: #3b82f6;
         }
 
-
-        /* 도움말 */
-        .tiptap-help {
-          padding: 0.75rem 1.5rem;
-          background: #f9fafb;
-          border-top: 1px solid #e5e7eb;
-        }
-
-        .tiptap-help summary {
-          cursor: pointer;
-          font-size: 0.875rem;
-          color: #6b7280;
-          user-select: none;
-          font-weight: 500;
-        }
-
-        .help-content {
-          margin-top: 0.75rem;
-          font-size: 0.875rem;
-          color: #6b7280;
-        }
-
-        .help-content p {
-          margin: 0.25rem 0;
-          font-family: monospace;
-        }
-
-        /* 포커스 상태 */
-        .tiptap-editor:focus-within {
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        .dark .tiptap-editor-content a:hover {
+          color: #93c5fd;
+          text-decoration-color: #60a5fa;
         }
 
         /* 반응형 디자인 */
         @media (max-width: 640px) {
-          .tiptap-toolbar {
-            padding: 0.375rem;
-            gap: 0.25rem;
-          }
-          
-          .toolbar-btn {
-            min-width: 32px;
-            height: 32px;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.8rem;
-          }
-          
           .tiptap-editor-content {
             padding: 1rem;
           }

@@ -66,9 +66,9 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden backdrop-blur-lg">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-lg">
           {/* Header */}
           <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-4 sm:p-6 lg:p-8">
             <div className="flex items-center justify-between">
@@ -76,7 +76,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">
                   {initialData ? '콘텐츠 수정' : '새 콘텐츠 만들기'}
                 </h1>
-                <p className="text-sm sm:text-base text-indigo-100 mt-2">
+                <p className="text-sm sm:text-base text-indigo-100 dark:text-indigo-200 mt-2">
                   정보를 입력하여 학습 콘텐츠를 만들어보세요
                 </p>
               </div>
@@ -86,7 +86,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
           <form onSubmit={handleSubmit(onFormSubmit)} className="p-8 space-y-8">
             {/* Title */}
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-900">
+              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
                 제목 <span className="text-red-500">*</span>
               </label>
               <input
@@ -95,23 +95,23 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                   minLength: { value: 3, message: '제목은 최소 3글자 이상이어야 합니다.' }
                 })}
                 type="text"
-                className={`w-full px-4 py-4 text-lg border-2 rounded-xl transition-all duration-200 focus:outline-none ${
+                className={`w-full px-4 py-4 text-lg border-2 rounded-xl transition-all duration-200 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
                   errors.title 
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                    ? 'border-red-300 focus:border-red-500 focus:ring-red-200 dark:border-red-500 dark:focus:border-red-400 dark:focus:ring-red-800' 
                     : watchedTitle && watchedTitle.trim().length >= 3
-                    ? 'border-green-300 focus:border-green-500 focus:ring-green-200'
-                    : 'border-gray-200 focus:border-indigo-500 focus:ring-indigo-200'
+                    ? 'border-green-300 focus:border-green-500 focus:ring-green-200 dark:border-green-500 dark:focus:border-green-400 dark:focus:ring-green-800'
+                    : 'border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 dark:border-gray-600 dark:focus:border-indigo-400 dark:focus:ring-indigo-800'
                 } focus:ring-4`}
                 placeholder="예: React Hook 완벽 가이드"
               />
               {errors.title && (
-                <p className="text-sm text-red-600 flex items-center">
+                <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
                   <span className="mr-1">❌</span>
                   {errors.title.message}
                 </p>
               )}
               {watchedTitle && watchedTitle.trim().length >= 3 && !errors.title && (
-                <p className="text-sm text-green-600 flex items-center">
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
                   <span className="mr-1">✅</span>
                   좋은 제목이에요!
                 </p>
@@ -120,13 +120,13 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
 
             {/* Category */}
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-900">
+              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
                 카테고리
               </label>
               
               <select
                 {...register('category')}
-                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 focus:outline-none transition-all duration-200"
+                className="w-full px-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-800 focus:outline-none transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="">카테고리를 선택하세요 (선택사항)</option>
                 {categories.map((category) => (
@@ -139,7 +139,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
 
             {/* Priority */}
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-900">
+              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
                 중요도 <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -154,15 +154,15 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                     <div className={`p-3 rounded-lg border-2 text-center transition-all duration-200 ${
                         watchedPriority === option.value
                           ? option.color === 'red' 
-                            ? 'border-red-400 bg-red-50 ring-2 ring-red-200'
+                            ? 'border-red-400 bg-red-50 dark:bg-red-900/20 ring-2 ring-red-200 dark:ring-red-800'
                             : option.color === 'yellow'
-                            ? 'border-yellow-400 bg-yellow-50 ring-2 ring-yellow-200'
-                            : 'border-green-400 bg-green-50 ring-2 ring-green-200'
-                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 ring-2 ring-yellow-200 dark:ring-yellow-800'
+                            : 'border-green-400 bg-green-50 dark:bg-green-900/20 ring-2 ring-green-200 dark:ring-green-800'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                       }`}>
                       <div className="text-xl mb-1">{option.emoji}</div>
-                      <div className="font-medium text-gray-900 text-sm">{option.label}</div>
-                      <div className="text-xs text-gray-600 mt-1">{option.description}</div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{option.label}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">{option.description}</div>
                     </div>
                   </label>
                 ))}
@@ -171,7 +171,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
 
             {/* Content */}
             <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-900">
+              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
                 내용 <span className="text-red-500">*</span>
               </label>
               <TipTapEditor
@@ -181,13 +181,13 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                 className="w-full"
               />
               {content.trim().length > 0 && content.trim().length < 10 && (
-                <p className="text-sm text-yellow-600 flex items-center">
+                <p className="text-sm text-yellow-600 dark:text-yellow-400 flex items-center">
                   <span className="mr-1">⚠️</span>
                   내용을 조금 더 자세히 작성해주세요 (최소 10글자)
                 </p>
               )}
               {content.trim().length >= 10 && (
-                <p className="text-sm text-green-600 flex items-center">
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
                   <span className="mr-1">✅</span>
                   훌륭해요! {content.trim().length}글자 작성완료
                 </p>
@@ -195,11 +195,11 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
             </div>
 
             {/* Navigation */}
-            <div className="flex items-center justify-between pt-8 mt-8 border-t border-gray-200">
+            <div className="flex items-center justify-between pt-8 mt-8 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
                 onClick={onCancel}
-                className="inline-flex items-center px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all duration-200"
+                className="inline-flex items-center px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
               >
                 <span className="mr-2">✕</span>
                 취소
@@ -211,7 +211,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                 className={`inline-flex items-center px-8 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                   !isLoading && content && content.trim().length >= 10
                     ? 'text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg'
-                    : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                    : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
                 }`}
               >
                 {isLoading ? (
