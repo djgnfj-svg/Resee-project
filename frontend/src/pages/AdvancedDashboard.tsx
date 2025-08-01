@@ -562,7 +562,7 @@ const AdvancedDashboard: React.FC = () => {
             {process.env.NODE_ENV === 'development' && (
               <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-left">
                 <div className="text-xs text-red-800 dark:text-red-200 font-mono">
-                  Error: {calendarError?.message || 'Unknown error'}
+                  Error: {(calendarError as any)?.message || calendarError?.toString() || 'Unknown error'}
                 </div>
               </div>
             )}
