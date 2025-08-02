@@ -5,6 +5,9 @@
 /* PWA 및 모바일 최적화 스타일 */
 @import './styles/pwa.css';
 
+/* Component Styles */
+@import './styles/components.css';
+
 /* 차트 다크모드 지원을 위한 CSS 변수 */
 :root {
   --tooltip-bg: #ffffff;

@@ -60,145 +60,228 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-        <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900 dark:text-gray-100">
-          회원가입
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-          회원가입 후 이메일 인증을 완료해주세요
-        </p>
-      </div>
-
-      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          {error && (
-            <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
-              <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
-            </div>
-          )}
+    <>
+      {/* Background Pattern */}
+      <div className="auth-bg-pattern" />
+      
+      <div className="relative flex min-h-screen flex-col justify-center px-6 py-12 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          {/* Logo and Title */}
+          <div className="text-center">
+            <Link to="/" className="inline-block">
+              <h1 className="text-4xl font-bold gradient-text mb-2">Resee</h1>
+            </Link>
+            <p className="text-sm text-gray-600 dark:text-gray-400">과학적 복습 플랫폼</p>
+          </div>
           
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-              이메일
-            </label>
-            <div className="mt-2">
-              <input
-                {...register('email', { 
-                  required: '이메일을 입력해주세요.',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: '올바른 이메일 형식을 입력해주세요.'
-                  }
-                })}
-                type="email"
-                placeholder="이메일을 입력하세요"
-                className="form-input"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
-              )}
-              {fieldErrors.email && (
-                <div className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {fieldErrors.email.map((error, index) => (
-                    <p key={index}>{error}</p>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <h2 className="mt-8 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+            함께 시작해요!
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+            회원가입 후 이메일 인증을 완료해주세요
+          </p>
+        </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-              비밀번호
-            </label>
-            <div className="mt-2">
-              <input
-                {...register('password', { 
-                  required: '비밀번호를 입력해주세요.',
-                  minLength: { value: 8, message: '비밀번호는 최소 8자 이상이어야 합니다.' }
-                })}
-                type="password"
-                placeholder="비밀번호를 입력하세요"
-                className="form-input"
-              />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
-              )}
-              {fieldErrors.password && (
-                <div className="mt-1 text-sm text-red-600 dark:text-red-400">
-                  {fieldErrors.password.map((error, index) => (
-                    <p key={index}>{error}</p>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="auth-card">
+            <div className="auth-card-body">
+              <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+                {error && (
+                  <div className="alert alert-error animate-fadeIn">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm">{error}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="space-y-5">
+                  <div>
+                    <label htmlFor="email" className="form-label">
+                      이메일
+                    </label>
+                    <input
+                      {...register('email', { 
+                        required: '이메일을 입력해주세요.',
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                          message: '올바른 이메일 형식을 입력해주세요.'
+                        }
+                      })}
+                      type="email"
+                      placeholder="name@example.com"
+                      className="form-input"
+                      autoComplete="email"
+                    />
+                    {errors.email && (
+                      <p className="mt-2 text-sm text-red-600 dark:text-red-400 animate-fadeIn">
+                        {errors.email.message}
+                      </p>
+                    )}
+                    {fieldErrors.email && (
+                      <div className="mt-2 text-sm text-red-600 dark:text-red-400 animate-fadeIn">
+                        {fieldErrors.email.map((error, index) => (
+                          <p key={index}>{error}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-          <div>
-            <label htmlFor="password_confirm" className="block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100">
-              비밀번호 확인
-            </label>
-            <div className="mt-2">
-              <input
-                {...register('password_confirm', { 
-                  required: '비밀번호 확인을 입력해주세요.',
-                  validate: value => value === password || '비밀번호가 일치하지 않습니다.'
-                })}
-                type="password"
-                placeholder="비밀번호를 다시 입력하세요"
-                className="form-input"
-              />
-              {errors.password_confirm && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password_confirm.message}</p>
+                  <div>
+                    <label htmlFor="password" className="form-label">
+                      비밀번호
+                      <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                        (최소 8자 이상)
+                      </span>
+                    </label>
+                    <input
+                      {...register('password', { 
+                        required: '비밀번호를 입력해주세요.',
+                        minLength: { value: 8, message: '비밀번호는 최소 8자 이상이어야 합니다.' }
+                      })}
+                      type="password"
+                      placeholder="••••••••"
+                      className="form-input"
+                      autoComplete="new-password"
+                    />
+                    {errors.password && (
+                      <p className="mt-2 text-sm text-red-600 dark:text-red-400 animate-fadeIn">
+                        {errors.password.message}
+                      </p>
+                    )}
+                    {fieldErrors.password && (
+                      <div className="mt-2 text-sm text-red-600 dark:text-red-400 animate-fadeIn">
+                        {fieldErrors.password.map((error, index) => (
+                          <p key={index}>{error}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="password_confirm" className="form-label">
+                      비밀번호 확인
+                    </label>
+                    <input
+                      {...register('password_confirm', { 
+                        required: '비밀번호 확인을 입력해주세요.',
+                        validate: value => value === password || '비밀번호가 일치하지 않습니다.'
+                      })}
+                      type="password"
+                      placeholder="••••••••"
+                      className="form-input"
+                      autoComplete="new-password"
+                    />
+                    {errors.password_confirm && (
+                      <p className="mt-2 text-sm text-red-600 dark:text-red-400 animate-fadeIn">
+                        {errors.password_confirm.message}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* 비밀번호 강도 표시기 */}
+                  {password && (
+                    <div className="animate-fadeIn">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-gray-600 dark:text-gray-400">비밀번호 강도</span>
+                        <span className={
+                          password.length >= 12 ? 'text-green-600 dark:text-green-400' :
+                          password.length >= 8 ? 'text-yellow-600 dark:text-yellow-400' :
+                          'text-red-600 dark:text-red-400'
+                        }>
+                          {password.length >= 12 ? '강함' : password.length >= 8 ? '보통' : '약함'}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            password.length >= 12 ? 'bg-green-500 w-full' :
+                            password.length >= 8 ? 'bg-yellow-500 w-2/3' :
+                            'bg-red-500 w-1/3'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="btn btn-primary btn-lg w-full relative"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="spinner mr-2" />
+                        계정 생성 중...
+                      </div>
+                    ) : (
+                      '회원가입'
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              {/* Social Login Section - only show if Google OAuth is configured */}
+              {process.env.REACT_APP_GOOGLE_CLIENT_ID && (
+                <>
+                  {/* Divider */}
+                  <div className="divider">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                    </div>
+                    <div className="divider-text">
+                      <span>또는</span>
+                    </div>
+                  </div>
+
+                  {/* Google Sign In */}
+                  <div>
+                    <GoogleSignInButton
+                      onSuccess={() => navigate('/dashboard')}
+                      onError={(error) => setError(error)}
+                    />
+                  </div>
+                </>
               )}
-            </div>
-          </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn btn-primary btn-md w-full"
-            >
-              {isLoading ? '계정 생성 중...' : '회원가입'}
-            </button>
-          </div>
-        </form>
-
-        {/* Social Login Section - only show if Google OAuth is configured */}
-        {process.env.REACT_APP_GOOGLE_CLIENT_ID && (
-          <>
-            {/* Social Login Divider */}
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
-                </div>
-                <div className="relative flex justify-center text-sm font-medium leading-6">
-                  <span className="bg-white dark:bg-gray-900 px-6 text-gray-900 dark:text-gray-100">또는</span>
-                </div>
+              {/* Sign In Link */}
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  이미 계정이 있으신가요?{' '}
+                  <Link to="/login" className="link">
+                    로그인하기
+                  </Link>
+                </p>
               </div>
             </div>
+          </div>
 
-            {/* Google Sign In */}
-            <div className="mt-6">
-              <GoogleSignInButton
-                onSuccess={() => navigate('/dashboard')}
-                onError={(error) => setError(error)}
-              />
-            </div>
-          </>
-        )}
-
-        <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          이미 계정이 있으신가요?{' '}
-          <Link to="/login" className="font-semibold leading-6 text-primary-600 hover:text-primary-500">
-            로그인
-          </Link>
-        </p>
+          {/* Footer */}
+          <div className="mt-8 text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              회원가입하면 Resee의{' '}
+              <a href="#" className="hover:text-gray-700 dark:hover:text-gray-300">
+                이용약관
+              </a>
+              {' '}및{' '}
+              <a href="#" className="hover:text-gray-700 dark:hover:text-gray-300">
+                개인정보처리방침
+              </a>
+              에 동의하는 것으로 간주됩니다.
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
+  
   );
 };
 
