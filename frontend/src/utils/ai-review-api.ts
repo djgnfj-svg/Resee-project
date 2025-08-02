@@ -6,6 +6,8 @@ import type {
   AIQuestionType,
   AIQuestion,
   GenerateQuestionsRequest,
+  AIAnswerEvaluationRequest,
+  AIAnswerEvaluationResponse,
   FillBlankRequest,
   FillBlankResponse,
   BlurRegionsRequest,
@@ -38,6 +40,12 @@ class AIReviewAPI {
   async getContentQuestions(contentId: number): Promise<AIQuestion[]> {
     const response = await api.get<PaginatedResponse<AIQuestion>>(`/ai-review/content/${contentId}/questions/`);
     return response.data.results;
+  }
+
+  // Answer evaluation
+  async evaluateAnswer(request: AIAnswerEvaluationRequest): Promise<AIAnswerEvaluationResponse> {
+    const response = await api.post('/ai-review/evaluate-answer/', request);
+    return response.data;
   }
 
 
@@ -79,6 +87,22 @@ class AIReviewAPI {
       case 'blur_processing': return '블러 처리';
       default: return type;
     }
+  }
+
+  getScoreLabel(score: number): string {
+    if (score >= 0.9) return '우수';
+    if (score >= 0.7) return '양호';
+    if (score >= 0.5) return '보통';
+    if (score >= 0.3) return '미흡';
+    return '부족';
+  }
+
+  getScoreColor(score: number): string {
+    if (score >= 0.9) return 'green';
+    if (score >= 0.7) return 'blue';
+    if (score >= 0.5) return 'yellow';
+    if (score >= 0.3) return 'orange';
+    return 'red';
   }
 }
 

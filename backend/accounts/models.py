@@ -335,9 +335,50 @@ class AIUsageTracking(models.Model):
         return False
     
     def increment_evaluations(self, count=1):
-        """Increment evaluation count (no limit for now)"""
+        """Increment evaluation count"""
         self.evaluations_performed += count
         self.save()
+        return True
+    
+    def get_usage_summary(self):
+        """Get detailed usage summary for today"""
+        daily_limit = self.user.get_ai_question_limit()
+        remaining = max(0, daily_limit - self.questions_generated)
+        
+        return {
+            'date': self.date,
+            'questions_generated': self.questions_generated,
+            'evaluations_performed': self.evaluations_performed,
+            'daily_limit': daily_limit,
+            'remaining': remaining,
+            'usage_percentage': (self.questions_generated / daily_limit * 100) if daily_limit > 0 else 0,
+            'tier': self.user.subscription.tier,
+        }
+    
+    @classmethod
+    def get_user_weekly_usage(cls, user, weeks=1):
+        """Get user's usage for the past weeks"""
+        from datetime import timedelta
+        end_date = timezone.now().date()
+        start_date = end_date - timedelta(weeks=weeks * 7)
+        
+        usage_records = cls.objects.filter(
+            user=user,
+            date__gte=start_date,
+            date__lte=end_date
+        ).order_by('date')
+        
+        total_questions = sum(record.questions_generated for record in usage_records)
+        total_evaluations = sum(record.evaluations_performed for record in usage_records)
+        
+        return {
+            'start_date': start_date,
+            'end_date': end_date,
+            'total_questions': total_questions,
+            'total_evaluations': total_evaluations,
+            'daily_records': [record.get_usage_summary() for record in usage_records],
+            'average_daily_questions': total_questions / (weeks * 7) if weeks > 0 else 0,
+        }
 
 
 # Signal to create free subscription for new users

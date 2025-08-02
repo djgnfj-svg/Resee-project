@@ -11,7 +11,8 @@ from .views import (
     EmailVerificationView, 
     ResendVerificationView, 
     GoogleOAuthView,
-    WeeklyGoalUpdateView
+    WeeklyGoalUpdateView,
+    AIUsageView
 )
 
 app_name = 'accounts'
@@ -28,6 +29,7 @@ urlpatterns = [
     path('resend-verification/', ResendVerificationView.as_view(), name='resend-verification'),
     path('google-oauth/', GoogleOAuthView.as_view(), name='google-oauth'),
     path('weekly-goal/', WeeklyGoalUpdateView.as_view(), name='weekly-goal-update'),
+    path('ai-usage/', AIUsageView.as_view(), name='ai-usage'),
     # Subscription endpoints
     path('subscription/', subscription_detail, name='subscription-detail'),
     path('subscription/tiers/', subscription_tiers, name='subscription-tiers'),

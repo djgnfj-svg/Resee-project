@@ -18,7 +18,8 @@ urlpatterns = [
     path('generate-questions/', views.GenerateQuestionsView.as_view(), name='generate-questions'),
     path('content/<int:content_id>/questions/', views.ContentQuestionsView.as_view(), name='content-questions'),
     
-    # Answer evaluation removed - only question generation is supported
+    # Answer evaluation
+    path('evaluate-answer/', views.AIAnswerEvaluationView.as_view(), name='evaluate-answer'),
     
     # Review sessions
     path('sessions/', views.AIReviewSessionListView.as_view(), name='review-sessions'),
