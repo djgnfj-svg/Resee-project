@@ -1,10 +1,9 @@
-"""
-AI Review models for generating and evaluating interactive questions
-"""
-from django.db import models
+"""AI Review models for generating and evaluating interactive questions."""
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db import models
+
 from content.models import Content
 from review.models import ReviewHistory
 
@@ -13,9 +12,7 @@ User = get_user_model()
 
 
 class AIQuestionType(models.Model):
-    """
-    Types of AI-generated questions
-    """
+    """Types of AI-generated questions."""
     QUESTION_TYPES = [
         ('multiple_choice', 'Multiple Choice'),
         ('fill_blank', 'Fill in the Blank'),
@@ -52,9 +49,7 @@ class AIQuestionType(models.Model):
 
 
 class AIQuestion(models.Model):
-    """
-    AI-generated questions for content review
-    """
+    """AI-generated questions for content review."""
     content = models.ForeignKey(
         Content,
         on_delete=models.CASCADE,
@@ -121,20 +116,17 @@ class AIQuestion(models.Model):
         return f"{self.content.title} - {self.question_type.display_name}"
     
     def clean(self):
-        """
-        Validate the question based on its type
-        """
+        """Validate the question based on its type"""
         super().clean()
         
         # Validate multiple choice options
         if self.question_type.name == 'multiple_choice':
             if not self.options or not isinstance(self.options, list):
-                raise ValidationError("Multiple choice questions must have options as a list")
+                raise ValidationError("객관식 문제는 선택지를 리스트 형태로 제공해야 합니다.")
             if len(self.options) < 2:
-                raise ValidationError("Multiple choice questions must have at least 2 options")
+                raise ValidationError("객관식 문제는 최소 2개 이상의 선택지가 필요합니다.")
             if self.correct_answer not in self.options:
-                raise ValidationError("Correct answer must be one of the options")
-
+                raise ValidationError("정답은 선택지 중 하나여야 합니다.")
 
 
 class AIEvaluation(models.Model):
@@ -197,7 +189,9 @@ class AIEvaluation(models.Model):
         ]
     
     def __str__(self):
-        question_preview = self.question.question_text[:30] + "..." if len(self.question.question_text) > 30 else self.question.question_text
+        question_preview = (self.question.question_text[:30] + "..." 
+                          if len(self.question.question_text) > 30 
+                          else self.question.question_text)
         return f"{self.user.email} - {question_preview} - {self.ai_score}"
 
 
@@ -271,9 +265,7 @@ class AIReviewSession(models.Model):
     
     @property
     def completion_percentage(self):
-        """
-        Calculate percentage of questions answered
-        """
+        """Calculate percentage of questions answered"""
         if self.questions_generated == 0:
             return 0.0
         return (self.questions_answered / self.questions_generated) * 100.0

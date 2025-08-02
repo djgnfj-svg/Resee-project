@@ -1,6 +1,8 @@
-from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
+
+from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from .models import Subscription, SubscriptionTier
 
 User = get_user_model()
@@ -149,12 +151,12 @@ class PasswordChangeSerializer(serializers.Serializer):
     def validate_current_password(self, value):
         user = self.context['request'].user
         if not authenticate(username=user.email, password=value):
-            raise serializers.ValidationError("Current password is incorrect")
+            raise serializers.ValidationError("현재 비밀번호가 올바르지 않습니다.")
         return value
     
     def validate(self, attrs):
         if attrs['new_password'] != attrs['new_password_confirm']:
-            raise serializers.ValidationError("New passwords don't match")
+            raise serializers.ValidationError("새 비밀번호가 일치하지 않습니다.")
         return attrs
     
     def save(self):
@@ -172,12 +174,12 @@ class AccountDeleteSerializer(serializers.Serializer):
     def validate_password(self, value):
         user = self.context['request'].user
         if not authenticate(username=user.email, password=value):
-            raise serializers.ValidationError("Password is incorrect")
+            raise serializers.ValidationError("비밀번호가 올바르지 않습니다.")
         return value
     
     def validate_confirmation(self, value):
         if value != 'DELETE':
-            raise serializers.ValidationError("Please type 'DELETE' to confirm account deletion")
+            raise serializers.ValidationError("계정 삭제를 확인하려면 'DELETE'를 입력해주세요.")
         return value
     
     def save(self):
@@ -232,6 +234,6 @@ class SubscriptionUpgradeSerializer(serializers.Serializer):
         
         if hasattr(user, 'subscription') and user.subscription.tier == SubscriptionTier.PRO:
             if value == SubscriptionTier.PRO:
-                raise serializers.ValidationError('Already at highest subscription tier.')
+                raise serializers.ValidationError('이미 최고 구독 등급입니다.')
         
         return value

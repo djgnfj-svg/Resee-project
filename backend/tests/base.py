@@ -23,7 +23,7 @@ class BaseTestCase(TestCase):
     
     def setUp(self):
         """Set up test fixtures"""
-        self.user = self.create_user(username='testuser', email='test@example.com')
+        self.user = self.create_user(email='test@example.com')
         self.category = self.create_category()
         self.content = self.create_content()
     
@@ -32,11 +32,8 @@ class BaseTestCase(TestCase):
         import uuid
         unique_suffix = str(uuid.uuid4())[:8]
         defaults = {
-            'username': f'testuser_{unique_suffix}',
             'email': f'test_{unique_suffix}@example.com',
             'password': 'testpass123',
-            'timezone': 'Asia/Seoul',
-            'notification_enabled': True,
         }
         defaults.update(kwargs)
         return User.objects.create_user(**defaults)
@@ -117,7 +114,7 @@ class BaseAPITestCase(APITestCase):
     
     def setUp(self):
         """Set up API test fixtures"""
-        self.user = self.create_user(username='testuser', email='test@example.com')
+        self.user = self.create_user(email='test@example.com')
         self.authenticate_user()
         self.category = self.create_category()
         self.content = self.create_content()
@@ -127,11 +124,8 @@ class BaseAPITestCase(APITestCase):
         import uuid
         unique_suffix = str(uuid.uuid4())[:8]
         defaults = {
-            'username': f'testuser_{unique_suffix}',
             'email': f'test_{unique_suffix}@example.com',
             'password': 'testpass123',
-            'timezone': 'Asia/Seoul',
-            'notification_enabled': True,
         }
         defaults.update(kwargs)
         return User.objects.create_user(**defaults)
@@ -222,11 +216,8 @@ class TestDataMixin:
         users = []
         for i in range(count):
             user = User.objects.create_user(
-                username=f'testuser{i}',
                 email=f'test{i}@example.com',
                 password='testpass123',
-                timezone='Asia/Seoul',
-                notification_enabled=True,
             )
             users.append(user)
         return users

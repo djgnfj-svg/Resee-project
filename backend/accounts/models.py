@@ -1,18 +1,19 @@
-from django.contrib.auth.models import AbstractUser, BaseUserManager
-from django.db import models
-from django.utils import timezone
-from django.utils.crypto import get_random_string
 import secrets
 from datetime import timedelta
+
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
+from django.utils.crypto import get_random_string
 
 
 class UserManager(BaseUserManager):
-    """Custom user manager for email-only authentication"""
+    """Custom user manager for email-only authentication."""
     
     def create_user(self, email, password=None, **extra_fields):
-        """Create and return a regular user with email and password"""
+        """Create and return a regular user with email and password."""
         if not email:
             raise ValueError('The Email field must be set')
         email = self.normalize_email(email)
@@ -22,7 +23,7 @@ class UserManager(BaseUserManager):
         return user
     
     def create_superuser(self, email, password=None, **extra_fields):
-        """Create and return a superuser with email and password"""
+        """Create and return a superuser with email and password."""
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_email_verified', True)  # Superuser는 자동으로 인증됨
@@ -36,7 +37,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    """Custom User model with email-only authentication"""
+    """Custom User model with email-only authentication."""
     email = models.EmailField(unique=True)
     username = models.CharField(
         max_length=150,
@@ -72,16 +73,16 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    objects = UserManager()
-    
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []  # No additional required fields for email-only auth
+    
+    objects = UserManager()
     
     def __str__(self):
         return self.email
     
     def generate_email_verification_token(self):
-        """Generate a unique token for email verification"""
+        """Generate a unique token for email verification."""
         # 32자 길이의 URL-safe 토큰 생성
         token = secrets.token_urlsafe(32)
         self.email_verification_token = token

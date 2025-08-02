@@ -12,16 +12,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
-
-
-
-
-
-
-
-
-
 class PerformanceMiddleware:
     """Middleware to track and optimize performance"""
     

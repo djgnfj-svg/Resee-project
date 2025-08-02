@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import api from '../utils/api';
-import { weeklyGoalAPI } from '../utils/api';
+import api, { weeklyGoalAPI } from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import LearningInsights from '../components/analytics/LearningInsights';
 import CategoryPerformance from '../components/analytics/CategoryPerformance';

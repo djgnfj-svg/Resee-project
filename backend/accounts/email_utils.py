@@ -127,8 +127,6 @@ def send_verification_email_task(self, user_id: int):
             raise
 
 
-
-
 # 실무용 이메일 템플릿 관리
 EMAIL_TEMPLATES = {
     'verification': {

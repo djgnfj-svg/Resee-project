@@ -8,6 +8,7 @@ from pathlib import Path
 
 import dj_database_url
 from celery.schedules import crontab
+
 from .logging_config import LOGGING
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -184,6 +185,18 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',  # Anonymous users
+        'user': '1000/hour',  # Authenticated users
+        'login': '5/min',  # Login attempts
+        'ai': '50/hour',  # AI-related endpoints
+        'upload': '10/hour',  # File uploads
+        'register': '3/hour',  # User registration
+    }
 }
 
 # JWT settings
@@ -340,14 +353,8 @@ REDOC_SETTINGS = {
     'LAZY_RENDERING': False,
 }
 
-# Email configuration
-EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@resee.com')
+# Email configuration (moved to avoid duplication)
+# Configuration is handled above in AWS SES and SMTP sections
 
 # Email verification settings
 EMAIL_VERIFICATION_TIMEOUT_DAYS = 1  # 24시간
@@ -545,20 +552,32 @@ OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4')
 AI_MAX_RETRIES = int(os.environ.get('AI_MAX_RETRIES', '3'))
 AI_CACHE_TIMEOUT = int(os.environ.get('AI_CACHE_TIMEOUT', '3600'))  # 1 hour
 
-# Validation: Ensure critical environment variables are set for production
-if ENVIRONMENT in ['staging', 'production']:
-    required_env_vars = [
-        'SECRET_KEY',
-        'DATABASE_URL', 
-        'ALLOWED_HOSTS',
-        'CELERY_BROKER_URL',
-        'REDIS_URL'
-    ]
+# Comprehensive environment validation
+from .environment_validation import validate_environment, check_required_environment_variables, get_environment_info
+import logging
+
+# Quick check for critical variables during startup
+if not check_required_environment_variables():
+    raise ValueError("Critical environment variables are missing. Check logs for details.")
+
+# Perform comprehensive validation
+try:
+    validation_results = validate_environment(ENVIRONMENT)
     
-    missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
-    if missing_vars:
-        raise ValueError(f"Missing required environment variables for {ENVIRONMENT}: {', '.join(missing_vars)}")
+    # Log environment info for debugging
+    env_info = get_environment_info()
+    logger = logging.getLogger(__name__)
+    logger.info(f"Environment configuration loaded: {env_info}")
     
-    # Validate SECRET_KEY is not the default development key
-    if 'django-insecure' in SECRET_KEY or SECRET_KEY == 'your-secret-key-for-development':
-        raise ValueError("Cannot use development SECRET_KEY in production environment")
+    # Log validation warnings if any
+    if validation_results.get('warnings'):
+        for warning in validation_results['warnings']:
+            logger.warning(f"Environment validation warning: {warning}")
+            
+except Exception as e:
+    # In development, log the error but don't fail
+    if ENVIRONMENT == 'development':
+        print(f"Environment validation warning (development): {e}")
+    else:
+        # In staging/production, validation failures should stop startup
+        raise ValueError(f"Environment validation failed: {e}")

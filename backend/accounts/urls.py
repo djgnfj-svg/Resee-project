@@ -1,12 +1,17 @@
 from django.urls import path, include
+
 from rest_framework.routers import DefaultRouter
+
+from .subscription_views import subscription_detail, subscription_tiers, subscription_upgrade
 from .views import (
-    UserViewSet, ProfileView, PasswordChangeView, AccountDeleteView,
-    EmailVerificationView, ResendVerificationView, GoogleOAuthView,
+    UserViewSet, 
+    ProfileView, 
+    PasswordChangeView, 
+    AccountDeleteView,
+    EmailVerificationView, 
+    ResendVerificationView, 
+    GoogleOAuthView,
     WeeklyGoalUpdateView
-)
-from .subscription_views import (
-    subscription_detail, subscription_tiers, subscription_upgrade
 )
 
 app_name = 'accounts'
