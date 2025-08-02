@@ -522,6 +522,192 @@ def ai_review_health(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class AIAnswerEvaluationView(APIView):
+    """
+    Evaluate user answers using AI
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIEndpointThrottle]
+    
+    @swagger_auto_schema(
+        operation_summary="AI 답변 평가",
+        operation_description="""
+        사용자의 답변을 AI로 평가하여 점수와 피드백을 제공합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "question_id": 123,
+          "user_answer": "Python은 해석형 언어입니다."
+        }
+        ```
+        
+        **응답 예시:**
+        ```json
+        {
+          "id": 456,
+          "score": 0.85,
+          "feedback": "정답에 가깝습니다. 하지만 객체지향 특성도 언급하면 더 완전한 답변이 됩니다.",
+          "similarity_score": 0.78,
+          "evaluation_details": {
+            "strengths": ["기본 개념 이해가 정확함"],
+            "weaknesses": ["부분적 설명"],
+            "suggestions": ["객체지향 프로그래밍 언어라는 점도 추가해보세요"]
+          }
+        }
+        ```
+        
+        **채점 기준:**
+        - 0.9-1.0: 우수 (완벽한 이해)
+        - 0.7-0.8: 양호 (대부분 정확)
+        - 0.5-0.6: 보통 (부분적 이해)
+        - 0.3-0.4: 미흡 (기본 이해 부족)
+        - 0.0-0.2: 부족 (이해 부족)
+        """,
+        tags=['AI Review'],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'question_id': openapi.Schema(type=openapi.TYPE_INTEGER, description="평가할 질문 ID"),
+                'user_answer': openapi.Schema(type=openapi.TYPE_STRING, description="사용자의 답변"),
+            },
+            required=['question_id', 'user_answer']
+        ),
+        responses={
+            201: openapi.Response(
+                description="답변 평가 완료",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER, description="평가 기록 ID"),
+                        'score': openapi.Schema(type=openapi.TYPE_NUMBER, description="AI 평가 점수 (0.0-1.0)"),
+                        'feedback': openapi.Schema(type=openapi.TYPE_STRING, description="AI 피드백"),
+                        'similarity_score': openapi.Schema(type=openapi.TYPE_NUMBER, description="의미적 유사도 점수"),
+                        'evaluation_details': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'strengths': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                                'weaknesses': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                                'suggestions': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                            }
+                        ),
+                        'processing_time_ms': openapi.Schema(type=openapi.TYPE_INTEGER, description="AI 처리 시간"),
+                    }
+                )
+            ),
+            400: '잘못된 요청 - 유효성 검사 실패',
+            403: 'AI 기능 사용 불가 - 구독 업그레이드 필요',
+            404: '질문을 찾을 수 없음',
+            429: '일일 한도 초과',
+            503: 'AI 서비스 일시적 사용 불가',
+            500: 'AI 서비스 오류'
+        }
+    )
+    def post(self, request):
+        """Evaluate user answer with AI"""
+        # Check AI feature access
+        if not request.user.can_use_ai_features():
+            return Response(
+                {
+                    'error': 'AI features not available',
+                    'detail': 'Please upgrade your subscription and verify your email to access AI features.',
+                    'requires_subscription': True
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        question_id = request.data.get('question_id')
+        user_answer = request.data.get('user_answer')
+        
+        if not question_id or not user_answer:
+            return Response(
+                {'error': 'question_id and user_answer are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check daily usage limit
+        usage_record = AIUsageTracking.get_or_create_for_today(request.user)
+        if not usage_record.can_generate_questions(1):  # 1 evaluation = 1 credit
+            daily_limit = request.user.get_ai_question_limit()
+            remaining = daily_limit - usage_record.questions_generated
+            return Response(
+                {
+                    'error': 'Daily limit exceeded',
+                    'detail': f'You have reached your daily limit of {daily_limit} AI interactions. '
+                             f'You have {max(0, remaining)} interactions remaining today.',
+                    'daily_limit': daily_limit,
+                    'used_today': usage_record.questions_generated,
+                    'remaining_today': max(0, remaining)
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+        
+        # Get question and verify ownership through content
+        try:
+            question = AIQuestion.objects.select_related('content').get(
+                id=question_id,
+                content__author=request.user,
+                is_active=True
+            )
+        except AIQuestion.DoesNotExist:
+            return Response(
+                {'error': 'Question not found or access denied'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            # Evaluate answer using AI service
+            evaluation_result = ai_service.evaluate_answer(question, user_answer)
+            
+            # Create evaluation record
+            evaluation = AIEvaluation.objects.create(
+                question=question,
+                user=request.user,
+                user_answer=user_answer,
+                ai_score=evaluation_result['score'],
+                feedback=evaluation_result.get('feedback', ''),
+                similarity_score=evaluation_result.get('similarity_score'),
+                evaluation_details=evaluation_result.get('evaluation_details'),
+                ai_model_used=evaluation_result.get('ai_model_used', ''),
+                processing_time_ms=evaluation_result.get('processing_time_ms')
+            )
+            
+            # Track usage (1 evaluation = 1 credit)
+            usage_record.increment_questions(1)
+            
+            logger.info(
+                f"AI answer evaluation completed for question {question.id} "
+                f"(user: {request.user.email}, score: {evaluation.ai_score})"
+            )
+            
+            # Return evaluation result
+            response_data = {
+                'id': evaluation.id,
+                'score': evaluation.ai_score,
+                'feedback': evaluation.feedback,
+                'similarity_score': evaluation.similarity_score,
+                'evaluation_details': evaluation.evaluation_details,
+                'processing_time_ms': evaluation.processing_time_ms,
+                'question_id': question.id,
+                'user_answer': user_answer
+            }
+            
+            return Response(response_data, status=status.HTTP_201_CREATED)
+            
+        except AIServiceError as e:
+            logger.error(f"AI evaluation error for user {request.user.email}: {str(e)}")
+            return Response(
+                {'error': 'AI service temporarily unavailable', 'detail': str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error in AI evaluation: {str(e)}")
+            return Response(
+                {'error': 'Answer evaluation failed'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class AIChatView(APIView):
     """
     AI chat for learning content

@@ -142,6 +142,8 @@ A question needs overall_score >= 7.0 to be approved."""
             response_content, _ = self._make_api_call(messages, temperature=0.3, max_tokens=500)
             return json.loads(response_content)
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
             logger.error(f"Question quality evaluation failed: {e}")
             return {"overall_score": 5.0, "approved": False, "feedback": "Evaluation failed"}
 
@@ -185,6 +187,8 @@ Respond with JSON:
             response_content, _ = self._make_api_call(messages, temperature=0.3, max_tokens=800)
             return json.loads(response_content)
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
             logger.error(f"Content analysis failed: {e}")
             return {
                 "content_type": "concept",
@@ -337,10 +341,14 @@ QUESTION TYPES:
                 if quality_eval.get('approved', False):
                     approved_questions.append(question)
                 else:
+                    import logging
+                    logger = logging.getLogger(__name__)
                     logger.warning(f"Question rejected due to low quality: {quality_eval.get('feedback')}")
             
             # If not enough approved questions, generate more
             if len(approved_questions) < count and len(approved_questions) > 0:
+                import logging
+                logger = logging.getLogger(__name__)
                 logger.info(f"Generated {len(approved_questions)}/{count} approved questions")
             
             # Cache the approved results

@@ -71,6 +71,27 @@ export interface BlurRegionsResponse {
   processing_time_ms?: number;
 }
 
+// AI Answer Evaluation Request/Response
+export interface AIAnswerEvaluationRequest {
+  question_id: number;
+  user_answer: string;
+}
+
+export interface AIAnswerEvaluationResponse {
+  id: number;
+  score: number;
+  feedback: string;
+  similarity_score?: number;
+  evaluation_details?: {
+    strengths: string[];
+    weaknesses: string[];
+    suggestions: string[];
+  };
+  processing_time_ms?: number;
+  question_id: number;
+  user_answer: string;
+}
+
 // AI Chat Request/Response
 export interface AIChatRequest {
   content_id: number;
