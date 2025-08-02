@@ -2,6 +2,7 @@
 URL patterns for AI Review app
 """
 from django.urls import path
+
 from . import views
 
 app_name = 'ai_review'

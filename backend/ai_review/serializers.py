@@ -2,8 +2,10 @@
 Serializers for AI Review API
 """
 from rest_framework import serializers
-from .models import AIQuestionType, AIQuestion, AIEvaluation, AIReviewSession
+
 from content.models import Content
+
+from .models import AIQuestionType, AIQuestion, AIEvaluation, AIReviewSession
 
 
 class AIQuestionTypeSerializer(serializers.ModelSerializer):
@@ -35,7 +37,7 @@ class GenerateQuestionsSerializer(serializers.Serializer):
     content_id = serializers.IntegerField()
     question_types = serializers.ListField(
         child=serializers.CharField(),
-        help_text="List of question type names (multiple_choice, fill_blank, blur_processing)"
+        help_text="질문 유형 이름 목록 (multiple_choice, fill_blank, blur_processing)"
     )
     difficulty = serializers.IntegerField(min_value=1, max_value=5, default=1)
     count = serializers.IntegerField(min_value=1, max_value=10, default=3)
@@ -46,7 +48,7 @@ class GenerateQuestionsSerializer(serializers.Serializer):
         try:
             content = Content.objects.get(id=value, author=user)
         except Content.DoesNotExist:
-            raise serializers.ValidationError("Content not found or access denied")
+            raise serializers.ValidationError("콘텐츠를 찾을 수 없거나 접근 권한이 없습니다.")
         return value
     
     def validate_question_types(self, value):
@@ -59,7 +61,7 @@ class GenerateQuestionsSerializer(serializers.Serializer):
         invalid_types = set(value) - set(valid_types)
         if invalid_types:
             raise serializers.ValidationError(
-                f"Invalid or inactive question types: {list(invalid_types)}"
+                f"유효하지 않거나 비활성화된 질문 유형: {list(invalid_types)}"
             )
         
         return value
@@ -76,8 +78,6 @@ class GeneratedQuestionSerializer(serializers.Serializer):
     difficulty = serializers.IntegerField()
     ai_model_used = serializers.CharField(required=False)
     processing_time_ms = serializers.IntegerField(required=False)
-
-
 
 
 class AIReviewSessionSerializer(serializers.ModelSerializer):
@@ -107,7 +107,7 @@ class FillBlankRequestSerializer(serializers.Serializer):
         try:
             Content.objects.get(id=value, author=user)
         except Content.DoesNotExist:
-            raise serializers.ValidationError("Content not found or access denied")
+            raise serializers.ValidationError("콘텐츠를 찾을 수 없거나 접근 권한이 없습니다.")
         return value
 
 
@@ -130,7 +130,7 @@ class BlurRegionsRequestSerializer(serializers.Serializer):
         try:
             Content.objects.get(id=value, author=user)
         except Content.DoesNotExist:
-            raise serializers.ValidationError("Content not found or access denied")
+            raise serializers.ValidationError("콘텐츠를 찾을 수 없거나 접근 권한이 없습니다.")
         return value
 
 
@@ -162,7 +162,7 @@ class AIChatRequestSerializer(serializers.Serializer):
         try:
             Content.objects.get(id=value, author=user)
         except Content.DoesNotExist:
-            raise serializers.ValidationError("Content not found or access denied")
+            raise serializers.ValidationError("콘텐츠를 찾을 수 없거나 접근 권한이 없습니다.")
         return value
 
 

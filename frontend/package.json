@@ -4,8 +4,6 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
-    "@google-cloud/local-auth": "^3.0.1",
-    "@headlessui/react": "^1.7.4",
     "@heroicons/react": "^2.0.13",
     "@tanstack/react-query": "^4.16.1",
     "@testing-library/jest-dom": "^5.16.5",
@@ -22,8 +20,6 @@
     "autoprefixer": "^10.4.13",
     "axios": "^1.2.0",
     "date-fns": "^4.1.0",
-    "framer-motion": "^12.23.6",
-    "googleapis": "^153.0.0",
     "lucide-react": "^0.525.0",
     "postcss": "^8.4.19",
     "react": "^18.2.0",
@@ -34,11 +30,9 @@
     "react-router-dom": "^6.4.4",
     "react-scripts": "5.0.1",
     "recharts": "^2.15.4",
-    "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "tailwindcss": "^3.2.4",
-    "typescript": "^4.9.3",
-    "web-vitals": "^2.1.4"
+    "typescript": "^4.9.3"
   },
   "scripts": {
     "start": "react-scripts start",

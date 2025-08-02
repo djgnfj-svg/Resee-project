@@ -6,12 +6,12 @@ from .models import User, Subscription
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
-        ('Additional Info', {'fields': ('timezone', 'notification_enabled', 'is_email_verified')}),
+        ('Additional Info', {'fields': ('is_email_verified', 'weekly_goal')}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
-        ('Additional Info', {'fields': ('timezone', 'notification_enabled')}),
+        ('Additional Info', {'fields': ('weekly_goal',)}),
     )
-    list_display = ('email', 'first_name', 'last_name', 'is_email_verified', 'is_active', 'date_joined')
+    list_display = ('email', 'username', 'is_email_verified', 'weekly_goal', 'is_active', 'date_joined')
     list_filter = UserAdmin.list_filter + ('is_email_verified',)
 
 
@@ -19,7 +19,7 @@ class CustomUserAdmin(UserAdmin):
 class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ('user', 'tier', 'max_interval_days', 'is_active', 'start_date', 'end_date')
     list_filter = ('tier', 'is_active', 'start_date')
-    search_fields = ('user__email', 'user__first_name', 'user__last_name')
+    search_fields = ('user__email', 'user__username')
     readonly_fields = ('created_at', 'updated_at')
     
     fieldsets = (

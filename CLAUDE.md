@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🏗️ 프로젝트 개요
+Resee는 에빙하우스 망각곡선 이론을 활용한 스마트 복습 플랫폼입니다. Django(백엔드)와 React(프론트엔드)로 구성되어 있으며, Docker Compose로 전체 개발 환경을 관리합니다.
+
+### 핵심 서비스
+- **Backend**: Django REST Framework + PostgreSQL + Celery
+- **Frontend**: React + TypeScript + TailwindCSS
+- **AI Service**: Claude API (Anthropic)
+- **Message Queue**: RabbitMQ (Celery 브로커)
+- **Cache**: Redis
+- **Reverse Proxy**: Nginx
+
 ## 🎯 해야할 것 (TODO)
 
 ### 1. 새로운 기능 개발 시
@@ -45,8 +56,12 @@ docker-compose exec backend python manage.py shell_plus
 ```bash
 # 1. 코드 품질 체크
 docker-compose exec backend black . --check
+docker-compose exec backend black .  # 코드 포맷팅 적용
 docker-compose exec backend flake8
+docker-compose exec backend python manage.py check  # Django 시스템 체크
 docker-compose exec frontend npm run lint
+docker-compose exec frontend npm run lint:fix  # 자동 수정
+docker-compose exec frontend npx tsc --noEmit  # TypeScript 타입 체크
 
 # 2. 전체 테스트 실행
 docker-compose exec backend pytest
@@ -54,9 +69,11 @@ docker-compose exec frontend npm test -- --watchAll=false
 
 # 3. 프로덕션 빌드 테스트
 docker-compose exec frontend npm run build
+docker-compose build --no-cache  # Docker 이미지 새로 빌드
 
 # 4. 마이그레이션 확인
 docker-compose exec backend python manage.py showmigrations
+docker-compose exec backend python manage.py makemigrations --dry-run  # 예상 마이그레이션 확인
 ```
 
 ## 🔧 수정해야할 것 (FIX)
@@ -266,19 +283,34 @@ ContentForm (TipTap Editor)
 
 ## 🚀 필수 명령어 Quick Reference
 
-### 개발 환경
+### 개발 환경 설정
 ```bash
+# 최초 실행 시
+docker-compose up -d
+docker-compose exec backend python manage.py migrate
+docker-compose exec backend python manage.py create_test_users
+
 # 시작/중지
 docker-compose up -d
 docker-compose down
 
+# 특정 서비스만 재시작
+docker-compose restart backend
+docker-compose restart frontend
+docker-compose restart celery
+
 # 로그 확인
 docker-compose logs -f backend
 docker-compose logs -f frontend
+docker-compose logs -f celery
+docker-compose logs -f rabbitmq
 
 # 쉘 접속
 docker-compose exec backend bash
 docker-compose exec frontend bash
+
+# Django shell (향상된 shell_plus)
+docker-compose exec backend python manage.py shell_plus
 ```
 
 ### 데이터베이스
@@ -299,14 +331,22 @@ docker-compose exec db pg_dump -U resee_user resee_db > backup.sql
 # 백엔드
 docker-compose exec backend pytest -v
 docker-compose exec backend pytest -k "특정테스트" -v
+docker-compose exec backend pytest -m unit  # 유닛 테스트만
+docker-compose exec backend pytest -m integration  # 통합 테스트만
+docker-compose exec backend pytest -m "not slow"  # 느린 테스트 제외
+docker-compose exec backend pytest --pdb  # 실패 시 디버거 실행
 
 # 프론트엔드
 docker-compose exec frontend npm test
 docker-compose exec frontend npm test -- --coverage
+docker-compose exec frontend npm run test:coverage  # 커버리지 리포트
+docker-compose exec frontend npm run test:ci  # CI 환경용
 
 # E2E 테스트
 docker-compose exec frontend npx playwright test
-docker-compose exec frontend npx playwright test --ui
+docker-compose exec frontend npx playwright test --ui  # UI 모드
+docker-compose exec frontend npx playwright test --headed  # 브라우저 보며 실행
+docker-compose exec frontend npx playwright test --debug  # 디버그 모드
 ```
 
 ### 프로덕션
@@ -416,6 +456,42 @@ docker-compose exec frontend npx tsc --noEmit
 
 # 3. 환경 변수 확인
 docker-compose exec frontend printenv | grep REACT_APP_
+
+# 4. 컨테이너 재시작 (메모리 부족 시)
+docker-compose restart frontend
+```
+
+### 4. 캘린더 히트맵 문제 해결
+```bash
+# 1. 백엔드 데이터 확인
+docker-compose exec backend python manage.py shell
+>>> from review.models import ReviewHistory
+>>> from django.contrib.auth import get_user_model
+>>> user = get_user_model().objects.get(email='test@resee.com')
+>>> ReviewHistory.objects.filter(user=user).count()
+
+# 2. API 응답 확인
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8000/api/analytics/calendar/
+
+# 3. 프론트엔드 캐시 무효화
+queryClient.invalidateQueries({ queryKey: ['learning-calendar'] });
+```
+
+### 5. 주간 목표 및 진행률 문제
+```bash
+# 1. 사용자 설정 확인
+docker-compose exec backend python manage.py shell
+>>> from accounts.models import UserProfile
+>>> profile = UserProfile.objects.get(user__email='test@resee.com')
+>>> print(f"Weekly goal: {profile.weekly_goal}")
+
+# 2. 이번 주 복습 횟수 확인
+>>> from review.models import ReviewHistory
+>>> from django.utils import timezone
+>>> from datetime import timedelta
+>>> week_start = timezone.now().date() - timedelta(days=timezone.now().weekday())
+>>> count = ReviewHistory.objects.filter(user=profile.user, completed_at__date__gte=week_start).count()
+>>> print(f"This week reviews: {count}")
 ```
 
 ## 🌐 환경 변수 설정
@@ -467,4 +543,210 @@ docker-compose exec frontend npm run pwa:icons
 ### PWA 테스트
 ```bash
 docker-compose exec frontend npm run pwa:test
+```
+
+### Lighthouse 성능 테스트
+```bash
+# 프론트엔드 실행 중에
+docker-compose exec frontend npx lighthouse http://localhost:3000 --view
+```
+
+## 🔧 유용한 개발 도구 명령어
+
+### Django 관리 명령어
+```bash
+# 슈퍼유저 생성
+docker-compose exec backend python manage.py createsuperuser
+
+# 특정 앱의 마이그레이션만 생성
+docker-compose exec backend python manage.py makemigrations app_name
+
+# SQL 쿼리 확인
+docker-compose exec backend python manage.py sqlmigrate app_name 0001
+
+# 모든 URL 패턴 확인
+docker-compose exec backend python manage.py show_urls
+
+# 데이터베이스 플러시 (주의: 모든 데이터 삭제)
+docker-compose exec backend python manage.py flush
+
+# 정적 파일 수집 (프로덕션용)
+docker-compose exec backend python manage.py collectstatic --noinput
+```
+
+### Celery 작업 관리
+```bash
+# Celery 워커 상태 확인
+docker-compose exec celery celery -A resee status
+
+# 대기 중인 작업 확인
+docker-compose exec celery celery -A resee inspect active
+
+# 예약된 작업 확인
+docker-compose exec celery celery -A resee inspect scheduled
+
+# 특정 큐의 작업 삭제
+docker-compose exec celery celery -A resee purge -Q celery
+```
+
+### 성능 모니터링
+```bash
+# Django Debug Toolbar 활성화 (settings.py에서 DEBUG=True 필요)
+# 브라우저에서 http://localhost:8000/__debug__/ 접속
+
+# 데이터베이스 쿼리 분석
+docker-compose exec backend python manage.py debugsqlshell
+```
+
+## 🐛 자주 발생하는 문제들
+
+### 1. 캘린더 히트맵이 업데이트되지 않는 경우
+**원인**: 프론트엔드 캐시와 백엔드 날짜 범위 문제
+**해결**: 
+- 백엔드: `analytics/views.py`에서 날짜 범위를 정확히 365일(오늘 포함)로 설정
+- 프론트엔드: React Query 캐시 무효화 및 실제 API 데이터 범위 사용
+
+### 2. 주간 목표가 100% 초과 시 표시되지 않는 경우  
+**원인**: Math.min()으로 진행률을 100%로 제한
+**해결**: Math.min() 제거하고 초과 표시 UI 추가
+
+### 3. TypeScript 컴파일 오류로 프론트엔드 컨테이너 중단
+**원인**: 변수 선언 전 사용, 타입 불일치
+**해결**: 
+```bash
+docker-compose exec frontend npx tsc --noEmit  # 오류 확인
+docker-compose restart frontend  # 컨테이너 재시작
+```
+
+### 4. 시간 표시가 영어(AM/PM)로 나오는 경우
+**원인**: date-fns 기본 로케일이 영어
+**해결**: 수동으로 한국어 포맷 함수 구현
+```typescript
+const formatHour = (hour: number) => {
+  if (hour === 0) return '오전 12시';
+  if (hour < 12) return `오전 ${hour}시`;
+  if (hour === 12) return '오후 12시';  
+  return `오후 ${hour - 12}시`;
+};
+```
+
+### 5. 복습 완료 후 진행률이 정확하지 않은 경우
+**원인**: 백엔드와 프론트엔드 간 데이터 동기화 문제
+**해결**: 복습 완료 후 관련 쿼리 캐시 무효화
+```typescript
+queryClient.invalidateQueries({ queryKey: ['learning-calendar'] });
+queryClient.invalidateQueries({ queryKey: ['advanced-analytics'] });
+```
+
+### 6. Git 커밋 작성자 정보 변경
+**원인**: 잘못된 사용자 정보로 커밋됨
+**해결**:
+```bash
+# 모든 unpushed 커밋의 작성자 변경
+git filter-branch --env-filter 'AUTHOR_NAME="djgnfj-svg"; AUTHOR_EMAIL="djgnfj@naver.com"; COMMITTER_NAME="djgnfj-svg"; COMMITTER_EMAIL="djgnfj@naver.com"' HEAD~48..HEAD
+```
+
+## 🔍 성능 최적화 팁
+
+### 1. React Query 설정
+- staleTime과 cacheTime을 적절히 설정하여 불필요한 API 호출 방지
+- 캐시 무효화는 데이터 변경 시에만 수행
+
+### 2. 타입스크립트 컴파일 최적화
+- incremental 컴파일 활성화
+- strict 모드 사용으로 런타임 오류 방지
+
+### 3. Docker 컨테이너 메모리 관리
+- 프론트엔드 빌드 시 메모리 부족 현상 발생 가능
+- 필요시 컨테이너 재시작으로 해결
+
+## 🔌 API 테스트 및 디버깅
+
+### API 엔드포인트 테스트
+```bash
+# 헬스체크
+curl http://localhost:8000/api/health/
+
+# JWT 토큰 획득
+curl -X POST http://localhost:8000/api/auth/token/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@resee.com", "password": "test123!"}'
+
+# 인증된 요청 예시
+TOKEN="your-access-token"
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/content/contents/
+
+# API 문서 확인 (Swagger UI)
+# 브라우저에서 http://localhost:8000/api/docs/ 접속
+```
+
+### React 개발 도구
+```bash
+# 번들 크기 분석
+docker-compose exec frontend npm run build -- --stats
+docker-compose exec frontend npx webpack-bundle-analyzer build/bundle-stats.json
+
+# 의존성 업데이트 확인
+docker-compose exec frontend npm outdated
+
+# 의존성 보안 취약점 검사
+docker-compose exec frontend npm audit
+docker-compose exec frontend npm audit fix  # 자동 수정
+```
+
+## 🔒 보안 체크리스트
+
+### 개발 시 주의사항
+- 절대 시크릿 키나 API 키를 코드에 하드코딩하지 않음
+- 환경 변수는 .env 파일로 관리 (.env는 .gitignore에 포함)
+- 사용자 입력은 항상 검증 및 sanitize
+- SQL 인젝션 방지를 위해 ORM 쿼리 사용
+- XSS 방지를 위해 React의 기본 이스케이핑 활용
+
+### 보안 검사 명령어
+```bash
+# Django 보안 체크
+docker-compose exec backend python manage.py check --deploy
+
+# 의존성 보안 취약점 검사
+docker-compose exec backend pip-audit
+docker-compose exec frontend npm audit
+```
+
+## 🐳 Docker 문제 해결
+
+### 일반적인 Docker 문제
+```bash
+# 컨테이너가 시작되지 않을 때
+docker-compose ps  # 상태 확인
+docker-compose logs service_name  # 특정 서비스 로그
+
+# 모든 컨테이너 재빌드
+docker-compose down -v  # 볼륨 포함 삭제
+docker-compose build --no-cache
+docker-compose up -d
+
+# 디스크 공간 정리
+docker system prune -a  # 사용하지 않는 이미지, 컨테이너 삭제
+docker volume prune  # 사용하지 않는 볼륨 삭제
+
+# 특정 서비스만 로그 확인
+docker-compose logs --tail=100 backend
+docker-compose logs --since="10m" frontend
+
+# 컨테이너 내부 프로세스 확인
+docker-compose exec backend ps aux
+docker-compose exec backend top
+```
+
+### 데이터베이스 연결 문제
+```bash
+# PostgreSQL 연결 테스트
+docker-compose exec backend python manage.py dbshell
+
+# 데이터베이스 직접 접속
+docker-compose exec db psql -U resee_user -d resee_db
+
+# 연결 상태 확인
+docker-compose exec db pg_isready
 ```

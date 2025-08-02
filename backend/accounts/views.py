@@ -1,22 +1,32 @@
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework_simplejwt.views import TokenObtainPairView
+import logging
+from datetime import timedelta
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from django.conf import settings
-from datetime import timedelta
-from .serializers import (
-    UserSerializer, ProfileSerializer, UserRegistrationSerializer, 
-    PasswordChangeSerializer, AccountDeleteSerializer, EmailTokenObtainPairSerializer
-)
-from .google_auth import GoogleAuthSerializer
+
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from drf_yasg.utils import swagger_auto_schema
+from rest_framework_simplejwt.views import TokenObtainPairView
+
 from drf_yasg import openapi
-import logging
+from drf_yasg.utils import swagger_auto_schema
+
+from resee.throttling import LoginRateThrottle, RegistrationRateThrottle, EmailRateThrottle
+
+from .google_auth import GoogleAuthSerializer
+from .serializers import (
+    UserSerializer, 
+    ProfileSerializer, 
+    UserRegistrationSerializer,
+    PasswordChangeSerializer, 
+    AccountDeleteSerializer, 
+    EmailTokenObtainPairSerializer
+)
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -25,6 +35,7 @@ logger = logging.getLogger(__name__)
 class EmailTokenObtainPairView(TokenObtainPairView):
     """Custom JWT token view that uses email instead of username"""
     serializer_class = EmailTokenObtainPairSerializer
+    throttle_classes = [LoginRateThrottle]
     
     @swagger_auto_schema(
         operation_summary="로그인 (JWT 토큰 획득)",
@@ -116,7 +127,7 @@ class UserViewSet(viewsets.ModelViewSet):
             500: "서버 오류",
         }
     )
-    @action(detail=False, methods=['post'], permission_classes=[])
+    @action(detail=False, methods=['post'], permission_classes=[], throttle_classes=[RegistrationRateThrottle])
     def register(self, request):
         """User registration endpoint"""
         logger.info(f"회원가입 요청: {request.data.get('email', 'unknown')}")
@@ -354,6 +365,7 @@ class AccountDeleteView(APIView):
 class EmailVerificationView(APIView):
     """Email verification view"""
     permission_classes = [AllowAny]
+    throttle_classes = [EmailRateThrottle]
     
     @swagger_auto_schema(
         operation_summary="이메일 인증",
@@ -453,6 +465,7 @@ class EmailVerificationView(APIView):
 class ResendVerificationView(APIView):
     """Resend email verification"""
     permission_classes = [AllowAny]
+    throttle_classes = [EmailRateThrottle]
     
     @swagger_auto_schema(
         operation_summary="인증 이메일 재발송",
@@ -624,8 +637,23 @@ class WeeklyGoalUpdateView(APIView):
     """주간 목표 설정 API"""
     permission_classes = [IsAuthenticated]
     
+    def get(self, request):
+        """주간 목표 조회"""
+        user = request.user
+        return Response({
+            'weekly_goal': user.weekly_goal
+        }, status=status.HTTP_200_OK)
+    
+    def put(self, request):
+        """주간 목표 업데이트 (PUT method)"""
+        return self._update_weekly_goal(request)
+    
     def patch(self, request):
-        """주간 목표 업데이트"""
+        """주간 목표 업데이트 (PATCH method)"""
+        return self._update_weekly_goal(request)
+    
+    def _update_weekly_goal(self, request):
+        """주간 목표 업데이트 공통 로직"""
         user = request.user
         weekly_goal = request.data.get('weekly_goal')
         
@@ -637,9 +665,9 @@ class WeeklyGoalUpdateView(APIView):
         
         try:
             weekly_goal = int(weekly_goal)
-            if weekly_goal < 1 or weekly_goal > 1000:
+            if weekly_goal < 1 or weekly_goal > 100:
                 return Response(
-                    {'error': '주간 목표는 1회 이상 1000회 이하로 설정해주세요.'}, 
+                    {'error': '주간 목표는 1회 이상 100회 이하로 설정해주세요.'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
         except ValueError:

@@ -2,21 +2,28 @@
 AI Review API views
 """
 import logging
+
 from django.shortcuts import get_object_or_404
+
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 
-from content.models import Content
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+
+from resee.structured_logging import log_api_call, log_performance, ai_logger
+from resee.throttling import AIEndpointThrottle
+
 from accounts.models import AIUsageTracking
+from content.models import Content
+
 from .models import AIQuestionType, AIQuestion, AIReviewSession
 from .serializers import (
     AIQuestionTypeSerializer,
-    AIQuestionSerializer, 
+    AIQuestionSerializer,
     GenerateQuestionsSerializer,
     GeneratedQuestionSerializer,
     AIReviewSessionSerializer,
@@ -28,7 +35,6 @@ from .serializers import (
     AIChatResponseSerializer
 )
 from .services import ai_service, AIServiceError
-from resee.structured_logging import log_api_call, log_performance, ai_logger
 
 
 logger = logging.getLogger(__name__)
@@ -50,6 +56,7 @@ class GenerateQuestionsView(APIView):
     Generate AI questions for given content
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIEndpointThrottle]
     
     @swagger_auto_schema(
         request_body=GenerateQuestionsSerializer,
@@ -212,7 +219,6 @@ class GenerateQuestionsView(APIView):
 
 
 
-
 class ContentQuestionsView(ListAPIView):
     """
     List AI questions for specific content
@@ -254,7 +260,6 @@ class ContentQuestionsView(ListAPIView):
         ).select_related('content', 'question_type')\
          .prefetch_related('feedback')\
          .order_by('-created_at')
-
 
 
 
@@ -300,12 +305,12 @@ class AIReviewSessionListView(ListAPIView):
             'review_history__content__ai_questions'
         ).order_by('-created_at')
 
-
 class GenerateFillBlanksView(APIView):
     """
     Generate fill-in-the-blank questions for content
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIEndpointThrottle]
     
     @swagger_auto_schema(
         operation_summary="빈칸 채우기 문제 생성",
@@ -398,6 +403,7 @@ class IdentifyBlurRegionsView(APIView):
     Identify regions for blur processing in content
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIEndpointThrottle]
     
     @swagger_auto_schema(
         operation_summary="블러 처리 영역 식별",
@@ -521,6 +527,7 @@ class AIChatView(APIView):
     AI chat for learning content
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIEndpointThrottle]
     
     @swagger_auto_schema(
         request_body=AIChatRequestSerializer,

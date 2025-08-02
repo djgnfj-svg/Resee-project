@@ -75,7 +75,13 @@
       "mcp__playwright__browser_console_messages",
       "Bash(npm run lint)",
       "Bash(flake8:*)",
-      "mcp__playwright__browser_evaluate"
+      "mcp__playwright__browser_evaluate",
+      "Bash(git log:*)",
+      "Bash(git config:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)",
+      "Bash(/tmp/monitor_celery.sh:*)",
+      "Bash(/dev/null)"
     ]
   },
   "enableAllProjectMcpServers": true,

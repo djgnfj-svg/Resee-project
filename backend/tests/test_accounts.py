@@ -26,51 +26,58 @@ class UserModelTestCase(BaseTestCase):
     def test_create_user(self):
         """Test creating a regular user"""
         user = User.objects.create_user(
-            username='testuser2',
             email='test2@example.com',
             password='testpass123'
         )
-        self.assertEqual(user.username, 'testuser2')
         self.assertEqual(user.email, 'test2@example.com')
         self.assertTrue(user.check_password('testpass123'))
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
-        self.assertEqual(user.timezone, 'Asia/Seoul')  # Default timezone
-        self.assertTrue(user.notification_enabled)  # Default enabled
+        self.assertFalse(user.is_email_verified)  # Default not verified
+        self.assertEqual(user.weekly_goal, 7)  # Default weekly goal
     
     def test_create_superuser(self):
         """Test creating a superuser"""
         admin_user = User.objects.create_superuser(
-            username='admin',
             email='admin@example.com',
             password='adminpass123'
         )
-        self.assertEqual(admin_user.username, 'admin')
         self.assertEqual(admin_user.email, 'admin@example.com')
         self.assertTrue(admin_user.check_password('adminpass123'))
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
+        self.assertTrue(admin_user.is_email_verified)  # Superuser is auto-verified
     
     def test_user_string_representation(self):
         """Test user string representation"""
-        user = self.create_user(username='testuser3', email='test3@example.com')
-        self.assertEqual(str(user), 'testuser3')
+        user = self.create_user(email='test3@example.com')
+        self.assertEqual(str(user), 'test3@example.com')
     
     def test_user_email_unique(self):
         """Test that email must be unique"""
-        self.create_user(email='test4@example.com', username='user4')
+        self.create_user(email='test4@example.com')
         with self.assertRaises(Exception):
-            self.create_user(email='test4@example.com', username='different')
+            self.create_user(email='test4@example.com')
     
-    def test_user_timezone_validation(self):
-        """Test timezone field validation"""
-        user = self.create_user(username='user5', email='test5@example.com', timezone='America/New_York')
-        self.assertEqual(user.timezone, 'America/New_York')
+    def test_user_weekly_goal_default(self):
+        """Test weekly goal default value"""
+        user = self.create_user(email='test5@example.com')
+        self.assertEqual(user.weekly_goal, 7)
     
-    def test_user_notification_settings(self):
-        """Test notification settings"""
-        user = self.create_user(username='user6', email='test6@example.com', notification_enabled=False)
-        self.assertFalse(user.notification_enabled)
+    def test_user_email_verification(self):
+        """Test email verification functionality"""
+        user = self.create_user(email='test6@example.com')
+        self.assertFalse(user.is_email_verified)
+        
+        # Generate verification token
+        token = user.generate_email_verification_token()
+        self.assertIsNotNone(token)
+        self.assertIsNotNone(user.email_verification_token)
+        
+        # Verify email with token
+        self.assertTrue(user.verify_email(token))
+        self.assertTrue(user.is_email_verified)
+        self.assertIsNone(user.email_verification_token)
 
 
 class UserSerializerTestCase(BaseTestCase):
@@ -82,11 +89,11 @@ class UserSerializerTestCase(BaseTestCase):
         serializer = UserSerializer(user)
         data = serializer.data
         
-        self.assertEqual(data['username'], user.username)
         self.assertEqual(data['email'], user.email)
-        self.assertEqual(data['timezone'], user.timezone)
-        self.assertEqual(data['notification_enabled'], user.notification_enabled)
-        self.assertIn('date_joined', data)
+        self.assertEqual(data['is_email_verified'], user.is_email_verified)
+        self.assertEqual(data['weekly_goal'], user.weekly_goal)
+        self.assertIn('created_at', data)
+        self.assertIn('updated_at', data)
         self.assertNotIn('password', data)
     
     def test_profile_serializer(self):
@@ -94,56 +101,43 @@ class UserSerializerTestCase(BaseTestCase):
         user = self.create_user()
         data = {
             'username': 'updateduser',
-            'email': 'updated@example.com',
-            'first_name': 'Updated',
-            'last_name': 'User',
-            'timezone': 'America/New_York',
-            'notification_enabled': False,
+            'weekly_goal': 14,
         }
         serializer = ProfileSerializer(user, data=data)
         self.assertTrue(serializer.is_valid())
         
         updated_user = serializer.save()
         self.assertEqual(updated_user.username, 'updateduser')
-        self.assertEqual(updated_user.email, 'updated@example.com')
-        self.assertEqual(updated_user.first_name, 'Updated')
-        self.assertEqual(updated_user.timezone, 'America/New_York')
-        self.assertFalse(updated_user.notification_enabled)
+        self.assertEqual(updated_user.weekly_goal, 14)
+        # Email should remain unchanged (read-only)
+        self.assertEqual(updated_user.email, user.email)
     
     def test_user_registration_serializer_valid(self):
         """Test UserRegistrationSerializer with valid data"""
         data = {
-            'username': 'newuser',
             'email': 'newuser@example.com',
             'password': 'newpass123',
             'password_confirm': 'newpass123',
-            'first_name': 'New',
-            'last_name': 'User',
-            'timezone': 'Asia/Seoul',
-            'notification_enabled': True,
         }
         serializer = UserRegistrationSerializer(data=data)
         self.assertTrue(serializer.is_valid())
         
         user = serializer.save()
-        self.assertEqual(user.username, 'newuser')
         self.assertEqual(user.email, 'newuser@example.com')
         self.assertTrue(user.check_password('newpass123'))
-        self.assertEqual(user.first_name, 'New')
-        self.assertEqual(user.timezone, 'Asia/Seoul')
+        self.assertFalse(user.is_email_verified)  # Default not verified
+        self.assertEqual(user.weekly_goal, 7)  # Default weekly goal
     
     def test_user_registration_serializer_password_mismatch(self):
         """Test UserRegistrationSerializer with mismatched passwords"""
         data = {
-            'username': 'newuser',
             'email': 'newuser@example.com',
             'password': 'newpass123',
             'password_confirm': 'differentpass',
-            'timezone': 'Asia/Seoul',
         }
         serializer = UserRegistrationSerializer(data=data)
         self.assertFalse(serializer.is_valid())
-        self.assertIn('non_field_errors', serializer.errors)
+        self.assertIn('password_confirm', serializer.errors)
     
     def test_password_change_serializer_valid(self):
         """Test PasswordChangeSerializer with valid data"""
@@ -223,14 +217,9 @@ class AccountsAPITestCase(BaseAPITestCase):
         """Test user registration endpoint"""
         url = reverse('accounts:users-register')
         data = {
-            'username': 'newuser',
             'email': 'newuser@example.com',
             'password': 'newpass123',
             'password_confirm': 'newpass123',
-            'first_name': 'New',
-            'last_name': 'User',
-            'timezone': 'Asia/Seoul',
-            'notification_enabled': True,
         }
         
         # Remove authentication for registration
@@ -240,9 +229,10 @@ class AccountsAPITestCase(BaseAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         
         # Check user was created
-        user = User.objects.get(username='newuser')
+        user = User.objects.get(email='newuser@example.com')
         self.assertEqual(user.email, 'newuser@example.com')
-        self.assertEqual(user.first_name, 'New')
+        self.assertFalse(user.is_email_verified)  # Email not auto-verified in test environment
+        self.assertEqual(user.weekly_goal, 7)  # Default value
         self.assertTrue(user.check_password('newpass123'))
     
     def test_user_registration_invalid_data(self):
@@ -260,8 +250,9 @@ class AccountsAPITestCase(BaseAPITestCase):
         
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('email', response.data)
-        self.assertIn('password', response.data)
+        self.assertIn('field_errors', response.data)
+        self.assertIn('email', response.data['field_errors'])
+        self.assertIn('password', response.data['field_errors'])
     
     def test_get_profile(self):
         """Test getting user profile"""
@@ -269,20 +260,16 @@ class AccountsAPITestCase(BaseAPITestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['username'], self.user.username)
         self.assertEqual(response.data['email'], self.user.email)
-        self.assertEqual(response.data['timezone'], self.user.timezone)
+        self.assertEqual(response.data['is_email_verified'], self.user.is_email_verified)
+        self.assertEqual(response.data['weekly_goal'], self.user.weekly_goal)
     
     def test_update_profile(self):
         """Test updating user profile"""
         url = reverse('accounts:profile')
         data = {
             'username': 'updateduser',
-            'email': 'updated@example.com',
-            'first_name': 'Updated',
-            'last_name': 'User',
-            'timezone': 'America/New_York',
-            'notification_enabled': False,
+            'weekly_goal': 14,
         }
         
         response = self.client.put(url, data, format='json')
@@ -291,10 +278,9 @@ class AccountsAPITestCase(BaseAPITestCase):
         # Check user was updated
         self.user.refresh_from_db()
         self.assertEqual(self.user.username, 'updateduser')
-        self.assertEqual(self.user.email, 'updated@example.com')
-        self.assertEqual(self.user.first_name, 'Updated')
-        self.assertEqual(self.user.timezone, 'America/New_York')
-        self.assertFalse(self.user.notification_enabled)
+        self.assertEqual(self.user.weekly_goal, 14)
+        # Email should remain unchanged (read-only in ProfileSerializer)
+        self.assertNotEqual(self.user.email, 'updated@example.com')
     
     def test_change_password(self):
         """Test password change endpoint"""
@@ -405,9 +391,13 @@ class JWTAuthenticationTestCase(BaseAPITestCase):
     
     def test_login_valid_credentials(self):
         """Test login with valid credentials"""
+        # Verify user email first
+        self.user.is_email_verified = True
+        self.user.save()
+        
         url = reverse('token_obtain_pair')
         data = {
-            'username': 'testuser',
+            'email': self.user.email,
             'password': 'testpass123',
         }
         
@@ -423,7 +413,7 @@ class JWTAuthenticationTestCase(BaseAPITestCase):
         """Test login with invalid credentials"""
         url = reverse('token_obtain_pair')
         data = {
-            'username': 'testuser',
+            'email': self.user.email,
             'password': 'wrongpassword',
         }
         
@@ -431,7 +421,7 @@ class JWTAuthenticationTestCase(BaseAPITestCase):
         self.client.credentials()
         
         response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
     def test_token_refresh(self):
         """Test JWT token refresh"""
