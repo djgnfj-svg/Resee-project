@@ -404,7 +404,7 @@ const ProgressVisualization: React.FC<ProgressVisualizationProps> = ({ data, onG
       {/* 주간 학습 진도 차트 */}
       <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 dark:border-gray-700/50 p-6 hover:shadow-lg transition-all duration-200">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          📈 주간 학습 진도
+          📈 주간별 학습 진도 (최근 8주)
         </h3>
         <div className="h-80">
           {safeArray(weeklyProgress).length > 0 ? (

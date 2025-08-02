@@ -1,0 +1,177 @@
+/* Component Styles */
+
+/* Form Components */
+.form-input {
+  @apply block w-full rounded-lg border-0 px-4 py-3 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-primary-600 dark:focus:ring-primary-500 bg-white dark:bg-gray-800 transition-all duration-200;
+}
+
+.form-input:hover:not(:focus) {
+  @apply ring-gray-400 dark:ring-gray-500;
+}
+
+.form-label {
+  @apply block text-sm font-medium leading-6 text-gray-900 dark:text-gray-100 mb-2;
+}
+
+/* Button Components */
+.btn {
+  @apply inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98];
+}
+
+.btn-primary {
+  @apply bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 focus:ring-primary-500 shadow-lg hover:shadow-xl;
+}
+
+.btn-secondary {
+  @apply bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-gray-500;
+}
+
+.btn-ghost {
+  @apply text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 focus:ring-gray-500;
+}
+
+/* Button Sizes */
+.btn-sm {
+  @apply px-3 py-1.5 text-sm;
+}
+
+.btn-md {
+  @apply px-4 py-2.5 text-base;
+}
+
+.btn-lg {
+  @apply px-6 py-3 text-lg;
+}
+
+/* Card Components */
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden;
+}
+
+.card-body {
+  @apply p-6;
+}
+
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] hover:border-primary-500/50 dark:hover:border-primary-400/50;
+}
+
+/* Auth Card - Special card for auth pages */
+.auth-card {
+  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95;
+}
+
+.auth-card-body {
+  @apply p-8 sm:p-10;
+}
+
+/* Background Pattern for Auth Pages */
+.auth-bg-pattern {
+  @apply fixed inset-0 -z-10 bg-gradient-to-br from-primary-50 via-white to-primary-100 dark:from-gray-900 dark:via-gray-900 dark:to-primary-900;
+}
+
+.auth-bg-pattern::before {
+  content: '';
+  @apply absolute inset-0 opacity-30 dark:opacity-10;
+  background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239CA3AF" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+}
+
+/* Divider with Text */
+.divider {
+  @apply relative my-6;
+}
+
+.divider::before {
+  content: '';
+  @apply absolute inset-0 flex items-center;
+}
+
+.divider-text {
+  @apply relative flex justify-center text-sm font-medium;
+}
+
+.divider-text span {
+  @apply bg-white dark:bg-gray-800 px-4 text-gray-500 dark:text-gray-400;
+}
+
+/* Social Login Button */
+.social-login-btn {
+  @apply w-full flex items-center justify-center gap-3 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 shadow-sm hover:shadow-md;
+}
+
+/* Error Alert */
+.alert {
+  @apply rounded-lg p-4 border;
+}
+
+.alert-error {
+  @apply bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300;
+}
+
+.alert-success {
+  @apply bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300;
+}
+
+.alert-warning {
+  @apply bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-300;
+}
+
+.alert-info {
+  @apply bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300;
+}
+
+/* Link Styles */
+.link {
+  @apply text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors duration-200 underline decoration-transparent hover:decoration-current;
+}
+
+/* Loading Spinner */
+.spinner {
+  @apply inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin;
+}
+
+/* Focus Ring Utilities */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900;
+}
+
+/* Additional Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Animation Classes */
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Glassmorphism Effect */
+.glass {
+  @apply backdrop-blur-md bg-white/70 dark:bg-gray-900/70 border border-white/20 dark:border-gray-700/30;
+}
+
+/* Gradient Text */
+.gradient-text {
+  @apply bg-gradient-to-r from-primary-600 to-primary-700 dark:from-primary-400 dark:to-primary-500 bg-clip-text text-transparent;
+}

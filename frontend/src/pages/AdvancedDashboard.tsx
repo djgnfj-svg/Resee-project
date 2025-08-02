@@ -138,16 +138,44 @@ const AdvancedDashboard: React.FC = () => {
     const safeMonthlyData = (calendarData && Array.isArray(calendarData.monthly_summary)) ? calendarData.monthly_summary : [];
     const safeCategoryData = Array.isArray(analyticsData.category_performance) ? analyticsData.category_performance : [];
 
-    // 주간 진도 데이터 (최근 30일) - NaN 방지 강화
-    const weeklyProgress = safeCalendarData
-      .slice(-30)
-      .map((day, index) => ({
-        date: day?.date ? new Date(day.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }) : `Day ${index + 1}`,
-        reviews: sanitizeValue(day?.count, 0),
-        successRate: sanitizeValue(day?.success_rate, 0),
-        newContent: 0, // 실제 신규 콘텐츠 데이터가 없으므로 0으로 설정
-        masteredItems: sanitizeValue(day?.remembered, 0)
-      }));
+    // 주간 진도 데이터 (최근 8주) - NaN 방지 강화
+    const weeklyProgress = (() => {
+      if (!Array.isArray(safeCalendarData) || safeCalendarData.length === 0) {
+        return [];
+      }
+      
+      // 주별로 데이터 그룹화
+      const weeklyData = [];
+      const today = new Date();
+      
+      for (let weekOffset = 7; weekOffset >= 0; weekOffset--) {
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - (weekOffset * 7) - today.getDay());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        
+        // 해당 주의 데이터 필터링
+        const weekData = safeCalendarData.filter(day => {
+          const dayDate = new Date(day.date);
+          return dayDate >= weekStart && dayDate <= weekEnd;
+        });
+        
+        // 주별 합계 계산
+        const totalReviews = weekData.reduce((sum, day) => sum + sanitizeValue(day?.count, 0), 0);
+        const totalRemembered = weekData.reduce((sum, day) => sum + sanitizeValue(day?.remembered, 0), 0);
+        const successRate = totalReviews > 0 ? (totalRemembered / totalReviews * 100) : 0;
+        
+        weeklyData.push({
+          date: `${weekStart.getMonth() + 1}/${weekStart.getDate()} 주`,
+          reviews: totalReviews,
+          successRate: sanitizeValue(successRate, 0),
+          newContent: 0, // 실제 신규 콘텐츠 데이터가 없으므로 0으로 설정
+          masteredItems: totalRemembered
+        });
+      }
+      
+      return weeklyData;
+    })();
 
     // 월간 트렌드 데이터 - NaN 방지 강화
     const monthlyTrends = safeMonthlyData.map(month => ({
