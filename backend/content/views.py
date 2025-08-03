@@ -70,9 +70,10 @@ class ContentViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
     
     def get_queryset(self):
-        # Basic query without complex prefetch for now
+        # Optimized query with prefetch for review data
         queryset = Content.objects.filter(author=self.request.user)\
-            .select_related('category', 'author')
+            .select_related('category', 'author')\
+            .prefetch_related('review_history', 'review_schedules')
         
         # Category filter
         category_slug = self.request.query_params.get('category_slug', None)

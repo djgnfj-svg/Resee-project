@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Q
+from datetime import timedelta
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import ReviewSchedule, ReviewHistory
@@ -75,8 +76,18 @@ class TodayReviewView(APIView):
     """
     
     @swagger_auto_schema(
-        operation_summary="오늘의 복습 목록 조회",
-        operation_description="오늘 복습 예정인 모든 콘텐츠를 반환합니다. 카테고리별 필터링 가능합니다.",
+        operation_summary="구독 티어별 복습 목록 조회",
+        operation_description="""
+        사용자의 구독 티어에 따라 복습할 콘텐츠를 반환합니다.
+        
+        **구독 티어별 복습 범위:**
+        - FREE: 최대 7일 전까지의 밀린 복습
+        - BASIC: 최대 30일 전까지의 밀린 복습  
+        - PREMIUM: 최대 60일 전까지의 밀린 복습
+        - PRO: 최대 180일 전까지의 밀린 복습
+        
+        초기 복습이 완료되지 않은 콘텐츠는 항상 포함됩니다.
+        """,
         manual_parameters=[
             openapi.Parameter(
                 'category_slug', 
@@ -88,14 +99,26 @@ class TodayReviewView(APIView):
         responses={200: ReviewScheduleSerializer(many=True)}
     )
     def get(self, request):
-        """Get today's review items (including initial reviews)"""
+        """Get review items due today or overdue (within subscription limits)"""
         today = timezone.now().date()
+        
+        # Get user's subscription tier and determine overdue limit
+        max_overdue_days = request.user.get_max_review_interval()
+        if not max_overdue_days:
+            max_overdue_days = 7  # Default to FREE tier
+        
+        # Calculate cutoff date for overdue reviews based on subscription
+        # Don't show reviews older than the subscription allows
+        cutoff_date = timezone.now() - timedelta(days=max_overdue_days)
+        
         schedules = ReviewSchedule.objects.filter(
             user=request.user,
             is_active=True
         ).filter(
-            # Include items that are due today OR are initial reviews not yet completed
-            Q(next_review_date__date__lte=today) | Q(initial_review_completed=False)
+            # Only include reviews that are due TODAY or overdue (but within subscription range)
+            # OR initial reviews not yet completed
+            Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date) | 
+            Q(initial_review_completed=False)
         ).select_related('content', 'content__category').order_by('next_review_date')
         
         # Category filter
@@ -103,8 +126,29 @@ class TodayReviewView(APIView):
         if category_slug:
             schedules = schedules.filter(content__category__slug=category_slug)
         
+        # Get total active schedules for progress display
+        total_schedules = ReviewSchedule.objects.filter(
+            user=request.user,
+            is_active=True
+        ).count()
+        
+        # Apply category filter to total count if specified
+        if category_slug:
+            total_schedules = ReviewSchedule.objects.filter(
+                user=request.user,
+                is_active=True,
+                content__category__slug=category_slug
+            ).count()
+        
         serializer = ReviewScheduleSerializer(schedules, many=True)
-        return Response(serializer.data)
+        
+        return Response({
+            'results': serializer.data,
+            'count': len(serializer.data),  # Today's reviews count
+            'total_count': total_schedules,  # Total active schedules
+            'subscription_tier': request.user.subscription.tier,
+            'max_interval_days': request.user.get_max_review_interval()
+        })
 
 
 class CompleteReviewView(APIView):
@@ -193,22 +237,44 @@ class CompleteReviewView(APIView):
                     notes=notes
                 )
                 
-                # Update schedule based on result
+                # Update schedule based on result with subscription limits
                 if result == 'remembered':
                     # Mark initial review as completed if it's the first review
                     if not schedule.initial_review_completed:
                         schedule.initial_review_completed = True
                         schedule.save()
-                    # Advance to next interval
+                    # Advance to next interval (advance_schedule now includes subscription limits)
                     schedule.advance_schedule()
                 elif result == 'partial':
                     # Mark initial review as completed if it's the first review
                     if not schedule.initial_review_completed:
                         schedule.initial_review_completed = True
                         schedule.save()
-                    # Stay at current interval but reset date
+                    # Stay at current interval but reset date with subscription validation
                     intervals = get_review_intervals(request.user)
+                    user_max_interval = request.user.get_max_review_interval()
+                    
+                    # Ensure current interval doesn't exceed subscription limits
+                    if schedule.interval_index >= len(intervals):
+                        schedule.interval_index = len(intervals) - 1
+                    
                     current_interval = intervals[schedule.interval_index]
+                    
+                    # Additional check: ensure interval respects subscription tier
+                    if current_interval > user_max_interval:
+                        # Find the highest allowed interval
+                        allowed_intervals = [i for i in intervals if i <= user_max_interval]
+                        if allowed_intervals:
+                            current_interval = max(allowed_intervals)
+                            try:
+                                schedule.interval_index = intervals.index(current_interval)
+                            except ValueError:
+                                schedule.interval_index = len(allowed_intervals) - 1
+                                current_interval = allowed_intervals[-1]
+                        else:
+                            current_interval = intervals[0]
+                            schedule.interval_index = 0
+                    
                     schedule.next_review_date = timezone.now() + timezone.timedelta(days=current_interval)
                     schedule.save()
                 else:  # 'forgot'
@@ -216,7 +282,7 @@ class CompleteReviewView(APIView):
                     if not schedule.initial_review_completed:
                         schedule.initial_review_completed = True
                         schedule.save()
-                    # Reset to first interval
+                    # Reset to first interval (reset_schedule uses get_review_intervals which respects subscription)
                     schedule.reset_schedule()
                 
                 return Response({

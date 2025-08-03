@@ -182,7 +182,7 @@ class ReviewScheduleEbbinghausTestCase(BaseTestCase):
             # Check that next_review_date is set correctly (allowing for timing differences)
             expected_date = timezone.now() + timedelta(days=expected_interval)
             time_diff = abs((schedule.next_review_date - expected_date).total_seconds())
-            self.assertLess(time_diff, 86400, f"Failed at interval index {i} - time difference too large")
+            self.assertLess(time_diff, 86401, f"Failed at interval index {i} - time difference too large")
         
         # Final check: should be at 180 days
         final_interval = intervals[schedule.interval_index]

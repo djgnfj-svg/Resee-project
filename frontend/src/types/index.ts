@@ -47,6 +47,9 @@ export interface Content {
   priority: 'low' | 'medium' | 'high';
   created_at: string;
   updated_at: string;
+  review_count: number;
+  current_interval?: number;
+  next_review_date?: string;
 }
 
 export interface ReviewSchedule {
@@ -59,6 +62,14 @@ export interface ReviewSchedule {
   initial_review_completed: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface TodayReviewsResponse {
+  results: ReviewSchedule[];
+  count: number;
+  total_count: number;
+  subscription_tier: string;
+  max_interval_days: number;
 }
 
 export interface ReviewHistory {

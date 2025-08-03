@@ -34,10 +34,10 @@ const SubscriptionPage: React.FC = () => {
     {
       name: 'basic',
       display_name: '베이직',
-      max_days: 14,
+      max_days: 30,
       price: 5900,
       features: [
-        '최대 14일 복습 간격',
+        '최대 30일 복습 간격',
         '상세 통계 및 분석',
         '무제한 콘텐츠 생성',
         'AI 질문 생성 (월 50개)',
@@ -47,10 +47,10 @@ const SubscriptionPage: React.FC = () => {
     {
       name: 'premium',
       display_name: '프리미엄',
-      max_days: 30,
+      max_days: 60,
       price: 9900,
       features: [
-        '최대 30일 복습 간격',
+        '최대 60일 복습 간격',
         '고급 통계 및 인사이트',
         '무제한 콘텐츠 생성',
         'AI 질문 생성 (월 200개)',
@@ -104,13 +104,24 @@ const SubscriptionPage: React.FC = () => {
   const upgradeMutation = useMutation({
     mutationFn: (data: SubscriptionUpgradeData) => subscriptionAPI.upgradeSubscription(data),
     onSuccess: (data) => {
-      toast.success(data.message || '구독이 성공적으로 업그레이드되었습니다!');
-      // Invalidate queries to refresh data
+      const tier = data.subscription?.tier;
+      const maxDays = subscriptionTiers.find(t => t.name === tier)?.max_days || 7;
+      
+      toast.success(
+        data.message || 
+        `구독이 성공적으로 변경되었습니다! 이제 최대 ${maxDays}일까지의 밀린 복습을 확인할 수 있습니다.`
+      );
+      
+      // Invalidate all relevant queries to refresh data immediately
       queryClient.invalidateQueries({ queryKey: ['current-subscription'] });
       queryClient.invalidateQueries({ queryKey: ['user'] });
+      queryClient.invalidateQueries({ queryKey: ['contents'] });
+      queryClient.invalidateQueries({ queryKey: ['todayReviews'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['learning-calendar'] });
     },
     onError: (error: any) => {
-      const errorMessage = error.message || '구독 업그레이드에 실패했습니다.';
+      const errorMessage = error.message || '구독 변경에 실패했습니다.';
       toast.error(errorMessage);
     }
   });
@@ -126,10 +137,14 @@ const SubscriptionPage: React.FC = () => {
     const isDowngrade = newTierIndex < currentTierIndex;
     
     if (isDowngrade) {
+      const currentMaxDays = subscriptionTiers[currentTierIndex].max_days;
+      const newMaxDays = subscriptionTiers[newTierIndex].max_days;
+      
       const confirmed = window.confirm(
         `정말로 ${subscriptionTiers[newTierIndex].display_name}으로 다운그레이드하시겠습니까?\n\n` +
         `다운그레이드 시 다음과 같은 제한이 적용됩니다:\n` +
-        `• 복습 간격: ${subscriptionTiers[newTierIndex].max_days}일로 제한\n` +
+        `• 복습 범위: ${currentMaxDays}일 → ${newMaxDays}일로 축소\n` +
+        `• ${newMaxDays}일보다 오래된 밀린 복습은 숨겨집니다\n` +
         `• AI 기능 및 질문 생성 제한\n` +
         `• 일부 고급 기능 사용 불가\n\n` +
         `기존 데이터는 유지되지만 새로운 제한사항이 즉시 적용됩니다.`
