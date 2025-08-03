@@ -194,11 +194,11 @@ class User(AbstractUser):
 
 
 class SubscriptionTier(models.TextChoices):
-    """Subscription tier choices"""
-    FREE = 'free', 'Free'
+    """Subscription tier choices with Ebbinghaus-optimized intervals"""
+    FREE = 'free', 'Free (7일)'
     BASIC = 'basic', 'Basic (30일)'
     PREMIUM = 'premium', 'Premium (60일)'
-    PRO = 'pro', 'Pro (90일)'
+    PRO = 'pro', 'Pro (180일)'
 
 
 class Subscription(models.Model):
@@ -257,16 +257,17 @@ class Subscription(models.Model):
         return max(0, remaining)
     
     def save(self, *args, **kwargs):
-        """Override save to set max_interval_days based on tier"""
-        tier_intervals = {
-            SubscriptionTier.FREE: 7,
-            SubscriptionTier.BASIC: 30,
-            SubscriptionTier.PREMIUM: 60,
-            SubscriptionTier.PRO: 90,
+        """Override save to set max_interval_days based on tier using Ebbinghaus forgetting curve"""
+        # Ebbinghaus-optimized maximum intervals for each tier
+        tier_max_intervals = {
+            SubscriptionTier.FREE: 7,     # Basic spaced repetition
+            SubscriptionTier.BASIC: 30,   # Medium-term memory retention
+            SubscriptionTier.PREMIUM: 60, # Long-term memory retention
+            SubscriptionTier.PRO: 180,    # Complete long-term retention (6 months)
         }
         
-        if self.tier in tier_intervals:
-            self.max_interval_days = tier_intervals[self.tier]
+        if self.tier in tier_max_intervals:
+            self.max_interval_days = tier_max_intervals[self.tier]
         
         super().save(*args, **kwargs)
 
