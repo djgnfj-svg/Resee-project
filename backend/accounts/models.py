@@ -392,3 +392,76 @@ def create_user_subscription(sender, instance, created, **kwargs):
             tier=SubscriptionTier.FREE,
             max_interval_days=7
         )
+
+
+@receiver(post_save, sender=Subscription)
+def adjust_review_schedules_on_subscription_change(sender, instance, created, **kwargs):
+    """Adjust existing review schedules when subscription tier changes"""
+    if not created:  # Only for updates, not new subscriptions
+        from review.models import ReviewSchedule
+        from review.utils import get_review_intervals
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Get new intervals for the updated subscription
+        new_intervals = get_review_intervals(instance.user)
+        new_max_interval = instance.max_interval_days
+        
+        # Get all active review schedules for this user
+        schedules = ReviewSchedule.objects.filter(
+            user=instance.user,
+            is_active=True
+        )
+        
+        for schedule in schedules:
+            schedule_changed = False
+            
+            # Check if current interval_index exceeds new tier limits
+            if schedule.interval_index >= len(new_intervals):
+                schedule.interval_index = len(new_intervals) - 1
+                schedule_changed = True
+            
+            # Get the current interval for this schedule
+            current_interval = new_intervals[schedule.interval_index]
+            
+            # Check if current interval exceeds new max interval
+            if current_interval > new_max_interval:
+                # Find the highest allowed interval
+                allowed_intervals = [i for i in new_intervals if i <= new_max_interval]
+                if allowed_intervals:
+                    max_allowed_interval = max(allowed_intervals)
+                    try:
+                        schedule.interval_index = new_intervals.index(max_allowed_interval)
+                        current_interval = max_allowed_interval
+                        schedule_changed = True
+                    except ValueError:
+                        # Fallback to the last allowed interval
+                        schedule.interval_index = len(allowed_intervals) - 1
+                        current_interval = allowed_intervals[-1]
+                        schedule_changed = True
+            
+            # If schedule was changed, update the next_review_date
+            if schedule_changed:
+                # Keep the review due soon if it was already due
+                if schedule.next_review_date <= timezone.now():
+                    # Keep it due today/now
+                    pass
+                else:
+                    # Recalculate next review date with new interval
+                    # Use a reasonable base date (either creation date or now minus interval)
+                    base_date = timezone.now()
+                    if schedule.created_at:
+                        # Calculate how far we should be from creation based on new interval
+                        days_since_creation = (timezone.now() - schedule.created_at).days
+                        if days_since_creation < current_interval:
+                            base_date = schedule.created_at
+                    
+                    schedule.next_review_date = base_date + timedelta(days=current_interval)
+                
+                schedule.save()
+        
+        # Log the adjustment for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Adjusted {schedules.count()} review schedules for user {instance.user.email} "
+                   f"due to subscription change to {instance.tier} (max: {new_max_interval} days)")

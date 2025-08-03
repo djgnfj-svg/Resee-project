@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import { reviewAPI, contentAPI } from '../utils/api';
-import { ReviewSchedule, Category } from '../types';
+import { ReviewSchedule, Category, TodayReviewsResponse } from '../types';
 import { extractResults } from '../utils/helpers';
 
 const ReviewPage: React.FC = () => {
@@ -13,15 +13,38 @@ const ReviewPage: React.FC = () => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [reviewsCompleted, setReviewsCompleted] = useState(0);
+  const [totalSchedules, setTotalSchedules] = useState(0);
+
+  // Type guard function
+  const isTodayReviewsResponse = (data: any): data is TodayReviewsResponse => {
+    return data && 
+           typeof data === 'object' && 
+           'results' in data && 
+           'total_count' in data &&
+           'count' in data &&
+           Array.isArray(data.results);
+  };
 
   // Fetch today's reviews
-  const { data: reviews = [], isLoading, refetch } = useQuery<ReviewSchedule[]>({
+  const { data: reviewData, isLoading, refetch } = useQuery<ReviewSchedule[]>({
     queryKey: ['todayReviews', selectedCategory],
-    queryFn: () => {
+    queryFn: async () => {
       const params = selectedCategory !== 'all' ? `?category_slug=${selectedCategory}` : '';
-      return reviewAPI.getTodayReviews(params).then(extractResults);
-    },
+      const data = await reviewAPI.getTodayReviews(params);
+      
+      // Handle both old and new API response formats
+      if (isTodayReviewsResponse(data)) {
+        // New format with metadata
+        setTotalSchedules(data.total_count || 0);
+        return data.results;
+      } else {
+        // Old format (fallback)
+        return extractResults(data) as ReviewSchedule[];
+      }
+    }
   });
+
+  const reviews: ReviewSchedule[] = reviewData || [];
 
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
@@ -83,7 +106,7 @@ const ReviewPage: React.FC = () => {
   }, [reviews, currentReviewIndex, startTime, completeReviewMutation]);
 
   const currentReview = reviews[currentReviewIndex];
-  const progress = reviews.length > 0 ? ((currentReviewIndex + 1) / reviews.length) * 100 : 0;
+  const progress = reviews.length > 0 ? (reviewsCompleted / (reviews.length + reviewsCompleted)) * 100 : 0;
   
   // Keyboard shortcuts
   useEffect(() => {
@@ -138,10 +161,13 @@ const ReviewPage: React.FC = () => {
           {reviews.length > 0 && (
             <div className="text-right">
               <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {currentReviewIndex + 1} / {reviews.length}
+                {reviews.length - reviewsCompleted}개 남음
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                완료: {reviewsCompleted}개
+                전체: {totalSchedules}개 | 완료: {reviewsCompleted}개
+              </div>
+              <div className="text-xs text-gray-400 dark:text-gray-500">
+                {currentReviewIndex + 1}번째 학습 중
               </div>
             </div>
           )}
