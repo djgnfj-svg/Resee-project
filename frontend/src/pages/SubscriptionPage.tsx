@@ -1,13 +1,21 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { authAPI } from '../utils/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import api, { authAPI } from '../utils/api';
 import { SubscriptionTierInfo, SubscriptionUpgradeData } from '../types';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 
 const SubscriptionPage: React.FC = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // 현재 구독 정보 조회
+  const { data: currentSubscription, isLoading: subscriptionLoading } = useQuery({
+    queryKey: ['current-subscription'],
+    queryFn: () => api.get('/accounts/subscription/').then(res => res.data),
+    enabled: !!user?.is_email_verified,
+  });
 
   // Subscription tiers data
   const subscriptionTiers: SubscriptionTierInfo[] = [
@@ -72,47 +80,78 @@ const SubscriptionPage: React.FC = () => {
   // Import subscription API
   const subscriptionAPI = {
     upgradeSubscription: async (data: SubscriptionUpgradeData) => {
-      const response = await fetch('/api/accounts/subscription/upgrade/', {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('http://localhost:8000/api/accounts/subscription/upgrade/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(data)
       });
-      if (!response.ok) throw new Error('Failed to upgrade subscription');
-      return response.json();
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Failed to upgrade subscription');
+      }
+      
+      return responseData;
     }
   };
 
   // Subscription upgrade mutation
   const upgradeMutation = useMutation({
     mutationFn: (data: SubscriptionUpgradeData) => subscriptionAPI.upgradeSubscription(data),
-    onSuccess: () => {
-      toast.success('구독이 성공적으로 업그레이드되었습니다!');
-      window.location.reload(); // Refresh to update user data
+    onSuccess: (data) => {
+      toast.success(data.message || '구독이 성공적으로 업그레이드되었습니다!');
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['current-subscription'] });
+      queryClient.invalidateQueries({ queryKey: ['user'] });
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || '구독 업그레이드에 실패했습니다.';
+      const errorMessage = error.message || '구독 업그레이드에 실패했습니다.';
       toast.error(errorMessage);
     }
   });
 
-  const handleUpgrade = (tier: string) => {
+  const handleTierChange = (tier: string) => {
     if (!user?.is_email_verified) {
-      toast.error('구독을 업그레이드하려면 먼저 이메일 인증을 완료해주세요.');
+      toast.error('구독을 변경하려면 먼저 이메일 인증을 완료해주세요.');
       return;
+    }
+    
+    const currentTierIndex = getCurrentTierIndex();
+    const newTierIndex = subscriptionTiers.findIndex(t => t.name === tier);
+    const isDowngrade = newTierIndex < currentTierIndex;
+    
+    if (isDowngrade) {
+      const confirmed = window.confirm(
+        `정말로 ${subscriptionTiers[newTierIndex].display_name}으로 다운그레이드하시겠습니까?\n\n` +
+        `다운그레이드 시 다음과 같은 제한이 적용됩니다:\n` +
+        `• 복습 간격: ${subscriptionTiers[newTierIndex].max_days}일로 제한\n` +
+        `• AI 기능 및 질문 생성 제한\n` +
+        `• 일부 고급 기능 사용 불가\n\n` +
+        `기존 데이터는 유지되지만 새로운 제한사항이 즉시 적용됩니다.`
+      );
+      
+      if (!confirmed) {
+        return;
+      }
     }
     
     upgradeMutation.mutate({ tier: tier as any });
   };
 
   const getCurrentTierIndex = () => {
-    const currentTier = user?.subscription?.tier || 'free';
+    const currentTier = currentSubscription?.tier || user?.subscription?.tier || 'free';
     return subscriptionTiers.findIndex(tier => tier.name === currentTier);
   };
 
   const currentTierIndex = getCurrentTierIndex();
+  
+  // 현재 표시할 구독 정보 (API에서 가져온 데이터 우선)
+  const displaySubscription = currentSubscription || user?.subscription;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
@@ -128,22 +167,29 @@ const SubscriptionPage: React.FC = () => {
         </div>
 
         {/* Current Subscription Status */}
-        {user?.subscription && (
+        {subscriptionLoading ? (
+          <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-8">
+            <div className="animate-pulse">
+              <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/4 mb-2"></div>
+              <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+            </div>
+          </div>
+        ) : displaySubscription && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-8">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
-                  현재 구독: {user.subscription.tier_display}
+                  현재 구독: {displaySubscription.tier_display}
                 </h3>
                 <p className="text-blue-700 dark:text-blue-300">
-                  {user.subscription.is_active ? '활성' : '비활성'} • 
-                  최대 {user.subscription.max_interval_days}일 복습 간격
+                  {displaySubscription.is_active ? '활성' : '비활성'} • 
+                  최대 {displaySubscription.max_interval_days}일 복습 간격
                 </p>
               </div>
-              {user.subscription.days_remaining && (
+              {displaySubscription.days_remaining && (
                 <div className="text-right">
                   <p className="text-sm text-blue-600 dark:text-blue-400">
-                    {user.subscription.days_remaining}일 남음
+                    {displaySubscription.days_remaining}일 남음
                   </p>
                 </div>
               )}
@@ -212,15 +258,15 @@ const SubscriptionPage: React.FC = () => {
                 </ul>
 
                 <button
-                  onClick={() => handleUpgrade(tier.name)}
-                  disabled={isCurrent || isDowngrade || upgradeMutation.isPending}
+                  onClick={() => handleTierChange(tier.name)}
+                  disabled={isCurrent || upgradeMutation.isPending}
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-colors duration-200 ${
                     isCurrent
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                      : isDowngrade
-                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                       : tier.name === 'premium'
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
+                      : isDowngrade
+                      ? 'bg-orange-600 text-white hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600'
                       : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
                   } ${upgradeMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
@@ -229,9 +275,9 @@ const SubscriptionPage: React.FC = () => {
                   ) : isCurrent ? (
                     '현재 플랜'
                   ) : isDowngrade ? (
-                    '다운그레이드 불가'
+                    `${tier.display_name}으로 다운그레이드`
                   ) : tier.price === 0 ? (
-                    '무료로 시작'
+                    '무료로 변경'
                   ) : (
                     `${tier.display_name}으로 업그레이드`
                   )}

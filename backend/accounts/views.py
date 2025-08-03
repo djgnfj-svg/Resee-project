@@ -25,7 +25,8 @@ from .serializers import (
     UserRegistrationSerializer,
     PasswordChangeSerializer, 
     AccountDeleteSerializer, 
-    EmailTokenObtainPairSerializer
+    EmailTokenObtainPairSerializer,
+    SubscriptionUpgradeSerializer
 )
 
 User = get_user_model()
@@ -776,3 +777,146 @@ class AIUsageView(APIView):
         }
         
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class SubscriptionUpgradeView(APIView):
+    """구독 업그레이드 API"""
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_summary="구독 플랜 업그레이드",
+        operation_description="""
+        사용자의 구독 플랜을 업그레이드합니다. (결제 시스템 없이 즉시 적용)
+        
+        **요청 예시:**
+        ```json
+        {
+          "tier": "premium"
+        }
+        ```
+        
+        **지원하는 티어:**
+        - free: 무료 (기본)
+        - basic: 베이직 (14일 간격)
+        - premium: 프리미엄 (30일 간격)
+        - pro: 프로 (90일 간격)
+        
+        **업그레이드 조건:**
+        - 이메일 인증이 완료된 사용자만 가능
+        - 현재 티어보다 높은 티어로만 업그레이드 가능
+        - 다운그레이드는 지원하지 않음
+        """,
+        tags=['Subscription'],
+        request_body=SubscriptionUpgradeSerializer,
+        responses={
+            200: openapi.Response(
+                description="구독 업그레이드 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
+                        'subscription': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'tier': openapi.Schema(type=openapi.TYPE_STRING),
+                                'tier_display': openapi.Schema(type=openapi.TYPE_STRING),
+                                'max_interval_days': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'is_active': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                'start_date': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                                'end_date': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME),
+                            }
+                        ),
+                        'ai_features': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                        'ai_question_limit': openapi.Schema(type=openapi.TYPE_INTEGER),
+                    }
+                )
+            ),
+            400: "잘못된 요청 - 유효하지 않은 티어 또는 업그레이드 불가",
+            401: "인증 필요",
+            403: "권한 없음 - 이메일 인증 필요",
+            500: "서버 오류",
+        }
+    )
+    def post(self, request):
+        """구독 플랜 업그레이드"""
+        serializer = SubscriptionUpgradeSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = request.user
+        new_tier = serializer.validated_data['tier']
+        
+        # 이메일 인증 확인
+        if not user.is_email_verified:
+            logger.warning(f"Subscription upgrade attempt without email verification: {user.email}")
+            return Response(
+                {'error': '구독을 업그레이드하려면 먼저 이메일 인증을 완료해주세요.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            # 현재 구독 가져오기
+            from .models import Subscription, SubscriptionTier
+            subscription = getattr(user, 'subscription', None)
+            
+            if not subscription:
+                # 구독이 없으면 새로 생성 (기본적으로 FREE로 생성되어야 함)
+                subscription = Subscription.objects.create(
+                    user=user,
+                    tier=SubscriptionTier.FREE
+                )
+            
+            # 티어 순서 확인 (다운그레이드 방지)
+            tier_hierarchy = {
+                SubscriptionTier.FREE: 0,
+                SubscriptionTier.BASIC: 1,
+                SubscriptionTier.PREMIUM: 2,
+                SubscriptionTier.PRO: 3,
+            }
+            
+            current_tier_level = tier_hierarchy.get(subscription.tier, 0)
+            new_tier_level = tier_hierarchy.get(new_tier, 0)
+            
+            if new_tier_level <= current_tier_level:
+                return Response(
+                    {'error': f'현재 티어({subscription.get_tier_display()})보다 높은 티어로만 업그레이드할 수 있습니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # 구독 업그레이드 수행
+            old_tier = subscription.tier
+            subscription.tier = new_tier
+            subscription.is_active = True
+            subscription.start_date = timezone.now()
+            
+            # 구독 기간 설정 (개발용으로 30일로 설정)
+            subscription.end_date = timezone.now() + timedelta(days=30)
+            
+            subscription.save()  # save() 메서드에서 max_interval_days가 자동 설정됨
+            
+            logger.info(f"Subscription upgraded: {user.email} from {old_tier} to {new_tier}")
+            
+            # 응답 데이터 구성
+            response_data = {
+                'message': f'구독이 성공적으로 {subscription.get_tier_display()}으로 업그레이드되었습니다!',
+                'subscription': {
+                    'tier': subscription.tier,
+                    'tier_display': subscription.get_tier_display(),
+                    'max_interval_days': subscription.max_interval_days,
+                    'is_active': subscription.is_active,
+                    'start_date': subscription.start_date.isoformat(),
+                    'end_date': subscription.end_date.isoformat() if subscription.end_date else None,
+                },
+                'ai_features': user.get_ai_features_list(),
+                'ai_question_limit': user.get_ai_question_limit(),
+            }
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Subscription upgrade failed for {user.email}: {str(e)}")
+            return Response(
+                {'error': '구독 업그레이드 중 오류가 발생했습니다.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
