@@ -75,6 +75,18 @@ class GenerateQuestionsView(APIView):
     @log_performance('ai_question_generation')
     def post(self, request):
         """Generate questions for content"""
+        # AI 서비스 미구현 알림
+        return Response(
+            {
+                'error': 'AI 서비스 미구현',
+                'detail': 'AI 질문 생성 기능은 현재 개발 중입니다. 곧 제공될 예정이니 조금만 기다려주세요! 🚀',
+                'status': 'under_development'
+            },
+            status=status.HTTP_501_NOT_IMPLEMENTED
+        )
+        
+        # 아래는 추후 구현 시 활성화할 코드
+        """
         # Check AI feature access
         if not request.user.can_use_ai_features():
             return Response(
@@ -216,7 +228,7 @@ class GenerateQuestionsView(APIView):
                 {'error': 'Failed to generate questions'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
+        """
 
 
 class ContentQuestionsView(ListAPIView):
@@ -605,6 +617,18 @@ class AIAnswerEvaluationView(APIView):
     )
     def post(self, request):
         """Evaluate user answer with AI"""
+        # AI 서비스 미구현 알림
+        return Response(
+            {
+                'error': 'AI 서비스 미구현',
+                'detail': 'AI 답변 평가 기능은 현재 개발 중입니다. 곧 제공될 예정이니 조금만 기다려주세요! 🚀',
+                'status': 'under_development'
+            },
+            status=status.HTTP_501_NOT_IMPLEMENTED
+        )
+        
+        # 아래는 추후 구현 시 활성화할 코드
+        """
         # Check AI feature access
         if not request.user.can_use_ai_features():
             return Response(
@@ -706,6 +730,7 @@ class AIAnswerEvaluationView(APIView):
                 {'error': 'Answer evaluation failed'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        """
 
 
 class AIChatView(APIView):
