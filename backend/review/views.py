@@ -207,7 +207,7 @@ class CompleteReviewView(APIView):
                         schedule.initial_review_completed = True
                         schedule.save()
                     # Stay at current interval but reset date
-                    intervals = get_review_intervals()
+                    intervals = get_review_intervals(request.user)
                     current_interval = intervals[schedule.interval_index]
                     schedule.next_review_date = timezone.now() + timezone.timedelta(days=current_interval)
                     schedule.save()

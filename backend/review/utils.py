@@ -8,7 +8,17 @@ from .models import ReviewHistory
 
 
 def get_review_intervals(user=None):
-    """Get review intervals based on user's subscription tier
+    """Get review intervals based on user's subscription tier using Ebbinghaus forgetting curve
+    
+    Based on Hermann Ebbinghaus's research on optimal spaced repetition intervals:
+    - 1 day: Initial reinforcement
+    - 3 days: Short-term consolidation  
+    - 7 days: Working memory to long-term transfer
+    - 14 days: Long-term memory strengthening
+    - 30 days: Monthly reinforcement
+    - 60 days: Bi-monthly consolidation
+    - 120 days: Quarterly review (4 months)
+    - 180 days: Semi-annual review (6 months)
     
     Args:
         user: User instance (optional). If not provided, returns default intervals.
@@ -16,36 +26,33 @@ def get_review_intervals(user=None):
     Returns:
         list: Review intervals in days based on subscription tier
     """
-    # Base intervals for all tiers
-    base_intervals = [1, 3, 7]
+    # Return intervals based on subscription tier
+    from accounts.models import SubscriptionTier
     
+    # Ebbinghaus-optimized intervals for each tier
+    tier_intervals = {
+        SubscriptionTier.FREE: [1, 3, 7],  # Basic spaced repetition (max 7 days)
+        SubscriptionTier.BASIC: [1, 3, 7, 14, 30],  # Medium-term memory (max 30 days)
+        SubscriptionTier.PREMIUM: [1, 3, 7, 14, 30, 60],  # Long-term memory (max 60 days)
+        SubscriptionTier.PRO: [1, 3, 7, 14, 30, 60, 120, 180],  # Complete long-term retention (max 180 days)
+    }
+    
+    # Default to free tier intervals if no user
     if not user:
-        return base_intervals
+        return tier_intervals[SubscriptionTier.FREE]
     
     # Check if user has active subscription
     if not hasattr(user, 'subscription'):
-        return base_intervals
+        return tier_intervals[SubscriptionTier.FREE]
     
     subscription = user.subscription
     
     # Check if subscription is active and not expired
     if not subscription.is_active or subscription.is_expired():
-        return base_intervals
+        return tier_intervals[SubscriptionTier.FREE]
     
-    # Return intervals based on subscription tier
-    from accounts.models import SubscriptionTier
-    
-    if subscription.tier == SubscriptionTier.FREE:
-        return base_intervals
-    elif subscription.tier == SubscriptionTier.BASIC:
-        return base_intervals + [14, 21, 30]
-    elif subscription.tier == SubscriptionTier.PREMIUM:
-        return base_intervals + [14, 21, 30, 45, 60]
-    elif subscription.tier == SubscriptionTier.PRO:
-        return base_intervals + [14, 21, 30, 45, 60, 75, 90]
-    
-    # Fallback to base intervals
-    return base_intervals
+    # Return intervals for user's tier
+    return tier_intervals.get(subscription.tier, tier_intervals[SubscriptionTier.FREE])
 
 
 def calculate_success_rate(user, category=None, days=30):

@@ -67,11 +67,12 @@ def subscription_tiers(request):
         }
     }
     
+    # Ebbinghaus-optimized maximum intervals
     tier_max_days = {
         SubscriptionTier.FREE: 7,
         SubscriptionTier.BASIC: 30,
         SubscriptionTier.PREMIUM: 60,
-        SubscriptionTier.PRO: 90
+        SubscriptionTier.PRO: 180
     }
     
     for tier_value, tier_label in SubscriptionTier.choices:

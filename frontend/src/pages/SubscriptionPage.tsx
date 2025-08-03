@@ -62,11 +62,11 @@ const SubscriptionPage: React.FC = () => {
     {
       name: 'pro',
       display_name: '프로',
-      max_days: 90,
+      max_days: 180,
       price: 19900,
       features: [
-        '최대 90일 복습 간격',
-        '전문가급 분석 도구',
+        '최대 180일 복습 간격 (에빙하우스 최적화)',
+        '완전한 장기 기억 시스템',
         '무제한 콘텐츠 생성',
         'AI 질문 생성 (무제한)',
         '고급 카테고리 관리',
