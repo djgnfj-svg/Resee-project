@@ -81,7 +81,10 @@
       "Bash(git rebase:*)",
       "Bash(git stash:*)",
       "Bash(/tmp/monitor_celery.sh:*)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__restore_project",
+      "mcp__playwright__browser_resize"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -110,7 +110,11 @@ const ContentPage: React.FC = () => {
   };
 
   const handleAIReview = (content: Content) => {
-    setAIReviewContent(content);
+    // AI 서비스 미구현 알림
+    alert('AI 학습 기능은 현재 개발 중입니다.\n곧 제공될 예정이니 조금만 기다려주세요! 🚀');
+    
+    // 임시로 주석 처리 (추후 구현 시 활성화)
+    // setAIReviewContent(content);
   };
 
   const handleAIReviewComplete = () => {
@@ -347,31 +351,39 @@ const ContentPage: React.FC = () => {
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(content.priority)}`}>
                       {getPriorityText(content.priority)}
                     </span>
-                    {/* Review Count Badge */}
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300">
-                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                      복습 {content.review_count}회
-                    </span>
-                    {/* Current Interval Badge */}
-                    {content.current_interval && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                    {/* Review Count Badge - Only show if reviewed */}
+                    {content.review_count > 0 && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300">
                         <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
-                        {content.current_interval}일 간격
+                        복습 {content.review_count}회
                       </span>
                     )}
-                    {/* Next Review Date */}
-                    {content.next_review_date && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">
-                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        다음: {new Date(content.next_review_date).toLocaleDateString('ko-KR')}
-                      </span>
-                    )}
+                    {/* Next Review Date - Show only if review is due soon */}
+                    {content.next_review_date && (() => {
+                      const nextDate = new Date(content.next_review_date);
+                      const today = new Date();
+                      const daysDiff = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                      
+                      if (daysDiff <= 3) {  // Only show if due within 3 days
+                        return (
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            daysDiff <= 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+                            daysDiff === 1 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300' :
+                            'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                          }`}>
+                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {daysDiff <= 0 ? '오늘 복습' : 
+                             daysDiff === 1 ? '내일 복습' : 
+                             `${daysDiff}일 후 복습`}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                     <span>{new Date(content.created_at).toLocaleDateString('ko-KR')}</span>
                   </div>
                 </div>

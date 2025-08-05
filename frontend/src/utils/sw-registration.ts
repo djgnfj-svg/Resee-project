@@ -28,7 +28,9 @@ export function registerSW(config?: SWRegistrationCallbacks) {
       if (isLocalhost) {
         checkValidServiceWorker(swUrl, config);
         navigator.serviceWorker.ready.then(() => {
-          console.log('[SW] App is being served from cache by a service worker');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[SW] App is being served from cache by a service worker');
+          }
           config?.onOfflineReady?.();
         });
       } else {
@@ -42,7 +44,9 @@ function registerValidSW(swUrl: string, config?: SWRegistrationCallbacks) {
   navigator.serviceWorker
     .register(swUrl)
     .then(registration => {
-      console.log('[SW] Registration successful:', registration);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SW] Registration successful:', registration);
+      }
       
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
@@ -51,10 +55,14 @@ function registerValidSW(swUrl: string, config?: SWRegistrationCallbacks) {
         installingWorker.onstatechange = () => {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
-              console.log('[SW] New content available; please refresh');
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[SW] New content available; please refresh');
+              }
               config?.onUpdate?.(registration);
             } else {
-              console.log('[SW] Content cached for offline use');
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[SW] Content cached for offline use');
+              }
               config?.onSuccess?.(registration);
             }
           }
@@ -87,7 +95,9 @@ function checkValidServiceWorker(swUrl: string, config?: SWRegistrationCallbacks
       }
     })
     .catch(() => {
-      console.log('[SW] No internet connection. App is running in offline mode');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SW] No internet connection. App is running in offline mode');
+      }
     });
 }
 
@@ -131,14 +141,18 @@ declare global {
 
 export function setupInstallPrompt(options?: InstallPromptOptions) {
   window.addEventListener('beforeinstallprompt', (e: BeforeInstallPromptEvent) => {
-    console.log('[PWA] Install prompt available');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[PWA] Install prompt available');
+    }
     e.preventDefault();
     deferredPrompt = e;
     options?.onInstallAvailable?.();
   });
 
   window.addEventListener('appinstalled', () => {
-    console.log('[PWA] App installed successfully');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[PWA] App installed successfully');
+    }
     deferredPrompt = null;
     options?.onInstallSuccess?.();
   });
@@ -146,7 +160,9 @@ export function setupInstallPrompt(options?: InstallPromptOptions) {
 
 export async function promptInstall(): Promise<boolean> {
   if (!deferredPrompt) {
-    console.log('[PWA] Install prompt not available');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[PWA] Install prompt not available');
+    }
     return false;
   }
 
@@ -154,7 +170,9 @@ export async function promptInstall(): Promise<boolean> {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     
-    console.log(`[PWA] Install prompt outcome: ${outcome}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[PWA] Install prompt outcome: ${outcome}`);
+    }
     deferredPrompt = null;
     
     return outcome === 'accepted';
@@ -190,7 +208,9 @@ export function setupNetworkStatusTracking() {
 // 앱 업데이트 관리
 export function setupAppUpdateManagement() {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('[SW] Controller changed - reloading page');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[SW] Controller changed - reloading page');
+    }
     window.location.reload();
   });
 }
