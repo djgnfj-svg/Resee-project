@@ -529,8 +529,7 @@ elif ENVIRONMENT == 'production':
     LOGS_DIR.chmod(0o755)
     
     # Additional production-only settings
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = os.environ.get('FORCE_HTTPS', 'False') == 'True'
+    # SSL handling removed - managed by AWS ALB/CloudFront
     
     # Production cache settings with longer timeouts
     CACHES['default'].update({

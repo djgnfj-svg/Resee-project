@@ -160,10 +160,7 @@ services:
       - ALLOWED_HOSTS=${ALLOWED_HOSTS}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
       - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
-      - SECURE_SSL_REDIRECT=${SECURE_SSL_REDIRECT:-False}
-      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-False}
-      - CSRF_COOKIE_SECURE=${CSRF_COOKIE_SECURE:-False}
-      - USE_TLS=${USE_TLS:-False}
+      # SSL/TLS settings removed - handled by AWS ALB/CloudFront
       - GOOGLE_OAUTH2_CLIENT_ID=${GOOGLE_OAUTH2_CLIENT_ID}
       - GOOGLE_OAUTH2_CLIENT_SECRET=${GOOGLE_OAUTH2_CLIENT_SECRET}
       - EMAIL_BACKEND=${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}
@@ -336,10 +333,10 @@ services:
     image: nginx:alpine
     ports:
       - "80:80"
-      - "443:443"
+      # HTTPS port removed - handled by AWS ALB
     volumes:
       - ./config/nginx.production.conf:/etc/nginx/nginx.conf:ro
-      - ./config/ssl:/etc/nginx/ssl:ro  # SSL 인증서 디렉토리
+      # SSL certificates managed by AWS - removed local SSL volume
       - static_files:/usr/share/nginx/html/static:ro
       - media_files:/usr/share/nginx/html/media:ro
       - /var/log/nginx:/var/log/nginx

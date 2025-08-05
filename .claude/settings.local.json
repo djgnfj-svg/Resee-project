@@ -84,7 +84,9 @@
       "Bash(/dev/null)",
       "mcp__supabase__list_projects",
       "mcp__supabase__restore_project",
-      "mcp__playwright__browser_resize"
+      "mcp__playwright__browser_resize",
+      "Bash(echo:*)",
+      "Bash(diff:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

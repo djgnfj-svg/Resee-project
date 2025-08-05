@@ -11,21 +11,18 @@ DEBUG = False
 # Strong security headers
 SECURE_BROWSER_XSS_FILTER = os.environ.get('SECURE_BROWSER_XSS_FILTER', 'True').lower() == 'true'
 SECURE_CONTENT_TYPE_NOSNIFF = os.environ.get('SECURE_CONTENT_TYPE_NOSNIFF', 'True').lower() == 'true'
-SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'False').lower() == 'true'
-SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', 'False').lower() == 'true'
-SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '0'))
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() == 'true' else None
-SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
+# SSL/HTTPS settings removed - handled by AWS ALB/CloudFront
+# SECURE_HSTS_* and SECURE_SSL_* settings managed by AWS
 SECURE_REDIRECT_EXEMPT = []
 
 # Session Security
-SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+# SESSION_COOKIE_SECURE handled by AWS - cookies secure by default
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_AGE = 3600  # 1 hour
 
 # CSRF Protection
-CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'False').lower() == 'true'
+# CSRF_COOKIE_SECURE handled by AWS - cookies secure by default
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 csrf_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
@@ -94,14 +91,13 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 FILE_UPLOAD_PERMISSIONS = 0o644
 
-# Database Security (SSL disabled for HTTP-only deployment)
-ssl_mode = os.environ.get('POSTGRES_SSL_MODE', 'require')
+# Database Security
 DATABASES['default'].update({
     'CONN_MAX_AGE': 60,
     'OPTIONS': {
-        'sslmode': ssl_mode,
         'connect_timeout': 10,
         'application_name': 'resee-backend',
+        # SSL managed by AWS RDS
     }
 })
 
@@ -237,18 +233,7 @@ CACHES = {
 }
 
 # Celery Security
-CELERY_BROKER_USE_SSL = {
-    'keyfile': None,
-    'certfile': None,
-    'ca_certs': None,
-    'cert_reqs': None
-}
-CELERY_REDIS_BACKEND_USE_SSL = {
-    'ssl_cert_reqs': None,
-    'ssl_ca_certs': None,
-    'ssl_certfile': None,
-    'ssl_keyfile': None,
-}
+# SSL certificates managed by AWS - simplified broker config
 
 # Static files security
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
