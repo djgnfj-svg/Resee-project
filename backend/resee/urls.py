@@ -8,14 +8,24 @@ from django.urls import path, include, re_path
 
 from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
 
 from accounts.views import EmailTokenObtainPairView
-from api_docs import get_custom_schema_view
-
 from .health import health_check, detailed_health_check, readiness_check, liveness_check
 
-# Use the custom schema view
-schema_view = get_custom_schema_view()
+# API documentation schema
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Resee API",
+        default_version='v1',
+        description="Resee 스마트 복습 플랫폼 API",
+        contact=openapi.Contact(email="admin@resee.com"),
+        license=openapi.License(name="MIT License"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
