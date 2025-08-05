@@ -1,23 +1,18 @@
-FROM node:18
+FROM node:18-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Add `/app/node_modules/.bin` to $PATH
-ENV PATH /app/node_modules/.bin:$PATH
+# Copy package files
+COPY package*.json ./
 
-# Install app dependencies
-COPY package.json package-lock.json ./
-RUN npm ci --silent
+# Install dependencies
+RUN npm install
 
-# Copy app files
-COPY . ./
-
-# Build the app for production
-RUN npm run build || true
+# Copy source code
+COPY . .
 
 # Expose port
 EXPOSE 3000
 
-# Start app
+# Start development server
 CMD ["npm", "start"]

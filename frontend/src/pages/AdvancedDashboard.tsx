@@ -2,12 +2,10 @@ import React, { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api, { weeklyGoalAPI } from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
-import LearningInsights from '../components/analytics/LearningInsights';
 import CategoryPerformance from '../components/analytics/CategoryPerformance';
 import StudyPatterns from '../components/analytics/StudyPatterns';
 import AchievementStats from '../components/analytics/AchievementStats';
 import LearningCalendar from '../components/analytics/LearningCalendar';
-import Recommendations from '../components/analytics/Recommendations';
 import ProgressVisualization from '../components/analytics/ProgressVisualization';
 import WeeklyGoalEditor from '../components/WeeklyGoalEditor';
 
@@ -331,10 +329,6 @@ const AdvancedDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 추천 시스템 */}
-      {analyticsData.recommendations.length > 0 && (
-        <Recommendations recommendations={analyticsData.recommendations} />
-      )}
 
       {/* 고급 진도 시각화 */}
       {progressData && (
@@ -358,8 +352,6 @@ const AdvancedDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* 학습 인사이트 */}
-      <LearningInsights insights={analyticsData.learning_insights} />
 
       {/* 성취 통계 */}
       <AchievementStats achievements={analyticsData.achievement_stats} />

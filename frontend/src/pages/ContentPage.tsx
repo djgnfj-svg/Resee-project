@@ -6,7 +6,6 @@ import { contentAPI } from '../utils/api';
 import { Content, Category, CreateContentData, UpdateContentData } from '../types';
 import { extractResults } from '../utils/helpers';
 import ContentFormV2 from '../components/ContentFormV2';
-import { AIReviewSession } from '../components/ai/AIReviewSession';
 import { useAuth } from '../contexts/AuthContext';
 
 const ContentPage: React.FC = () => {
@@ -195,11 +194,6 @@ const ContentPage: React.FC = () => {
           </button>
         </div>
 
-        {/* AI Review Session */}
-        <AIReviewSession
-          content={aiReviewContent}
-          onSessionComplete={handleAIReviewComplete}
-        />
       </div>
     );
   }

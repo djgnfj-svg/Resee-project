@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import ProductionFeatures from '../components/ProductionFeatures';
-import InteractiveForgettingCurve from '../components/InteractiveForgettingCurve';
-import ReviewSimulation from '../components/ReviewSimulation';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -134,12 +131,6 @@ const HomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Interactive Forgetting Curve Section */}
-      <div className="py-24 bg-white dark:bg-gray-900">
-        <div className="max-w-6xl mx-auto px-6">
-          <InteractiveForgettingCurve />
-        </div>
-      </div>
 
       {/* Bento Grid Features Section */}
       <div className="py-24 bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -307,15 +298,6 @@ const HomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Review Simulation Section */}
-      <div className="py-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-800 dark:via-gray-900 dark:to-indigo-900">
-        <div className="max-w-7xl mx-auto px-6">
-          <ReviewSimulation />
-        </div>
-      </div>
-
-      {/* Add production features section */}
-      <ProductionFeatures />
     </div>
   );
 };
