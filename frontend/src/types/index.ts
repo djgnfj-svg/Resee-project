@@ -48,7 +48,6 @@ export interface Content {
   created_at: string;
   updated_at: string;
   review_count: number;
-  current_interval?: number;
   next_review_date?: string;
 }
 

@@ -182,9 +182,28 @@ docker-compose exec backend python manage.py shell
 >>> from review.models import ReviewSchedule
 >>> from django.utils import timezone
 >>> today = timezone.now().date()
->>> ReviewSchedule.objects.filter(next_review_date=today).count()
+>>> ReviewSchedule.objects.filter(next_review_date__date=today).count()
 
-# 2. Celery 작업 확인
+# 2. 구독 티어별 복습 간격 확인
+>>> from review.utils import get_review_intervals
+>>> from django.contrib.auth import get_user_model
+>>> user = get_user_model().objects.get(email='test@resee.com')
+>>> intervals = get_review_intervals(user)
+>>> print(f"User {user.subscription.tier}: {intervals}")
+>>> print(f"Max interval: {user.get_max_review_interval()} days")
+
+# 3. 밀린 복습 확인 (구독 티어별)
+>>> from datetime import timedelta
+>>> cutoff_date = timezone.now() - timedelta(days=user.get_max_review_interval())
+>>> overdue = ReviewSchedule.objects.filter(
+...     user=user,
+...     is_active=True,
+...     next_review_date__date__lt=today,
+...     next_review_date__gte=cutoff_date
+... ).count()
+>>> print(f"Overdue reviews within subscription range: {overdue}")
+
+# 4. Celery 작업 확인
 docker-compose exec celery celery -A resee inspect active
 docker-compose exec celery celery -A resee inspect scheduled
 ```
@@ -235,15 +254,18 @@ ContentForm (TipTap Editor)
     → 즉시 복습 가능 상태
 ```
 
-#### 복습 프로세스
+#### 복습 프로세스 (에빙하우스 최적화)
 ```
 복습 페이지 접속
     → GET /api/review/today/
-    → 오늘 복습할 콘텐츠 목록
+    → 구독 티어별 필터링된 복습 목록 (밀린 복습 포함)
     → 사용자 복습 수행
     → POST /api/review/complete/
-    → ReviewHistory 생성
-    → ReviewSchedule 업데이트 (다음 간격으로)
+    → ReviewHistory 생성 (result: remembered/partial/forgot)
+    → ReviewSchedule 업데이트:
+        - remembered: 다음 간격으로 진행 (구독 제한 적용)
+        - partial: 현재 간격 유지
+        - forgot: 첫 번째 간격(1일)으로 재설정
 ```
 
 ### 3. AI 질문 생성 플로우
@@ -271,12 +293,16 @@ ContentForm (TipTap Editor)
 
 ### 4. 구독 시스템 플로우
 
-#### 구독 업그레이드
+#### 구독 업그레이드/다운그레이드
 ```
 구독 페이지
     → 플랜 선택
     → POST /api/accounts/subscription/upgrade/
     → Subscription 모델 업데이트
+    → Django Signal: adjust_review_schedules_on_subscription_change
+    → 기존 복습 스케줄 자동 조정:
+        - 다운그레이드: 초과 간격을 새 티어 한도로 조정
+        - 업그레이드: 더 긴 간격 사용 가능
     → 새로운 기능 한도 적용
     → Celery: 구독 만료 스케줄링
 ```
@@ -371,6 +397,13 @@ docker-compose exec backend python manage.py create_test_users
 
 # 샘플 콘텐츠 생성
 docker-compose exec backend python manage.py create_sample_data
+
+# 장기 학습 테스트 데이터 (180일 연속 학습 시뮬레이션)
+docker-compose exec backend python manage.py create_long_term_test_data --tier=pro
+docker-compose exec backend python manage.py create_long_term_test_data --tier=all  # 모든 티어
+
+# 현실적인 사용자 데이터 (다양한 학습 패턴)
+docker-compose exec backend python manage.py create_realistic_user_data
 ```
 
 ## 🏗️ 아키텍처 핵심 요약
@@ -407,15 +440,43 @@ frontend/src/
 - Content → ReviewSchedule (1:1)
 - Content → AIQuestion (1:N)
 - User → Subscription (1:1)
+- User → ReviewHistory (1:N)
+
+### 복습 시스템 핵심 아키텍처
+**에빙하우스 망각곡선 기반 지능형 복습 시스템**
+
+1. **ReviewSchedule Model**: 각 콘텐츠별 복습 스케줄 관리
+   - `interval_index`: 현재 복습 간격 단계 (0-7)
+   - `next_review_date`: 다음 복습 예정일
+   - `initial_review_completed`: 첫 복습 완료 여부
+
+2. **ReviewHistory Model**: 복습 기록 및 성과 추적
+   - `result`: remembered/partial/forgot (복습 결과)
+   - `time_spent`: 복습 소요 시간
+   - 성과 분석 및 개인화된 학습 패턴 도출
+
+3. **Subscription-based Limitations**: 구독 티어별 복습 범위 제한
+   - 각 티어마다 접근 가능한 최대 복습 간격 설정
+   - 밀린 복습도 구독 범위 내에서만 표시
+   - 구독 변경 시 기존 스케줄 자동 조정
+
+4. **Signal-based Auto-adjustment**: 
+   - 구독 변경 시 `adjust_review_schedules_on_subscription_change` 신호
+   - 콘텐츠 생성 시 자동 복습 스케줄 생성
 
 ### API 인증
 - JWT (Access: 5분, Refresh: 7일)
 - 이메일 기반 로그인
 - Google OAuth 2.0 지원
 
-### 복습 간격
-- 즉시 → 1일 → 3일 → 7일 → 14일 → 30일
-- 구독 티어별 최대 간격 제한
+### 에빙하우스 망각곡선 기반 복습 간격
+- **전체 간격**: [1, 3, 7, 14, 30, 60, 120, 180일] (에빙하우스 연구 기반)
+- **구독 티어별 제한**:
+  - FREE: 최대 7일 (1, 3, 7)
+  - BASIC: 최대 30일 (1, 3, 7, 14, 30)  
+  - PREMIUM: 최대 60일 (1, 3, 7, 14, 30, 60)
+  - PRO: 최대 180일 (전체 간격)
+- **밀린 복습 처리**: 구독 티어별 최대 기간 내 밀린 복습은 현재 날짜에 표시
 
 ## 🔍 디버깅 팁
 
@@ -638,7 +699,37 @@ queryClient.invalidateQueries({ queryKey: ['learning-calendar'] });
 queryClient.invalidateQueries({ queryKey: ['advanced-analytics'] });
 ```
 
-### 6. Git 커밋 작성자 정보 변경
+### 6. 복습 시스템 관련 문제
+
+#### 밀린 복습이 표시되지 않는 경우
+**원인**: 구독 티어 제한으로 오래된 복습이 숨겨짐
+**해결**: 
+```bash
+# 사용자 구독 티어 확인
+docker-compose exec backend python manage.py shell
+>>> user = get_user_model().objects.get(email='test@resee.com')
+>>> print(f"Tier: {user.subscription.tier}, Max days: {user.get_max_review_interval()}")
+
+# 밀린 복습 범위 확인
+>>> from datetime import timedelta
+>>> cutoff = timezone.now() - timedelta(days=user.get_max_review_interval())
+>>> overdue = ReviewSchedule.objects.filter(user=user, next_review_date__lt=cutoff).count()
+>>> print(f"Reviews beyond subscription range: {overdue}")
+```
+
+#### 구독 변경 후 복습 항목이 조정되지 않은 경우
+**원인**: Django Signal이 제대로 실행되지 않음
+**해결**: 수동으로 스케줄 조정 실행
+```bash
+>>> from review.models import ReviewSchedule
+>>> from review.utils import get_review_intervals
+>>> user = get_user_model().objects.get(email='user@example.com')
+>>> intervals = get_review_intervals(user)
+>>> max_interval = user.get_max_review_interval()
+>>> # 수동으로 스케줄 조정 로직 실행
+```
+
+### 7. Git 커밋 작성자 정보 변경
 **원인**: 잘못된 사용자 정보로 커밋됨
 **해결**:
 ```bash
@@ -750,3 +841,26 @@ docker-compose exec db psql -U resee_user -d resee_db
 # 연결 상태 확인
 docker-compose exec db pg_isready
 ```
+
+## 🎯 중요한 설계 원칙
+
+### 복습 시스템 핵심 개념
+1. **밀린 복습 처리**: 사용자가 복습을 놓쳐도 사라지지 않고 현재 날짜에 표시
+2. **구독 기반 제한**: 각 구독 티어별로 접근 가능한 복습 범위 제한
+3. **에빙하우스 최적화**: 과학적 연구 기반의 망각곡선 간격 적용
+4. **실시간 조정**: 구독 변경 시 기존 복습 스케줄 자동 조정
+
+### 프론트엔드 상태 관리
+- React Query를 통한 서버 상태 캐싱
+- 복습 완료 시 관련 쿼리 즉시 무효화로 실시간 업데이트
+- TypeScript 타입 가드로 API 응답 안전성 보장
+
+### 테스트 및 검증
+- `create_long_term_test_data` 명령어로 180일 연속 학습 시뮬레이션
+- 구독 티어별 복습 동작 검증을 위한 전용 테스트 계정들
+- MCP Playwright를 통한 브라우저 시각적 테스트 지원
+
+## 🔄 지속적인 개선 사항
+- 복습 성과 데이터 기반 개인화된 간격 조정 (향후 구현)
+- AI 기반 복습 난이도 예측 시스템 (진행 중)
+- 다국어 지원 및 현지화 (계획 중)

@@ -27,14 +27,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     
     def get_queryset(self):
-        # Return global categories (user=None) and user's custom categories
-        return Category.objects.filter(
-            models.Q(user=None) | models.Q(user=self.request.user)
-        )
+        # Return only user's custom categories
+        return Category.objects.filter(user=self.request.user)
     
     @swagger_auto_schema(
         operation_summary="카테고리 목록 조회",
-        operation_description="사용자가 접근 가능한 모든 카테고리 목록을 반환합니다. (전역 + 개인 카테고리)",
+        operation_description="사용자의 개인 커스텀 카테고리 목록을 반환합니다.",
         responses={200: CategorySerializer(many=True)}
     )
     def list(self, request, *args, **kwargs):
@@ -42,7 +40,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     
     @swagger_auto_schema(
         operation_summary="새 카테고리 생성",
-        operation_description="사용자별 커스텀 카테고리를 생성합니다.",
+        operation_description="새로운 개인 커스텀 카테고리를 생성합니다. 이모지나 색상은 name 필드에 포함 가능합니다.",
         request_body=CategorySerializer,
         responses={201: CategorySerializer()}
     )
@@ -162,9 +160,9 @@ class ContentViewSet(viewsets.ModelViewSet):
             # Log query count in development
             if settings.DEBUG:
                 initial_queries = len(connection.queries)
-            # Optimize: Get user-accessible categories 
+            # Optimize: Get user's custom categories only
             user_categories = Category.objects.filter(
-                models.Q(user=None) | models.Q(user=self.request.user)
+                user=self.request.user
             ).only('id', 'name', 'slug', 'user')  # Only select needed fields
             
             # Optimize: Get all user's contents with category data prefetched
@@ -183,12 +181,12 @@ class ContentViewSet(viewsets.ModelViewSet):
             # Build result for each category
             for category in user_categories:
                 category_contents = contents_by_category.get(category.id, [])
-                if category_contents or category.user == self.request.user:  # Include user's custom categories even if empty
-                    result[category.slug] = {
-                        'category': CategorySerializer(category).data,
-                        'contents': ContentSerializer(category_contents, many=True).data,
-                        'count': len(category_contents)
-                    }
+                # Include all user's custom categories (even if empty)
+                result[category.slug] = {
+                    'category': CategorySerializer(category).data,
+                    'contents': ContentSerializer(category_contents, many=True).data,
+                    'count': len(category_contents)
+                }
             
             # Add uncategorized content
             uncategorized_contents = contents_by_category.get(None, [])

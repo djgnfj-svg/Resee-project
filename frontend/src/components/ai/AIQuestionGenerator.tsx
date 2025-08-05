@@ -47,6 +47,12 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
   }, []);
 
   const handleGenerateQuestions = async () => {
+    // AI 서비스 미구현 알림
+    toast.error('AI 질문 생성 기능은 현재 개발 중입니다.\n곧 제공될 예정이니 조금만 기다려주세요! 🚀');
+    return;
+    
+    // 아래는 추후 구현 시 활성화할 코드
+    /*
     if (state.selectedTypes.length === 0) {
       toast.error('Please select at least one question type');
       return;
@@ -76,6 +82,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({
     } finally {
       setState(prev => ({ ...prev, isLoading: false }));
     }
+    */
   };
 
   const handleTypeToggle = (typeName: string) => {

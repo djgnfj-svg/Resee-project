@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
 import { Category } from '../types';
 import { extractResults } from '../utils/helpers';
@@ -31,6 +31,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
     handleSubmit, 
     formState: { errors }, 
     watch,
+    setValue,
   } = useForm<ContentFormData>({
     mode: 'onChange',
     defaultValues: {
@@ -40,6 +41,13 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   });
 
   const [content, setContent] = useState<string>(initialData?.content || '');
+  
+  // 카테고리 생성 관련 상태
+  const [showCreateCategory, setShowCreateCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  
+  const queryClient = useQueryClient();
 
   // Watch form values for real-time validation
   const watchedTitle = watch('title');
@@ -50,6 +58,46 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
     queryKey: ['categories'],
     queryFn: () => contentAPI.getCategories().then(extractResults),
   });
+
+  // 카테고리 생성 mutation
+  const createCategoryMutation = useMutation({
+    mutationFn: contentAPI.createCategory,
+    onSuccess: (newCategory) => {
+      // 기존 카테고리 목록에 새 카테고리를 즉시 추가
+      queryClient.setQueryData<Category[]>(['categories'], (oldCategories = []) => {
+        const categoryExists = oldCategories.some(cat => cat.id === newCategory.id);
+        return categoryExists ? oldCategories : [...oldCategories, newCategory];
+      });
+      
+      // React가 새 카테고리로 리렌더링할 시간을 준 후 자동 선택
+      setTimeout(() => {
+        setValue('category', newCategory.id);
+      }, 100);
+      
+      // UI 초기화
+      setShowCreateCategory(false);
+      setNewCategoryName('');
+      setIsCreatingCategory(false);
+      
+      alert(`카테고리 "${newCategory.name}"가 생성되어 선택되었습니다! 🎉`);
+    },
+    onError: (error: any) => {
+      setIsCreatingCategory(false);
+      const errorMessage = error.response?.data?.name?.[0] || '카테고리 생성에 실패했습니다.';
+      alert(`오류: ${errorMessage}`);
+    }
+  });
+
+  const handleCreateCategory = useCallback(async () => {
+    const categoryName = newCategoryName.trim();
+    if (!categoryName) return;
+    
+    setIsCreatingCategory(true);
+    createCategoryMutation.mutate({ 
+      name: categoryName,
+      description: `개인 커스텀 카테고리: ${categoryName}` 
+    });
+  }, [newCategoryName, createCategoryMutation]);
 
   const onFormSubmit = useCallback((data: ContentFormData) => {
     onSubmit({
@@ -124,17 +172,76 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                 카테고리
               </label>
               
-              <select
-                {...register('category')}
-                className="w-full px-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-800 focus:outline-none transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              >
-                <option value="">카테고리를 선택하세요 (선택사항)</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  {...register('category')}
+                  className="flex-1 px-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-800 focus:outline-none transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">카테고리를 선택하세요 (선택사항)</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                
+                <button
+                  type="button"
+                  onClick={() => setShowCreateCategory(true)}
+                  className="px-4 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors duration-200 whitespace-nowrap"
+                  title="새 카테고리 만들기"
+                >
+                  + 새 카테고리
+                </button>
+              </div>
+              
+              {/* 인라인 카테고리 생성 */}
+              {showCreateCategory && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium text-gray-900 dark:text-gray-100">새 카테고리 만들기</h4>
+                      <button
+                        type="button"
+                        onClick={() => setShowCreateCategory(false)}
+                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder="카테고리 이름 (예: 📚 영어학습, 💻 프로그래밍)"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      onKeyPress={(e) => e.key === 'Enter' && handleCreateCategory()}
+                    />
+                    
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCreateCategory}
+                        disabled={!newCategoryName.trim() || isCreatingCategory}
+                        className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors duration-200"
+                      >
+                        {isCreatingCategory ? '생성중...' : '생성'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCreateCategory(false);
+                          setNewCategoryName('');
+                        }}
+                        className="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Priority */}
