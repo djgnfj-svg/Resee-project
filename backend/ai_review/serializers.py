@@ -173,3 +173,64 @@ class AIChatResponseSerializer(serializers.Serializer):
     ai_model_used = serializers.CharField(required=False)
     processing_time_ms = serializers.IntegerField(required=False)
     content_title = serializers.CharField(required=False)
+
+
+class ExplanationEvaluationRequestSerializer(serializers.Serializer):
+    """Serializer for explanation evaluation request"""
+    content_id = serializers.IntegerField()
+    user_explanation = serializers.CharField(
+        max_length=2000,
+        help_text="사용자가 입력한 서술형 설명"
+    )
+    
+    def validate_content_id(self, value):
+        """Validate that content exists and belongs to the user"""
+        user = self.context['request'].user
+        try:
+            Content.objects.get(id=value, author=user)
+        except Content.DoesNotExist:
+            raise serializers.ValidationError("콘텐츠를 찾을 수 없거나 접근 권한이 없습니다.")
+        return value
+    
+    def validate_user_explanation(self, value):
+        """Validate user explanation is not empty"""
+        if not value.strip():
+            raise serializers.ValidationError("설명을 입력해주세요.")
+        if len(value.strip()) < 10:
+            raise serializers.ValidationError("최소 10자 이상 입력해주세요.")
+        return value.strip()
+
+
+class ExplanationEvaluationResponseSerializer(serializers.Serializer):
+    """Serializer for explanation evaluation response"""
+    score = serializers.IntegerField(
+        min_value=0, 
+        max_value=100,
+        help_text="AI 평가 점수 (0-100)"
+    )
+    feedback = serializers.CharField(
+        help_text="AI가 제공하는 구체적인 피드백"
+    )
+    strengths = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        help_text="설명의 강점들"
+    )
+    improvements = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        help_text="개선할 점들"
+    )
+    key_concepts_covered = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        help_text="다룬 핵심 개념들"
+    )
+    missing_concepts = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        help_text="놓친 핵심 개념들"
+    )
+    ai_model_used = serializers.CharField(required=False)
+    processing_time_ms = serializers.IntegerField(required=False)
+    content_title = serializers.CharField(required=False)

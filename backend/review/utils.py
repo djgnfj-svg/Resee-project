@@ -31,9 +31,8 @@ def get_review_intervals(user=None):
     
     # Ebbinghaus-optimized intervals for each tier
     tier_intervals = {
-        SubscriptionTier.FREE: [1, 3, 7],  # Basic spaced repetition (max 7 days)
-        SubscriptionTier.BASIC: [1, 3, 7, 14, 30],  # Medium-term memory (max 30 days)
-        SubscriptionTier.PREMIUM: [1, 3, 7, 14, 30, 60],  # Long-term memory (max 60 days)
+        SubscriptionTier.FREE: [1, 3],  # Basic spaced repetition (max 3 days)
+        SubscriptionTier.BASIC: [1, 3, 7, 14, 30, 60, 90],  # Medium-term memory (max 90 days)
         SubscriptionTier.PRO: [1, 3, 7, 14, 30, 60, 120, 180],  # Complete long-term retention (max 180 days)
     }
     

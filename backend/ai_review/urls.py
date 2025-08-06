@@ -32,4 +32,7 @@ urlpatterns = [
     
     # AI Chat
     path('chat/', views.AIChatView.as_view(), name='ai-chat'),
+    
+    # Explanation evaluation
+    path('evaluate-explanation/', views.ExplanationEvaluationView.as_view(), name='evaluate-explanation'),
 ]

@@ -83,11 +83,8 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       // 커스텀 리다이렉트 경로가 있으면 우선 사용
       if (redirectTo) {
         navigate(redirectTo);
-      } else if (result.is_new_user) {
-        // 신규 사용자인 경우 온보딩 페이지로
-        navigate('/onboarding');
       } else {
-        // 기존 사용자는 대시보드로
+        // 신규/기존 사용자 모두 대시보드로
         navigate('/dashboard');
       }
       

@@ -10,7 +10,6 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
 import VerificationPendingPage from './pages/VerificationPendingPage';
-import OnboardingPage from './pages/OnboardingPage';
 import SimpleDashboard from './pages/SimpleDashboard';
 import AdvancedDashboard from './pages/AdvancedDashboard';
 import ContentPage from './pages/ContentPage';
@@ -45,7 +44,6 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/verify-email" element={<EmailVerificationPage />} />
               <Route path="/verification-pending" element={<VerificationPendingPage />} />
-              <Route path="/onboarding" element={<OnboardingPage />} />
               <Route 
                 path="/dashboard" 
                 element={

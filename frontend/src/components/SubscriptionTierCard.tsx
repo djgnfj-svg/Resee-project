@@ -8,8 +8,6 @@ const getTierIcon = (tier: SubscriptionTier) => {
       return <Shield className="w-6 h-6" />;
     case 'basic':
       return <Star className="w-6 h-6" />;
-    case 'premium':
-      return <Crown className="w-6 h-6" />;
     case 'pro':
       return <Zap className="w-6 h-6" />;
     default:
@@ -34,14 +32,6 @@ const getTierColors = (tier: SubscriptionTier) => {
         icon: 'text-blue-600',
         button: 'bg-blue-600 hover:bg-blue-700',
         accent: 'text-blue-600',
-      };
-    case 'premium':
-      return {
-        border: 'border-purple-200',
-        header: 'bg-purple-50',
-        icon: 'text-purple-600',
-        button: 'bg-purple-600 hover:bg-purple-700',
-        accent: 'text-purple-600',
       };
     case 'pro':
       return {
@@ -89,7 +79,7 @@ export const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   };
 
   function getTierPriority(tier: SubscriptionTier): number {
-    const priorities = { free: 0, basic: 1, premium: 2, pro: 3 };
+    const priorities = { free: 0, basic: 1, pro: 2 };
     return priorities[tier] ?? 0;
   }
 

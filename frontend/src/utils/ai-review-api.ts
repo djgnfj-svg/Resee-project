@@ -14,6 +14,8 @@ import type {
   BlurRegionsResponse,
   AIChatRequest,
   AIChatResponse,
+  ExplanationEvaluationRequest,
+  ExplanationEvaluationResponse,
   PaginatedResponse,
 } from '../types/ai-review';
 
@@ -32,12 +34,8 @@ class AIReviewAPI {
 
   // Question Generation
   async generateQuestions(request: GenerateQuestionsRequest): Promise<AIQuestion[]> {
-    // AI 서비스 미구현 - 에러 던지기
-    throw new Error('AI 질문 생성 기능은 현재 개발 중입니다. 곧 제공될 예정이니 조금만 기다려주세요! 🚀');
-    
-    // 추후 구현 시 활성화
-    // const response = await api.post('/ai-review/generate-questions/', request);
-    // return response.data;
+    const response = await api.post('/ai-review/generate-questions/', request);
+    return response.data;
   }
 
   // Get questions for specific content
@@ -48,43 +46,33 @@ class AIReviewAPI {
 
   // Answer evaluation
   async evaluateAnswer(request: AIAnswerEvaluationRequest): Promise<AIAnswerEvaluationResponse> {
-    // AI 서비스 미구현 - 에러 던지기
-    throw new Error('AI 답변 평가 기능은 현재 개발 중입니다. 곧 제공될 예정이니 조금만 기다려주세요! 🚀');
-    
-    // 추후 구현 시 활성화
-    // const response = await api.post('/ai-review/evaluate-answer/', request);
-    // return response.data;
+    const response = await api.post('/ai-review/evaluate-answer/', request);
+    return response.data;
   }
 
 
   // Fill-in-blank generation
   async generateFillBlanks(request: FillBlankRequest): Promise<FillBlankResponse> {
-    // AI 서비스 미구현 - 에러 던지기
-    throw new Error('빈칸 채우기 기능은 현재 개발 중입니다. 곧 제공될 예정이니 조금만 기다려주세요! 🚀');
-    
-    // 추후 구현 시 활성화
-    // const response = await api.post('/ai-review/generate-fill-blanks/', request);
-    // return response.data;
+    const response = await api.post('/ai-review/generate-fill-blanks/', request);
+    return response.data;
   }
 
   // Blur regions identification
   async identifyBlurRegions(request: BlurRegionsRequest): Promise<BlurRegionsResponse> {
-    // AI 서비스 미구현 - 에러 던지기
-    throw new Error('블러 처리 학습 기능은 현재 개발 중입니다. 곧 제공될 예정이니 조금만 기다려주세요! 🚀');
-    
-    // 추후 구현 시 활성화
-    // const response = await api.post('/ai-review/identify-blur-regions/', request);
-    // return response.data;
+    const response = await api.post('/ai-review/identify-blur-regions/', request);
+    return response.data;
   }
 
   // AI Chat
   async chatAboutContent(request: AIChatRequest): Promise<AIChatResponse> {
-    // AI 서비스 미구현 - 에러 던지기
-    throw new Error('AI 채팅 기능은 현재 개발 중입니다. 곧 제공될 예정이니 조금만 기다려주세요! 🚀');
-    
-    // 추후 구현 시 활성화
-    // const response = await api.post('/ai-review/chat/', request);
-    // return response.data;
+    const response = await api.post('/ai-review/chat/', request);
+    return response.data;
+  }
+
+  // Explanation evaluation
+  async evaluateExplanation(request: ExplanationEvaluationRequest): Promise<ExplanationEvaluationResponse> {
+    const response = await api.post('/ai-review/evaluate-explanation/', request);
+    return response.data;
   }
 
   // Utility functions

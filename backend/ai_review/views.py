@@ -32,7 +32,9 @@ from .serializers import (
     BlurRegionsRequestSerializer,
     BlurRegionsResponseSerializer,
     AIChatRequestSerializer,
-    AIChatResponseSerializer
+    AIChatResponseSerializer,
+    ExplanationEvaluationRequestSerializer,
+    ExplanationEvaluationResponseSerializer
 )
 from .services import ai_service, AIServiceError
 
@@ -838,5 +840,148 @@ class AIChatView(APIView):
             logger.error(f"Unexpected error in AI chat: {str(e)}")
             return Response(
                 {'error': 'AI chat failed'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class ExplanationEvaluationView(APIView):
+    """
+    Evaluate user's descriptive explanation using AI
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIEndpointThrottle]
+    
+    @swagger_auto_schema(
+        operation_summary="서술형 설명 평가",
+        operation_description="""
+        사용자가 작성한 서술형 설명을 AI로 평가하여 점수와 피드백을 제공합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "content_id": 123,
+          "user_explanation": "Python은 해석형 언어로서 코드를 한 줄씩 실행합니다..."
+        }
+        ```
+        
+        **응답 예시:**
+        ```json
+        {
+          "score": 85,
+          "feedback": "핵심 개념을 잘 이해하고 있습니다. 객체지향 특성도 언급하면 더 완전한 설명이 됩니다.",
+          "strengths": ["기본 개념 이해가 정확함", "논리적 구조가 좋음"],
+          "improvements": ["더 구체적인 예시 추가", "객체지향 특성 언급"],
+          "key_concepts_covered": ["해석형 언어", "실행 방식"],
+          "missing_concepts": ["객체지향", "동적 타이핑"]
+        }
+        ```
+        
+        **평가 기준:**
+        - 핵심 개념 이해도 (40%)
+        - 설명의 완성도 (30%)
+        - 논리적 구조 (20%)
+        - 구체적 예시나 세부사항 (10%)
+        
+        **구독 티어 제한:**
+        - Basic 이상 티어에서만 사용 가능
+        """,
+        tags=['AI Review'],
+        request_body=ExplanationEvaluationRequestSerializer,
+        responses={
+            200: ExplanationEvaluationResponseSerializer,
+            400: '잘못된 요청 - 유효성 검사 실패',
+            403: '구독 티어 부족 - Basic 이상 필요',
+            404: '콘텐츠를 찾을 수 없음',
+            429: '일일 한도 초과',
+            503: 'AI 서비스 일시적 사용 불가',
+            500: 'AI 서비스 오류'
+        }
+    )
+    def post(self, request):
+        """Evaluate user's descriptive explanation"""
+        # Check AI feature access
+        if not request.user.can_use_ai_features():
+            return Response(
+                {
+                    'error': 'AI features not available',
+                    'detail': 'Please upgrade your subscription and verify your email to access AI features.',
+                    'requires_subscription': True
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Check if explanation evaluation is in available features
+        available_features = request.user.get_ai_features_list()
+        if 'explanation_evaluation' not in available_features:
+            return Response(
+                {
+                    'error': 'Explanation evaluation not available',
+                    'detail': 'Explanation evaluation is not available in your subscription tier. Please upgrade to Basic or higher.',
+                    'available_features': available_features
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = ExplanationEvaluationRequestSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        content_id = serializer.validated_data['content_id']
+        user_explanation = serializer.validated_data['user_explanation']
+        
+        # Check daily usage limit (reuse question limit for explanation evaluation)
+        usage_record = AIUsageTracking.get_or_create_for_today(request.user)
+        if not usage_record.can_generate_questions(1):  # 1 evaluation = 1 credit
+            daily_limit = request.user.get_ai_question_limit()
+            remaining = daily_limit - usage_record.questions_generated
+            return Response(
+                {
+                    'error': 'Daily limit exceeded',
+                    'detail': f'You have reached your daily limit of {daily_limit} AI interactions. '
+                             f'You have {max(0, remaining)} interactions remaining today.',
+                    'daily_limit': daily_limit,
+                    'used_today': usage_record.questions_generated,
+                    'remaining_today': max(0, remaining)
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+        
+        # Get content
+        content = get_object_or_404(Content, id=content_id, author=request.user)
+        
+        try:
+            # Evaluate explanation using AI service
+            result = ai_service.evaluate_explanation(
+                content=content,
+                user_explanation=user_explanation
+            )
+            
+            # Track usage (1 evaluation = 1 credit)
+            usage_record.increment_questions(1)
+            
+            logger.info(
+                f"AI explanation evaluation for content {content.id} "
+                f"(user: {request.user.email}, score: {result['score']})"
+            )
+            
+            return Response(result, status=status.HTTP_200_OK)
+            
+        except AIServiceError as e:
+            logger.error(f"AI explanation evaluation error for user {request.user.email}: {str(e)}")
+            return Response(
+                {'error': 'AI service temporarily unavailable', 'detail': str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error in explanation evaluation: {str(e)}")
+            return Response(
+                {'error': 'Explanation evaluation failed'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

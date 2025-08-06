@@ -80,3 +80,7 @@ debug_utils.py
 *_backup.log
 *_health_*.txt
 *_report_*.txt
+
+# Resume and personal documents
+RESUME-*.md
+README-DEPLOYMENT.md

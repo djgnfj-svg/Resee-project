@@ -9,8 +9,6 @@ const getTierIcon = (tier: SubscriptionTier) => {
       return <Shield className="w-4 h-4" />;
     case 'basic':
       return <Star className="w-4 h-4" />;
-    case 'premium':
-      return <Crown className="w-4 h-4" />;
     case 'pro':
       return <Zap className="w-4 h-4" />;
     default:
@@ -24,8 +22,6 @@ const getTierColor = (tier: SubscriptionTier) => {
       return 'bg-gray-100 text-gray-800 border-gray-200';
     case 'basic':
       return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'premium':
-      return 'bg-purple-100 text-purple-800 border-purple-200';
     case 'pro':
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     default:

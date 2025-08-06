@@ -629,6 +629,82 @@ Teaching approach:
             
         except Exception as e:
             raise AIServiceError(f"AI chat failed: {str(e)}")
+    
+    def evaluate_explanation(self, content, user_explanation):
+        """Evaluate user's descriptive explanation of content"""
+        system_message = """
+당신은 학습 평가 전문가입니다. 학습자가 작성한 서술형 설명을 평가하여 구체적인 피드백을 제공해주세요.
+
+평가 기준:
+1. 핵심 개념 이해도 (40%)
+2. 설명의 완성도 (30%)
+3. 논리적 구조 (20%)
+4. 구체적 예시나 세부사항 (10%)
+
+응답은 반드시 다음 JSON 형식으로 제공하세요:
+{
+  "score": 85,
+  "feedback": "구체적인 피드백 메시지",
+  "strengths": ["강점1", "강점2"],
+  "improvements": ["개선점1", "개선점2"],
+  "key_concepts_covered": ["다룬 핵심 개념1", "개념2"],
+  "missing_concepts": ["놓친 개념1", "개념2"]
+}
+
+점수는 0-100 사이의 정수로 제공하세요.
+"""
+
+        user_message = f"""
+원본 학습 내용:
+{content.content}
+
+학습자의 서술형 설명:
+{user_explanation}
+
+위의 학습자 설명을 평가해주세요.
+"""
+
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+        
+        try:
+            response_content, processing_time = self._make_api_call(messages, temperature=0.3, max_tokens=1000)
+            
+            # Parse JSON response
+            try:
+                evaluation_data = json.loads(response_content)
+                
+                return {
+                    'score': evaluation_data.get('score', 0),
+                    'feedback': evaluation_data.get('feedback', '평가를 완료했습니다.'),
+                    'strengths': evaluation_data.get('strengths', []),
+                    'improvements': evaluation_data.get('improvements', []),
+                    'key_concepts_covered': evaluation_data.get('key_concepts_covered', []),
+                    'missing_concepts': evaluation_data.get('missing_concepts', []),
+                    'ai_model_used': self.model,
+                    'processing_time_ms': processing_time,
+                    'content_title': content.title
+                }
+            except json.JSONDecodeError:
+                logger.error(f"Failed to parse explanation evaluation JSON response: {response_content}")
+                # Fallback response
+                return {
+                    'score': 50,
+                    'feedback': '설명을 검토했습니다. AI 파싱 오류로 인해 기본 점수를 부여합니다.',
+                    'strengths': ['설명을 작성해주셨습니다'],
+                    'improvements': ['더 구체적인 설명을 추가해보세요'],
+                    'key_concepts_covered': [],
+                    'missing_concepts': [],
+                    'ai_model_used': self.model,
+                    'processing_time_ms': processing_time,
+                    'content_title': content.title
+                }
+                
+        except Exception as e:
+            logger.error(f"Error evaluating explanation: {str(e)}")
+            raise AIServiceError(f"Explanation evaluation failed: {str(e)}")
 
 
 # Singleton instance

@@ -359,7 +359,8 @@ REDOC_SETTINGS = {
 # Email verification settings
 EMAIL_VERIFICATION_TIMEOUT_DAYS = 1  # 24시간
 EMAIL_VERIFICATION_RESEND_MINUTES = 5  # 5분 간격 제한
-ENFORCE_EMAIL_VERIFICATION = os.environ.get('ENFORCE_EMAIL_VERIFICATION', 'True').lower() == 'true'
+# 개발/테스트 환경에서는 이메일 인증 우회 가능 (DEBUG=True일 때 기본값 False)
+ENFORCE_EMAIL_VERIFICATION = os.environ.get('ENFORCE_EMAIL_VERIFICATION', 'False' if DEBUG else 'True').lower() == 'true'
 
 # Frontend URL for email links
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
@@ -546,6 +547,8 @@ elif ENVIRONMENT == 'production':
     })
 
 # AI Service Configuration
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', None)
+CLAUDE_MODEL = os.environ.get('CLAUDE_MODEL', 'claude-3-haiku-20240307')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', None)
 OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4')
 AI_MAX_RETRIES = int(os.environ.get('AI_MAX_RETRIES', '3'))

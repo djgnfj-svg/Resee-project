@@ -174,7 +174,7 @@ export interface PaginatedResponse<T> {
 }
 
 // Subscription types
-export type SubscriptionTier = 'free' | 'basic' | 'premium' | 'pro';
+export type SubscriptionTier = 'free' | 'basic' | 'pro';
 
 export interface Subscription {
   id: number;
