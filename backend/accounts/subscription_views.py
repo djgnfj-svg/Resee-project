@@ -98,7 +98,8 @@ def subscription_upgrade(request):
         context={'request': request}
     )
     
-    if not request.user.is_email_verified:
+    # 환경변수로 이메일 인증 강제 여부 제어
+    if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not request.user.is_email_verified:
         return Response(
             {
                 'error': '이메일 인증이 필요합니다.',

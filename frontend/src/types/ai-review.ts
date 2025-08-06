@@ -114,6 +114,24 @@ export interface ChatMessage {
   isLoading?: boolean;
 }
 
+// Explanation Evaluation Request/Response
+export interface ExplanationEvaluationRequest {
+  content_id: number;
+  user_explanation: string;
+}
+
+export interface ExplanationEvaluationResponse {
+  score: number;
+  feedback: string;
+  strengths: string[];
+  improvements: string[];
+  key_concepts_covered: string[];
+  missing_concepts: string[];
+  ai_model_used?: string;
+  processing_time_ms?: number;
+  content_title?: string;
+}
+
 // UI State Types
 export interface QuestionGenerationState {
   isLoading: boolean;

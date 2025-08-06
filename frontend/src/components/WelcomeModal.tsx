@@ -20,7 +20,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }
 
   const handleStartOnboarding = () => {
     onClose();
-    navigate('/onboarding');
+    navigate('/content');
   };
 
   const handleSkipToContent = () => {

@@ -22,10 +22,10 @@ const SubscriptionPage: React.FC = () => {
     {
       name: 'free',
       display_name: '무료',
-      max_days: 7,
+      max_days: 3,
       price: 0,
       features: [
-        '최대 7일 복습 간격',
+        '최대 3일 복습 간격',
         '기본 통계',
         '무제한 콘텐츠 생성',
         '이메일 지원'
@@ -34,41 +34,31 @@ const SubscriptionPage: React.FC = () => {
     {
       name: 'basic',
       display_name: '베이직',
-      max_days: 30,
-      price: 5900,
+      max_days: 90,
+      price: 19900,
       features: [
-        '최대 30일 복습 간격',
+        '최대 90일 복습 간격',
         '상세 통계 및 분석',
         '무제한 콘텐츠 생성',
-        'AI 질문 생성 (월 50개)',
+        'AI 질문 생성 (일 30개)',
+        'AI 서술형 평가',
+        'AI 채팅',
         '우선 이메일 지원'
-      ]
-    },
-    {
-      name: 'premium',
-      display_name: '프리미엄',
-      max_days: 60,
-      price: 9900,
-      features: [
-        '최대 60일 복습 간격',
-        '고급 통계 및 인사이트',
-        '무제한 콘텐츠 생성',
-        'AI 질문 생성 (월 200개)',
-        '카테고리 관리',
-        '데이터 내보내기',
-        '24시간 이메일 지원'
       ]
     },
     {
       name: 'pro',
       display_name: '프로',
       max_days: 180,
-      price: 19900,
+      price: 39900,
       features: [
         '최대 180일 복습 간격 (에빙하우스 최적화)',
         '완전한 장기 기억 시스템',
         '무제한 콘텐츠 생성',
-        'AI 질문 생성 (무제한)',
+        'AI 질문 생성 (일 200개)',
+        '모든 AI 기능 (빈칸채우기, 블러처리)',
+        'AI 서술형 평가',
+        'AI 채팅',
         '고급 카테고리 관리',
         '데이터 내보내기',
         'API 액세스',
@@ -213,7 +203,7 @@ const SubscriptionPage: React.FC = () => {
         )}
 
         {/* Subscription Plans Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {subscriptionTiers.map((tier, index) => {
             const isCurrent = currentTierIndex === index;
             const isUpgrade = index > currentTierIndex;
@@ -226,11 +216,11 @@ const SubscriptionPage: React.FC = () => {
                   isCurrent
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                     : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600'
-                } ${tier.name === 'premium' ? 'scale-105' : ''}`}
+                } ${tier.name === 'pro' ? 'scale-105' : ''}`}
               >
-                {tier.name === 'premium' && (
+                {tier.name === 'pro' && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-medium">
+                    <span className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white px-4 py-1 rounded-full text-sm font-medium">
                       인기
                     </span>
                   </div>
@@ -278,8 +268,8 @@ const SubscriptionPage: React.FC = () => {
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-colors duration-200 ${
                     isCurrent
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                      : tier.name === 'premium'
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
+                      : tier.name === 'pro'
+                      ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white hover:from-yellow-600 hover:to-orange-700'
                       : isDowngrade
                       ? 'bg-orange-600 text-white hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600'
                       : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'

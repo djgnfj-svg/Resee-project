@@ -124,7 +124,7 @@ class User(AbstractUser):
         """Get maximum review interval based on subscription"""
         if hasattr(self, 'subscription') and self.subscription.is_active and not self.subscription.is_expired():
             return self.subscription.max_interval_days
-        return 7  # Default FREE tier
+        return 3  # Default FREE tier
     
     def has_active_subscription(self):
         """Check if user has an active subscription"""
@@ -134,7 +134,8 @@ class User(AbstractUser):
     
     def can_upgrade_subscription(self):
         """Check if user can upgrade subscription"""
-        if not self.is_email_verified:
+        from django.conf import settings
+        if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not self.is_email_verified:
             return False
         
         if hasattr(self, 'subscription') and self.subscription.tier == SubscriptionTier.PRO:
@@ -144,7 +145,8 @@ class User(AbstractUser):
     
     def can_use_ai_features(self):
         """Check if user can use AI features based on subscription"""
-        if not self.is_email_verified:
+        from django.conf import settings
+        if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not self.is_email_verified:
             return False
             
         if not hasattr(self, 'subscription'):
@@ -159,8 +161,7 @@ class User(AbstractUser):
         
         tier_limits = {
             SubscriptionTier.FREE: 0,         # No AI features for free users
-            SubscriptionTier.BASIC: 10,       # 10 questions per day
-            SubscriptionTier.PREMIUM: 50,     # 50 questions per day
+            SubscriptionTier.BASIC: 30,       # 30 questions per day
             SubscriptionTier.PRO: 200,        # 200 questions per day (unlimited-like)
         }
         
@@ -175,18 +176,15 @@ class User(AbstractUser):
             SubscriptionTier.FREE: [],
             SubscriptionTier.BASIC: [
                 'multiple_choice',
-                'ai_chat'
-            ],
-            SubscriptionTier.PREMIUM: [
-                'multiple_choice',
-                'fill_blank',
-                'ai_chat'
+                'ai_chat',
+                'explanation_evaluation'  # 서술형 평가 추가
             ],
             SubscriptionTier.PRO: [
                 'multiple_choice',
                 'fill_blank',
                 'blur_processing',
-                'ai_chat'
+                'ai_chat',
+                'explanation_evaluation'
             ]
         }
         
@@ -195,9 +193,8 @@ class User(AbstractUser):
 
 class SubscriptionTier(models.TextChoices):
     """Subscription tier choices with Ebbinghaus-optimized intervals"""
-    FREE = 'free', 'Free (7일)'
-    BASIC = 'basic', 'Basic (30일)'
-    PREMIUM = 'premium', 'Premium (60일)'
+    FREE = 'free', 'Free (3일)'
+    BASIC = 'basic', 'Basic (90일)'
     PRO = 'pro', 'Pro (180일)'
 
 
@@ -215,7 +212,7 @@ class Subscription(models.Model):
         help_text='Subscription tier'
     )
     max_interval_days = models.IntegerField(
-        default=7,
+        default=3,
         help_text='Maximum review interval in days'
     )
     start_date = models.DateTimeField(
@@ -260,9 +257,8 @@ class Subscription(models.Model):
         """Override save to set max_interval_days based on tier using Ebbinghaus forgetting curve"""
         # Ebbinghaus-optimized maximum intervals for each tier
         tier_max_intervals = {
-            SubscriptionTier.FREE: 7,     # Basic spaced repetition
-            SubscriptionTier.BASIC: 30,   # Medium-term memory retention
-            SubscriptionTier.PREMIUM: 60, # Long-term memory retention
+            SubscriptionTier.FREE: 3,     # Basic spaced repetition
+            SubscriptionTier.BASIC: 90,   # Medium-term memory retention
             SubscriptionTier.PRO: 180,    # Complete long-term retention (6 months)
         }
         
@@ -390,7 +386,7 @@ def create_user_subscription(sender, instance, created, **kwargs):
         Subscription.objects.create(
             user=instance,
             tier=SubscriptionTier.FREE,
-            max_interval_days=7
+            max_interval_days=3
         )
 
 
