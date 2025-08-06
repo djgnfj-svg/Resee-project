@@ -37,7 +37,9 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
             if not user.is_active:
                 raise serializers.ValidationError('비활성화된 계정입니다.')
 
-            if not user.is_email_verified:
+            # 환경변수로 이메일 인증 강제 여부 제어
+            from django.conf import settings
+            if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not user.is_email_verified:
                 raise serializers.ValidationError('이메일 인증을 완료해주세요.')
 
             # Set the user for token generation
@@ -57,11 +59,28 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """User serializer"""
+    subscription = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'is_email_verified', 'weekly_goal', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at', 'is_email_verified')
+        fields = ('id', 'email', 'username', 'is_email_verified', 'weekly_goal', 'created_at', 'updated_at', 'subscription')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'is_email_verified', 'subscription')
+    
+    def get_subscription(self, obj):
+        """Get subscription data"""
+        if hasattr(obj, 'subscription'):
+            return {
+                'id': obj.subscription.id,
+                'tier': obj.subscription.tier,
+                'tier_display': obj.subscription.get_tier_display(),
+                'max_interval_days': obj.subscription.max_interval_days,
+                'start_date': obj.subscription.start_date.isoformat() if obj.subscription.start_date else None,
+                'end_date': obj.subscription.end_date.isoformat() if obj.subscription.end_date else None,
+                'is_active': obj.subscription.is_active,
+                'days_remaining': obj.subscription.days_remaining(),
+                'is_expired': obj.subscription.is_expired(),
+            }
+        return None
 
 
 class ProfileSerializer(serializers.ModelSerializer):
