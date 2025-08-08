@@ -12,6 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   showWelcome: boolean;
   setShowWelcome: (show: boolean) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -123,6 +124,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    try {
+      const userData = await authAPI.getProfile();
+      setUser(userData);
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  };
+
   const value = {
     user,
     isLoading,
@@ -133,6 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated,
     showWelcome,
     setShowWelcome,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

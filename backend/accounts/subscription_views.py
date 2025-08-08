@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 from .models import Subscription, SubscriptionTier
 from .serializers import (
     SubscriptionSerializer,
@@ -41,25 +42,17 @@ def subscription_tiers(request):
         SubscriptionTier.BASIC: {
             'price': 5000,
             'features': [
-                '최대 30일까지 복습 지원',
+                '최대 90일까지 복습 지원',
                 '향상된 통계 기능',
-                '우선 지원'
-            ]
-        },
-        SubscriptionTier.PREMIUM: {
-            'price': 10000,
-            'features': [
-                '최대 60일까지 복습 지원',
-                '고급 분석 기능',
-                '전문가 복습 패턴',
-                'API 접근'
+                '우선 지원',
+                'AI 기능 사용 가능'
             ]
         },
         SubscriptionTier.PRO: {
             'price': 20000,
             'features': [
-                '최대 90일까지 복습 지원',
-                '모든 프리미엄 기능',
+                '최대 180일까지 복습 지원',
+                '모든 고급 기능',
                 '팀 협업 기능',
                 '우선 고객 지원',
                 '커스텀 복습 주기'
@@ -69,9 +62,8 @@ def subscription_tiers(request):
     
     # Ebbinghaus-optimized maximum intervals
     tier_max_days = {
-        SubscriptionTier.FREE: 7,
-        SubscriptionTier.BASIC: 30,
-        SubscriptionTier.PREMIUM: 60,
+        SubscriptionTier.FREE: 3,
+        SubscriptionTier.BASIC: 90,
         SubscriptionTier.PRO: 180
     }
     
@@ -93,82 +85,161 @@ def subscription_tiers(request):
 @permission_classes([IsAuthenticated])
 def subscription_upgrade(request):
     """Upgrade user's subscription"""
-    serializer = SubscriptionUpgradeSerializer(
-        data=request.data,
-        context={'request': request}
-    )
+    import logging
+    logger = logging.getLogger(__name__)
     
-    # 환경변수로 이메일 인증 강제 여부 제어
-    if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not request.user.is_email_verified:
-        return Response(
-            {
-                'error': '이메일 인증이 필요합니다.',
-                'email_verified': False
-            },
-            status=status.HTTP_403_FORBIDDEN
+    try:
+        logger.info(f"Starting subscription upgrade for user: {request.user.email}")
+        
+        # Check user and subscription first
+        user = request.user
+        logger.info(f"User: {user}, has subscription: {hasattr(user, 'subscription')}")
+        
+        if not hasattr(user, 'subscription'):
+            logger.error(f"User {user.email} has no subscription attribute")
+            return Response({'error': 'User subscription not found'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        subscription = user.subscription
+        logger.info(f"Current subscription: {subscription}, tier: {subscription.tier}")
+        
+        serializer = SubscriptionUpgradeSerializer(
+            data=request.data,
+            context={'request': request}
         )
+        
+        # 환경변수로 이메일 인증 강제 여부 제어
+        if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not request.user.is_email_verified:
+            return Response(
+                {
+                    'error': '이메일 인증이 필요합니다.',
+                    'email_verified': False
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        logger.info("Email verification passed")
+        
+        if serializer.is_valid():
+            logger.info(f"Serializer is valid, validated data: {serializer.validated_data}")
+        else:
+            logger.error(f"Serializer validation failed: {serializer.errors}")
+            
+    except Exception as e:
+        logger.error(f"Error in subscription upgrade view: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response({'error': f'Internal error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     if serializer.is_valid():
-        tier = serializer.validated_data['tier']
-        user = request.user
+        logger.info("=== Starting subscription upgrade process ===")
         
-        # Get or create subscription
-        subscription = getattr(user, 'subscription', None)
-        if not subscription:
+        try:
+            tier = serializer.validated_data['tier']
+            user = request.user
+            logger.info(f"Step 1: Got tier={tier}, user={user.email}")
+            
+            # Get or create subscription
+            logger.info("Step 2: Getting subscription...")
+            subscription = getattr(user, 'subscription', None)
+            logger.info(f"Step 2: subscription={subscription}")
+            
+            if not subscription:
+                logger.info("Step 2b: Creating new subscription...")
+                from django.utils import timezone
+                from datetime import timedelta
+                subscription = Subscription.objects.create(
+                    user=user,
+                    tier=SubscriptionTier.FREE
+                )
+                logger.info(f"Step 2b: Created subscription={subscription}")
+            
+            # 티어 순서 확인
+            logger.info("Step 3: Checking tier hierarchy...")
+            tier_hierarchy = {
+                SubscriptionTier.FREE: 0,
+                SubscriptionTier.BASIC: 1,
+                SubscriptionTier.PRO: 2,
+            }
+            
+            current_tier_level = tier_hierarchy.get(subscription.tier, 0)
+            new_tier_level = tier_hierarchy.get(tier, 0)
+            logger.info(f"Step 3: current_tier_level={current_tier_level}, new_tier_level={new_tier_level}")
+            
+            # 동일한 티어로의 변경 방지
+            if new_tier_level == current_tier_level:
+                logger.info("Step 4: Same tier, returning error")
+                return Response(
+                    {'error': f'이미 {subscription.get_tier_display()} 티어입니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update subscription
+            logger.info("Step 5: Updating subscription...")
             from django.utils import timezone
             from datetime import timedelta
-            subscription = Subscription.objects.create(
-                user=user,
-                tier=SubscriptionTier.FREE
-            )
-        
-        # 티어 순서 확인
-        tier_hierarchy = {
-            SubscriptionTier.FREE: 0,
-            SubscriptionTier.BASIC: 1,
-            SubscriptionTier.PREMIUM: 2,
-            SubscriptionTier.PRO: 3,
-        }
-        
-        current_tier_level = tier_hierarchy.get(subscription.tier, 0)
-        new_tier_level = tier_hierarchy.get(tier, 0)
-        
-        # 동일한 티어로의 변경 방지
-        if new_tier_level == current_tier_level:
-            return Response(
-                {'error': f'이미 {subscription.get_tier_display()} 티어입니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Update subscription
-        from django.utils import timezone
-        from datetime import timedelta
-        
-        old_tier = subscription.tier
-        subscription.tier = tier
-        subscription.is_active = True
-        subscription.start_date = timezone.now()
-        # 개발용으로 30일 구독 기간 설정
-        subscription.end_date = timezone.now() + timedelta(days=30)
-        subscription.save()  # save() 메서드에서 max_interval_days가 자동 설정됨
-        
-        # 로그 기록
-        import logging
-        logger = logging.getLogger(__name__)
-        
-        # 업그레이드/다운그레이드 구분
-        is_upgrade = new_tier_level > current_tier_level
-        action_type = "업그레이드" if is_upgrade else "다운그레이드"
-        
-        logger.info(f"Subscription {action_type}: {user.email} from {old_tier} to {tier}")
+            
+            old_tier = subscription.tier
+            logger.info(f"Step 5a: old_tier={old_tier}")
+            
+            subscription.tier = tier
+            logger.info(f"Step 5b: Set tier to {tier}")
+            
+            subscription.is_active = True
+            logger.info("Step 5c: Set is_active=True")
+            
+            subscription.start_date = timezone.now()
+            logger.info("Step 5d: Set start_date")
+            
+            # 개발용으로 30일 구독 기간 설정
+            subscription.end_date = timezone.now() + timedelta(days=30)
+            logger.info("Step 5e: Set end_date")
+            
+            logger.info("Step 5f: About to call subscription.save()...")
+            subscription.save()  # save() 메서드에서 max_interval_days가 자동 설정됨
+            logger.info("Step 5f: subscription.save() completed")
+            
+            # 업그레이드/다운그레이드 구분
+            logger.info("Step 6: Determining upgrade/downgrade...")
+            is_upgrade = new_tier_level > current_tier_level
+            action_type = "업그레이드" if is_upgrade else "다운그레이드"
+            logger.info(f"Step 6: is_upgrade={is_upgrade}, action_type={action_type}")
+            
+            logger.info(f"Subscription {action_type}: {user.email} from {old_tier} to {tier}")
+            
+        except Exception as e:
+            logger.error(f"Error in subscription upgrade main process: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return Response({'error': f'Subscription update failed: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         # Return updated subscription with success message
-        response_serializer = SubscriptionSerializer(subscription)
-        response_data = response_serializer.data
-        response_data['message'] = f'구독이 성공적으로 {subscription.get_tier_display()}으로 {action_type}되었습니다!'
-        response_data['ai_features'] = user.get_ai_features_list()
-        response_data['ai_question_limit'] = user.get_ai_question_limit()
-        
-        return Response(response_data, status=status.HTTP_200_OK)
+        try:
+            response_serializer = SubscriptionSerializer(subscription)
+            response_data = response_serializer.data
+            response_data['message'] = f'구독이 성공적으로 {subscription.get_tier_display()}으로 {action_type}되었습니다!'
+            
+            # Add AI features and limits safely
+            try:
+                response_data['ai_features'] = user.get_ai_features_list()
+                response_data['ai_question_limit'] = user.get_ai_question_limit()
+            except AttributeError as e:
+                logger.error(f"AttributeError getting AI info: {e}")
+                response_data['ai_features'] = []
+                response_data['ai_question_limit'] = 0
+                
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Unexpected error in subscription upgrade response: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            
+            # Fallback response
+            return Response({
+                'message': '구독이 성공적으로 업데이트되었습니다.',
+                'tier': tier,
+                'ai_features': [],
+                'ai_question_limit': 0
+            }, status=status.HTTP_200_OK)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
