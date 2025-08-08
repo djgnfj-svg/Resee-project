@@ -120,6 +120,15 @@ export interface ExplanationEvaluationRequest {
   user_explanation: string;
 }
 
+export interface ContentQualityAssessment {
+  quality_level: 'excellent' | 'good' | 'average' | 'poor';
+  clarity: number;
+  completeness: number;
+  logical_structure: number;
+  content_issues: string[];
+  content_strengths: string[];
+}
+
 export interface ExplanationEvaluationResponse {
   score: number;
   feedback: string;
@@ -127,6 +136,10 @@ export interface ExplanationEvaluationResponse {
   improvements: string[];
   key_concepts_covered: string[];
   missing_concepts: string[];
+  bonus_points?: string[];
+  evaluation_approach?: 'strict' | 'standard' | 'lenient';
+  adaptation_note?: string;
+  content_quality_assessment?: ContentQualityAssessment;
   ai_model_used?: string;
   processing_time_ms?: number;
   content_title?: string;

@@ -7,7 +7,7 @@ import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 
 const SubscriptionPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
 
   // 현재 구독 정보 조회
@@ -93,14 +93,17 @@ const SubscriptionPage: React.FC = () => {
   // Subscription upgrade mutation
   const upgradeMutation = useMutation({
     mutationFn: (data: SubscriptionUpgradeData) => subscriptionAPI.upgradeSubscription(data),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       const tier = data.subscription?.tier;
       const maxDays = subscriptionTiers.find(t => t.name === tier)?.max_days || 7;
       
       toast.success(
         data.message || 
-        `구독이 성공적으로 변경되었습니다! 이제 최대 ${maxDays}일까지의 밀린 복습을 확인할 수 있습니다.`
+        `구독이 성공적으로 변경되었습니다! 이제 최대 ${maxDays}일까지의 밀진 복습을 확인할 수 있습니다.`
       );
+      
+      // Refresh user data in AuthContext to update subscription info
+      await refreshUser();
       
       // Invalidate all relevant queries to refresh data immediately
       queryClient.invalidateQueries({ queryKey: ['current-subscription'] });

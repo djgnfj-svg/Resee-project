@@ -9,7 +9,7 @@ import { ExplanationEvaluationResponse } from '../types/ai-review';
 import { extractResults } from '../utils/helpers';
 
 const ReviewPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
@@ -303,8 +303,14 @@ const ReviewPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  if (canUseExplanation) {
+                onClick={async () => {
+                  // Refresh user info to get latest subscription status
+                  await refreshUser();
+                  
+                  // Re-check after refresh
+                  const updatedCanUseExplanation = user?.subscription?.tier !== 'free';
+                  
+                  if (updatedCanUseExplanation || canUseExplanation) {
                     setReviewMode('explanation');
                   } else {
                     setShowUpgradeModal(true);
@@ -318,7 +324,7 @@ const ReviewPage: React.FC = () => {
                     ? 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 cursor-pointer'
                 }`}
-                title={!canUseExplanation ? 'BASIC 이상 구독이 필요합니다' : ''}
+                title={!canUseExplanation ? 'BASIC 이상 구독이 필요합니다 (클릭하여 최신 구독 정보 확인)' : ''}
               >
                 <div className="flex items-center space-x-1">
                   <span>✍️ 서술형 모드</span>
@@ -572,11 +578,50 @@ const ReviewPage: React.FC = () => {
                   </div>
 
                   <div className="space-y-4">
+                    {/* Content Quality Assessment */}
+                    {evaluationResult.content_quality_assessment && (
+                      <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                        <h3 className="font-medium text-purple-900 dark:text-purple-300 mb-2">📊 원본 내용 분석</h3>
+                        <div className="text-sm text-purple-800 dark:text-purple-200">
+                          <p className="mb-2">
+                            <span className="font-medium">품질 수준:</span> {
+                              evaluationResult.content_quality_assessment.quality_level === 'excellent' ? '우수' :
+                              evaluationResult.content_quality_assessment.quality_level === 'good' ? '양호' :
+                              evaluationResult.content_quality_assessment.quality_level === 'average' ? '보통' : '개선 필요'
+                            }
+                            <span className="ml-2 text-xs">
+                              (평가 기준: {
+                                evaluationResult.evaluation_approach === 'strict' ? '엄격' :
+                                evaluationResult.evaluation_approach === 'standard' ? '표준' : '관대'
+                              })
+                            </span>
+                          </p>
+                          {evaluationResult.adaptation_note && (
+                            <p className="text-xs text-purple-600 dark:text-purple-400 italic">
+                              {evaluationResult.adaptation_note}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Feedback */}
                     <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                       <h3 className="font-medium text-blue-900 dark:text-blue-300 mb-2">💬 AI 피드백</h3>
                       <p className="text-blue-800 dark:text-blue-200">{evaluationResult.feedback}</p>
                     </div>
+
+                    {/* Bonus Points */}
+                    {evaluationResult.bonus_points && evaluationResult.bonus_points.length > 0 && (
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                        <h3 className="font-medium text-yellow-900 dark:text-yellow-300 mb-2">⭐ 가산점 항목</h3>
+                        <ul className="list-disc list-inside text-yellow-800 dark:text-yellow-200 space-y-1">
+                          {evaluationResult.bonus_points.map((bonus, index) => (
+                            <li key={index}>{bonus}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
                     {/* Strengths */}
                     {evaluationResult.strengths && evaluationResult.strengths.length > 0 && (

@@ -631,37 +631,69 @@ Teaching approach:
             raise AIServiceError(f"AI chat failed: {str(e)}")
     
     def evaluate_explanation(self, content, user_explanation):
-        """Evaluate user's descriptive explanation of content"""
+        """Evaluate user's descriptive explanation of content with intelligent content quality assessment"""
         system_message = """
-당신은 학습 평가 전문가입니다. 학습자가 작성한 서술형 설명을 평가하여 구체적인 피드백을 제공해주세요.
+당신은 교육 평가 전문가이자 내용 분석 전문가입니다. 다음 두 가지를 수행해주세요:
+
+1) 먼저 원본 학습 내용의 품질을 판단하세요:
+- 내용이 명확하고 이해하기 쉬운가?
+- 개념이 논리적으로 구성되어 있는가?
+- 학습 목적에 적합한 내용인가?
+- 내용이 부족하거나 애매한 부분이 있는가?
+
+2) 원본 내용의 품질을 고려하여 학습자의 설명을 평가하세요:
 
 평가 기준:
-1. 핵심 개념 이해도 (40%)
-2. 설명의 완성도 (30%)
-3. 논리적 구조 (20%)
-4. 구체적 예시나 세부사항 (10%)
+- 원본 내용이 우수한 경우: 엄격한 기준 적용 (핵심 개념 60%, 완성도 25%, 논리성 15%)
+- 원본 내용이 보통인 경우: 표준 기준 적용 (핵심 개념 50%, 완성도 30%, 논리성 20%)  
+- 원본 내용이 부족한 경우: 관대한 기준 적용 (이해 노력 70%, 자신만의 해석 30%)
+
+특별 고려사항:
+- 원본이 애매하거나 불완전하면 학습자의 나름의 이해와 해석을 높이 평가
+- 원본에서 설명이 부족한 부분을 학습자가 보완했다면 가산점
+- 원본이 너무 간단하거나 추상적이면 구체적 예시나 경험을 추가한 것을 긍정 평가
+- 학습자가 원본의 한계를 인식하고 추가 설명을 시도한 경우 우수 평가
 
 응답은 반드시 다음 JSON 형식으로 제공하세요:
 {
+  "content_quality_assessment": {
+    "quality_level": "excellent|good|average|poor",
+    "clarity": 85,
+    "completeness": 75,
+    "logical_structure": 90,
+    "content_issues": ["문제점1", "문제점2"],
+    "content_strengths": ["장점1", "장점2"]
+  },
+  "evaluation_approach": "strict|standard|lenient",
   "score": 85,
-  "feedback": "구체적인 피드백 메시지",
-  "strengths": ["강점1", "강점2"],
-  "improvements": ["개선점1", "개선점2"],
-  "key_concepts_covered": ["다룬 핵심 개념1", "개념2"],
-  "missing_concepts": ["놓친 개념1", "개념2"]
+  "feedback": "원본 내용의 품질을 고려한 구체적인 피드백",
+  "strengths": ["학습자의 강점1", "강점2"],
+  "improvements": ["개선 제안1", "개선 제안2"],
+  "key_concepts_covered": ["이해한 개념1", "개념2"],
+  "missing_concepts": ["놓친 개념1", "개념2"],
+  "bonus_points": ["원본을 보완한 부분", "추가 통찰"],
+  "adaptation_note": "원본 내용 품질에 따른 평가 조정 설명"
 }
 
-점수는 0-100 사이의 정수로 제공하세요.
+점수는 0-100 사이의 정수로, 원본 내용 품질에 따라 유연하게 조정하세요.
+- 원본이 훌륭하면 80점도 높은 점수
+- 원본이 부족하면 학습자의 노력을 인정하여 관대하게 평가
 """
 
         user_message = f"""
-원본 학습 내용:
-{content.content}
+=== 평가할 원본 학습 내용 ===
+제목: {content.title}
+내용: {content.content}
 
-학습자의 서술형 설명:
+=== 학습자의 서술형 설명 ===
 {user_explanation}
 
-위의 학습자 설명을 평가해주세요.
+=== 평가 지시사항 ===
+1. 먼저 원본 학습 내용의 품질을 객관적으로 분석하세요
+2. 원본 내용의 품질 수준에 맞는 평가 기준을 적용하세요
+3. 학습자가 원본의 부족한 부분을 보완했는지 확인하세요
+4. 대충 작성된 원본에 대해서도 학습자가 나름의 이해를 보여주면 격려하세요
+5. 원본이 우수하다면 더 높은 기준을 적용하되, 너무 가혹하지는 않게 하세요
 """
 
         messages = [
@@ -670,11 +702,14 @@ Teaching approach:
         ]
         
         try:
-            response_content, processing_time = self._make_api_call(messages, temperature=0.3, max_tokens=1000)
+            response_content, processing_time = self._make_api_call(messages, temperature=0.3, max_tokens=1500)
             
             # Parse JSON response
             try:
                 evaluation_data = json.loads(response_content)
+                
+                # Extract content quality assessment
+                content_assessment = evaluation_data.get('content_quality_assessment', {})
                 
                 return {
                     'score': evaluation_data.get('score', 0),
@@ -683,26 +718,55 @@ Teaching approach:
                     'improvements': evaluation_data.get('improvements', []),
                     'key_concepts_covered': evaluation_data.get('key_concepts_covered', []),
                     'missing_concepts': evaluation_data.get('missing_concepts', []),
+                    'bonus_points': evaluation_data.get('bonus_points', []),
+                    'evaluation_approach': evaluation_data.get('evaluation_approach', 'standard'),
+                    'adaptation_note': evaluation_data.get('adaptation_note', ''),
+                    'content_quality_assessment': {
+                        'quality_level': content_assessment.get('quality_level', 'average'),
+                        'clarity': content_assessment.get('clarity', 70),
+                        'completeness': content_assessment.get('completeness', 70),
+                        'logical_structure': content_assessment.get('logical_structure', 70),
+                        'content_issues': content_assessment.get('content_issues', []),
+                        'content_strengths': content_assessment.get('content_strengths', [])
+                    },
                     'ai_model_used': self.model,
                     'processing_time_ms': processing_time,
                     'content_title': content.title
                 }
             except json.JSONDecodeError:
+                import logging
+                logger = logging.getLogger(__name__)
                 logger.error(f"Failed to parse explanation evaluation JSON response: {response_content}")
-                # Fallback response
+                # Fallback response with smart content quality detection
+                content_length = len(content.content.strip())
+                is_short_content = content_length < 100
+                
                 return {
-                    'score': 50,
-                    'feedback': '설명을 검토했습니다. AI 파싱 오류로 인해 기본 점수를 부여합니다.',
-                    'strengths': ['설명을 작성해주셨습니다'],
-                    'improvements': ['더 구체적인 설명을 추가해보세요'],
+                    'score': 65 if is_short_content else 50,
+                    'feedback': f'설명을 검토했습니다. {"원본 내용이 간단하여 관대하게 평가했습니다" if is_short_content else "AI 파싱 오류로 인해 기본 점수를 부여합니다"}.',
+                    'strengths': ['설명을 작성해주셨습니다', '학습에 대한 노력을 보여주셨습니다'],
+                    'improvements': ['더 구체적인 설명을 추가해보세요', '예시나 경험을 포함해보세요'],
                     'key_concepts_covered': [],
                     'missing_concepts': [],
+                    'bonus_points': [],
+                    'evaluation_approach': 'lenient' if is_short_content else 'standard',
+                    'adaptation_note': '원본 내용 분석 중 오류가 발생하여 기본 평가를 적용했습니다.',
+                    'content_quality_assessment': {
+                        'quality_level': 'poor' if is_short_content else 'average',
+                        'clarity': 50,
+                        'completeness': 40 if is_short_content else 60,
+                        'logical_structure': 60,
+                        'content_issues': ['AI 분석 실패'],
+                        'content_strengths': ['기본 정보 포함']
+                    },
                     'ai_model_used': self.model,
                     'processing_time_ms': processing_time,
                     'content_title': content.title
                 }
                 
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
             logger.error(f"Error evaluating explanation: {str(e)}")
             raise AIServiceError(f"Explanation evaluation failed: {str(e)}")
 
