@@ -269,3 +269,518 @@ class AIReviewSession(models.Model):
         if self.questions_generated == 0:
             return 0.0
         return (self.questions_answered / self.questions_generated) * 100.0
+
+
+class WeeklyTest(models.Model):
+    """
+    주간 종합 시험 모델
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='weekly_tests',
+        help_text="시험을 본 사용자"
+    )
+    week_start_date = models.DateField(
+        help_text="주간 시작일 (월요일)"
+    )
+    week_end_date = models.DateField(
+        help_text="주간 종료일 (일요일)"
+    )
+    total_questions = models.IntegerField(
+        default=15,
+        validators=[MinValueValidator(5), MaxValueValidator(30)],
+        help_text="총 문제 수"
+    )
+    completed_questions = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text="완료한 문제 수"
+    )
+    correct_answers = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text="정답 수"
+    )
+    score = models.FloatField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
+        help_text="최종 점수 (0-100)"
+    )
+    time_limit_minutes = models.IntegerField(
+        default=30,
+        choices=[(30, '30분'), (60, '60분'), (0, '무제한')],
+        help_text="시험 시간 제한"
+    )
+    started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="시험 시작 시간"
+    )
+    completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="시험 완료 시간"
+    )
+    difficulty_distribution = models.JSONField(
+        default=dict,
+        help_text="난이도별 문제 분포 {'easy': 5, 'medium': 8, 'hard': 2}"
+    )
+    content_coverage = models.JSONField(
+        default=list,
+        help_text="포함된 콘텐츠 ID 목록"
+    )
+    weak_areas = models.JSONField(
+        default=list,
+        help_text="취약 분야 분석 결과"
+    )
+    improvement_from_last_week = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="지난 주 대비 향상도 (%)"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('draft', '준비중'),
+            ('ready', '시작가능'),
+            ('in_progress', '진행중'),
+            ('completed', '완료'),
+            ('expired', '만료')
+        ],
+        default='draft',
+        help_text="시험 상태"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'ai_weekly_tests'
+        ordering = ['-week_start_date']
+        unique_together = ['user', 'week_start_date']
+        indexes = [
+            models.Index(fields=['user', 'week_start_date']),
+            models.Index(fields=['status', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email} - Week {self.week_start_date}"
+    
+    @property
+    def accuracy_rate(self):
+        """정답률 계산"""
+        if self.completed_questions == 0:
+            return 0.0
+        return (self.correct_answers / self.completed_questions) * 100.0
+    
+    @property
+    def completion_rate(self):
+        """완료율 계산"""
+        if self.total_questions == 0:
+            return 0.0
+        return (self.completed_questions / self.total_questions) * 100.0
+    
+    @property
+    def time_spent_minutes(self):
+        """소요 시간 계산 (분)"""
+        if self.started_at and self.completed_at:
+            delta = self.completed_at - self.started_at
+            return delta.total_seconds() / 60
+        return 0
+    
+    def is_expired(self):
+        """시간 제한 만료 여부 확인"""
+        if self.time_limit_minutes == 0:  # 무제한
+            return False
+        if self.started_at and self.status == 'in_progress':
+            from django.utils import timezone
+            elapsed = (timezone.now() - self.started_at).total_seconds() / 60
+            return elapsed > self.time_limit_minutes
+        return False
+
+
+class WeeklyTestQuestion(models.Model):
+    """
+    주간 시험 문제
+    """
+    weekly_test = models.ForeignKey(
+        WeeklyTest,
+        on_delete=models.CASCADE,
+        related_name='test_questions',
+        help_text="소속 주간 시험"
+    )
+    ai_question = models.ForeignKey(
+        AIQuestion,
+        on_delete=models.CASCADE,
+        related_name='weekly_test_uses',
+        help_text="AI 생성 문제"
+    )
+    order = models.IntegerField(
+        help_text="문제 순서"
+    )
+    user_answer = models.TextField(
+        blank=True,
+        help_text="사용자 답변"
+    )
+    is_correct = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="정답 여부"
+    )
+    ai_score = models.FloatField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        help_text="AI 평가 점수"
+    )
+    time_spent_seconds = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="문제 풀이 시간 (초)"
+    )
+    answered_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="답변 제출 시간"
+    )
+    
+    class Meta:
+        db_table = 'ai_weekly_test_questions'
+        ordering = ['order']
+        unique_together = ['weekly_test', 'order']
+    
+    def __str__(self):
+        return f"{self.weekly_test} - Q{self.order}"
+
+
+class InstantContentCheck(models.Model):
+    """
+    실시간 내용 검토 모델
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='instant_checks',
+        help_text="검토를 수행한 사용자"
+    )
+    content = models.ForeignKey(
+        Content,
+        on_delete=models.CASCADE,
+        related_name='instant_checks',
+        help_text="검토 대상 콘텐츠"
+    )
+    check_point = models.CharField(
+        max_length=50,
+        help_text="검토 시점 (예: 50%, 완료 등)"
+    )
+    questions_count = models.IntegerField(
+        default=3,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="생성된 문제 수"
+    )
+    correct_count = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0)],
+        help_text="정답 수"
+    )
+    understanding_score = models.FloatField(
+        validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
+        help_text="이해도 점수 (0-100)"
+    )
+    weak_points = models.JSONField(
+        default=list,
+        help_text="취약점 목록"
+    )
+    feedback = models.TextField(
+        blank=True,
+        help_text="AI 생성 피드백"
+    )
+    duration_seconds = models.IntegerField(
+        help_text="검토 소요 시간 (초)"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'ai_instant_content_checks'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'content', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.content.title} @ {self.check_point}"
+
+
+class LearningAnalytics(models.Model):
+    """
+    AI 학습 패턴 분석 모델
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='learning_analytics',
+        help_text="분석 대상 사용자"
+    )
+    period_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('daily', '일간'),
+            ('weekly', '주간'),
+            ('monthly', '월간'),
+            ('quarterly', '분기')
+        ],
+        help_text="분석 기간 유형"
+    )
+    period_start = models.DateField(
+        help_text="분석 시작일"
+    )
+    period_end = models.DateField(
+        help_text="분석 종료일"
+    )
+    
+    # 학습 패턴 메트릭
+    total_study_minutes = models.IntegerField(
+        default=0,
+        help_text="총 학습 시간 (분)"
+    )
+    average_daily_minutes = models.FloatField(
+        default=0.0,
+        help_text="일 평균 학습 시간 (분)"
+    )
+    peak_study_hour = models.IntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(23)],
+        help_text="가장 집중도 높은 시간대 (0-23시)"
+    )
+    study_day_pattern = models.JSONField(
+        default=dict,
+        help_text="요일별 학습 패턴 {'mon': 30, 'tue': 45, ...}"
+    )
+    
+    # 성과 메트릭
+    total_contents_studied = models.IntegerField(
+        default=0,
+        help_text="학습한 콘텐츠 수"
+    )
+    total_reviews_completed = models.IntegerField(
+        default=0,
+        help_text="완료한 복습 수"
+    )
+    average_accuracy = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
+        help_text="평균 정답률 (%)"
+    )
+    
+    # 취약 분야 분석
+    weak_categories = models.JSONField(
+        default=list,
+        help_text="취약 카테고리 목록 [{'category': 'math', 'score': 65}, ...]"
+    )
+    strong_categories = models.JSONField(
+        default=list,
+        help_text="강점 카테고리 목록"
+    )
+    
+    # AI 추천
+    recommended_focus_areas = models.JSONField(
+        default=list,
+        help_text="AI 추천 집중 학습 분야"
+    )
+    personalized_tips = models.JSONField(
+        default=list,
+        help_text="개인화된 학습 팁"
+    )
+    predicted_improvement_areas = models.JSONField(
+        default=list,
+        help_text="예상 개선 가능 분야"
+    )
+    
+    # 학습 효율성
+    efficiency_score = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
+        help_text="학습 효율성 점수"
+    )
+    retention_rate = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
+        help_text="기억 유지율"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'ai_learning_analytics'
+        ordering = ['-period_start']
+        unique_together = ['user', 'period_type', 'period_start']
+        indexes = [
+            models.Index(fields=['user', 'period_type', 'period_start']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.period_type} ({self.period_start})"
+
+
+class AIStudyMate(models.Model):
+    """
+    AI 스터디 메이트 세션 모델
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='study_mate_sessions',
+        help_text="학습자"
+    )
+    content = models.ForeignKey(
+        Content,
+        on_delete=models.CASCADE,
+        related_name='study_mate_sessions',
+        help_text="학습 콘텐츠"
+    )
+    session_type = models.CharField(
+        max_length=30,
+        choices=[
+            ('guided_learning', '가이드 학습'),
+            ('hint_system', '힌트 시스템'),
+            ('error_analysis', '오답 분석'),
+            ('concept_explanation', '개념 설명')
+        ],
+        help_text="세션 유형"
+    )
+    interaction_count = models.IntegerField(
+        default=0,
+        help_text="상호작용 횟수"
+    )
+    hints_provided = models.JSONField(
+        default=list,
+        help_text="제공된 힌트 목록"
+    )
+    user_level = models.CharField(
+        max_length=20,
+        choices=[
+            ('beginner', '초급'),
+            ('intermediate', '중급'),
+            ('advanced', '고급')
+        ],
+        default='intermediate',
+        help_text="감지된 사용자 수준"
+    )
+    adapted_explanations = models.JSONField(
+        default=list,
+        help_text="수준별 맞춤 설명"
+    )
+    learning_progress = models.JSONField(
+        default=dict,
+        help_text="학습 진행 상황 추적"
+    )
+    session_duration_minutes = models.IntegerField(
+        default=0,
+        help_text="세션 지속 시간 (분)"
+    )
+    effectiveness_score = models.FloatField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
+        help_text="세션 효과성 점수"
+    )
+    started_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="세션 시작 시간"
+    )
+    ended_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="세션 종료 시간"
+    )
+    
+    class Meta:
+        db_table = 'ai_study_mate_sessions'
+        ordering = ['-started_at']
+        indexes = [
+            models.Index(fields=['user', 'content', 'started_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.session_type} ({self.started_at})"
+
+
+class AISummaryNote(models.Model):
+    """
+    AI 생성 요약 노트 모델
+    """
+    content = models.ForeignKey(
+        Content,
+        on_delete=models.CASCADE,
+        related_name='ai_summaries',
+        help_text="원본 콘텐츠"
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='ai_summaries',
+        help_text="요청한 사용자"
+    )
+    summary_type = models.CharField(
+        max_length=30,
+        choices=[
+            ('one_page', '1페이지 요약'),
+            ('mind_map', '마인드맵'),
+            ('key_points', '핵심 포인트'),
+            ('cornell_notes', '코넬 노트')
+        ],
+        default='one_page',
+        help_text="요약 형식"
+    )
+    summary_content = models.TextField(
+        help_text="요약 내용"
+    )
+    key_concepts = models.JSONField(
+        default=list,
+        help_text="핵심 개념 목록"
+    )
+    important_terms = models.JSONField(
+        default=list,
+        help_text="중요 용어 및 정의"
+    )
+    visual_elements = models.JSONField(
+        default=dict,
+        help_text="시각적 요소 (다이어그램, 차트 등)"
+    )
+    study_questions = models.JSONField(
+        default=list,
+        help_text="학습 확인 질문"
+    )
+    pdf_url = models.URLField(
+        blank=True,
+        help_text="생성된 PDF 파일 URL"
+    )
+    word_count = models.IntegerField(
+        default=0,
+        help_text="요약 단어 수"
+    )
+    compression_ratio = models.FloatField(
+        default=0.0,
+        help_text="압축률 (원본 대비 요약 비율)"
+    )
+    ai_model_used = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="사용된 AI 모델"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'ai_summary_notes'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['content', 'user', 'created_at']),
+            models.Index(fields=['summary_type', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.content.title} - {self.summary_type} ({self.user.email})"
