@@ -40,8 +40,11 @@
     "test": "react-scripts test",
     "test:coverage": "react-scripts test --coverage --watchAll=false",
     "test:ci": "react-scripts test --coverage --ci --watchAll=false",
+    "test:quick": "react-scripts test --watchAll=false --verbose=false",
     "lint": "eslint src --ext .ts,.tsx --max-warnings 0",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "ci:quick": "npm run typecheck && npm run build --silent",
     "eject": "react-scripts eject",
     "pwa:icons": "node ../scripts/generate-pwa-icons.js",
     "pwa:test": "lighthouse http://localhost:3000 --output=html --output-path=./lighthouse-report.html --view"
