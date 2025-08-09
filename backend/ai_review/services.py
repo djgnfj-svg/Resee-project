@@ -1276,6 +1276,221 @@ Respond with valid JSON:
             logger.error(f"Summary generation failed: {str(e)}")
             raise AIServiceError(f"Failed to generate summary: {str(e)}")
 
+    def analyze_wrong_answer(self, question: str, user_answer: str, correct_answer: str, content_text: str) -> Dict[str, Any]:
+        """
+        AI 오답 클리닉 - 틀린 문제에 대한 맞춤형 분석 및 해설
+        
+        Args:
+            question: 원본 문제
+            user_answer: 사용자 답변
+            correct_answer: 정답
+            content_text: 학습 콘텐츠
+        
+        Returns:
+            오답 분석 및 학습 가이드
+        """
+        system_message = """You are an expert AI tutor specializing in personalized error analysis.
+
+Provide a comprehensive analysis in Korean that helps the student understand:
+1. Why their answer was incorrect (specific reasoning)
+2. Clear explanation of the correct concept
+3. Practical tips to avoid similar mistakes
+4. One additional practice question of similar difficulty
+
+Return as JSON:
+{
+    "error_analysis": "구체적인 오답 원인 분석 (2-3문장)",
+    "concept_explanation": "핵심 개념 재설명 (3-4문장으로 명확하게)",
+    "additional_tips": ["실용적인 학습 팁 3-4개"],
+    "practice_question": {
+        "question_text": "연습 문제",
+        "options": ["선택지1", "선택지2", "선택지3", "선택지4"],
+        "correct_answer": "정답",
+        "explanation": "해설"
+    }
+}"""
+
+        user_message = f"""
+학습 내용:
+{content_text[:1000]}
+
+문제: {question}
+학생 답변: {user_answer}
+정답: {correct_answer}
+
+이 학생이 왜 틀렸는지 분석하고 맞춤형 학습 가이드를 제공해주세요.
+"""
+
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+
+        try:
+            response_content, processing_time = self._make_api_call(
+                messages, 
+                temperature=0.3, 
+                max_tokens=1500
+            )
+            
+            result = json.loads(response_content)
+            result['processing_time_ms'] = processing_time
+            result['ai_model_used'] = self.model
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Wrong answer analysis failed: {str(e)}")
+            raise AIServiceError(f"Failed to analyze wrong answer: {str(e)}")
+
+    def get_adaptive_question(self, content_area: str, current_difficulty: str, user_performance: Dict) -> Dict[str, Any]:
+        """
+        AI 난이도 조절 시험 - 사용자 성과에 따른 맞춤 문제 생성
+        
+        Args:
+            content_area: 시험 범위
+            current_difficulty: 현재 난이도 (easy/medium/hard)
+            user_performance: 사용자 성과 데이터
+        
+        Returns:
+            난이도 조절된 문제
+        """
+        difficulty_map = {
+            'easy': 'beginner level (basic recall and comprehension)',
+            'medium': 'intermediate level (application and analysis)', 
+            'hard': 'advanced level (synthesis and evaluation)'
+        }
+        
+        system_message = f"""You are an adaptive testing AI that generates questions based on student performance.
+
+Create a {difficulty_map[current_difficulty]} question in Korean.
+
+The question should:
+1. Match the specified difficulty level exactly
+2. Be relevant to the content area
+3. Have one clear correct answer
+4. Include plausible distractors for multiple choice
+
+Return as JSON:
+{{
+    "question_text": "문제 내용",
+    "question_type": "multiple_choice",
+    "options": ["선택지1", "선택지2", "선택지3", "선택지4"],
+    "correct_answer": "정답",
+    "difficulty": "{current_difficulty}",
+    "explanation": "정답 해설",
+    "estimated_time": "예상 소요 시간 (초)"
+}}"""
+
+        user_message = f"""
+시험 범위: {content_area}
+현재 난이도: {current_difficulty}
+사용자 성과:
+- 연속 정답: {user_performance.get('consecutive_correct', 0)}
+- 연속 오답: {user_performance.get('consecutive_wrong', 0)}
+- 전체 정답률: {user_performance.get('accuracy_rate', 0)}%
+
+이 난이도에 맞는 문제를 생성해주세요.
+"""
+
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+
+        try:
+            response_content, processing_time = self._make_api_call(
+                messages, 
+                temperature=0.7, 
+                max_tokens=1000
+            )
+            
+            result = json.loads(response_content)
+            result['processing_time_ms'] = processing_time
+            result['ai_model_used'] = self.model
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Adaptive question generation failed: {str(e)}")
+            raise AIServiceError(f"Failed to generate adaptive question: {str(e)}")
+
+    def transform_question(self, original_question: str, transformation_type: str, content_context: str) -> Dict[str, Any]:
+        """
+        AI 문제 변형기 - 같은 개념을 다양한 방식으로 묻기
+        
+        Args:
+            original_question: 원본 문제
+            transformation_type: 변형 방식 (reverse, practical, comparison, troubleshoot, analogy, step_by_step)
+            content_context: 콘텐츠 맥락
+        
+        Returns:
+            변형된 문제와 해설
+        """
+        transformation_prompts = {
+            'reverse': '원본 문제의 답을 주고 그 이유나 과정을 묻는 역질문으로 변형',
+            'practical': '실생활에서 접할 수 있는 구체적인 상황으로 적용하여 변형',
+            'comparison': '비슷한 개념이나 다른 접근법과 비교하는 문제로 변형',
+            'troubleshoot': '문제 상황을 주고 해결 방법을 찾는 문제해결형으로 변형',
+            'analogy': '비유나 예시를 활용하여 이해하기 쉽게 변형',
+            'step_by_step': '단계별로 풀이 과정을 따라가는 형태로 변형'
+        }
+        
+        system_message = f"""You are an expert question transformer that creates educational variations.
+
+Transform the given question using: {transformation_prompts[transformation_type]}
+
+The transformed question should:
+1. Test the same core concept as the original
+2. Provide a different perspective or approach
+3. Be engaging and educational
+4. Match the original difficulty level
+5. Be clearly written in Korean
+
+Return as JSON:
+{{
+    "transformed_question": "변형된 문제",
+    "transformed_answer": "변형 문제의 답안",
+    "transformation_explanation": "왜 이렇게 변형했는지 설명",
+    "learning_benefit": "이 변형이 학습에 주는 이점",
+    "difficulty_level": "원본과 동일한 난이도"
+}}"""
+
+        user_message = f"""
+원본 문제: {original_question}
+
+학습 맥락:
+{content_context[:500]}
+
+변형 방식: {transformation_type} - {transformation_prompts[transformation_type]}
+
+같은 개념을 다른 방식으로 묻는 문제를 만들어주세요.
+"""
+
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+
+        try:
+            response_content, processing_time = self._make_api_call(
+                messages, 
+                temperature=0.8, 
+                max_tokens=1200
+            )
+            
+            result = json.loads(response_content)
+            result['processing_time_ms'] = processing_time
+            result['ai_model_used'] = self.model
+            result['original_question'] = original_question
+            result['transformation_type'] = transformation_type
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Question transformation failed: {str(e)}")
+            raise AIServiceError(f"Failed to transform question: {str(e)}")
+
 
 # Singleton instance
 ai_service = ClaudeService()
