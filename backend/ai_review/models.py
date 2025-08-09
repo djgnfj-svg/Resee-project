@@ -784,3 +784,206 @@ class AISummaryNote(models.Model):
     
     def __str__(self):
         return f"{self.content.title} - {self.summary_type} ({self.user.email})"
+
+
+class AIWrongAnswerClinic(models.Model):
+    """
+    AI 오답 클리닉 - 틀린 문제에 대한 맞춤형 해설
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='wrong_answer_clinics',
+        help_text="질문한 사용자"
+    )
+    original_question = models.ForeignKey(
+        AIQuestion,
+        on_delete=models.CASCADE,
+        related_name='clinic_sessions',
+        help_text="원본 문제"
+    )
+    user_answer = models.TextField(
+        help_text="사용자의 오답"
+    )
+    correct_answer = models.TextField(
+        help_text="정답"
+    )
+    
+    # AI 분석 결과
+    error_analysis = models.TextField(
+        help_text="오답 원인 분석"
+    )
+    concept_explanation = models.TextField(
+        help_text="핵심 개념 재설명"
+    )
+    additional_tips = models.JSONField(
+        default=list,
+        help_text="추가 학습 팁"
+    )
+    practice_question = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="연습 문제"
+    )
+    
+    # 메타 정보
+    improvement_score = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="재시도 후 향상도"
+    )
+    is_resolved = models.BooleanField(
+        default=False,
+        help_text="문제 해결 여부"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'ai_wrong_answer_clinics'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['original_question', 'is_resolved']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.original_question.question_text[:50]}..."
+
+
+class AIAdaptiveDifficultyTest(models.Model):
+    """
+    AI 난이도 조절 시험 - 실시간 난이도 조절
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='adaptive_tests',
+        help_text="시험 응시자"
+    )
+    content_area = models.CharField(
+        max_length=100,
+        help_text="시험 범위 (카테고리 또는 콘텐츠 그룹)"
+    )
+    target_questions = models.IntegerField(
+        default=10,
+        help_text="목표 문제 수"
+    )
+    
+    # 난이도 조절 상태
+    current_difficulty = models.CharField(
+        max_length=20,
+        choices=[
+            ('easy', '쉬움'),
+            ('medium', '보통'),
+            ('hard', '어려움')
+        ],
+        default='medium',
+        help_text="현재 난이도"
+    )
+    consecutive_correct = models.IntegerField(
+        default=0,
+        help_text="연속 정답 수"
+    )
+    consecutive_wrong = models.IntegerField(
+        default=0,
+        help_text="연속 오답 수"
+    )
+    
+    # 시험 결과
+    total_questions = models.IntegerField(default=0)
+    correct_answers = models.IntegerField(default=0)
+    final_difficulty_level = models.CharField(max_length=20, blank=True)
+    estimated_proficiency = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="추정 숙련도 (0-100)"
+    )
+    
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'ai_adaptive_difficulty_tests'
+        ordering = ['-started_at']
+        indexes = [
+            models.Index(fields=['user', 'started_at']),
+            models.Index(fields=['content_area', 'completed_at']),
+        ]
+    
+    def __str__(self):
+        status = "완료" if self.completed_at else "진행중"
+        return f"{self.user.email} - {self.content_area} ({status})"
+    
+    @property
+    def accuracy_rate(self):
+        if self.total_questions == 0:
+            return 0.0
+        return (self.correct_answers / self.total_questions) * 100.0
+
+
+class AIQuestionTransformer(models.Model):
+    """
+    AI 문제 변형기 - 같은 개념을 다양하게 묻기
+    """
+    original_question = models.ForeignKey(
+        AIQuestion,
+        on_delete=models.CASCADE,
+        related_name='transformations',
+        help_text="원본 문제"
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='question_transformations',
+        help_text="변형을 요청한 사용자"
+    )
+    
+    transformation_type = models.CharField(
+        max_length=30,
+        choices=[
+            ('reverse', '역질문'),
+            ('practical', '실생활 적용'),
+            ('comparison', '비교형'),
+            ('troubleshoot', '문제해결형'),
+            ('analogy', '비유/예시'),
+            ('step_by_step', '단계별 풀이')
+        ],
+        help_text="변형 방식"
+    )
+    
+    transformed_question_text = models.TextField(
+        help_text="변형된 문제"
+    )
+    transformed_answer = models.TextField(
+        help_text="변형 문제 답안"
+    )
+    transformation_explanation = models.TextField(
+        blank=True,
+        help_text="변형 의도 설명"
+    )
+    
+    # 사용자 피드백
+    user_rating = models.IntegerField(
+        null=True,
+        blank=True,
+        choices=[(i, f"{i}점") for i in range(1, 6)],
+        help_text="사용자 평점 (1-5)"
+    )
+    is_helpful = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="도움되었는지 여부"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'ai_question_transformers'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'transformation_type']),
+            models.Index(fields=['original_question', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.original_question.question_text[:30]}... → {self.transformation_type}"

@@ -15,7 +15,10 @@ from .models import (
     InstantContentCheck,
     LearningAnalytics,
     AIStudyMate,
-    AISummaryNote
+    AISummaryNote,
+    AIWrongAnswerClinic,
+    AIAdaptiveDifficultyTest,
+    AIQuestionTransformer
 )
 
 
@@ -452,3 +455,108 @@ class SummaryNoteRequestSerializer(serializers.Serializer):
         except Content.DoesNotExist:
             raise serializers.ValidationError("콘텐츠를 찾을 수 없거나 접근 권한이 없습니다.")
         return value
+
+
+# 새로운 AI 기능 시리얼라이저들
+class AIWrongAnswerClinicSerializer(serializers.ModelSerializer):
+    """AI 오답 클리닉 시리얼라이저"""
+    question_text = serializers.CharField(source='original_question.question_text', read_only=True)
+    content_title = serializers.CharField(source='original_question.content.title', read_only=True)
+    
+    class Meta:
+        model = AIWrongAnswerClinic
+        fields = [
+            'id', 'user', 'original_question', 'question_text', 'content_title',
+            'user_answer', 'correct_answer', 'error_analysis', 'concept_explanation',
+            'additional_tips', 'practice_question', 'improvement_score', 'is_resolved',
+            'created_at'
+        ]
+        read_only_fields = ['id', 'user', 'question_text', 'content_title', 'created_at']
+
+
+class WrongAnswerAnalysisRequestSerializer(serializers.Serializer):
+    """오답 분석 요청 시리얼라이저"""
+    question_id = serializers.IntegerField()
+    user_answer = serializers.CharField(max_length=1000)
+    
+    def validate_question_id(self, value):
+        user = self.context['request'].user
+        try:
+            question = AIQuestion.objects.get(id=value, content__author=user)
+        except AIQuestion.DoesNotExist:
+            raise serializers.ValidationError("문제를 찾을 수 없거나 접근 권한이 없습니다.")
+        return value
+
+
+class AIAdaptiveDifficultyTestSerializer(serializers.ModelSerializer):
+    """AI 난이도 조절 시험 시리얼라이저"""
+    accuracy_rate = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = AIAdaptiveDifficultyTest
+        fields = [
+            'id', 'user', 'content_area', 'target_questions', 'current_difficulty',
+            'consecutive_correct', 'consecutive_wrong', 'total_questions', 
+            'correct_answers', 'final_difficulty_level', 'estimated_proficiency',
+            'accuracy_rate', 'started_at', 'completed_at'
+        ]
+        read_only_fields = ['id', 'user', 'accuracy_rate', 'started_at']
+
+
+class AdaptiveTestStartSerializer(serializers.Serializer):
+    """적응형 시험 시작 시리얼라이저"""
+    content_area = serializers.CharField(max_length=100)
+    target_questions = serializers.IntegerField(min_value=5, max_value=20, default=10)
+
+
+class AdaptiveTestAnswerSerializer(serializers.Serializer):
+    """적응형 시험 답안 제출 시리얼라이저"""
+    test_id = serializers.IntegerField()
+    user_answer = serializers.CharField(max_length=1000)
+    time_spent_seconds = serializers.IntegerField(min_value=0, required=False)
+
+
+class AIQuestionTransformerSerializer(serializers.ModelSerializer):
+    """AI 문제 변형기 시리얼라이저"""
+    original_question_text = serializers.CharField(source='original_question.question_text', read_only=True)
+    content_title = serializers.CharField(source='original_question.content.title', read_only=True)
+    
+    class Meta:
+        model = AIQuestionTransformer
+        fields = [
+            'id', 'original_question', 'original_question_text', 'content_title',
+            'user', 'transformation_type', 'transformed_question_text', 
+            'transformed_answer', 'transformation_explanation', 'user_rating', 
+            'is_helpful', 'created_at'
+        ]
+        read_only_fields = ['id', 'user', 'original_question_text', 'content_title', 'created_at']
+
+
+class QuestionTransformRequestSerializer(serializers.Serializer):
+    """문제 변형 요청 시리얼라이저"""
+    question_id = serializers.IntegerField()
+    transformation_type = serializers.ChoiceField(
+        choices=[
+            ('reverse', '역질문'),
+            ('practical', '실생활 적용'),
+            ('comparison', '비교형'),
+            ('troubleshoot', '문제해결형'),
+            ('analogy', '비유/예시'),
+            ('step_by_step', '단계별 풀이')
+        ]
+    )
+    
+    def validate_question_id(self, value):
+        user = self.context['request'].user
+        try:
+            question = AIQuestion.objects.get(id=value, content__author=user)
+        except AIQuestion.DoesNotExist:
+            raise serializers.ValidationError("문제를 찾을 수 없거나 접근 권한이 없습니다.")
+        return value
+
+
+class TransformationFeedbackSerializer(serializers.Serializer):
+    """변형 문제 피드백 시리얼라이저"""
+    transformation_id = serializers.IntegerField()
+    user_rating = serializers.IntegerField(min_value=1, max_value=5)
+    is_helpful = serializers.BooleanField()
