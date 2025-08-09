@@ -21,6 +21,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: '분석', href: '/analytics', current: location.pathname === '/analytics' },
     { name: '콘텐츠', href: '/content', current: location.pathname === '/content' },
     { name: '복습', href: '/review', current: location.pathname === '/review' },
+    { name: '주간시험', href: '/weekly-test', current: location.pathname === '/weekly-test' },
+    { name: 'AI분석', href: '/ai-analytics', current: location.pathname === '/ai-analytics' },
   ];
 
   return (
