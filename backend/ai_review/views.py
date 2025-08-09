@@ -20,7 +20,17 @@ from resee.throttling import AIEndpointThrottle
 from accounts.models import AIUsageTracking
 from content.models import Content
 
-from .models import AIQuestionType, AIQuestion, AIReviewSession
+from .models import (
+    AIQuestionType, 
+    AIQuestion, 
+    AIReviewSession,
+    WeeklyTest,
+    WeeklyTestQuestion,
+    InstantContentCheck,
+    LearningAnalytics,
+    AIStudyMate,
+    AISummaryNote
+)
 from .serializers import (
     AIQuestionTypeSerializer,
     AIQuestionSerializer,
@@ -34,7 +44,21 @@ from .serializers import (
     AIChatRequestSerializer,
     AIChatResponseSerializer,
     ExplanationEvaluationRequestSerializer,
-    ExplanationEvaluationResponseSerializer
+    ExplanationEvaluationResponseSerializer,
+    # 새로운 시리얼라이저들
+    WeeklyTestSerializer,
+    WeeklyTestQuestionSerializer,
+    WeeklyTestCreateSerializer,
+    WeeklyTestStartSerializer,
+    WeeklyTestAnswerSerializer,
+    InstantContentCheckSerializer,
+    InstantCheckRequestSerializer,
+    LearningAnalyticsSerializer,
+    AnalyticsRequestSerializer,
+    AIStudyMateSerializer,
+    StudyMateRequestSerializer,
+    AISummaryNoteSerializer,
+    SummaryNoteRequestSerializer
 )
 from .services import ai_service, AIServiceError
 
@@ -983,5 +1007,460 @@ class ExplanationEvaluationView(APIView):
             logger.error(f"Unexpected error in explanation evaluation: {str(e)}")
             return Response(
                 {'error': 'Explanation evaluation failed'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# 새로운 AI 기능 뷰들
+class WeeklyTestView(APIView):
+    """주간 시험 관리 뷰"""
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIEndpointThrottle]
+    
+    @swagger_auto_schema(
+        operation_summary="주간 시험 목록 조회",
+        responses={
+            200: WeeklyTestSerializer(many=True),
+            401: "인증 필요"
+        }
+    )
+    def get(self, request):
+        """사용자의 주간 시험 목록 조회"""
+        tests = WeeklyTest.objects.filter(user=request.user)[:10]
+        serializer = WeeklyTestSerializer(tests, many=True)
+        return Response(serializer.data)
+    
+    @swagger_auto_schema(
+        request_body=WeeklyTestCreateSerializer,
+        operation_summary="주간 시험 생성",
+        responses={
+            201: WeeklyTestSerializer,
+            400: "잘못된 요청",
+            403: "AI 기능 접근 불가"
+        }
+    )
+    @log_api_call
+    @log_performance('weekly_test_creation')
+    def post(self, request):
+        """새로운 주간 시험 생성"""
+        if not request.user.can_use_ai_features():
+            return Response(
+                {'error': 'AI features not available'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = WeeklyTestCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # 이번 주 학습한 콘텐츠 조회
+            from datetime import datetime, timedelta
+            from django.utils import timezone
+            
+            today = timezone.now().date()
+            week_start = today - timedelta(days=today.weekday())
+            week_end = week_start + timedelta(days=6)
+            
+            # 이번 주 복습한 콘텐츠들 조회
+            from review.models import ReviewHistory
+            week_contents = Content.objects.filter(
+                review_histories__user=request.user,
+                review_histories__completed_at__date__gte=week_start,
+                review_histories__completed_at__date__lte=week_end
+            ).distinct()[:10]
+            
+            if len(week_contents) < 3:
+                return Response(
+                    {'error': 'Not enough content for weekly test', 
+                     'detail': f'최소 3개 이상의 콘텐츠가 필요합니다. 현재: {len(week_contents)}개'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # 주간 시험 생성
+            weekly_test = WeeklyTest.objects.create(
+                user=request.user,
+                week_start_date=week_start,
+                week_end_date=week_end,
+                time_limit_minutes=serializer.validated_data['time_limit_minutes'],
+                difficulty_distribution=serializer.validated_data.get('difficulty_distribution', {
+                    'easy': 5, 'medium': 8, 'hard': 2
+                }),
+                content_coverage=[content.id for content in week_contents],
+                status='ready'
+            )
+            
+            logger.info(f"Weekly test created for user {request.user.email}")
+            return Response(
+                WeeklyTestSerializer(weekly_test).data,
+                status=status.HTTP_201_CREATED
+            )
+            
+        except Exception as e:
+            logger.error(f"Weekly test creation failed: {str(e)}")
+            return Response(
+                {'error': 'Failed to create weekly test'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class WeeklyTestStartView(APIView):
+    """주간 시험 시작 뷰"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @swagger_auto_schema(
+        request_body=WeeklyTestStartSerializer,
+        responses={
+            200: "시험 시작 성공",
+            400: "잘못된 요청"
+        }
+    )
+    def post(self, request):
+        """주간 시험 시작"""
+        serializer = WeeklyTestStartSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        test_id = serializer.validated_data['test_id']
+        
+        try:
+            weekly_test = get_object_or_404(
+                WeeklyTest, 
+                id=test_id, 
+                user=request.user,
+                status='ready'
+            )
+            
+            # 시험 시작 처리
+            weekly_test.status = 'in_progress'
+            weekly_test.started_at = timezone.now()
+            weekly_test.save()
+            
+            # TODO: AI로 문제 생성하여 WeeklyTestQuestion 생성
+            
+            return Response({
+                'message': '주간 시험이 시작되었습니다',
+                'test': WeeklyTestSerializer(weekly_test).data
+            })
+            
+        except Exception as e:
+            logger.error(f"Weekly test start failed: {str(e)}")
+            return Response(
+                {'error': 'Failed to start weekly test'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class InstantContentCheckView(APIView):
+    """실시간 내용 검토 뷰"""
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIEndpointThrottle]
+    
+    @swagger_auto_schema(
+        request_body=InstantCheckRequestSerializer,
+        responses={
+            200: "검토 완료",
+            403: "AI 기능 접근 불가"
+        }
+    )
+    @log_api_call
+    @log_performance('instant_content_check')
+    def post(self, request):
+        """실시간 내용 검토 수행"""
+        if not request.user.can_use_ai_features():
+            return Response(
+                {'error': 'AI features not available'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = InstantCheckRequestSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        content_id = serializer.validated_data['content_id']
+        check_point = serializer.validated_data['check_point']
+        question_count = serializer.validated_data['question_count']
+        
+        try:
+            content = get_object_or_404(Content, id=content_id, author=request.user)
+            
+            # AI 서비스로 즉시 검토 수행
+            result = ai_service.perform_instant_check(
+                content=content,
+                check_point=check_point,
+                question_count=question_count
+            )
+            
+            # 검토 결과 저장
+            instant_check = InstantContentCheck.objects.create(
+                user=request.user,
+                content=content,
+                check_point=check_point,
+                questions_count=len(result['questions']),
+                understanding_score=75,  # TODO: 실제 점수 계산
+                weak_points=[],
+                feedback=result['indicators'].get('recommended_action', ''),
+                duration_seconds=60  # TODO: 실제 소요 시간
+            )
+            
+            response_data = {
+                'check_id': instant_check.id,
+                'questions': result['questions'],
+                'indicators': result['indicators'],
+                'recommendations': result['indicators'].get('recommended_action', '')
+            }
+            
+            return Response(response_data)
+            
+        except AIServiceError as e:
+            return Response(
+                {'error': 'AI service error', 'detail': str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        except Exception as e:
+            logger.error(f"Instant check failed: {str(e)}")
+            return Response(
+                {'error': 'Failed to perform instant check'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class LearningAnalyticsView(APIView):
+    """학습 분석 뷰"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @swagger_auto_schema(
+        query_serializer=AnalyticsRequestSerializer,
+        responses={
+            200: LearningAnalyticsSerializer,
+            403: "AI 기능 접근 불가"
+        }
+    )
+    def get(self, request):
+        """학습 분석 데이터 조회"""
+        if not request.user.can_use_ai_features():
+            return Response(
+                {'error': 'AI features not available'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = AnalyticsRequestSerializer(data=request.query_params)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        period_type = serializer.validated_data['period_type']
+        
+        try:
+            # 기존 분석 데이터 조회
+            analytics = LearningAnalytics.objects.filter(
+                user=request.user,
+                period_type=period_type
+            ).first()
+            
+            if analytics:
+                return Response(LearningAnalyticsSerializer(analytics).data)
+            
+            # 새 분석 생성 (간단한 예시)
+            from datetime import datetime, timedelta
+            today = timezone.now().date()
+            
+            if period_type == 'monthly':
+                start_date = today.replace(day=1)
+                end_date = today
+            else:
+                start_date = today - timedelta(days=7)
+                end_date = today
+            
+            analytics = LearningAnalytics.objects.create(
+                user=request.user,
+                period_type=period_type,
+                period_start=start_date,
+                period_end=end_date,
+                total_study_minutes=120,  # TODO: 실제 데이터
+                average_daily_minutes=17,
+                peak_study_hour=14,
+                efficiency_score=78.5,
+                retention_rate=85.2
+            )
+            
+            return Response(LearningAnalyticsSerializer(analytics).data)
+            
+        except Exception as e:
+            logger.error(f"Analytics generation failed: {str(e)}")
+            return Response(
+                {'error': 'Failed to generate analytics'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class AIStudyMateView(APIView):
+    """AI 스터디 메이트 뷰"""
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIEndpointThrottle]
+    
+    @swagger_auto_schema(
+        request_body=StudyMateRequestSerializer,
+        responses={
+            200: "스터디 가이드 제공",
+            403: "AI 기능 접근 불가"
+        }
+    )
+    @log_api_call
+    @log_performance('ai_study_mate')
+    def post(self, request):
+        """AI 스터디 메이트 가이드 제공"""
+        if not request.user.can_use_ai_features():
+            return Response(
+                {'error': 'AI features not available'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = StudyMateRequestSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        content_id = serializer.validated_data['content_id']
+        struggle_point = serializer.validated_data['struggle_point']
+        user_level = serializer.validated_data['user_level']
+        session_type = serializer.validated_data['session_type']
+        
+        try:
+            content = get_object_or_404(Content, id=content_id, author=request.user)
+            
+            # AI 스터디 메이트 세션 시작
+            study_mate = AIStudyMate.objects.create(
+                user=request.user,
+                content=content,
+                session_type=session_type,
+                user_level=user_level
+            )
+            
+            # AI 서비스로 가이드 생성
+            result = ai_service.provide_study_mate_guidance(
+                user=request.user,
+                content=content,
+                struggle_point=struggle_point,
+                user_level=user_level
+            )
+            
+            # 세션 업데이트
+            study_mate.adapted_explanations = [result]
+            study_mate.interaction_count = 1
+            study_mate.save()
+            
+            return Response({
+                'session_id': study_mate.id,
+                'guidance': result,
+                'user_level': user_level,
+                'session_type': session_type
+            })
+            
+        except AIServiceError as e:
+            return Response(
+                {'error': 'AI service error', 'detail': str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        except Exception as e:
+            logger.error(f"Study mate guidance failed: {str(e)}")
+            return Response(
+                {'error': 'Failed to provide study guidance'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class AISummaryNoteView(APIView):
+    """AI 요약 노트 뷰"""
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIEndpointThrottle]
+    
+    @swagger_auto_schema(
+        request_body=SummaryNoteRequestSerializer,
+        responses={
+            201: AISummaryNoteSerializer,
+            403: "AI 기능 접근 불가"
+        }
+    )
+    @log_api_call 
+    @log_performance('ai_summary_note')
+    def post(self, request):
+        """AI 요약 노트 생성"""
+        if not request.user.can_use_ai_features():
+            return Response(
+                {'error': 'AI features not available'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = SummaryNoteRequestSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        content_id = serializer.validated_data['content_id']
+        summary_type = serializer.validated_data['summary_type']
+        user_preferences = serializer.validated_data.get('user_preferences')
+        
+        try:
+            content = get_object_or_404(Content, id=content_id, author=request.user)
+            
+            # 기존 요약 노트 확인
+            existing_summary = AISummaryNote.objects.filter(
+                content=content,
+                user=request.user,
+                summary_type=summary_type
+            ).first()
+            
+            if existing_summary:
+                return Response(
+                    AISummaryNoteSerializer(existing_summary).data,
+                    status=status.HTTP_200_OK
+                )
+            
+            # AI 서비스로 요약 생성
+            result = ai_service.generate_summary_note(
+                content=content,
+                summary_type=summary_type,
+                user_preferences=user_preferences
+            )
+            
+            # 요약 노트 저장
+            summary_note = AISummaryNote.objects.create(
+                content=content,
+                user=request.user,
+                summary_type=summary_type,
+                summary_content=result['summary']['main_content'],
+                key_concepts=result['key_concepts'],
+                important_terms=result.get('important_terms', []),
+                visual_elements=result.get('visual_elements', {}),
+                study_questions=result.get('study_questions', []),
+                word_count=result['metadata']['word_count'],
+                compression_ratio=result['metadata']['compression_ratio'],
+                ai_model_used=result['metadata']['ai_model_used']
+            )
+            
+            return Response(
+                AISummaryNoteSerializer(summary_note).data,
+                status=status.HTTP_201_CREATED
+            )
+            
+        except AIServiceError as e:
+            return Response(
+                {'error': 'AI service error', 'detail': str(e)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        except Exception as e:
+            logger.error(f"Summary note generation failed: {str(e)}")
+            return Response(
+                {'error': 'Failed to generate summary note'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

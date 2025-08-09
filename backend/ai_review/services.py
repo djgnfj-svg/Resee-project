@@ -769,6 +769,512 @@ Teaching approach:
             logger = logging.getLogger(__name__)
             logger.error(f"Error evaluating explanation: {str(e)}")
             raise AIServiceError(f"Explanation evaluation failed: {str(e)}")
+    
+    def generate_weekly_test(self, user, week_contents, difficulty_distribution=None):
+        """
+        주간 학습 콘텐츠를 기반으로 종합 시험 생성
+        
+        Args:
+            user: 사용자 객체
+            week_contents: 주간 학습한 콘텐츠 목록
+            difficulty_distribution: 난이도 분포 (기본값: easy 30%, medium 50%, hard 20%)
+        
+        Returns:
+            생성된 시험 문제 목록
+        """
+        if not difficulty_distribution:
+            difficulty_distribution = {
+                'easy': 5,    # 30%
+                'medium': 8,  # 50%
+                'hard': 3     # 20%
+            }
+        
+        system_message = """You are an expert educational AI creating comprehensive weekly tests.
+
+Create a balanced test that:
+1. Covers all major topics from the week
+2. Tests different cognitive levels (recall, understanding, application)
+3. Provides fair difficulty distribution
+4. Avoids repetition of similar concepts
+5. Includes diverse question types
+
+Focus on:
+- Key concepts that connect multiple topics
+- Practical applications of learned material
+- Critical thinking questions
+- Common misconceptions to test understanding
+
+Respond with valid JSON:
+{
+    "test_questions": [
+        {
+            "content_id": "content_id",
+            "question_type": "multiple_choice|fill_blank|explanation",
+            "difficulty": 1-5,
+            "question_text": "Question text",
+            "correct_answer": "Answer",
+            "options": ["A", "B", "C", "D"],
+            "explanation": "Why this matters",
+            "estimated_time_seconds": 60,
+            "topic_coverage": ["topic1", "topic2"],
+            "cognitive_level": "recall|understand|apply|analyze"
+        }
+    ],
+    "test_overview": {
+        "total_topics_covered": 10,
+        "estimated_total_minutes": 30,
+        "difficulty_balance": "Appropriate for user level"
+    }
+}"""
+        
+        # 콘텐츠 요약 준비
+        content_summaries = []
+        for content in week_contents[:10]:  # 최대 10개 콘텐츠
+            summary = f"Title: {content.title}\nCategory: {content.category}\nKey points: {content.content[:200]}..."
+            content_summaries.append(summary)
+        
+        user_message = f"""
+        Create a comprehensive weekly test for this user's learning:
+        
+        USER PROFILE:
+        - Subscription: {user.subscription.tier}
+        - Weekly goal: {user.weekly_goal} reviews
+        
+        WEEK'S LEARNING CONTENT:
+        {chr(10).join(content_summaries)}
+        
+        REQUIREMENTS:
+        - Total questions: {sum(difficulty_distribution.values())}
+        - Easy questions (difficulty 1-2): {difficulty_distribution.get('easy', 5)}
+        - Medium questions (difficulty 3): {difficulty_distribution.get('medium', 8)}
+        - Hard questions (difficulty 4-5): {difficulty_distribution.get('hard', 3)}
+        
+        GUIDELINES:
+        - Mix question types for variety
+        - Ensure comprehensive topic coverage
+        - Questions should build on each other when possible
+        - Include at least one question that connects multiple topics
+        - Target completion time: 30-45 minutes
+        """
+        
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+        
+        try:
+            response_content, processing_time = self._make_api_call(messages, temperature=0.7, max_tokens=2000)
+            
+            result = json.loads(response_content)
+            questions = result.get('test_questions', [])
+            
+            # 메타데이터 추가
+            for question in questions:
+                question['ai_model_used'] = self.model
+                question['processing_time_ms'] = processing_time
+                question['generation_context'] = 'weekly_test'
+            
+            return {
+                'questions': questions,
+                'overview': result.get('test_overview', {}),
+                'processing_time_ms': processing_time
+            }
+            
+        except Exception as e:
+            logger.error(f"Weekly test generation failed: {str(e)}")
+            raise AIServiceError(f"Failed to generate weekly test: {str(e)}")
+    
+    def perform_instant_check(self, content, check_point='current', question_count=3):
+        """
+        콘텐츠 학습 중 실시간 이해도 검토
+        
+        Args:
+            content: 학습 중인 콘텐츠
+            check_point: 검토 시점 (예: '50%', 'end', 'current')
+            question_count: 생성할 문제 수 (1-5)
+        
+        Returns:
+            빠른 체크 문제 및 평가 기준
+        """
+        system_message = """You are an AI tutor performing real-time comprehension checks.
+
+Create quick, focused questions that:
+1. Test immediate understanding of just-learned concepts
+2. Are answerable in 30-60 seconds each
+3. Provide instant feedback value
+4. Identify specific misconceptions
+5. Guide further learning needs
+
+Respond with valid JSON:
+{
+    "check_questions": [
+        {
+            "question_type": "quick_choice|true_false|brief_answer",
+            "question_text": "Quick check question",
+            "correct_answer": "Answer",
+            "options": ["A", "B", "C"] or null,
+            "instant_feedback": {
+                "correct": "Great! You understood that...",
+                "incorrect": "Let's review: The key point is...",
+                "partial": "You're on the right track, but..."
+            },
+            "concept_tested": "Specific concept being checked",
+            "followup_hint": "Additional guidance if needed"
+        }
+    ],
+    "understanding_indicators": {
+        "strong_understanding": ["Concept A", "Concept B"],
+        "needs_review": ["Concept C"],
+        "recommended_action": "Continue to next section|Review this part|Try practice problems"
+    }
+}"""
+        
+        user_message = f"""
+        Create {question_count} instant comprehension check questions for:
+        
+        CONTENT: {content.title}
+        CHECK POINT: {check_point}
+        
+        CONTENT EXCERPT:
+        {content.content[:1000]}
+        
+        REQUIREMENTS:
+        - Super quick to answer (30-60 seconds each)
+        - Test the most important concepts up to this point
+        - Provide immediate, actionable feedback
+        - Help identify if the learner should continue or review
+        - Use simple, clear language
+        - Focus on understanding, not memorization
+        """
+        
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+        
+        try:
+            response_content, processing_time = self._make_api_call(
+                messages, 
+                temperature=0.5, 
+                max_tokens=1000
+            )
+            
+            result = json.loads(response_content)
+            
+            return {
+                'questions': result.get('check_questions', []),
+                'indicators': result.get('understanding_indicators', {}),
+                'processing_time_ms': processing_time,
+                'check_point': check_point
+            }
+            
+        except Exception as e:
+            logger.error(f"Instant check generation failed: {str(e)}")
+            raise AIServiceError(f"Failed to generate instant check: {str(e)}")
+    
+    def analyze_learning_patterns(self, user, period_data):
+        """
+        사용자의 학습 패턴을 분석하여 개인화된 인사이트 제공
+        
+        Args:
+            user: 사용자 객체
+            period_data: 기간별 학습 데이터
+        
+        Returns:
+            학습 패턴 분석 결과 및 추천사항
+        """
+        system_message = """You are an AI learning analytics expert analyzing student learning patterns.
+
+Analyze the data to provide:
+1. Learning behavior patterns (time, frequency, consistency)
+2. Performance trends and trajectories
+3. Strength and weakness identification
+4. Personalized improvement strategies
+5. Predictive insights for future performance
+
+Respond with valid JSON:
+{
+    "pattern_analysis": {
+        "optimal_study_time": "Morning|Afternoon|Evening|Night",
+        "consistency_score": 85,
+        "learning_style": "Visual|Auditory|Kinesthetic|Mixed",
+        "focus_duration": "Short bursts|Medium sessions|Long sessions",
+        "retention_pattern": "Strong initial|Gradual decline|Stable"
+    },
+    "performance_insights": {
+        "overall_trend": "Improving|Stable|Declining",
+        "growth_rate": 15.5,
+        "plateau_areas": ["Topics showing no improvement"],
+        "breakthrough_moments": ["Significant improvements"]
+    },
+    "recommendations": {
+        "immediate_actions": ["Action 1", "Action 2"],
+        "long_term_strategies": ["Strategy 1", "Strategy 2"],
+        "optimal_review_schedule": "Customized intervals",
+        "focus_areas": ["Priority topics"]
+    },
+    "predictions": {
+        "expected_improvement": "20% in 30 days",
+        "mastery_timeline": "Estimated dates for topic mastery",
+        "risk_areas": ["Topics at risk of forgetting"]
+    }
+}"""
+        
+        user_message = f"""
+        Analyze learning patterns for this user:
+        
+        USER PROFILE:
+        - Subscription: {user.subscription.tier}
+        - Weekly goal: {user.weekly_goal}
+        
+        LEARNING DATA:
+        {json.dumps(period_data, indent=2)}
+        
+        Please provide:
+        1. Detailed pattern analysis
+        2. Actionable insights
+        3. Personalized recommendations
+        4. Future performance predictions
+        5. Specific areas for improvement
+        """
+        
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+        
+        try:
+            response_content, processing_time = self._make_api_call(
+                messages, 
+                temperature=0.4, 
+                max_tokens=1500
+            )
+            
+            result = json.loads(response_content)
+            result['processing_time_ms'] = processing_time
+            result['analysis_date'] = timezone.now().isoformat()
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Learning pattern analysis failed: {str(e)}")
+            raise AIServiceError(f"Failed to analyze learning patterns: {str(e)}")
+    
+    def provide_study_mate_guidance(self, user, content, struggle_point, user_level='intermediate'):
+        """
+        AI 스터디 메이트가 맞춤형 학습 가이드 제공
+        
+        Args:
+            user: 사용자 객체
+            content: 학습 콘텐츠
+            struggle_point: 어려워하는 부분
+            user_level: 사용자 수준
+        
+        Returns:
+            단계별 가이드 및 힌트
+        """
+        system_message = f"""You are a patient, adaptive AI study mate helping a {user_level} level student.
+
+Your approach:
+1. Assess the specific struggle point
+2. Break down complex concepts into manageable steps
+3. Provide hints that guide discovery, not direct answers
+4. Adapt explanation style to user level
+5. Encourage and motivate throughout
+
+Teaching principles:
+- Use analogies and real-world examples
+- Build on prior knowledge
+- Provide scaffolding support
+- Check understanding at each step
+- Celebrate small victories
+
+Respond with valid JSON:
+{{
+    "diagnosis": {{
+        "struggle_type": "conceptual|procedural|factual",
+        "root_cause": "Why they're struggling",
+        "prerequisite_gaps": ["Missing knowledge"]
+    }},
+    "guided_explanation": {{
+        "step_1": {{
+            "explanation": "Simple explanation",
+            "check_question": "Do you see how...",
+            "hint_if_stuck": "Think about..."
+        }},
+        "step_2": {{...}}
+    }},
+    "adaptive_hints": [
+        {{
+            "level": 1,
+            "hint": "Gentle nudge",
+            "reveals": "10% of answer"
+        }},
+        {{
+            "level": 2,
+            "hint": "More specific guidance",
+            "reveals": "30% of answer"
+        }}
+    ],
+    "encouragement": "Personalized motivational message",
+    "next_steps": "What to do after understanding this"
+}}"""
+        
+        user_message = f"""
+        Help this {user_level} student understand:
+        
+        CONTENT: {content.title}
+        STRUGGLE POINT: {struggle_point}
+        
+        RELEVANT CONTENT:
+        {content.content[:800]}
+        
+        Please provide:
+        1. Step-by-step explanation adapted to their level
+        2. Progressive hints (don't give away the answer)
+        3. Encouraging tone throughout
+        4. Check for understanding
+        5. Connect to what they might already know
+        """
+        
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+        
+        try:
+            response_content, processing_time = self._make_api_call(
+                messages, 
+                temperature=0.7, 
+                max_tokens=1200
+            )
+            
+            result = json.loads(response_content)
+            result['processing_time_ms'] = processing_time
+            result['session_metadata'] = {
+                'user_level': user_level,
+                'content_id': content.id,
+                'timestamp': timezone.now().isoformat()
+            }
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Study mate guidance failed: {str(e)}")
+            raise AIServiceError(f"Failed to provide study guidance: {str(e)}")
+    
+    def generate_summary_note(self, content, summary_type='one_page', user_preferences=None):
+        """
+        콘텐츠의 AI 요약 노트 생성
+        
+        Args:
+            content: 요약할 콘텐츠
+            summary_type: 요약 형식
+            user_preferences: 사용자 선호 설정
+        
+        Returns:
+            생성된 요약 노트
+        """
+        summary_prompts = {
+            'one_page': """Create a comprehensive one-page summary that captures all essential information in a scannable format. Use bullet points, numbered lists, and clear sections.""",
+            'mind_map': """Create a mind map structure showing the relationships between concepts. Start with the central topic and branch out to subtopics, using indentation to show hierarchy.""",
+            'key_points': """Extract and list only the most critical points that a student must remember. Focus on core concepts, important facts, and key takeaways.""",
+            'cornell_notes': """Format as Cornell notes with: 1) Cue column (questions/keywords), 2) Note-taking area (main content), 3) Summary section (brief overview)."""
+        }
+        
+        system_message = f"""You are an expert at creating effective study summaries for optimal learning and retention.
+
+{summary_prompts.get(summary_type, summary_prompts['one_page'])}
+
+Requirements:
+1. Maintain academic accuracy while simplifying language
+2. Highlight connections between concepts
+3. Include memory aids (mnemonics, associations)
+4. Add visual markers for importance (★ for critical, → for processes)
+5. Keep it concise but complete
+
+Respond with valid JSON:
+{{
+    "summary": {{
+        "title": "Clear, descriptive title",
+        "main_content": "Formatted summary content",
+        "sections": [
+            {{
+                "heading": "Section name",
+                "content": "Section content",
+                "importance": "high|medium|low"
+            }}
+        ]
+    }},
+    "key_concepts": [
+        {{
+            "concept": "Term",
+            "definition": "Clear definition",
+            "example": "Practical example"
+        }}
+    ],
+    "study_questions": [
+        "Self-test question 1",
+        "Self-test question 2"
+    ],
+    "visual_elements": {{
+        "diagrams_suggested": ["Diagram description"],
+        "charts_suggested": ["Chart description"]
+    }},
+    "quick_review": "2-3 sentence summary of entire content"
+}}"""
+        
+        user_message = f"""
+        Create a {summary_type} summary for:
+        
+        TITLE: {content.title}
+        CATEGORY: {content.category}
+        
+        CONTENT TO SUMMARIZE:
+        {content.content}
+        
+        USER PREFERENCES:
+        {json.dumps(user_preferences) if user_preferences else 'Standard format'}
+        
+        Make it:
+        - Visually organized
+        - Easy to scan and review
+        - Focused on retention
+        - Suitable for spaced repetition review
+        """
+        
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+        
+        try:
+            response_content, processing_time = self._make_api_call(
+                messages, 
+                temperature=0.3, 
+                max_tokens=2000
+            )
+            
+            result = json.loads(response_content)
+            
+            # 요약 통계 추가
+            summary_text = json.dumps(result.get('summary', {}))
+            word_count = len(summary_text.split())
+            compression_ratio = (1 - (word_count / len(content.content.split()))) * 100
+            
+            result['metadata'] = {
+                'word_count': word_count,
+                'compression_ratio': round(compression_ratio, 1),
+                'processing_time_ms': processing_time,
+                'summary_type': summary_type,
+                'ai_model_used': self.model
+            }
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Summary generation failed: {str(e)}")
+            raise AIServiceError(f"Failed to generate summary: {str(e)}")
 
 
 # Singleton instance
