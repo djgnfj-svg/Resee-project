@@ -92,7 +92,9 @@
       "Bash(COMPOSE_HTTP_TIMEOUT=300 docker-compose up -d frontend)",
       "Bash(export ENFORCE_EMAIL_VERIFICATION=False)",
       "Bash(ENFORCE_EMAIL_VERIFICATION=False docker-compose exec -T backend python manage.py shell -c \"\nimport os\nprint(''Environment variables:'')\nprint(''ENFORCE_EMAIL_VERIFICATION:'', os.environ.get(''ENFORCE_EMAIL_VERIFICATION''))\nprint()\n\nfrom django.conf import settings  \nprint(''Django settings:'')\nprint(''ENFORCE_EMAIL_VERIFICATION:'', getattr(settings, ''ENFORCE_EMAIL_VERIFICATION''))\nprint()\n\nfrom accounts.models import User\nuser_unverified = User.objects.get(email=''unverified@resee.com'')\nprint(''Final test (should work now):'')\nprint(f''unverified@resee.com is_email_verified: {user_unverified.is_email_verified}'') \nprint(f''Can upgrade subscription: {user_unverified.can_upgrade_subscription()}'')\nprint(f''Can use AI features: {user_unverified.can_use_ai_features()}'')\n\")",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(for i in {1..6})",
+      "Bash(done)"
     ]
   },
   "enableAllProjectMcpServers": true,

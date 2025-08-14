@@ -23,7 +23,23 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-development-key-chang
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,backend').split(',')
+# Environment setting
+ENVIRONMENT = os.environ.get('ENVIRONMENT', 'development')
+
+# ALLOWED_HOSTS 설정
+if ENVIRONMENT == 'production':
+    ALLOWED_HOSTS = [
+        'resee.com',
+        'www.resee.com',
+        '.amazonaws.com',  # ALB 도메인
+        '.elb.amazonaws.com',  # ELB 도메인
+    ]
+    # CloudFront 도메인 추가
+    cloudfront_domain = os.environ.get('CLOUDFRONT_DOMAIN')
+    if cloudfront_domain:
+        ALLOWED_HOSTS.append(cloudfront_domain)
+else:
+    ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,backend').split(',')
 
 
 # Application definition
@@ -59,10 +75,26 @@ INSTALLED_APPS = [
     'analytics',
     'ai_review',
     'monitoring',
+    'payments',
+    'legal',
 ]
 
 # Environment-based configuration
-ENVIRONMENT = os.environ.get('ENVIRONMENT', 'development')
+
+# Health check URL 패턴 (ALB 헬스체크용)
+if ENVIRONMENT in ['staging', 'production']:
+    # ALB 헬스체크는 인증 불필요
+    HEALTH_CHECK_URL = '/health/'
+    
+    # 비용 최적화를 위한 설정
+    CONN_MAX_AGE = 60  # DB 연결 재사용
+    
+    # 결제 관련 보안 설정
+    SECURE_STRIPE_WEBHOOK = True
+    
+    # 세션 보안 강화
+    SESSION_COOKIE_AGE = 1800  # 30분
+    SESSION_SAVE_EVERY_REQUEST = True
 
 # Base middleware for all environments
 MIDDLEWARE = [
@@ -98,6 +130,21 @@ if ENVIRONMENT in ['staging', 'production']:
     # Add IP whitelist middleware if configured
     if os.environ.get('ADMIN_IP_WHITELIST'):
         MIDDLEWARE.insert(-1, 'resee.middleware.IPWhitelistMiddleware')
+    
+    # AWS ALB HTTPS 설정
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # AWS 환경에서 X-Forwarded-Host 신뢰
+    USE_X_FORWARDED_HOST = True
+    USE_X_FORWARDED_PORT = True
 
 ROOT_URLCONF = 'resee.urls'
 
@@ -164,11 +211,35 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'static'
-
-MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Static/Media files 설정
+if ENVIRONMENT == 'production':
+    # AWS S3 설정
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'ap-northeast-2')
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
+    
+    # S3 파일 저장소 설정
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.StaticS3Boto3Storage'
+    
+    # URL 설정
+    STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+    
+    # S3 설정
+    AWS_DEFAULT_ACL = None
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+else:
+    # 로컬 개발 환경
+    STATIC_URL = 'static/'
+    STATIC_ROOT = BASE_DIR / 'static'
+    
+    MEDIA_URL = 'media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -211,18 +282,30 @@ SIMPLE_JWT = {
 }
 
 # CORS settings
-if os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True':
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
+if ENVIRONMENT == 'production':
+    # 프로덕션에서는 실제 도메인만 허용
     CORS_ALLOWED_ORIGINS = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
+        "https://resee.com",
+        "https://www.resee.com",
     ]
-    
-    # Add custom origins from environment
-    custom_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
-    if custom_origins:
-        CORS_ALLOWED_ORIGINS.extend(custom_origins.split(','))
+    # CloudFront 도메인 추가 (필요시)
+    cloudfront_domain = os.environ.get('CLOUDFRONT_DOMAIN')
+    if cloudfront_domain:
+        CORS_ALLOWED_ORIGINS.append(f"https://{cloudfront_domain}")
+else:
+    # 개발 환경
+    if os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True':
+        CORS_ALLOW_ALL_ORIGINS = True
+    else:
+        CORS_ALLOWED_ORIGINS = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+        
+        # Add custom origins from environment
+        custom_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+        if custom_origins:
+            CORS_ALLOWED_ORIGINS.extend(custom_origins.split(','))
 
 # Redis settings
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
@@ -489,10 +572,19 @@ LOGGING = {
 LOGS_DIR = BASE_DIR / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)
 
+# ================================
+# Rate Limiting Configuration
+# ================================
+RATE_LIMIT_ENABLE = True
+
+# Admin IP 화이트리스트 (Rate limiting에서 제외)
+ADMIN_IP_WHITELIST = os.environ.get('ADMIN_IP_WHITELIST', '').split(',') if os.environ.get('ADMIN_IP_WHITELIST') else []
+
 # Environment-specific configuration overrides
 if ENVIRONMENT == 'development':
     # Development-specific settings (keep current defaults)
-    pass
+    # Disable rate limiting for development
+    RATE_LIMIT_ENABLE = False
 
 elif ENVIRONMENT == 'staging':
     # Staging environment settings
@@ -548,6 +640,21 @@ elif ENVIRONMENT == 'production':
 
 # AI Service Configuration
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', None)
+
+# Stripe settings
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
+# 프로덕션에서는 라이브 키, 개발에서는 테스트 키 사용
+if ENVIRONMENT == 'production':
+    if not all([STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET]):
+        raise ValueError('Production Stripe keys must be set')
+else:
+    # 개발 환경에서는 테스트 키 사용
+    STRIPE_PUBLISHABLE_KEY = STRIPE_PUBLISHABLE_KEY or 'pk_test_...'
+    STRIPE_SECRET_KEY = STRIPE_SECRET_KEY or 'sk_test_...'
+    STRIPE_WEBHOOK_SECRET = STRIPE_WEBHOOK_SECRET or 'whsec_test_...'
 CLAUDE_MODEL = os.environ.get('CLAUDE_MODEL', 'claude-3-haiku-20240307')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', None)
 OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4')

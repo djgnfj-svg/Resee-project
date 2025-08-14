@@ -42,60 +42,253 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
 
 
 class RateLimitMiddleware(MiddlewareMixin):
-    """Rate limiting middleware for API endpoints"""
+    """Enhanced rate limiting middleware with tier-based limits"""
     
-    RATE_LIMITS = {
-        'login': {'limit': 5, 'window': 3600},  # 5 attempts per hour
-        'register': {'limit': 3, 'window': 3600},  # 3 attempts per hour
-        'api': {'limit': 1000, 'window': 3600},  # 1000 requests per hour
-        'password_reset': {'limit': 3, 'window': 3600},  # 3 attempts per hour
+    # IP 기반 기본 제한
+    DEFAULT_IP_LIMITS = {
+        'minute': 100,    # 분당 100회
+        'hour': 1000,     # 시간당 1000회 
+        'day': 10000,     # 일당 10000회
     }
     
+    # 구독 티어별 제한
+    TIER_LIMITS = {
+        'free': {
+            'minute': 30,
+            'hour': 500,
+            'ai_hour': 10,
+            'upload_hour': 5,
+        },
+        'basic': {
+            'minute': 60,
+            'hour': 1000,
+            'ai_hour': 50,
+            'upload_hour': 20,
+        },
+        'premium': {
+            'minute': 120,
+            'hour': 2000,
+            'ai_hour': 100,
+            'upload_hour': 50,
+        },
+        'pro': {
+            'minute': 200,
+            'hour': 5000,
+            'ai_hour': 200,
+            'upload_hour': 100,
+        }
+    }
+    
+    # 엔드포인트별 특별 제한
+    ENDPOINT_LIMITS = {
+        '/api/auth/token/': {'minute': 5, 'hour': 20},
+        '/api/accounts/users/register/': {'hour': 3, 'day': 5},
+        '/api/accounts/password-reset/': {'hour': 3, 'day': 10},
+        '/api/ai-review/generate-questions/': {'minute': 2, 'hour': 20},
+        '/api/payments/webhook/': {'minute': 100},  # Stripe webhook
+    }
+    
+    # 화이트리스트 IP
+    WHITELIST_IPS = ['127.0.0.1', '::1']
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # 화이트리스트 IP 로드
+        admin_whitelist = getattr(settings, 'ADMIN_IP_WHITELIST', '')
+        if admin_whitelist:
+            if isinstance(admin_whitelist, str):
+                self.WHITELIST_IPS.extend(admin_whitelist.split(','))
+            else:
+                self.WHITELIST_IPS.extend(admin_whitelist)
+        super().__init__(get_response)
+    
     def process_request(self, request):
-        if not getattr(settings, 'RATE_LIMIT_ENABLE', False):
+        if not getattr(settings, 'RATE_LIMIT_ENABLE', True):
             return None
             
-        # Determine rate limit type based on path
-        rate_limit_type = self._get_rate_limit_type(request.path)
-        if not rate_limit_type:
-            return None
-            
-        # Get client IP
         client_ip = self._get_client_ip(request)
-        cache_key = f"rate_limit:{rate_limit_type}:{client_ip}"
         
-        # Check rate limit
-        current_requests = cache.get(cache_key, 0)
-        limit_config = self.RATE_LIMITS[rate_limit_type]
+        # 화이트리스트 확인
+        if client_ip in self.WHITELIST_IPS:
+            return None
         
-        if current_requests >= limit_config['limit']:
-            logger.warning(f"Rate limit exceeded for {client_ip} on {rate_limit_type}")
-            return JsonResponse({
-                'error': 'Rate limit exceeded',
-                'message': '요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.'
-            }, status=429)
+        # Health check, static files 제외
+        if (request.path.startswith('/api/health/') or 
+            request.path.startswith('/static/') or 
+            request.path.startswith('/media/')):
+            return None
         
-        # Increment counter
-        cache.set(cache_key, current_requests + 1, limit_config['window'])
+        # 1. IP 기반 제한 확인
+        ip_limit_result = self._check_ip_limits(request, client_ip)
+        if ip_limit_result:
+            return ip_limit_result
+        
+        # 2. 엔드포인트별 제한 확인  
+        endpoint_limit_result = self._check_endpoint_limits(request, client_ip)
+        if endpoint_limit_result:
+            return endpoint_limit_result
+        
+        # 3. 사용자별 제한 확인 (인증된 사용자)
+        if hasattr(request, 'user') and request.user.is_authenticated:
+            user_limit_result = self._check_user_limits(request)
+            if user_limit_result:
+                return user_limit_result
         
         return None
     
-    def _get_rate_limit_type(self, path):
-        if '/api/auth/token/' in path:
-            return 'login'
-        elif '/api/accounts/users/register/' in path:
-            return 'register'
-        elif '/api/accounts/password-reset/' in path:
-            return 'password_reset'
-        elif path.startswith('/api/'):
-            return 'api'
+    def _check_ip_limits(self, request, client_ip):
+        """IP 기반 제한 확인"""
+        for period, limit in self.DEFAULT_IP_LIMITS.items():
+            cache_key = f"rate_limit:ip:{client_ip}:{period}"
+            window = {'minute': 60, 'hour': 3600, 'day': 86400}[period]
+            
+            if self._is_rate_limited(cache_key, limit, window):
+                logger.warning(f"IP rate limit exceeded: {client_ip} - {period} limit")
+                return self._create_rate_limit_response(
+                    f"IP 기반 {period} 요청 한도를 초과했습니다.",
+                    limit, window
+                )
         return None
+    
+    def _check_endpoint_limits(self, request, client_ip):
+        """엔드포인트별 제한 확인"""
+        endpoint_limits = self.ENDPOINT_LIMITS.get(request.path)
+        if not endpoint_limits:
+            return None
+            
+        for period, limit in endpoint_limits.items():
+            cache_key = f"rate_limit:endpoint:{client_ip}:{request.path}:{period}"
+            window = {'minute': 60, 'hour': 3600, 'day': 86400}[period]
+            
+            if self._is_rate_limited(cache_key, limit, window):
+                logger.warning(f"Endpoint rate limit exceeded: {client_ip} - {request.path}")
+                return self._create_rate_limit_response(
+                    f"이 엔드포인트의 {period} 요청 한도를 초과했습니다.",
+                    limit, window
+                )
+        return None
+    
+    def _check_user_limits(self, request):
+        """사용자별 제한 확인"""
+        user = request.user
+        tier = self._get_user_tier(user)
+        tier_limits = self.TIER_LIMITS.get(tier, self.TIER_LIMITS['free'])
+        
+        # 일반 요청 제한
+        for period in ['minute', 'hour']:
+            if period not in tier_limits:
+                continue
+                
+            cache_key = f"rate_limit:user:{user.id}:{period}"
+            window = {'minute': 60, 'hour': 3600}[period]
+            limit = tier_limits[period]
+            
+            if self._is_rate_limited(cache_key, limit, window):
+                logger.warning(f"User rate limit exceeded: {user.id} ({tier}) - {period}")
+                return self._create_rate_limit_response(
+                    f"{tier} 구독 {period} 요청 한도를 초과했습니다.",
+                    limit, window
+                )
+        
+        # AI 요청 제한
+        if '/ai-review/' in request.path:
+            cache_key = f"rate_limit:user_ai:{user.id}:hour"
+            limit = tier_limits.get('ai_hour', 10)
+            
+            if self._is_rate_limited(cache_key, limit, 3600):
+                logger.warning(f"User AI rate limit exceeded: {user.id} ({tier})")
+                return self._create_rate_limit_response(
+                    f"{tier} 구독 AI 요청 한도를 초과했습니다. 구독을 업그레이드하세요.",
+                    limit, 3600
+                )
+        
+        # 파일 업로드 제한
+        if request.method == 'POST' and ('upload' in request.path or 'files' in request.path):
+            cache_key = f"rate_limit:user_upload:{user.id}:hour"
+            limit = tier_limits.get('upload_hour', 5)
+            
+            if self._is_rate_limited(cache_key, limit, 3600):
+                logger.warning(f"User upload rate limit exceeded: {user.id} ({tier})")
+                return self._create_rate_limit_response(
+                    f"{tier} 구독 업로드 한도를 초과했습니다.",
+                    limit, 3600
+                )
+        
+        return None
+    
+    def _is_rate_limited(self, cache_key, limit, window):
+        """Rate limit 확인 및 카운터 증가"""
+        try:
+            current = cache.get(cache_key, 0)
+            if current >= limit:
+                return True
+            
+            # 카운터 증가
+            cache.set(cache_key, current + 1, window)
+            return False
+            
+        except Exception as e:
+            logger.error(f"Rate limit check failed: {e}")
+            return False
+    
+    def _get_user_tier(self, user):
+        """사용자 구독 티어 확인"""
+        try:
+            return user.subscription.tier.lower()
+        except:
+            return 'free'
+    
+    def _create_rate_limit_response(self, message, limit, window):
+        """Rate limit 응답 생성"""
+        response_data = {
+            'error': 'rate_limit_exceeded',
+            'message': message,
+            'limit': limit,
+            'window_seconds': window,
+            'retry_after': window
+        }
+        
+        response = JsonResponse(response_data, status=429)
+        response['X-RateLimit-Limit'] = str(limit)
+        response['X-RateLimit-Window'] = str(window)
+        response['Retry-After'] = str(window)
+        
+        return response
     
     def _get_client_ip(self, request):
+        """클라이언트 실제 IP 주소 추출 (AWS ALB 지원)"""
+        # AWS ALB X-Forwarded-For 헤더
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
             return x_forwarded_for.split(',')[0].strip()
-        return request.META.get('REMOTE_ADDR', '0.0.0.0')
+        
+        # CloudFlare CF-Connecting-IP
+        cf_ip = request.META.get('HTTP_CF_CONNECTING_IP') 
+        if cf_ip:
+            return cf_ip
+            
+        return request.META.get('REMOTE_ADDR', '127.0.0.1')
+    
+    def process_response(self, request, response):
+        """응답에 Rate Limit 헤더 추가"""
+        if getattr(settings, 'RATE_LIMIT_ENABLE', True):
+            # 현재 IP의 분당 제한 정보 추가
+            client_ip = self._get_client_ip(request)
+            cache_key = f"rate_limit:ip:{client_ip}:minute"
+            
+            try:
+                current = cache.get(cache_key, 0)
+                limit = self.DEFAULT_IP_LIMITS['minute']
+                remaining = max(0, limit - current)
+                
+                response['X-RateLimit-Limit'] = str(limit)
+                response['X-RateLimit-Remaining'] = str(remaining)
+                response['X-RateLimit-Window'] = '60'
+                
+            except Exception as e:
+                logger.error(f"Failed to add rate limit headers: {e}")
+        
+        return response
 
 
 class RequestLoggingMiddleware(MiddlewareMixin):

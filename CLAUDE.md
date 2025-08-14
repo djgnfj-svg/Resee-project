@@ -208,6 +208,254 @@ docker-compose exec celery celery -A resee inspect active
 docker-compose exec celery celery -A resee inspect scheduled
 ```
 
+## 🚀 필수 명령어 Quick Reference
+
+### 개발 환경 설정
+```bash
+# 최초 실행 시
+docker-compose up -d
+docker-compose exec backend python manage.py migrate
+docker-compose exec backend python manage.py create_test_users
+
+# 시작/중지
+docker-compose up -d
+docker-compose down
+
+# 특정 서비스만 재시작
+docker-compose restart backend
+docker-compose restart frontend
+docker-compose restart celery
+
+# 로그 확인
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f celery
+docker-compose logs -f rabbitmq
+
+# 쉘 접속
+docker-compose exec backend bash
+docker-compose exec frontend bash
+
+# Django shell (향상된 shell_plus)
+docker-compose exec backend python manage.py shell_plus
+```
+
+### 데이터베이스
+```bash
+# 마이그레이션
+docker-compose exec backend python manage.py makemigrations
+docker-compose exec backend python manage.py migrate
+
+# DB 쉘
+docker-compose exec db psql -U resee_user -d resee_db
+
+# 백업
+docker-compose exec db pg_dump -U resee_user resee_db > backup.sql
+```
+
+### 테스트
+```bash
+# 백엔드
+docker-compose exec backend pytest -v
+docker-compose exec backend pytest -k "특정테스트" -v
+docker-compose exec backend pytest -m unit  # 유닛 테스트만
+docker-compose exec backend pytest -m integration  # 통합 테스트만
+docker-compose exec backend pytest -m "not slow"  # 느린 테스트 제외
+docker-compose exec backend pytest --pdb  # 실패 시 디버거 실행
+
+# 프론트엔드
+docker-compose exec frontend npm test
+docker-compose exec frontend npm test -- --coverage
+docker-compose exec frontend npm run test:coverage  # 커버리지 리포트
+docker-compose exec frontend npm run test:ci  # CI 환경용
+
+# E2E 테스트
+docker-compose exec frontend npx playwright test
+docker-compose exec frontend npx playwright test --ui  # UI 모드
+docker-compose exec frontend npx playwright test --headed  # 브라우저 보며 실행
+docker-compose exec frontend npx playwright test --debug  # 디버그 모드
+```
+
+### 프로덕션
+```bash
+# 배포
+./ops.sh deploy
+
+# 상태 확인
+./ops.sh status
+./ops.sh health --detailed
+
+# 백업
+./ops.sh backup daily
+```
+
+## 🧪 테스트 데이터 생성
+
+### 샘플 데이터 생성
+```bash
+# 테스트 사용자 생성
+docker-compose exec backend python manage.py create_test_users
+
+# 샘플 콘텐츠 생성
+docker-compose exec backend python manage.py create_sample_data
+
+# 장기 학습 테스트 데이터 (180일 연속 학습 시뮬레이션)
+docker-compose exec backend python manage.py create_long_term_test_data --tier=pro
+docker-compose exec backend python manage.py create_long_term_test_data --tier=all  # 모든 티어
+
+# 현실적인 사용자 데이터 (다양한 학습 패턴)
+docker-compose exec backend python manage.py create_realistic_user_data
+```
+
+## 🏗️ 아키텍처 핵심 요약
+
+### 백엔드 구조
+```
+backend/
+├── accounts/      # 사용자, 구독 관리
+├── content/       # 학습 콘텐츠
+├── review/        # 복습 시스템
+├── ai_review/     # AI 기능
+├── analytics/     # 학습 분석
+├── monitoring/    # 시스템 모니터링
+└── resee/         # 설정
+```
+
+### 프론트엔드 구조
+```
+frontend/src/
+├── components/    # 재사용 컴포넌트
+│   ├── ai/       # AI 관련 컴포넌트
+│   └── analytics/ # 분석 차트 컴포넌트
+├── pages/         # 페이지 컴포넌트
+├── contexts/      # 전역 상태 (Auth, Theme)
+├── hooks/         # 커스텀 훅
+├── utils/         # API 클라이언트
+├── types/         # TypeScript 타입
+└── styles/        # 전역 스타일
+```
+
+### 핵심 모델 관계
+- User → Content (1:N)
+- User → ReviewSchedule (1:N)
+- Content → ReviewSchedule (1:1)
+- Content → AIQuestion (1:N)
+- User → Subscription (1:1)
+- User → ReviewHistory (1:N)
+
+### 복습 시스템 핵심 아키텍처
+**에빙하우스 망각곡선 기반 지능형 복습 시스템**
+
+1. **ReviewSchedule Model**: 각 콘텐츠별 복습 스케줄 관리
+   - `interval_index`: 현재 복습 간격 단계 (0-7)
+   - `next_review_date`: 다음 복습 예정일
+   - `initial_review_completed`: 첫 복습 완료 여부
+
+2. **ReviewHistory Model**: 복습 기록 및 성과 추적
+   - `result`: remembered/partial/forgot (복습 결과)
+   - `time_spent`: 복습 소요 시간
+   - 성과 분석 및 개인화된 학습 패턴 도출
+
+3. **Subscription-based Limitations**: 구독 티어별 복습 범위 제한
+   - 각 티어마다 접근 가능한 최대 복습 간격 설정
+   - 밀린 복습도 구독 범위 내에서만 표시
+   - 구독 변경 시 기존 스케줄 자동 조정
+
+4. **Signal-based Auto-adjustment**: 
+   - 구독 변경 시 `adjust_review_schedules_on_subscription_change` 신호
+   - 콘텐츠 생성 시 자동 복습 스케줄 생성
+
+### API 인증
+- JWT (Access: 5분, Refresh: 7일)
+- 이메일 기반 로그인
+- Google OAuth 2.0 지원
+
+### 에빙하우스 망각곡선 기반 복습 간격
+- **전체 간격**: [1, 3, 7, 14, 30, 60, 120, 180일] (에빙하우스 연구 기반)
+- **구독 티어별 제한**:
+  - FREE: 최대 7일 (1, 3, 7)
+  - BASIC: 최대 30일 (1, 3, 7, 14, 30)  
+  - PREMIUM: 최대 60일 (1, 3, 7, 14, 30, 60)
+  - PRO: 최대 180일 (전체 간격)
+- **밀린 복습 처리**: 구독 티어별 최대 기간 내 밀린 복습은 현재 날짜에 표시
+
+## 🔍 디버깅 팁
+
+### 1. 500 에러 발생 시
+```bash
+# 1. Django 로그 확인
+docker-compose logs backend --tail=50
+
+# 2. Sentry 또는 로컬 로그 파일
+docker-compose exec backend tail -f logs/error.log
+
+# 3. DEBUG 모드로 상세 확인
+# .env에서 DEBUG=True 설정 후 재시작
+```
+
+### 2. Celery 태스크 실패 시
+```bash
+# 1. Worker 로그 확인
+docker-compose logs celery -f
+
+# 2. RabbitMQ 상태 확인
+docker-compose exec rabbitmq rabbitmqctl list_queues
+
+# 3. 수동 실행 테스트
+docker-compose exec backend python manage.py shell
+>>> from review.tasks import send_daily_review_notifications
+>>> send_daily_review_notifications.apply_async()
+```
+
+### 3. 프론트엔드 빌드 실패 시
+```bash
+# 1. 의존성 정리
+docker-compose exec frontend rm -rf node_modules package-lock.json
+docker-compose exec frontend npm install
+
+# 2. 타입 오류 확인
+docker-compose exec frontend npx tsc --noEmit
+
+# 3. 환경 변수 확인
+docker-compose exec frontend printenv | grep REACT_APP_
+
+# 4. 컨테이너 재시작 (메모리 부족 시)
+docker-compose restart frontend
+```
+
+### 4. 캘린더 히트맵 문제 해결
+```bash
+# 1. 백엔드 데이터 확인
+docker-compose exec backend python manage.py shell
+>>> from review.models import ReviewHistory
+>>> from django.contrib.auth import get_user_model
+>>> user = get_user_model().objects.get(email='test@resee.com')
+>>> ReviewHistory.objects.filter(user=user).count()
+
+# 2. API 응답 확인
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8000/api/analytics/calendar/
+
+# 3. 프론트엔드 캐시 무효화
+queryClient.invalidateQueries({ queryKey: ['learning-calendar'] });
+```
+
+### 5. 주간 목표 및 진행률 문제
+```bash
+# 1. 사용자 설정 확인
+docker-compose exec backend python manage.py shell
+>>> from accounts.models import UserProfile
+>>> profile = UserProfile.objects.get(user__email='test@resee.com')
+>>> print(f"Weekly goal: {profile.weekly_goal}")
+
+# 2. 이번 주 복습 횟수 확인
+>>> from review.models import ReviewHistory
+>>> from django.utils import timezone
+>>> from datetime import timedelta
+>>> week_start = timezone.now().date() - timedelta(days=timezone.now().weekday())
+>>> count = ReviewHistory.objects.filter(user=profile.user, completed_at__date__gte=week_start).count()
+>>> print(f"This week reviews: {count}")
+```
+
 ## 📋 기능별 플로우 정리
 
 ### 1. 사용자 인증 플로우
@@ -862,5 +1110,10 @@ docker-compose exec db pg_isready
 
 ## 🔄 지속적인 개선 사항
 - 복습 성과 데이터 기반 개인화된 간격 조정 (향후 구현)
-- AI 기반 복습 난이도 예측 시스템 (진행 중)
+- AI 기반 복습 난이도 예측 시스템 (진핡 중)
 - 다국어 지원 및 현지화 (계획 중)
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
