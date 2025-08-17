@@ -11,7 +11,7 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon
 } from '@heroicons/react/24/outline';
-import apiClient from '../utils/apiClient';
+import { apiClient } from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 interface LearningAnalytics {

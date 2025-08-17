@@ -54,7 +54,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'monitoring.middleware.request_middleware',
+    'monitoring.middleware.MetricsCollectionMiddleware',
 ]
 
 ROOT_URLCONF = 'resee.urls'
@@ -151,10 +151,10 @@ REST_FRAMEWORK = {
         'user': '1000/hour',
         'login': '5/min',
         'registration': '3/min',
+        'register': '3/min',
         'email': '10/hour',
         'ai_endpoint': '50/hour',
     },
-    'EXCEPTION_HANDLER': 'resee.exception_handlers.custom_exception_handler',
 }
 
 

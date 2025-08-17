@@ -306,4 +306,7 @@ export const weeklyGoalAPI = {
   },
 };
 
+// Export apiClient alias for compatibility
+export const apiClient = api;
+
 export default api;
