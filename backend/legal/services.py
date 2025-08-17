@@ -2,9 +2,10 @@ import json
 import os
 import tempfile
 from datetime import timedelta
-from django.utils import timezone
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 User = get_user_model()
 

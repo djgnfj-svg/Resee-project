@@ -1,11 +1,13 @@
 """
 Test cases for subscription-related utilities
 """
-import pytest
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from django.utils import timezone
 from datetime import timedelta
+
+import pytest
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.utils import timezone
+
 from accounts.models import Subscription, SubscriptionTier
 from review.utils import get_review_intervals
 
@@ -102,7 +104,7 @@ class ReviewScheduleSubscriptionTest(TestCase):
     
     def setUp(self):
         """Create test user and content"""
-        from content.models import Content, Category
+        from content.models import Category, Content
         
         self.user = User.objects.create_user(
             email='test@example.com',
@@ -166,7 +168,7 @@ class ReviewScheduleSubscriptionTest(TestCase):
     def test_review_schedule_with_downgraded_subscription(self):
         """Test review schedule behavior when subscription is downgraded"""
         from review.models import ReviewSchedule
-        
+
         # Start with premium user
         self.user.subscription.tier = SubscriptionTier.PREMIUM
         self.user.subscription.save()

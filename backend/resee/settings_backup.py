@@ -10,6 +10,7 @@ import dj_database_url
 from celery.schedules import crontab
 
 from .logging_config import LOGGING
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -593,7 +594,7 @@ elif ENVIRONMENT == 'staging':
     
     # Use production settings but with less strict JWT tokens
     from .production_settings import *
-    
+
     # Staging-specific overrides
     SIMPLE_JWT.update({
         'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
@@ -617,7 +618,7 @@ elif ENVIRONMENT == 'production':
     
     # Import all production settings
     from .production_settings import *
-    
+
     # Ensure logs directory exists with proper permissions
     LOGS_DIR.chmod(0o755)
     
@@ -661,9 +662,12 @@ OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4')
 AI_MAX_RETRIES = int(os.environ.get('AI_MAX_RETRIES', '3'))
 AI_CACHE_TIMEOUT = int(os.environ.get('AI_CACHE_TIMEOUT', '3600'))  # 1 hour
 
-# Comprehensive environment validation
-from .environment_validation import validate_environment, check_required_environment_variables, get_environment_info
 import logging
+
+# Comprehensive environment validation
+from .environment_validation import (check_required_environment_variables,
+                                     get_environment_info,
+                                     validate_environment)
 
 # Quick check for critical variables during startup
 if not check_required_environment_variables():

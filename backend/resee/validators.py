@@ -1,139 +1,142 @@
 """
-Custom password validators
+Common validation utilities and validators
 """
-
-import re
-import string
 from django.core.exceptions import ValidationError
-from django.utils.translation import gettext as _
+from rest_framework import status
+from rest_framework.response import Response
 
 
-class ComplexPasswordValidator:
+def validate_required_fields(data, required_fields):
     """
-    Validate that the password contains:
-    - At least one uppercase letter
-    - At least one lowercase letter
-    - At least one digit
-    - At least one special character
-    - No common patterns
+    Validate that all required fields are present in data
+    
+    Args:
+        data (dict): Data to validate
+        required_fields (list): List of required field names
+        
+    Raises:
+        ValidationError: If any required field is missing
+    """
+    missing_fields = []
+    for field in required_fields:
+        if field not in data or data[field] is None or data[field] == '':
+            missing_fields.append(field)
+    
+    if missing_fields:
+        raise ValidationError(
+            f"Required fields missing: {', '.join(missing_fields)}"
+        )
+
+
+def validate_choice_field(value, choices, field_name=None):
+    """
+    Validate that value is in allowed choices
+    
+    Args:
+        value: Value to validate
+        choices: List or tuple of valid choices
+        field_name: Name of the field (for error message)
+        
+    Raises:
+        ValidationError: If value is not in choices
+    """
+    valid_choices = [choice[0] if isinstance(choice, tuple) else choice for choice in choices]
+    
+    if value not in valid_choices:
+        field_part = f" for {field_name}" if field_name else ""
+        raise ValidationError(
+            f"Invalid choice{field_part}. Must be one of: {', '.join(map(str, valid_choices))}"
+        )
+
+
+def validate_positive_integer(value, field_name=None):
+    """
+    Validate that value is a positive integer
+    
+    Args:
+        value: Value to validate
+        field_name: Name of the field (for error message)
+        
+    Raises:
+        ValidationError: If value is not a positive integer
+    """
+    try:
+        int_value = int(value)
+        if int_value <= 0:
+            raise ValueError()
+    except (ValueError, TypeError):
+        field_part = f" for {field_name}" if field_name else ""
+        raise ValidationError(f"Value{field_part} must be a positive integer")
+
+
+def handle_validation_error(func):
+    """
+    Decorator to handle ValidationError and return proper API response
+    
+    Usage:
+        @handle_validation_error
+        def create(self, request, *args, **kwargs):
+            # Your view logic here
+            return super().create(request, *args, **kwargs)
+    """
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ValidationError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    return wrapper
+
+
+class BaseValidator:
+    """
+    Base validator class for reusable validation logic
     """
     
-    def __init__(self, min_length=12):
-        self.min_length = min_length
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
     
-    def validate(self, password, user=None):
-        # Check minimum length
-        if len(password) < self.min_length:
-            raise ValidationError(
-                _("This password must contain at least %(min_length)d characters."),
-                code='password_too_short',
-                params={'min_length': self.min_length},
-            )
-        
-        # Check for uppercase letter
-        if not re.search(r'[A-Z]', password):
-            raise ValidationError(
-                _("This password must contain at least one uppercase letter."),
-                code='password_no_upper',
-            )
-        
-        # Check for lowercase letter
-        if not re.search(r'[a-z]', password):
-            raise ValidationError(
-                _("This password must contain at least one lowercase letter."),
-                code='password_no_lower',
-            )
-        
-        # Check for digit
-        if not re.search(r'\d', password):
-            raise ValidationError(
-                _("This password must contain at least one digit."),
-                code='password_no_digit',
-            )
-        
-        # Check for special character
-        special_chars = string.punctuation
-        if not any(char in special_chars for char in password):
-            raise ValidationError(
-                _("This password must contain at least one special character."),
-                code='password_no_special',
-            )
-        
-        # Check for common patterns
-        self._check_common_patterns(password, user)
+    def validate(self, value):
+        """
+        Override this method in subclasses
+        """
+        raise NotImplementedError("Subclasses must implement validate method")
     
-    def _check_common_patterns(self, password, user):
-        """Check for common password patterns"""
-        password_lower = password.lower()
+    def __call__(self, value):
+        return self.validate(value)
+
+
+class JSONFieldValidator(BaseValidator):
+    """
+    Validator for JSON fields with specific structure requirements
+    """
+    
+    def __init__(self, required_keys=None, optional_keys=None, **kwargs):
+        super().__init__(**kwargs)
+        self.required_keys = required_keys or []
+        self.optional_keys = optional_keys or []
+    
+    def validate(self, value):
+        if not isinstance(value, dict):
+            raise ValidationError("Value must be a dictionary")
         
-        # Check for keyboard patterns
-        keyboard_patterns = [
-            'qwerty', 'asdf', 'zxcv', '1234', 'abcd',
-            'qwertyuiop', 'asdfghjkl', 'zxcvbnm',
-            '123456789', 'abcdefgh'
-        ]
+        # Check required keys
+        missing_keys = set(self.required_keys) - set(value.keys())
+        if missing_keys:
+            raise ValidationError(
+                f"Missing required keys: {', '.join(missing_keys)}"
+            )
         
-        for pattern in keyboard_patterns:
-            if pattern in password_lower:
+        # Check for unexpected keys if we have a whitelist
+        if self.required_keys or self.optional_keys:
+            allowed_keys = set(self.required_keys + self.optional_keys)
+            unexpected_keys = set(value.keys()) - allowed_keys
+            if unexpected_keys:
                 raise ValidationError(
-                    _("This password contains a common keyboard pattern."),
-                    code='password_common_pattern',
+                    f"Unexpected keys: {', '.join(unexpected_keys)}"
                 )
         
-        # Check for repeated characters
-        if re.search(r'(.)\1{2,}', password):
-            raise ValidationError(
-                _("This password contains too many repeated characters."),
-                code='password_repeated_chars',
-            )
-        
-        # Check for user-related information
-        if user:
-            user_info = [
-                user.username.lower() if hasattr(user, 'username') else '',
-                user.first_name.lower() if hasattr(user, 'first_name') else '',
-                user.last_name.lower() if hasattr(user, 'last_name') else '',
-                user.email.split('@')[0].lower() if hasattr(user, 'email') else '',
-            ]
-            
-            for info in user_info:
-                if info and len(info) > 3 and info in password_lower:
-                    raise ValidationError(
-                        _("This password is too similar to your personal information."),
-                        code='password_too_similar',
-                    )
-        
-        # Check for common substitutions
-        common_substitutions = {
-            'a': ['@', '4'],
-            'e': ['3'],
-            'i': ['1', '!'],
-            'o': ['0'],
-            's': ['$', '5'],
-            't': ['7'],
-        }
-        
-        # Reverse common substitutions to check original patterns
-        reversed_password = password_lower
-        for letter, subs in common_substitutions.items():
-            for sub in subs:
-                reversed_password = reversed_password.replace(sub, letter)
-        
-        # Check if reversed password is a common word
-        common_words = [
-            'password', 'welcome', 'admin', 'login', 'user',
-            'resee', 'review', 'study', 'learn', 'content'
-        ]
-        
-        for word in common_words:
-            if word in reversed_password:
-                raise ValidationError(
-                    _("This password is based on a common word."),
-                    code='password_common_word',
-                )
-    
-    def get_help_text(self):
-        return _(
-            "Your password must contain at least %(min_length)d characters, "
-            "including uppercase and lowercase letters, digits, and special characters."
-        ) % {'min_length': self.min_length}
+        return value

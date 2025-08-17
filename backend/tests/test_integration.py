@@ -3,19 +3,22 @@ Integration tests for complete workflows
 """
 
 from datetime import timedelta
-from django.test import TestCase, override_settings
-from django.utils import timezone
-from django.urls import reverse
+
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.test import TestCase, override_settings
+from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .base import BaseTestCase, BaseAPITestCase, TestDataMixin
 from accounts.models import User
-from content.models import Content, Category
-from review.models import ReviewSchedule, ReviewHistory
-from review.tasks import create_review_schedule_for_content, send_daily_review_notifications
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
+from review.tasks import (create_review_schedule_for_content,
+                          send_daily_review_notifications)
+
+from .base import BaseAPITestCase, BaseTestCase, TestDataMixin
 
 User = get_user_model()
 
@@ -497,7 +500,7 @@ class CompleteUserWorkflowTestCase(BaseAPITestCase, TestDataMixin):
         
         # Test API performance
         import time
-        
+
         # Test contents list
         start_time = time.time()
         contents_url = reverse('content:contents-list')

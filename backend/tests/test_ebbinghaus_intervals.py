@@ -3,14 +3,16 @@ Tests for Ebbinghaus forgetting curve optimized review intervals
 """
 
 from datetime import timedelta
+
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
-from django.contrib.auth import get_user_model
+
+from accounts.models import Subscription, SubscriptionTier
+from review.models import ReviewSchedule
+from review.utils import get_review_intervals
 
 from .base import BaseTestCase
-from review.utils import get_review_intervals
-from review.models import ReviewSchedule
-from accounts.models import SubscriptionTier, Subscription
 
 User = get_user_model()
 
@@ -237,7 +239,7 @@ class EbbinghausMemoryOptimizationTestCase(TestCase):
     def test_interval_exponential_growth(self):
         """Test that intervals grow exponentially as per Ebbinghaus research"""
         from accounts.models import SubscriptionTier
-        
+
         # Get PRO tier intervals for full progression
         tier_intervals = {
             SubscriptionTier.PRO: [1, 3, 7, 14, 30, 60, 120, 180]
@@ -276,7 +278,7 @@ class EbbinghausMemoryOptimizationTestCase(TestCase):
     def test_tier_progression_logical(self):
         """Test that tier progression makes logical sense"""
         from accounts.models import SubscriptionTier
-        
+
         # Mock user class for testing
         class MockUser:
             def __init__(self, tier):

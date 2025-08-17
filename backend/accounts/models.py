@@ -394,11 +394,13 @@ def create_user_subscription(sender, instance, created, **kwargs):
 def adjust_review_schedules_on_subscription_change(sender, instance, created, **kwargs):
     """Adjust existing review schedules when subscription tier changes"""
     if not created:  # Only for updates, not new subscriptions
+        from datetime import timedelta
+
+        from django.utils import timezone
+
         from review.models import ReviewSchedule
         from review.utils import get_review_intervals
-        from django.utils import timezone
-        from datetime import timedelta
-        
+
         # Get new intervals for the updated subscription
         new_intervals = get_review_intervals(instance.user)
         new_max_interval = instance.max_interval_days

@@ -1,10 +1,12 @@
 """
 Create test users for development/testing
 """
-from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
-from accounts.models import SubscriptionTier
 import uuid
+
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+
+from accounts.models import SubscriptionTier
 
 User = get_user_model()
 

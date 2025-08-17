@@ -2,12 +2,13 @@
 실무용 이메일 유틸리티
 """
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
+from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from celery import shared_task
 
 logger = logging.getLogger(__name__)
 

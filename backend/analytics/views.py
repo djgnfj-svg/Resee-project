@@ -1,14 +1,17 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from collections import defaultdict
+from datetime import datetime, timedelta
+
 from django.db.models import Count
 from django.utils import timezone
-from datetime import timedelta, datetime
-from review.models import ReviewHistory, ReviewSchedule
-from review.utils import calculate_success_rate, get_today_reviews_count, get_pending_reviews_count
-from content.models import Content, Category
-from collections import defaultdict
-from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
+from review.utils import (calculate_success_rate, get_pending_reviews_count,
+                          get_today_reviews_count)
 
 
 class DashboardView(APIView):

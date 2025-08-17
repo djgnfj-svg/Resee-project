@@ -2,20 +2,20 @@
 Tests for accounts app
 """
 
-from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .base import BaseTestCase, BaseAPITestCase
 from accounts.models import User
-from accounts.serializers import (
-    UserSerializer, ProfileSerializer, UserRegistrationSerializer,
-    PasswordChangeSerializer, AccountDeleteSerializer
-)
+from accounts.serializers import (AccountDeleteSerializer,
+                                  PasswordChangeSerializer, ProfileSerializer,
+                                  UserRegistrationSerializer, UserSerializer)
+
+from .base import BaseAPITestCase, BaseTestCase
 
 User = get_user_model()
 

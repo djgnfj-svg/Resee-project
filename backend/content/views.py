@@ -1,22 +1,28 @@
-from rest_framework import viewsets, status
+import logging
+
+from django.core.exceptions import ValidationError
+from django.db import models
+from django_filters.rest_framework import DjangoFilterBackend
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
-from django.db import models
-from django.core.exceptions import ValidationError
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
+
+from resee.cache_utils import CacheManager, cached_method
+from resee.mixins import AuthorViewSetMixin, UserOwnershipMixin
+from resee.pagination import ContentPagination, OptimizedPageNumberPagination
+from resee.performance_utils import PerformanceMonitor, query_debugger
+from resee.structured_logging import (log_api_call, log_performance,
+                                      performance_logger)
+
 from .models import Category, Content
 from .serializers import CategorySerializer, ContentSerializer
-from resee.pagination import ContentPagination, OptimizedPageNumberPagination
-from resee.structured_logging import log_api_call, log_performance, performance_logger
-import logging
 
 logger = logging.getLogger(__name__)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     """
     카테고리 관리
     
@@ -25,10 +31,6 @@ class CategoryViewSet(viewsets.ModelViewSet):
     """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    
-    def get_queryset(self):
-        # Return only user's custom categories
-        return Category.objects.filter(user=self.request.user)
     
     @swagger_auto_schema(
         operation_summary="카테고리 목록 조회",
@@ -46,13 +48,10 @@ class CategoryViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
-    
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
 
 
 
-class ContentViewSet(viewsets.ModelViewSet):
+class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     """
     학습 콘텐츠 관리
     
@@ -67,11 +66,12 @@ class ContentViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'updated_at', 'title']
     ordering = ['-created_at']
     
+    # Query optimization configuration
+    select_related_fields = ['category', 'author']
+    prefetch_related_fields = ['review_history', 'review_schedules']
+    
     def get_queryset(self):
-        # Optimized query with prefetch for review data
-        queryset = Content.objects.filter(author=self.request.user)\
-            .select_related('category', 'author')\
-            .prefetch_related('review_history', 'review_schedules')
+        queryset = super().get_queryset()
         
         # Category filter
         category_slug = self.request.query_params.get('category_slug', None)
@@ -93,8 +93,10 @@ class ContentViewSet(viewsets.ModelViewSet):
     )
     @log_api_call
     @log_performance('content_list')
+    @query_debugger
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        with PerformanceMonitor('content_list'):
+            return super().list(request, *args, **kwargs)
     
     @swagger_auto_schema(
         operation_summary="새 콘텐츠 생성",
@@ -130,8 +132,6 @@ class ContentViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
     
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
     
     @swagger_auto_schema(
         operation_summary="카테고리별 콘텐츠 조회",
@@ -150,13 +150,15 @@ class ContentViewSet(viewsets.ModelViewSet):
         )}
     )
     @action(detail=False, methods=['get'])
+    @cached_method(timeout=600, key_prefix='content_by_category')
+    @query_debugger
     def by_category(self, request):
         """Get contents grouped by category - optimized version with error handling"""
         try:
             # Import at method level to avoid circular imports
-            from django.db import connection
             from django.conf import settings
-            
+            from django.db import connection
+
             # Log query count in development
             if settings.DEBUG:
                 initial_queries = len(connection.queries)

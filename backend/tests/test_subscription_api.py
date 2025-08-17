@@ -2,15 +2,17 @@
 Test cases for subscription API endpoints
 """
 import json
+from datetime import timedelta
+
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-from django.contrib.auth import get_user_model
 from django.utils import timezone
-from datetime import timedelta
-from rest_framework.test import APIClient
 from rest_framework import status
-from accounts.models import Subscription, SubscriptionTier
+from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from accounts.models import Subscription, SubscriptionTier
 
 User = get_user_model()
 
@@ -216,7 +218,7 @@ class SubscriptionIntegrationTest(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
         
         # Create test content
-        from content.models import Content, Category
+        from content.models import Category, Content
         
         self.category = Category.objects.create(
             name='Test Category',
@@ -233,7 +235,7 @@ class SubscriptionIntegrationTest(TestCase):
     def test_review_intervals_update_with_subscription(self):
         """Test that review intervals update when subscription changes"""
         from review.models import ReviewSchedule
-        
+
         # Create review schedule
         schedule = ReviewSchedule.objects.create(
             content=self.content,
@@ -256,6 +258,7 @@ class SubscriptionIntegrationTest(TestCase):
         
         # Verify user can now advance beyond free tier limits
         from review.utils import get_review_intervals
+
         # Refresh user from DB to get updated subscription
         self.user.refresh_from_db()
         intervals = get_review_intervals(self.user)

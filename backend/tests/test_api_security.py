@@ -3,16 +3,18 @@ Comprehensive API security and edge case tests
 """
 
 import json
+
+from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .base import BaseAPITestCase, TestDataMixin, BaseTestCase
-from content.models import Content, Category
-from review.models import ReviewSchedule, ReviewHistory
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
+
+from .base import BaseAPITestCase, BaseTestCase, TestDataMixin
 
 User = get_user_model()
 

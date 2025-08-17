@@ -2,10 +2,10 @@
 Tests for authentication APIs
 """
 import pytest
-from rest_framework import status
-from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APIClient
 
 User = get_user_model()
 

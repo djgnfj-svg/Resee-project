@@ -2,21 +2,23 @@ import json
 import os
 import tempfile
 from datetime import timedelta
-from django.utils import timezone
-from django.http import HttpResponse, Http404
+
 from django.conf import settings
+from django.http import Http404, HttpResponse
+from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import LegalDocument, UserConsent, DataDeletionRequest, DataExportRequest, CookieConsent
-from .serializers import (
-    LegalDocumentSerializer, UserConsentSerializer, CreateConsentSerializer,
-    DataDeletionRequestSerializer, DataExportRequestSerializer, CookieConsentSerializer,
-    UpdateCookieConsentSerializer, GDPRDataExportSerializer
-)
+from .models import (CookieConsent, DataDeletionRequest, DataExportRequest,
+                     LegalDocument, UserConsent)
+from .serializers import (CookieConsentSerializer, CreateConsentSerializer,
+                          DataDeletionRequestSerializer,
+                          DataExportRequestSerializer,
+                          GDPRDataExportSerializer, LegalDocumentSerializer,
+                          UpdateCookieConsentSerializer, UserConsentSerializer)
 from .services import GDPRService
 
 

@@ -2,8 +2,10 @@
 Custom email backends for development and testing
 """
 import logging
+
 from django.core.mail.backends.base import BaseEmailBackend
-from django.core.mail.backends.console import EmailBackend as ConsoleEmailBackend
+from django.core.mail.backends.console import \
+    EmailBackend as ConsoleEmailBackend
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +70,9 @@ class DatabaseEmailBackend(BaseEmailBackend):
             return 0
             
         from django.utils import timezone
-        from accounts.models import EmailLog  # You'll need to create this model
+
+        from accounts.models import \
+            EmailLog  # You'll need to create this model
         
         num_sent = 0
         for message in email_messages:
@@ -103,8 +107,8 @@ class MockSMTPBackend(BaseEmailBackend):
         if not email_messages:
             return 0
             
-        import time
         import random
+        import time
         
         num_sent = 0
         for message in email_messages:

@@ -3,16 +3,18 @@ Tests for content app
 """
 
 import os
-from django.test import TestCase, override_settings
+
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.text import slugify
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .base import BaseTestCase, BaseAPITestCase, TestDataMixin
-from content.models import Content, Category
-from content.serializers import ContentSerializer, CategorySerializer
+from content.models import Category, Content
+from content.serializers import CategorySerializer, ContentSerializer
+
+from .base import BaseAPITestCase, BaseTestCase, TestDataMixin
 
 
 class ContentModelTestCase(BaseTestCase):

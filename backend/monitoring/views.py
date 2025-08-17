@@ -1,24 +1,24 @@
 """
 API views for monitoring dashboard
 """
+import logging
+from datetime import timedelta
+
+from django.db import models
+from django.db.models import Avg, Count, Max, Min, Q, Sum
+from django.db.models.functions import TruncDate, TruncHour
+from django.utils import timezone
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
-from django.utils import timezone
-from django.db.models import Avg, Count, Sum, Max, Min, Q
-from django.db.models.functions import TruncDate, TruncHour
-from django.db import models
-from datetime import timedelta
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-import logging
 
-from .models import (
-    APIMetrics, DatabaseMetrics, AIMetrics, ErrorLog, 
-    SystemHealth, UserActivity
-)
-from .utils import check_system_health, get_performance_insights, clean_old_metrics
+from .models import (AIMetrics, APIMetrics, DatabaseMetrics, ErrorLog,
+                     SystemHealth, UserActivity)
+from .utils import (check_system_health, clean_old_metrics,
+                    get_performance_insights)
 
 logger = logging.getLogger('monitoring')
 

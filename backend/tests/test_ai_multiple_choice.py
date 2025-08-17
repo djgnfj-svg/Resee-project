@@ -2,12 +2,14 @@
 Tests for AI Multiple Choice Question Generation
 """
 import json
-from unittest.mock import patch, Mock
-from django.test import TestCase, override_settings
+from unittest.mock import Mock, patch
+
 from django.contrib.auth import get_user_model
-from content.models import Content, Category
-from ai_review.models import AIQuestionType, AIQuestion
-from ai_review.services import ai_service, AIServiceError
+from django.test import TestCase, override_settings
+
+from ai_review.models import AIQuestion, AIQuestionType
+from ai_review.services import AIServiceError, ai_service
+from content.models import Category, Content
 
 # Test cache settings to avoid Redis dependency
 TEST_CACHE_SETTINGS = {
@@ -126,7 +128,7 @@ class AIMultipleChoiceTestCase(TestCase):
     def test_multiple_choice_validation(self):
         """Test validation of multiple choice questions"""
         from django.core.exceptions import ValidationError
-        
+
         # Test with invalid options (less than 2)
         question = AIQuestion(
             content=self.content,

@@ -3,15 +3,17 @@ Tests for analytics app
 """
 
 from datetime import timedelta
-from django.test import TestCase
-from django.utils import timezone
-from django.urls import reverse
+
 from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .base import BaseTestCase, BaseAPITestCase, TestDataMixin
 from analytics.views import DashboardView, ReviewStatsView
+
+from .base import BaseAPITestCase, BaseTestCase, TestDataMixin
 
 User = get_user_model()
 
@@ -481,7 +483,7 @@ class AnalyticsViewTestCase(BaseTestCase):
     def test_analytics_edge_cases(self):
         """Test analytics edge cases"""
         from django.test import RequestFactory
-        
+
         # Test with user who has no review history
         empty_user = self.create_user(username='empty', email='empty@example.com')
         

@@ -2,9 +2,10 @@
 Test settings for Resee backend
 """
 
-from resee.settings import *
-import tempfile
 import os
+import tempfile
+
+from resee.settings import *
 
 # Test database
 DATABASES = {

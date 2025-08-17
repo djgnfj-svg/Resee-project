@@ -2,16 +2,17 @@
 Management command to create realistic user data with 40 days of daily activity
 """
 
-from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from datetime import timedelta, datetime
-import random
 import json
+import random
+from datetime import datetime, timedelta
 
-from accounts.models import SubscriptionTier, Subscription
-from content.models import Content, Category
-from review.models import ReviewSchedule, ReviewHistory
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from accounts.models import Subscription, SubscriptionTier
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
 from review.utils import get_review_intervals
 
 User = get_user_model()

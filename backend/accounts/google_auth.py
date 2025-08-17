@@ -1,12 +1,13 @@
 """
 Google OAuth 인증 처리
 """
+import logging
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from google.auth.transport import requests
 from google.oauth2 import id_token
-from django.contrib.auth import get_user_model
-from django.conf import settings
 from rest_framework import serializers
-import logging
 
 User = get_user_model()
 logger = logging.getLogger(__name__)

@@ -4,64 +4,45 @@ AI Review API views
 import logging
 
 from django.shortcuts import get_object_or_404
-
-from rest_framework import status, permissions
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
-
-from resee.structured_logging import log_api_call, log_performance, ai_logger
-from resee.throttling import AIEndpointThrottle
-
 from accounts.models import AIUsageTracking
 from content.models import Content
+from resee.structured_logging import ai_logger, log_api_call, log_performance
+from resee.throttling import AIEndpointThrottle
 
-from .models import (
-    AIQuestionType, 
-    AIQuestion, 
-    AIReviewSession,
-    WeeklyTest,
-    WeeklyTestQuestion,
-    InstantContentCheck,
-    LearningAnalytics,
-    AIStudyMate,
-    AISummaryNote
-)
-from .serializers import (
-    AIQuestionTypeSerializer,
-    AIQuestionSerializer,
-    GenerateQuestionsSerializer,
-    GeneratedQuestionSerializer,
-    AIReviewSessionSerializer,
-    FillBlankRequestSerializer,
-    FillBlankResponseSerializer,
-    BlurRegionsRequestSerializer,
-    BlurRegionsResponseSerializer,
-    AIChatRequestSerializer,
-    AIChatResponseSerializer,
-    ExplanationEvaluationRequestSerializer,
-    ExplanationEvaluationResponseSerializer,
-    # 새로운 시리얼라이저들
-    WeeklyTestSerializer,
-    WeeklyTestQuestionSerializer,
-    WeeklyTestCreateSerializer,
-    WeeklyTestStartSerializer,
-    WeeklyTestAnswerSerializer,
-    InstantContentCheckSerializer,
-    InstantCheckRequestSerializer,
-    LearningAnalyticsSerializer,
-    AnalyticsRequestSerializer,
-    AIStudyMateSerializer,
-    StudyMateRequestSerializer,
-    AISummaryNoteSerializer,
-    SummaryNoteRequestSerializer
-)
-from .services import ai_service, AIServiceError
-
+from .models import (AIQuestion, AIQuestionType, AIReviewSession, AIStudyMate,
+                     AISummaryNote, InstantContentCheck, LearningAnalytics,
+                     WeeklyTest, WeeklyTestQuestion)
+from .serializers import (AIChatRequestSerializer,  # 새로운 시리얼라이저들
+                          AIChatResponseSerializer, AIQuestionSerializer,
+                          AIQuestionTypeSerializer, AIReviewSessionSerializer,
+                          AIStudyMateSerializer, AISummaryNoteSerializer,
+                          AnalyticsRequestSerializer,
+                          BlurRegionsRequestSerializer,
+                          BlurRegionsResponseSerializer,
+                          ExplanationEvaluationRequestSerializer,
+                          ExplanationEvaluationResponseSerializer,
+                          FillBlankRequestSerializer,
+                          FillBlankResponseSerializer,
+                          GeneratedQuestionSerializer,
+                          GenerateQuestionsSerializer,
+                          InstantCheckRequestSerializer,
+                          InstantContentCheckSerializer,
+                          LearningAnalyticsSerializer,
+                          StudyMateRequestSerializer,
+                          SummaryNoteRequestSerializer,
+                          WeeklyTestAnswerSerializer,
+                          WeeklyTestCreateSerializer,
+                          WeeklyTestQuestionSerializer, WeeklyTestSerializer,
+                          WeeklyTestStartSerializer)
+from .services import AIServiceError, question_generator, answer_evaluator
 
 logger = logging.getLogger(__name__)
 
@@ -1056,6 +1037,7 @@ class WeeklyTestView(APIView):
         try:
             # 이번 주 학습한 콘텐츠 조회
             from datetime import datetime, timedelta
+
             from django.utils import timezone
             
             today = timezone.now().date()

@@ -3,22 +3,24 @@
 실제 사용자가 시스템을 사용하는 전체 플로우를 검증
 """
 
-import time
 import json
+import time
 from datetime import timedelta
+from unittest.mock import MagicMock, patch
+
+from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
-from django.contrib.auth import get_user_model
-from django.core import mail
 from rest_framework import status
-from rest_framework.test import APITestCase, APIClient
-from unittest.mock import patch, MagicMock
+from rest_framework.test import APIClient, APITestCase
 
 from accounts.models import User
-from content.models import Content, Category
-from review.models import ReviewSchedule, ReviewHistory
-from review.tasks import create_review_schedule_for_content, send_daily_review_notifications
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
+from review.tasks import (create_review_schedule_for_content,
+                          send_daily_review_notifications)
 
 User = get_user_model()
 

@@ -2,12 +2,14 @@
 Tests for AI Blur Processing Functionality
 """
 import json
-from unittest.mock import patch, Mock
-from django.test import TestCase, override_settings
+from unittest.mock import Mock, patch
+
 from django.contrib.auth import get_user_model
-from content.models import Content, Category
-from ai_review.models import AIQuestionType, AIQuestion
-from ai_review.services import ai_service, AIServiceError
+from django.test import TestCase, override_settings
+
+from ai_review.models import AIQuestion, AIQuestionType
+from ai_review.services import AIServiceError, ai_service
+from content.models import Category, Content
 
 # Test cache settings to avoid Redis dependency
 TEST_CACHE_SETTINGS = {

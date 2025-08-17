@@ -3,21 +3,21 @@ Tests for Celery tasks
 """
 
 from datetime import timedelta
-from django.test import TestCase, override_settings
-from django.utils import timezone
+from unittest.mock import MagicMock, patch
+
 from django.contrib.auth import get_user_model
 from django.core import mail
-from unittest.mock import patch, MagicMock
+from django.test import TestCase, override_settings
+from django.utils import timezone
+
+from content.models import Content
+from review.models import ReviewHistory, ReviewSchedule
+from review.tasks import (cleanup_old_review_history,
+                          create_review_schedule_for_content,
+                          send_daily_review_notifications,
+                          update_review_schedules)
 
 from .base import BaseTestCase, TestDataMixin
-from review.tasks import (
-    send_daily_review_notifications,
-    update_review_schedules,
-    cleanup_old_review_history,
-    create_review_schedule_for_content
-)
-from review.models import ReviewSchedule, ReviewHistory
-from content.models import Content
 
 User = get_user_model()
 

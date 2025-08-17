@@ -3,22 +3,22 @@ Comprehensive Celery task and background job tests
 """
 
 from datetime import timedelta
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import MagicMock, call, patch
+
+from celery.exceptions import Retry
+from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import TestCase, override_settings
 from django.utils import timezone
-from django.core import mail
-from django.contrib.auth import get_user_model
-from celery.exceptions import Retry
+
+from content.models import Content
+from review.models import ReviewHistory, ReviewSchedule
+from review.tasks import (cleanup_old_review_history,
+                          create_review_schedule_for_content,
+                          send_daily_review_notifications,
+                          update_review_schedules)
 
 from .base import BaseTestCase, TestDataMixin
-from content.models import Content
-from review.models import ReviewSchedule, ReviewHistory
-from review.tasks import (
-    create_review_schedule_for_content,
-    send_daily_review_notifications,
-    cleanup_old_review_history,
-    update_review_schedules
-)
 
 User = get_user_model()
 
@@ -401,6 +401,7 @@ class ScheduleUpdateTaskTestCase(BaseTestCase, TestDataMixin):
         
         # Inactive schedules should not be included in today's reviews
         from review.views import TodayReviewView
+
         # This would be tested in the view tests
         pass
 
@@ -450,7 +451,7 @@ class TaskPerformanceTestCase(BaseTestCase, TestDataMixin):
     def test_notification_task_performance_large_dataset(self):
         """Test notification task performance with large dataset"""
         import time
-        
+
         # Create many users with due reviews
         users = []
         for i in range(100):
