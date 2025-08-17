@@ -5,21 +5,11 @@ from rest_framework import serializers
 
 from content.models import Content
 
-from .models import (
-    AIQuestionType, 
-    AIQuestion, 
-    AIEvaluation, 
-    AIReviewSession,
-    WeeklyTest,
-    WeeklyTestQuestion,
-    InstantContentCheck,
-    LearningAnalytics,
-    AIStudyMate,
-    AISummaryNote,
-    AIWrongAnswerClinic,
-    AIAdaptiveDifficultyTest,
-    AIQuestionTransformer
-)
+from .models import (AIAdaptiveDifficultyTest, AIEvaluation, AIQuestion,
+                     AIQuestionTransformer, AIQuestionType, AIReviewSession,
+                     AIStudyMate, AISummaryNote, AIWrongAnswerClinic,
+                     InstantContentCheck, LearningAnalytics, WeeklyTest,
+                     WeeklyTestQuestion)
 
 
 class AIQuestionTypeSerializer(serializers.ModelSerializer):

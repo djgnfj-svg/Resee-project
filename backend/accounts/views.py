@@ -4,30 +4,25 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-
-from rest_framework import viewsets, status
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
-
-from resee.throttling import LoginRateThrottle, RegistrationRateThrottle, EmailRateThrottle
+from resee.throttling import (EmailRateThrottle, LoginRateThrottle,
+                              RegistrationRateThrottle)
 
 from .google_auth import GoogleAuthSerializer
-from .serializers import (
-    UserSerializer, 
-    ProfileSerializer, 
-    UserRegistrationSerializer,
-    PasswordChangeSerializer, 
-    AccountDeleteSerializer, 
-    EmailTokenObtainPairSerializer,
-    SubscriptionUpgradeSerializer
-)
+from .serializers import (AccountDeleteSerializer,
+                          EmailTokenObtainPairSerializer,
+                          PasswordChangeSerializer, ProfileSerializer,
+                          SubscriptionUpgradeSerializer,
+                          UserRegistrationSerializer, UserSerializer)
 
 User = get_user_model()
 logger = logging.getLogger(__name__)

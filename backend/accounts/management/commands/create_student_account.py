@@ -1,13 +1,15 @@
 """
 Create a student account with 10 days of learning history
 """
-from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from datetime import timedelta
 import random
-from content.models import Content, Category
-from review.models import ReviewSchedule, ReviewHistory
+from datetime import timedelta
+
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
 
 User = get_user_model()
 

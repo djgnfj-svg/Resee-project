@@ -1,12 +1,14 @@
 """
 Custom pagination classes for optimized performance
 """
-from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
-from rest_framework.response import Response
+import logging
+
+from django.conf import settings
 from django.core.paginator import Paginator
 from django.db import connection
-from django.conf import settings
-import logging
+from rest_framework.pagination import (LimitOffsetPagination,
+                                       PageNumberPagination)
+from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 

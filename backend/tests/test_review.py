@@ -3,17 +3,20 @@ Tests for review app
 """
 
 from datetime import timedelta
-from django.test import TestCase
-from django.utils import timezone
-from django.urls import reverse
+
 from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .base import BaseTestCase, BaseAPITestCase, TestDataMixin
-from review.models import ReviewSchedule, ReviewHistory
-from review.serializers import ReviewScheduleSerializer, ReviewHistorySerializer
-from content.models import Content, Category
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
+from review.serializers import (ReviewHistorySerializer,
+                                ReviewScheduleSerializer)
+
+from .base import BaseAPITestCase, BaseTestCase, TestDataMixin
 
 User = get_user_model()
 

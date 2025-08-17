@@ -3,11 +3,11 @@ Environment variable validation for Resee Django application.
 Ensures all required environment variables are properly configured for different environments.
 """
 
-import os
 import logging
+import os
 import re
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
-from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 

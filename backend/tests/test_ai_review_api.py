@@ -2,17 +2,17 @@
 Tests for AI Review API endpoints
 """
 import json
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
+
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient
 
-from content.models import Content, Category
-from ai_review.models import AIQuestionType, AIQuestion, AIEvaluation
+from ai_review.models import AIEvaluation, AIQuestion, AIQuestionType
 from ai_review.services import AIServiceError
-
+from content.models import Category, Content
 
 User = get_user_model()
 

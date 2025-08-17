@@ -2,18 +2,19 @@
 Base test utilities and fixtures for Resee backend tests
 """
 
-from django.test import TestCase
+import io
+import os
+import tempfile
+
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
-import io
-import tempfile
-import os
 
-from content.models import Content, Category
-from review.models import ReviewSchedule, ReviewHistory
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
 
 User = get_user_model()
 

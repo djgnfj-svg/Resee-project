@@ -2,13 +2,16 @@
 Celery tasks for monitoring data collection and processing
 """
 import logging
+
 import psutil
 from celery import shared_task
-from django.utils import timezone
 from django.core.cache import cache
 from django.db import transaction
-from .models import SystemHealth, APIMetrics
-from .utils import get_cache_stats, get_database_stats, clean_old_metrics, batch_insert_metrics
+from django.utils import timezone
+
+from .models import APIMetrics, SystemHealth
+from .utils import (batch_insert_metrics, clean_old_metrics, get_cache_stats,
+                    get_database_stats)
 
 logger = logging.getLogger('monitoring')
 
@@ -177,8 +180,9 @@ def generate_performance_report():
     Generate daily performance report and detect anomalies
     """
     try:
-        from .utils import get_performance_insights, calculate_performance_score
-        
+        from .utils import (calculate_performance_score,
+                            get_performance_insights)
+
         # Get insights for the last 24 hours
         insights = get_performance_insights(24)
         
@@ -236,7 +240,7 @@ def alert_on_errors():
     """
     try:
         from .models import ErrorLog
-        
+
         # Check for critical errors in the last hour
         one_hour_ago = timezone.now() - timezone.timedelta(hours=1)
         critical_errors = ErrorLog.objects.filter(

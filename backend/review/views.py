@@ -1,23 +1,28 @@
-from rest_framework import viewsets, status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from django.utils import timezone
+import logging
+from datetime import timedelta
+
 from django.db import transaction
 from django.db.models import Q
-from datetime import timedelta
-from drf_yasg.utils import swagger_auto_schema
+from django.utils import timezone
 from drf_yasg import openapi
-from .models import ReviewSchedule, ReviewHistory
-from .serializers import ReviewScheduleSerializer, ReviewHistorySerializer
-from .utils import get_review_intervals, calculate_success_rate, get_today_reviews_count
-from resee.pagination import ReviewPagination, OptimizedPageNumberPagination
-import logging
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from resee.mixins import UserOwnershipMixin
+from resee.pagination import OptimizedPageNumberPagination, ReviewPagination
+
+from .models import ReviewHistory, ReviewSchedule
+from .serializers import ReviewHistorySerializer, ReviewScheduleSerializer
+from .utils import (calculate_success_rate, get_review_intervals,
+                    get_today_reviews_count)
 
 logger = logging.getLogger(__name__)
 
 
-class ReviewScheduleViewSet(viewsets.ModelViewSet):
+class ReviewScheduleViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     """
     복습 스케줄 관리
     
@@ -27,10 +32,9 @@ class ReviewScheduleViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewScheduleSerializer
     pagination_class = ReviewPagination
     
-    def get_queryset(self):
-        return ReviewSchedule.objects.filter(user=self.request.user)\
-            .select_related('content', 'content__category', 'user')\
-            .prefetch_related('content__ai_questions')
+    # Query optimization configuration
+    select_related_fields = ['content', 'content__category', 'user']
+    prefetch_related_fields = ['content__ai_questions']
     
     @swagger_auto_schema(
         operation_summary="복습 스케줄 목록 조회",
@@ -41,7 +45,7 @@ class ReviewScheduleViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
 
-class ReviewHistoryViewSet(viewsets.ModelViewSet):
+class ReviewHistoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     """
     복습 기록 관리
     
@@ -51,10 +55,11 @@ class ReviewHistoryViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewHistorySerializer
     pagination_class = ReviewPagination
     
+    # Query optimization configuration
+    select_related_fields = ['content', 'content__category', 'user']
+    
     def get_queryset(self):
-        return ReviewHistory.objects.filter(user=self.request.user)\
-            .select_related('content', 'content__category', 'user')\
-            .order_by('-reviewed_at')
+        return super().get_queryset().order_by('-reviewed_at')
     
     @swagger_auto_schema(
         operation_summary="복습 기록 목록 조회",
@@ -64,8 +69,6 @@ class ReviewHistoryViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
     
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
 
 
 class TodayReviewView(APIView):
@@ -339,9 +342,10 @@ class CategoryReviewStatsView(APIView):
     )
     def get(self, request):
         """Get review stats by category - optimized version"""
-        from content.models import Category
         from django.db.models import Q
-        
+
+        from content.models import Category
+
         # Get user-accessible categories
         categories = Category.objects.filter(
             Q(user=None) | Q(user=request.user)

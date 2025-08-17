@@ -1,8 +1,8 @@
 """
 Email-related models for tracking and management
 """
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 from django.utils import timezone
 
 User = get_user_model()
@@ -138,8 +138,8 @@ class EmailTemplate(models.Model):
         """
         Render template with context variables
         """
-        from django.template import Template, Context
-        
+        from django.template import Context, Template
+
         # Render subject
         subject_template = Template(self.subject)
         subject = subject_template.render(Context(context))

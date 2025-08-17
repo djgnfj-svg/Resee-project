@@ -1,15 +1,16 @@
 """
 Utility functions for monitoring and performance analysis
 """
-import re
 import hashlib
 import logging
-from typing import Dict, List, Any, Optional
-from collections import defaultdict, Counter
+import re
+import time
+from collections import Counter, defaultdict
+from typing import Any, Dict, List, Optional
+
 from django.core.cache import cache
 from django.db import connection
 from django.utils import timezone
-import time
 
 logger = logging.getLogger('monitoring')
 
@@ -387,7 +388,8 @@ def clean_old_metrics(days_to_keep: int = 30):
     """
     Clean up old metrics data to prevent database bloat
     """
-    from .models import APIMetrics, DatabaseMetrics, AIMetrics, ErrorLog, SystemHealth, UserActivity
+    from .models import (AIMetrics, APIMetrics, DatabaseMetrics, ErrorLog,
+                         SystemHealth, UserActivity)
     
     cutoff_date = timezone.now().date() - timezone.timedelta(days=days_to_keep)
     

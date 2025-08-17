@@ -1,16 +1,19 @@
 """
 Celery tasks for review app
 """
-from celery import shared_task
-from django.utils import timezone
+import logging
 from datetime import timedelta
+
+from celery import shared_task
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from django.conf import settings
+from django.utils import timezone
+
 from content.models import Content
+
 from .models import ReviewSchedule
-import logging
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -144,7 +147,7 @@ def update_review_schedules():
     """Update review schedules based on performance and adaptive spacing"""
     from .models import ReviewHistory
     from .utils import calculate_success_rate
-    
+
     # Get recent review histories to analyze performance
     recent_date = timezone.now() - timedelta(days=30)
     

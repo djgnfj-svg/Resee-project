@@ -1,15 +1,17 @@
 """
 Middleware for collecting performance metrics and monitoring data
 """
-import time
 import logging
-from django.utils import timezone
+import time
+import uuid
+
 from django.conf import settings
-from django.db import connection
 from django.core.cache import cache
+from django.db import connection
+from django.utils import timezone
+
 from .models import APIMetrics, UserActivity
 from .utils import get_client_ip, get_device_type, should_track_request
-import uuid
 
 logger = logging.getLogger('monitoring')
 

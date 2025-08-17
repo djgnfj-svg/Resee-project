@@ -3,19 +3,20 @@
 PostgreSQL에 데이터가 올바르게 저장되고 조회되는지 확인
 """
 
-import time
 import json
+import time
 from datetime import datetime, timedelta
-from django.test import TestCase, TransactionTestCase
+
 from django.contrib.auth import get_user_model
-from django.db import connection, transaction
-from django.utils import timezone
 from django.core.management import execute_from_command_line
+from django.db import connection, transaction
+from django.test import TestCase, TransactionTestCase
+from django.utils import timezone
 
 from accounts.models import User
-from content.models import Content, Category
-from review.models import ReviewSchedule, ReviewHistory
 from analytics.views import DashboardView
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
 
 User = get_user_model()
 
@@ -699,8 +700,9 @@ if __name__ == '__main__':
     print("Database verification test execution")
     print("Docker 환경에서 PostgreSQL이 실행 중인지 확인하세요.")
     
-    import django
     import os
+
+    import django
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'resee.settings')
     django.setup()
     

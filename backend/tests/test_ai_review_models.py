@@ -2,14 +2,15 @@
 Tests for AI Review models
 """
 import pytest
-from django.test import TestCase
-from django.db import IntegrityError
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from content.models import Content, Category
-from ai_review.models import AIQuestionType, AIQuestion, AIEvaluation, AIReviewSession
-from review.models import ReviewHistory
+from django.db import IntegrityError
+from django.test import TestCase
 
+from ai_review.models import (AIEvaluation, AIQuestion, AIQuestionType,
+                              AIReviewSession)
+from content.models import Category, Content
+from review.models import ReviewHistory
 
 User = get_user_model()
 

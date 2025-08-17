@@ -1,12 +1,14 @@
 """
 샘플 콘텐츠 및 리뷰 데이터 생성
 """
-from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from datetime import timedelta
 import random
-from content.models import Content, Category
+from datetime import timedelta
+
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from content.models import Category, Content
 from review.models import ReviewHistory, ReviewSchedule
 
 User = get_user_model()

@@ -4,6 +4,7 @@ Management command to update subscription tiers from 4-tier to 3-tier system
 """
 from django.core.management.base import BaseCommand
 from django.db import transaction
+
 from accounts.models import Subscription, SubscriptionTier
 
 

@@ -1,9 +1,9 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import (
-    ReviewScheduleViewSet, ReviewHistoryViewSet, 
-    TodayReviewView, CompleteReviewView, CategoryReviewStatsView
-)
+
+from .views import (CategoryReviewStatsView, CompleteReviewView,
+                    ReviewHistoryViewSet, ReviewScheduleViewSet,
+                    TodayReviewView)
 
 app_name = 'review'
 

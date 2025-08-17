@@ -3,11 +3,14 @@ Django management command to validate environment configuration.
 Usage: python manage.py validate_environment [--environment ENVIRONMENT] [--fix-warnings]
 """
 
-import os
 import json
-from django.core.management.base import BaseCommand, CommandError
+import os
+
 from django.conf import settings
-from resee.environment_validation import validate_environment, get_environment_info
+from django.core.management.base import BaseCommand, CommandError
+
+from resee.environment_validation import (get_environment_info,
+                                          validate_environment)
 
 
 class Command(BaseCommand):

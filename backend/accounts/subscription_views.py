@@ -1,18 +1,16 @@
 """
 Subscription-related views
 """
+from django.conf import settings
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from django.conf import settings
+
 from .models import Subscription, SubscriptionTier
-from .serializers import (
-    SubscriptionSerializer,
-    SubscriptionTierSerializer,
-    SubscriptionUpgradeSerializer
-)
+from .serializers import (SubscriptionSerializer, SubscriptionTierSerializer,
+                          SubscriptionUpgradeSerializer)
 
 
 @api_view(['GET'])
@@ -145,8 +143,9 @@ def subscription_upgrade(request):
             
             if not subscription:
                 logger.info("Step 2b: Creating new subscription...")
-                from django.utils import timezone
                 from datetime import timedelta
+
+                from django.utils import timezone
                 subscription = Subscription.objects.create(
                     user=user,
                     tier=SubscriptionTier.FREE
@@ -175,8 +174,9 @@ def subscription_upgrade(request):
             
             # Update subscription
             logger.info("Step 5: Updating subscription...")
-            from django.utils import timezone
             from datetime import timedelta
+
+            from django.utils import timezone
             
             old_tier = subscription.tier
             logger.info(f"Step 5a: old_tier={old_tier}")

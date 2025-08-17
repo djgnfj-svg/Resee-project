@@ -1,13 +1,14 @@
 """
 Performance optimization utilities for Resee
 """
-from django.db import models
-from django.core.cache import cache
-from django.conf import settings
-from functools import wraps
 import hashlib
 import json
 import logging
+from functools import wraps
+
+from django.conf import settings
+from django.core.cache import cache
+from django.db import models
 
 logger = logging.getLogger(__name__)
 

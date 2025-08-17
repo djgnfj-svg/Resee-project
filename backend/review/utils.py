@@ -1,9 +1,11 @@
 """
 Review system utility functions
 """
+from datetime import timedelta
+
 from django.conf import settings
 from django.utils import timezone
-from datetime import timedelta
+
 from .models import ReviewHistory
 
 
@@ -28,7 +30,7 @@ def get_review_intervals(user=None):
     """
     # Return intervals based on subscription tier
     from accounts.models import SubscriptionTier
-    
+
     # Ebbinghaus-optimized intervals for each tier
     tier_intervals = {
         SubscriptionTier.FREE: [1, 3],  # Basic spaced repetition (max 3 days)

@@ -1,17 +1,18 @@
 """
 Structured logging system for comprehensive monitoring and debugging
 """
-import logging
 import json
+import logging
 import time
 import traceback
-from functools import wraps
-from django.conf import settings
-from django.utils import timezone
-from django.contrib.auth import get_user_model
 import uuid
-from typing import Dict, Any, Optional
 from contextlib import contextmanager
+from functools import wraps
+from typing import Any, Dict, Optional
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 
 class StructuredFormatter(logging.Formatter):

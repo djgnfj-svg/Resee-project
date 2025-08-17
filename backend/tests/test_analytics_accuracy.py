@@ -1,12 +1,14 @@
 """
 Test analytics data accuracy
 """
-import pytest
-from django.utils import timezone
-from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
 from datetime import timedelta
-from content.models import Content, Category
+
+import pytest
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+from rest_framework.test import APIClient
+
+from content.models import Category, Content
 from review.models import ReviewHistory
 
 User = get_user_model()

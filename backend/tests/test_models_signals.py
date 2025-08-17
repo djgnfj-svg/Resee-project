@@ -3,18 +3,20 @@ Comprehensive tests for models, signals, and business logic
 """
 
 from datetime import timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+from django.db.models.signals import post_delete, post_save
 from django.test import TestCase, override_settings
 from django.utils import timezone
-from django.db import IntegrityError
-from django.core.exceptions import ValidationError
-from django.contrib.auth import get_user_model
+
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
+from review.utils import get_review_intervals
 
 from .base import BaseTestCase, TestDataMixin
-from content.models import Content, Category
-from review.models import ReviewSchedule, ReviewHistory
-from review.utils import get_review_intervals
-from django.db.models.signals import post_save, post_delete
 
 User = get_user_model()
 

@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import ReviewSchedule, ReviewHistory
+
+from .models import ReviewHistory, ReviewSchedule
 
 
 @admin.register(ReviewSchedule)

@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import AIQuestionType, AIQuestion, AIEvaluation, AIReviewSession
+
+from .models import AIEvaluation, AIQuestion, AIQuestionType, AIReviewSession
 
 
 @admin.register(AIQuestionType)

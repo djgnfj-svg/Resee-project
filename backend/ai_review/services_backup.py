@@ -1,14 +1,17 @@
 """
 AI service integration for question generation and answer evaluation using Claude
 """
-import anthropic
 import json
 import time
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
+
+import anthropic
 from django.conf import settings
 from django.core.cache import cache
-from .models import AIQuestion, AIEvaluation, AIQuestionType
+
 from content.models import Content
+
+from .models import AIEvaluation, AIQuestion, AIQuestionType
 
 
 class AIServiceError(Exception):

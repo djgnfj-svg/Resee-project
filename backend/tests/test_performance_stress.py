@@ -3,22 +3,23 @@
 시스템의 성능 한계를 테스트하고 병목 지점을 식별
 """
 
-import time
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
-from django.test import TestCase, TransactionTestCase, Client
+
 from django.contrib.auth import get_user_model
-from django.db import connection, transaction
-from django.utils import timezone
-from django.urls import reverse
 from django.core.management import call_command
+from django.db import connection, transaction
+from django.test import Client, TestCase, TransactionTestCase
+from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import User
-from content.models import Content, Category
-from review.models import ReviewSchedule, ReviewHistory
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
 
 User = get_user_model()
 
@@ -515,8 +516,9 @@ class StressTestCase(TransactionTestCase):
         """부하 상황에서 메모리 사용량 테스트"""
         print("\nMemory usage test")
         
-        import psutil
         import os
+
+        import psutil
         
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
@@ -576,8 +578,9 @@ if __name__ == '__main__':
     print("Performance and stress test execution")
     print("Docker 환경에서 모든 서비스가 실행 중인지 확인하세요.")
     
-    import django
     import os
+
+    import django
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'resee.settings')
     django.setup()
     

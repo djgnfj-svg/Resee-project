@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import LegalDocument, UserConsent, DataDeletionRequest, DataExportRequest, CookieConsent
+
+from .models import (CookieConsent, DataDeletionRequest, DataExportRequest,
+                     LegalDocument, UserConsent)
 
 
 @admin.register(LegalDocument)

@@ -1,11 +1,13 @@
 """
 Test cases for subscription models
 """
-import pytest
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from django.utils import timezone
 from datetime import timedelta
+
+import pytest
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.utils import timezone
+
 from accounts.models import Subscription, SubscriptionTier
 
 User = get_user_model()

@@ -2,14 +2,13 @@
 Django admin interface for monitoring models
 """
 from django.contrib import admin
-from django.utils.html import format_html
+from django.db.models import Avg, Count, Sum
 from django.urls import reverse
 from django.utils import timezone
-from django.db.models import Avg, Count, Sum
-from .models import (
-    APIMetrics, DatabaseMetrics, AIMetrics, ErrorLog, 
-    SystemHealth, UserActivity
-)
+from django.utils.html import format_html
+
+from .models import (AIMetrics, APIMetrics, DatabaseMetrics, ErrorLog,
+                     SystemHealth, UserActivity)
 
 
 @admin.register(APIMetrics)

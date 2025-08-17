@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import PaymentPlan, Payment, Subscription
+
+from .models import Payment, PaymentPlan, Subscription
 
 
 class PaymentPlanSerializer(serializers.ModelSerializer):

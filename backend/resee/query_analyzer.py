@@ -1,14 +1,15 @@
 """
 Database query performance analysis tools
 """
-import time
+import json
 import logging
+import time
+from collections import Counter, defaultdict
 from functools import wraps
-from django.db import connection, reset_queries
+
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from collections import defaultdict, Counter
-import json
+from django.db import connection, reset_queries
 
 logger = logging.getLogger('performance')
 
@@ -335,9 +336,10 @@ def profile_database_operations():
     """
     Profile common database operations to identify bottlenecks
     """
-    from content.models import Content, Category
-    from review.models import ReviewSchedule
     from django.contrib.auth import get_user_model
+
+    from content.models import Category, Content
+    from review.models import ReviewSchedule
     
     User = get_user_model()
     

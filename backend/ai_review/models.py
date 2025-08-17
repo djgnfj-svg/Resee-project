@@ -1,12 +1,12 @@
 """AI Review models for generating and evaluating interactive questions."""
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from content.models import Content
+from resee.validators import validate_choice_field, validate_required_fields
 from review.models import ReviewHistory
-
 
 User = get_user_model()
 
@@ -121,12 +121,16 @@ class AIQuestion(models.Model):
         
         # Validate multiple choice options
         if self.question_type.name == 'multiple_choice':
-            if not self.options or not isinstance(self.options, list):
-                raise ValidationError("객관식 문제는 선택지를 리스트 형태로 제공해야 합니다.")
-            if len(self.options) < 2:
-                raise ValidationError("객관식 문제는 최소 2개 이상의 선택지가 필요합니다.")
-            if self.correct_answer not in self.options:
-                raise ValidationError("정답은 선택지 중 하나여야 합니다.")
+            self._validate_multiple_choice()
+    
+    def _validate_multiple_choice(self):
+        """Validate multiple choice question format"""
+        if not self.options or not isinstance(self.options, list):
+            raise ValidationError("객관식 문제는 선택지를 리스트 형태로 제공해야 합니다.")
+        if len(self.options) < 2:
+            raise ValidationError("객관식 문제는 최소 2개 이상의 선택지가 필요합니다.")
+        if self.correct_answer not in self.options:
+            raise ValidationError("정답은 선택지 중 하나여야 합니다.")
 
 
 class AIEvaluation(models.Model):

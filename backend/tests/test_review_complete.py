@@ -2,12 +2,13 @@
 Test review completion flow and data accuracy
 """
 import pytest
-from django.utils import timezone
 from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
+from django.utils import timezone
 from rest_framework import status
-from content.models import Content, Category
-from review.models import ReviewSchedule, ReviewHistory
+from rest_framework.test import APIClient
+
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
 
 User = get_user_model()
 

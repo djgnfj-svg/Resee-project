@@ -1,5 +1,7 @@
 from django.urls import path
-from .views import DashboardView, ReviewStatsView, AdvancedAnalyticsView, LearningCalendarView
+
+from .views import (AdvancedAnalyticsView, DashboardView, LearningCalendarView,
+                    ReviewStatsView)
 
 app_name = 'analytics'
 

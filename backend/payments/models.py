@@ -1,6 +1,7 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 from django.utils import timezone
+
 from accounts.models import SubscriptionTier
 
 User = get_user_model()

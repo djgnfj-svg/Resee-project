@@ -1,10 +1,11 @@
 """
 Custom throttling classes for Resee API endpoints
 """
-from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
-from django.core.cache import cache
 import hashlib
 import time
+
+from django.core.cache import cache
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 
 class LoginRateThrottle(AnonRateThrottle):
