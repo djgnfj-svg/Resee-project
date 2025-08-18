@@ -14,8 +14,9 @@ import {
 import { toast } from 'react-hot-toast';
 import { apiClient } from '../utils/api';
 import LoadingSpinner from './LoadingSpinner';
+import { TransformedQuestion } from '../types/ai-review';
 
-interface TransformedQuestion {
+interface TransformationDisplayQuestion {
   transformed_question: string;
   transformed_answer: string;
   transformation_explanation: string;
@@ -41,6 +42,7 @@ const QuestionTransformer: React.FC<QuestionTransformerProps> = ({
   const queryClient = useQueryClient();
   const [selectedType, setSelectedType] = useState<string>('');
   const [transformedQuestion, setTransformedQuestion] = useState<TransformedQuestion | null>(null);
+  const [displayQuestion, setDisplayQuestion] = useState<TransformationDisplayQuestion | null>(null);
   const [userRating, setUserRating] = useState(0);
   const [isHelpful, setIsHelpful] = useState<boolean | null>(null);
 
@@ -217,14 +219,14 @@ const QuestionTransformer: React.FC<QuestionTransformerProps> = ({
                   </span>
                 </div>
                 <span className="text-sm text-gray-600">
-                  난이도: {transformedQuestion.difficulty_level}
+                  유형: {transformedQuestion.transformation_type}
                 </span>
               </div>
 
               {/* 변형된 문제 */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-medium text-blue-800 mb-3">변형된 문제</h4>
-                <div className="text-blue-700 mb-4">{transformedQuestion.transformed_question}</div>
+                <div className="text-blue-700 mb-4">{transformedQuestion.transformed_question_text}</div>
                 <div className="text-sm text-blue-600">
                   <strong>답안:</strong> {transformedQuestion.transformed_answer}
                 </div>
@@ -242,7 +244,7 @@ const QuestionTransformer: React.FC<QuestionTransformerProps> = ({
                   <LightBulbIcon className="h-4 w-4 mr-2" />
                   학습 효과
                 </h4>
-                <div className="text-purple-700">{transformedQuestion.learning_benefit}</div>
+                <div className="text-purple-700">{transformedQuestion.transformation_explanation}</div>
               </div>
 
               {/* 피드백 섹션 */}

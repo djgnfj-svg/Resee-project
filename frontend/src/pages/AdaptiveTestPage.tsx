@@ -12,20 +12,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { apiClient } from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
-
-interface AdaptiveTest {
-  id: number;
-  content_area: string;
-  target_questions: number;
-  current_difficulty: 'easy' | 'medium' | 'hard';
-  consecutive_correct: number;
-  consecutive_wrong: number;
-  total_questions: number;
-  correct_answers: number;
-  accuracy_rate: number;
-  started_at: string;
-  completed_at?: string;
-}
+import { AdaptiveTest, AdaptiveTestQuestion, AIQuestion } from '../types/ai-review';
 
 interface AdaptiveQuestion {
   question_text: string;
@@ -76,8 +63,7 @@ const AdaptiveTestPage: React.FC = () => {
   // 답안 제출 및 다음 문제
   const submitAnswerMutation = useMutation({
     mutationFn: async ({ test_id, user_answer }: { test_id: number; user_answer: string }) => {
-      const response = await apiClient.post('/api/ai-review/adaptive-test/answer/', {
-        test_id,
+      const response = await apiClient.post(`/api/ai-review/adaptive-test/${test_id}/answer/`, {
         user_answer
       });
       return response.data;
@@ -95,8 +81,8 @@ const AdaptiveTestPage: React.FC = () => {
         
         // 난이도 변경 알림
         if (data.difficulty_changed) {
-          const difficultyLabels = { easy: '쉬움', medium: '보통', hard: '어려움' };
-          toast.info(`난이도가 "${difficultyLabels[data.test.current_difficulty]}"으로 조절되었습니다.`);
+          const difficultyLabels: Record<string, string> = { easy: '쉬움', medium: '보통', hard: '어려움' };
+          toast.success(`난이도가 "${difficultyLabels[data.test.current_difficulty]}"으로 조절되었습니다.`);
         }
       }
     },
@@ -249,7 +235,11 @@ const AdaptiveTestPage: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-6 mb-8">
               <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{currentTest.accuracy_rate.toFixed(0)}%</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {currentTest.total_questions > 0 ? 
+                    ((currentTest.correct_answers / currentTest.total_questions) * 100).toFixed(0) : 
+                    '0'}%
+                </div>
                 <div className="text-sm text-gray-600">정답률</div>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
@@ -388,7 +378,9 @@ const AdaptiveTestPage: React.FC = () => {
           <div className="mt-6 bg-white rounded-xl shadow-lg p-4">
             <h3 className="font-medium text-gray-900 mb-3">현재 성과</h3>
             <div className="flex items-center justify-between text-sm">
-              <span>정답률: {currentTest.accuracy_rate.toFixed(0)}%</span>
+              <span>정답률: {currentTest.total_questions > 0 ? 
+                ((currentTest.correct_answers / currentTest.total_questions) * 100).toFixed(0) : 
+                '0'}%</span>
               <span>연속 정답: {currentTest.consecutive_correct}개</span>
               <span>연속 오답: {currentTest.consecutive_wrong}개</span>
             </div>

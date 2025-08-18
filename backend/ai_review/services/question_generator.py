@@ -33,7 +33,8 @@ class QuestionGeneratorService(BaseAIService):
         Returns:
             List of generated question dictionaries
         """
-        cache_key = f"ai_questions_{content.id}_{hash(tuple(question_types))}_{difficulty}_{count}"
+        content_id = content.id if content else 'general'
+        cache_key = f"ai_questions_{content_id}_{hash(tuple(question_types))}_{difficulty}_{count}"
         cached_result = cache.get(cache_key)
         if cached_result:
             return cached_result
@@ -100,12 +101,24 @@ class QuestionGeneratorService(BaseAIService):
             5: "매우 어려움"
         }
         
-        prompt = f"""
+        if content:
+            prompt = f"""
 다음 학습 콘텐츠를 바탕으로 {question_type.display_name} 문제를 {count}개 생성해주세요.
 
 **콘텐츠 정보:**
 제목: {content.title}
 내용: {content.content}
+
+**요구사항:**
+- 문제 유형: {question_type.display_name}
+- 난이도: {difficulty_map.get(difficulty, '보통')} (1-5 척도에서 {difficulty})
+- 문제 수: {count}개
+
+**응답 형식 (JSON):**
+"""
+        else:
+            prompt = f"""
+일반적인 주제로 {question_type.display_name} 문제를 {count}개 생성해주세요.
 
 **요구사항:**
 - 문제 유형: {question_type.display_name}
@@ -206,7 +219,7 @@ class QuestionGeneratorService(BaseAIService):
                     'difficulty': q_data.get('difficulty', 3),
                     'options': q_data.get('options'),
                     'question_type': question_type.name,
-                    'content_id': content.id,
+                    'content_id': content.id if content else None,
                     'processing_time_ms': processing_time,
                 }
                 

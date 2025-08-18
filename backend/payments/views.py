@@ -17,7 +17,11 @@ from .serializers import (CreatePaymentIntentSerializer,
                           CreateSubscriptionSerializer, PaymentPlanSerializer,
                           PaymentSerializer, SubscriptionSerializer,
                           UpdateSubscriptionSerializer)
-from .services import StripeService, WebhookHandler
+from .services import (
+    StripeService, WebhookHandler, CompensationHandler,
+    PaymentError, PaymentValidationError, PaymentProcessingError,
+    DuplicatePaymentError, InsufficientPermissionError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,37 +36,85 @@ class PaymentPlanListView(generics.ListAPIView):
 
 
 class CreatePaymentIntentView(APIView):
-    """결제 의도 생성 API"""
+    """결제 의도 생성 API - 강화된 예외처리"""
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
+        # 입력 데이터 검증
         serializer = CreatePaymentIntentSerializer(data=request.data)
-        if serializer.is_valid():
+        if not serializer.is_valid():
+            logger.warning(f"Invalid payment intent request from {request.user.email}: {serializer.errors}")
+            return Response({
+                'error': '입력 데이터가 유효하지 않습니다.',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # 플랜 조회 (존재하지 않으면 404 에러)
             try:
                 plan = PaymentPlan.objects.get(id=serializer.validated_data['plan_id'])
-                billing_cycle = serializer.validated_data['billing_cycle']
-                
-                intent, payment = StripeService.create_payment_intent(
-                    user=request.user,
-                    plan=plan,
-                    billing_cycle=billing_cycle
-                )
-                
+            except PaymentPlan.DoesNotExist:
                 return Response({
-                    'client_secret': intent.client_secret,
-                    'payment_id': payment.id,
-                    'amount': payment.amount,
-                    'currency': payment.currency
-                })
-                
-            except Exception as e:
-                logger.error(f"Payment intent creation failed: {e}")
-                return Response(
-                    {'error': '결제 처리 중 오류가 발생했습니다.'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    'error': '존재하지 않는 결제 플랜입니다.'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            billing_cycle = serializer.validated_data['billing_cycle']
+            
+            # 결제 의도 생성
+            intent, payment = StripeService.create_payment_intent(
+                user=request.user,
+                plan=plan,
+                billing_cycle=billing_cycle
+            )
+            
+            # 성공 응답
+            response_data = {
+                'client_secret': intent.client_secret,
+                'payment_id': payment.id,
+                'amount': str(payment.amount),
+                'currency': payment.currency,
+                'plan_name': plan.name,
+                'billing_cycle': billing_cycle
+            }
+            
+            logger.info(f"Payment intent created: user={request.user.email}, plan={plan.name}, amount={payment.amount}")
+            return Response(response_data, status=status.HTTP_201_CREATED)
+            
+        except DuplicatePaymentError as e:
+            logger.warning(f"Duplicate payment attempt: {request.user.email}")
+            return Response({
+                'error': str(e),
+                'error_code': 'DUPLICATE_PAYMENT'
+            }, status=status.HTTP_409_CONFLICT)
+            
+        except PaymentValidationError as e:
+            logger.warning(f"Payment validation error: {request.user.email} - {e}")
+            return Response({
+                'error': str(e),
+                'error_code': 'VALIDATION_ERROR'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        except InsufficientPermissionError as e:
+            logger.warning(f"Insufficient permission: {request.user.email} - {e}")
+            return Response({
+                'error': str(e),
+                'error_code': 'PERMISSION_DENIED'
+            }, status=status.HTTP_403_FORBIDDEN)
+            
+        except PaymentProcessingError as e:
+            logger.error(f"Payment processing error: {request.user.email} - {e}")
+            return Response({
+                'error': str(e),
+                'error_code': 'PROCESSING_ERROR'
+            }, status=status.HTTP_502_BAD_GATEWAY)
+            
+        except Exception as e:
+            # 예상치 못한 오류 - 로그와 함께 일반적인 메시지 반환
+            logger.error(f"Unexpected error in CreatePaymentIntentView: {request.user.email} - {e}", exc_info=True)
+            return Response({
+                'error': '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+                'error_code': 'INTERNAL_ERROR'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CreateSubscriptionView(APIView):

@@ -33,9 +33,9 @@ const SubscriptionPage: React.FC = () => {
     },
     {
       name: 'basic',
-      display_name: '베이직',
+      display_name: '베이직 (준비중)',
       max_days: 90,
-      price: 19900,
+      price: '준비중',
       features: [
         '최대 90일 복습 간격',
         '상세 통계 및 분석',
@@ -43,14 +43,16 @@ const SubscriptionPage: React.FC = () => {
         'AI 질문 생성 (일 30개)',
         'AI 서술형 평가',
         'AI 채팅',
-        '우선 이메일 지원'
-      ]
+        '우선 이메일 지원',
+        '💡 곧 출시 예정!'
+      ],
+      coming_soon: true
     },
     {
       name: 'pro',
-      display_name: '프로',
+      display_name: '프로 (준비중)',
       max_days: 180,
-      price: 39900,
+      price: '준비중',
       features: [
         '최대 180일 복습 간격 (에빙하우스 최적화)',
         '완전한 장기 기억 시스템',
@@ -62,8 +64,10 @@ const SubscriptionPage: React.FC = () => {
         '고급 카테고리 관리',
         '데이터 내보내기',
         'API 액세스',
-        '전담 고객 지원'
-      ]
+        '전담 고객 지원',
+        '💡 곧 출시 예정!'
+      ],
+      coming_soon: true
     }
   ];
 
@@ -242,12 +246,20 @@ const SubscriptionPage: React.FC = () => {
                     {tier.display_name}
                   </h3>
                   <div className="mb-4">
-                    <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                      ₩{tier.price.toLocaleString()}
-                    </span>
-                    <span className="text-gray-500 dark:text-gray-400 ml-2">
-                      /월
-                    </span>
+                    {tier.coming_soon ? (
+                      <span className="text-4xl font-bold text-orange-600 dark:text-orange-400">
+                        {tier.price}
+                      </span>
+                    ) : (
+                      <>
+                        <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                          ₩{tier.price.toLocaleString()}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400 ml-2">
+                          /월
+                        </span>
+                      </>
+                    )}
                   </div>
                   <p className="text-gray-600 dark:text-gray-400">
                     최대 {tier.max_days}일 복습 간격
@@ -266,11 +278,13 @@ const SubscriptionPage: React.FC = () => {
                 </ul>
 
                 <button
-                  onClick={() => handleTierChange(tier.name)}
-                  disabled={isCurrent || upgradeMutation.isPending}
+                  onClick={() => tier.coming_soon ? null : handleTierChange(tier.name)}
+                  disabled={isCurrent || upgradeMutation.isPending || tier.coming_soon}
                   className={`w-full py-3 px-4 rounded-lg font-medium transition-colors duration-200 ${
                     isCurrent
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                      : tier.coming_soon
+                      ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 cursor-not-allowed border-2 border-orange-300 dark:border-orange-700'
                       : tier.name === 'pro'
                       ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white hover:from-yellow-600 hover:to-orange-700'
                       : isDowngrade
@@ -278,7 +292,9 @@ const SubscriptionPage: React.FC = () => {
                       : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
                   } ${upgradeMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {upgradeMutation.isPending ? (
+                  {tier.coming_soon ? (
+                    '준비 중...'
+                  ) : upgradeMutation.isPending ? (
                     '처리 중...'
                   ) : isCurrent ? (
                     '현재 플랜'
@@ -301,6 +317,16 @@ const SubscriptionPage: React.FC = () => {
             자주 묻는 질문
           </h2>
           <div className="space-y-6">
+            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 shadow-md">
+              <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-100 mb-2">
+                💡 유료 플랜은 언제 출시되나요?
+              </h3>
+              <p className="text-orange-800 dark:text-orange-200">
+                현재 결제 시스템 개발이 완료되었지만, 사업자등록 절차를 진행 중입니다. 
+                빠른 시일 내에 서비스를 시작할 예정이니 조금만 기다려 주세요! 
+                출시 소식은 이메일로 안내해드리겠습니다.
+              </p>
+            </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 언제든지 구독을 취소할 수 있나요?

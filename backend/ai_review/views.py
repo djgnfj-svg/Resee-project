@@ -4,6 +4,7 @@ AI Review API views
 import logging
 
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, status
@@ -17,13 +18,14 @@ from content.models import Content
 from resee.structured_logging import ai_logger, log_api_call, log_performance
 from resee.throttling import AIEndpointThrottle
 
-from .models import (AIQuestion, AIQuestionType, AIReviewSession, AIStudyMate,
+from .models import (AIAdaptiveDifficultyTest, AIQuestion, AIQuestionType, AIReviewSession, AIStudyMate,
                      AISummaryNote, InstantContentCheck, LearningAnalytics,
                      WeeklyTest, WeeklyTestQuestion)
 from .serializers import (AIChatRequestSerializer,  # 새로운 시리얼라이저들
                           AIChatResponseSerializer, AIQuestionSerializer,
                           AIQuestionTypeSerializer, AIReviewSessionSerializer,
                           AIStudyMateSerializer, AISummaryNoteSerializer,
+                          AdaptiveTestStartSerializer, AdaptiveTestAnswerSerializer,
                           AnalyticsRequestSerializer,
                           BlurRegionsRequestSerializer,
                           BlurRegionsResponseSerializer,
@@ -42,9 +44,14 @@ from .serializers import (AIChatRequestSerializer,  # 새로운 시리얼라이�
                           WeeklyTestCreateSerializer,
                           WeeklyTestQuestionSerializer, WeeklyTestSerializer,
                           WeeklyTestStartSerializer)
-from .services import AIServiceError, question_generator, answer_evaluator
+from .services import AIServiceError, question_generator, answer_evaluator, QuestionGeneratorService
+from .serializers import GenerateQuestionsSerializer
 
 logger = logging.getLogger(__name__)
+
+# Initialize AI service
+from .services.question_generator import QuestionGeneratorService
+ai_service = QuestionGeneratorService()
 
 
 class AIQuestionTypeListView(ListAPIView):
@@ -82,18 +89,6 @@ class GenerateQuestionsView(APIView):
     @log_performance('ai_question_generation')
     def post(self, request):
         """Generate questions for content"""
-        # AI 서비스 미구현 알림
-        return Response(
-            {
-                'error': 'AI 서비스 미구현',
-                'detail': 'AI 질문 생성 기능은 현재 개발 중입니다. 곧 제공될 예정이니 조금만 기다려주세요! 🚀',
-                'status': 'under_development'
-            },
-            status=status.HTTP_501_NOT_IMPLEMENTED
-        )
-        
-        # 아래는 추후 구현 시 활성화할 코드
-        """
         # Check AI feature access
         if not request.user.can_use_ai_features():
             return Response(
@@ -235,7 +230,6 @@ class GenerateQuestionsView(APIView):
                 {'error': 'Failed to generate questions'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        """
 
 
 class ContentQuestionsView(ListAPIView):
@@ -1446,3 +1440,343 @@ class AISummaryNoteView(APIView):
                 {'error': 'Failed to generate summary note'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class AdaptiveTestStartView(APIView):
+    """
+    Start a new adaptive test
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        """Start an adaptive test session"""
+        # 입력 데이터 검증
+        serializer = AdaptiveTestStartSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        content_area = serializer.validated_data['content_area']
+        target_questions = serializer.validated_data['target_questions']
+        
+        # AI 기능 사용 가능 여부 확인
+        if not request.user.can_use_ai_features():
+            return Response(
+                {
+                    'error': 'AI features not available',
+                    'detail': '적응형 시험은 AI 기능입니다. 이메일 인증과 구독 업그레이드가 필요합니다.',
+                    'requires_subscription': True
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            # 새로운 적응형 시험 생성
+            adaptive_test = AIAdaptiveDifficultyTest.objects.create(
+                user=request.user,
+                content_area=content_area,
+                target_questions=target_questions,
+                current_difficulty='medium'
+            )
+            
+            # 첫 번째 질문 생성
+            first_question = self._generate_question_for_difficulty(adaptive_test.current_difficulty, content_area)
+            
+            return Response({
+                'test': {
+                    'id': adaptive_test.id,
+                    'content_area': adaptive_test.content_area,
+                    'target_questions': adaptive_test.target_questions,
+                    'current_difficulty': adaptive_test.current_difficulty,
+                    'consecutive_correct': adaptive_test.consecutive_correct,
+                    'consecutive_wrong': adaptive_test.consecutive_wrong,
+                    'total_questions': adaptive_test.total_questions,
+                    'correct_answers': adaptive_test.correct_answers,
+                    'started_at': adaptive_test.started_at.isoformat()
+                },
+                'first_question': first_question
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error starting adaptive test for user {request.user.email}: {e}")
+            return Response(
+                {'error': '시험 시작 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _generate_question_for_difficulty(self, difficulty, content_area):
+        """주어진 난이도에 맞는 질문 생성"""
+        difficulty_map = {'easy': 1, 'medium': 3, 'hard': 5}
+        difficulty_level = difficulty_map.get(difficulty, 3)
+        
+        try:
+            # AI 서비스로 질문 생성 시도
+            ai_service = QuestionGeneratorService()
+            questions = ai_service.generate_questions(
+                content=None,  # 일반적인 질문
+                question_types=['multiple_choice'],
+                difficulty=difficulty_level,
+                count=1
+            )
+            
+            if questions and len(questions) > 0:
+                question = questions[0]
+                return {
+                    'question_text': question.get('question_text', f'{content_area}에 대한 질문입니다.'),
+                    'question_type': 'multiple_choice',
+                    'options': question.get('options', ['옵션 1', '옵션 2', '옵션 3', '옵션 4']),
+                    'correct_answer': question.get('correct_answer', '옵션 1'),
+                    'difficulty': difficulty,
+                    'explanation': question.get('explanation', ''),
+                    'estimated_time': '60'
+                }
+        except Exception as e:
+            logger.warning(f"Failed to generate AI question, using fallback: {e}")
+        
+        # AI 서비스 실패 시 기본 질문 반환
+        return self._get_fallback_question(difficulty, content_area)
+    
+    def _get_fallback_question(self, difficulty, content_area):
+        """AI 서비스 실패 시 사용할 기본 질문"""
+        questions_by_difficulty = {
+            'easy': {
+                'question_text': f'{content_area} 기초: 다음 중 가장 기본적인 개념은 무엇입니까?',
+                'options': ['기초 개념 A', '기초 개념 B', '기초 개념 C', '기초 개념 D'],
+                'correct_answer': '기초 개념 A',
+                'estimated_time': '30'
+            },
+            'medium': {
+                'question_text': f'{content_area} 응용: 다음 상황에서 가장 적절한 접근 방법은?',
+                'options': ['방법 A', '방법 B', '방법 C', '방법 D'],
+                'correct_answer': '방법 A',
+                'estimated_time': '60'
+            },
+            'hard': {
+                'question_text': f'{content_area} 고급: 복잡한 상황에서 최적의 해결책을 분석해보세요.',
+                'options': ['복합 해결책 A', '복합 해결책 B', '복합 해결책 C', '복합 해결책 D'],
+                'correct_answer': '복합 해결책 A',
+                'estimated_time': '90'
+            }
+        }
+        
+        base_question = questions_by_difficulty.get(difficulty, questions_by_difficulty['medium'])
+        return {
+            'question_text': base_question['question_text'],
+            'question_type': 'multiple_choice',
+            'options': base_question['options'],
+            'correct_answer': base_question['correct_answer'],
+            'difficulty': difficulty,
+            'explanation': f'이것은 {difficulty} 난이도의 {content_area} 문제입니다.',
+            'estimated_time': base_question['estimated_time']
+        }
+
+
+class AdaptiveTestAnswerView(APIView):
+    """
+    Submit an answer for adaptive test
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request, test_id):
+        """Submit answer and get next question"""
+        # 입력 데이터 검증
+        user_answer = request.data.get('user_answer')
+        time_spent_seconds = request.data.get('time_spent_seconds', 0)
+        
+        if not user_answer:
+            return Response(
+                {'error': 'user_answer is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # 적응형 시험 조회 및 소유권 확인
+            adaptive_test = get_object_or_404(
+                AIAdaptiveDifficultyTest,
+                id=test_id,
+                user=request.user,
+                completed_at__isnull=True  # 완료되지 않은 시험만
+            )
+            
+            # 답안의 정확성 판단 (실제로는 AI 평가나 정답 비교)
+            # 현재는 간단한 로직으로 처리
+            is_correct = self._evaluate_answer(user_answer, adaptive_test.content_area)
+            
+            # 난이도 조절 로직
+            old_difficulty = adaptive_test.current_difficulty
+            adaptive_test = self._update_test_state(adaptive_test, is_correct)
+            difficulty_changed = old_difficulty != adaptive_test.current_difficulty
+            
+            # 시험 완료 여부 확인
+            is_completed = adaptive_test.total_questions >= adaptive_test.target_questions
+            
+            if is_completed:
+                # 시험 완료 처리
+                adaptive_test.completed_at = timezone.now()
+                adaptive_test.final_difficulty_level = adaptive_test.current_difficulty
+                adaptive_test.estimated_proficiency = self._calculate_proficiency(adaptive_test)
+                adaptive_test.save()
+                
+                return Response({
+                    'test': self._serialize_test(adaptive_test),
+                    'is_completed': True,
+                    'final_results': {
+                        'accuracy_rate': adaptive_test.accuracy_rate,
+                        'final_difficulty': adaptive_test.final_difficulty_level,
+                        'estimated_proficiency': adaptive_test.estimated_proficiency
+                    }
+                })
+            else:
+                # 다음 질문 생성
+                next_question = self._generate_question_for_difficulty(
+                    adaptive_test.current_difficulty,
+                    adaptive_test.content_area
+                )
+                
+                return Response({
+                    'test': self._serialize_test(adaptive_test),
+                    'next_question': next_question,
+                    'is_completed': False,
+                    'difficulty_changed': difficulty_changed,
+                    'is_correct': is_correct
+                })
+                
+        except Exception as e:
+            logger.error(f"Error in adaptive test answer submission: {e}")
+            return Response(
+                {'error': '답안 처리 중 오류가 발생했습니다.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _evaluate_answer(self, user_answer, content_area):
+        """답안 평가 (간단한 로직, 추후 AI 평가로 대체 가능)"""
+        # 현재는 간단한 규칙 기반 평가
+        # 실제로는 AI 서비스를 통해 더 정교한 평가를 수행
+        
+        # 임시 로직: 특정 키워드가 포함되어 있으면 정답으로 간주
+        positive_keywords = ['A', '방법 A', '기초 개념 A', '복합 해결책 A']
+        return any(keyword in user_answer for keyword in positive_keywords)
+    
+    def _update_test_state(self, adaptive_test, is_correct):
+        """시험 상태 업데이트 및 난이도 조절"""
+        # 문제 수 및 정답 수 업데이트
+        adaptive_test.total_questions += 1
+        if is_correct:
+            adaptive_test.correct_answers += 1
+            adaptive_test.consecutive_correct += 1
+            adaptive_test.consecutive_wrong = 0
+        else:
+            adaptive_test.consecutive_correct = 0
+            adaptive_test.consecutive_wrong += 1
+        
+        # 난이도 조절 로직
+        if adaptive_test.consecutive_correct >= 3:
+            # 3개 연속 정답 → 난이도 상승
+            if adaptive_test.current_difficulty == 'easy':
+                adaptive_test.current_difficulty = 'medium'
+            elif adaptive_test.current_difficulty == 'medium':
+                adaptive_test.current_difficulty = 'hard'
+            adaptive_test.consecutive_correct = 0
+            
+        elif adaptive_test.consecutive_wrong >= 2:
+            # 2개 연속 오답 → 난이도 하락
+            if adaptive_test.current_difficulty == 'hard':
+                adaptive_test.current_difficulty = 'medium'
+            elif adaptive_test.current_difficulty == 'medium':
+                adaptive_test.current_difficulty = 'easy'
+            adaptive_test.consecutive_wrong = 0
+        
+        adaptive_test.save()
+        return adaptive_test
+    
+    def _calculate_proficiency(self, adaptive_test):
+        """숙련도 계산"""
+        accuracy_rate = adaptive_test.accuracy_rate
+        difficulty_bonus = {
+            'easy': 0,
+            'medium': 10,
+            'hard': 20
+        }.get(adaptive_test.final_difficulty_level, 0)
+        
+        # 정확도 + 최종 난이도 보너스
+        proficiency = min(100, accuracy_rate + difficulty_bonus)
+        return proficiency
+    
+    def _serialize_test(self, adaptive_test):
+        """시험 데이터 시리얼라이즈"""
+        return {
+            'id': adaptive_test.id,
+            'content_area': adaptive_test.content_area,
+            'target_questions': adaptive_test.target_questions,
+            'current_difficulty': adaptive_test.current_difficulty,
+            'consecutive_correct': adaptive_test.consecutive_correct,
+            'consecutive_wrong': adaptive_test.consecutive_wrong,
+            'total_questions': adaptive_test.total_questions,
+            'correct_answers': adaptive_test.correct_answers,
+            'estimated_proficiency': adaptive_test.estimated_proficiency,
+            'started_at': adaptive_test.started_at.isoformat()
+        }
+    
+    def _generate_question_for_difficulty(self, difficulty, content_area):
+        """AdaptiveTestStartView와 동일한 로직"""
+        difficulty_map = {'easy': 1, 'medium': 3, 'hard': 5}
+        difficulty_level = difficulty_map.get(difficulty, 3)
+        
+        try:
+            ai_service = QuestionGeneratorService()
+            questions = ai_service.generate_questions(
+                content=None,
+                question_types=['multiple_choice'],
+                difficulty=difficulty_level,
+                count=1
+            )
+            
+            if questions and len(questions) > 0:
+                question = questions[0]
+                return {
+                    'question_text': question.get('question_text', f'{content_area}에 대한 질문입니다.'),
+                    'question_type': 'multiple_choice',
+                    'options': question.get('options', ['옵션 1', '옵션 2', '옵션 3', '옵션 4']),
+                    'correct_answer': question.get('correct_answer', '옵션 1'),
+                    'difficulty': difficulty,
+                    'explanation': question.get('explanation', ''),
+                    'estimated_time': '60'
+                }
+        except Exception as e:
+            logger.warning(f"Failed to generate AI question, using fallback: {e}")
+        
+        # AI 서비스 실패 시 기본 질문 반환
+        return self._get_fallback_question(difficulty, content_area)
+    
+    def _get_fallback_question(self, difficulty, content_area):
+        """기본 질문 생성"""
+        questions_by_difficulty = {
+            'easy': {
+                'question_text': f'{content_area} 기초: 다음 중 가장 기본적인 개념은 무엇입니까?',
+                'options': ['기초 개념 A', '기초 개념 B', '기초 개념 C', '기초 개념 D'],
+                'correct_answer': '기초 개념 A',
+                'estimated_time': '30'
+            },
+            'medium': {
+                'question_text': f'{content_area} 응용: 다음 상황에서 가장 적절한 접근 방법은?',
+                'options': ['방법 A', '방법 B', '방법 C', '방법 D'],
+                'correct_answer': '방법 A',
+                'estimated_time': '60'
+            },
+            'hard': {
+                'question_text': f'{content_area} 고급: 복잡한 상황에서 최적의 해결책을 분석해보세요.',
+                'options': ['복합 해결책 A', '복합 해결책 B', '복합 해결책 C', '복합 해결책 D'],
+                'correct_answer': '복합 해결책 A',
+                'estimated_time': '90'
+            }
+        }
+        
+        base_question = questions_by_difficulty.get(difficulty, questions_by_difficulty['medium'])
+        return {
+            'question_text': base_question['question_text'],
+            'question_type': 'multiple_choice',
+            'options': base_question['options'],
+            'correct_answer': base_question['correct_answer'],
+            'difficulty': difficulty,
+            'explanation': f'이것은 {difficulty} 난이도의 {content_area} 문제입니다.',
+            'estimated_time': base_question['estimated_time']
+        }
