@@ -33,9 +33,9 @@ const SubscriptionPage: React.FC = () => {
     },
     {
       name: 'basic',
-      display_name: '베이직 (준비중)',
+      display_name: '베이직 (테스트 모드)',
       max_days: 90,
-      price: '준비중',
+      price: 9900,
       features: [
         '최대 90일 복습 간격',
         '상세 통계 및 분석',
@@ -44,15 +44,15 @@ const SubscriptionPage: React.FC = () => {
         'AI 서술형 평가',
         'AI 채팅',
         '우선 이메일 지원',
-        '💡 곧 출시 예정!'
+        '💳 테스트 모드로 결제 가능!'
       ],
-      coming_soon: true
+      coming_soon: false
     },
     {
       name: 'pro',
-      display_name: '프로 (준비중)',
+      display_name: '프로 (테스트 모드)',
       max_days: 180,
-      price: '준비중',
+      price: 19900,
       features: [
         '최대 180일 복습 간격 (에빙하우스 최적화)',
         '완전한 장기 기억 시스템',
@@ -65,9 +65,9 @@ const SubscriptionPage: React.FC = () => {
         '데이터 내보내기',
         'API 액세스',
         '전담 고객 지원',
-        '💡 곧 출시 예정!'
+        '💳 테스트 모드로 결제 가능!'
       ],
-      coming_soon: true
+      coming_soon: false
     }
   ];
 
@@ -317,14 +317,14 @@ const SubscriptionPage: React.FC = () => {
             자주 묻는 질문
           </h2>
           <div className="space-y-6">
-            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 shadow-md">
-              <h3 className="text-lg font-semibold text-orange-900 dark:text-orange-100 mb-2">
-                💡 유료 플랜은 언제 출시되나요?
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 shadow-md">
+              <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">
+                💳 테스트 모드 활성화!
               </h3>
-              <p className="text-orange-800 dark:text-orange-200">
-                현재 결제 시스템 개발이 완료되었지만, 사업자등록 절차를 진행 중입니다. 
-                빠른 시일 내에 서비스를 시작할 예정이니 조금만 기다려 주세요! 
-                출시 소식은 이메일로 안내해드리겠습니다.
+              <p className="text-green-800 dark:text-green-200">
+                포트폴리오 시연을 위해 테스트 모드가 활성화되었습니다. 
+                실제 결제 없이 결제 프로세스를 체험해볼 수 있습니다. 
+                테스트 카드 번호 <strong>4242 4242 4242 4242</strong>를 사용하여 결제를 시도해보세요!
               </p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md">
