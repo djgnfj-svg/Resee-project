@@ -250,7 +250,7 @@ CORS_ALLOW_ALL_ORIGINS = False  # Will be overridden in development
 
 # AI Service Configuration
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
-AI_MODEL_NAME = 'claude-3-sonnet-20240229'
+AI_MODEL_NAME = 'claude-3-haiku-20240307'
 AI_MAX_TOKENS = 4000
 AI_TEMPERATURE = 0.7
 

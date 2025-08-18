@@ -6,6 +6,7 @@ import { contentAPI } from '../utils/api';
 import { Content, Category, CreateContentData, UpdateContentData } from '../types';
 import { extractResults } from '../utils/helpers';
 import ContentFormV2 from '../components/ContentFormV2';
+import AIQuestionModal from '../components/AIQuestionModal';
 import { useAuth } from '../contexts/AuthContext';
 
 const ContentPage: React.FC = () => {
@@ -109,11 +110,8 @@ const ContentPage: React.FC = () => {
   };
 
   const handleAIReview = (content: Content) => {
-    // AI 서비스 미구현 알림
-    alert('AI 학습 기능은 현재 개발 중입니다.\n곧 제공될 예정이니 조금만 기다려주세요! 🚀');
-    
-    // 임시로 주석 처리 (추후 구현 시 활성화)
-    // setAIReviewContent(content);
+    // AI 리뷰 콘텐츠 설정
+    setAIReviewContent(content);
   };
 
   const handleAIReviewComplete = () => {
@@ -194,6 +192,11 @@ const ContentPage: React.FC = () => {
           </button>
         </div>
 
+        {/* AI Question Modal */}
+        <AIQuestionModal
+          content={aiReviewContent}
+          onClose={handleAIReviewComplete}
+        />
       </div>
     );
   }
@@ -458,6 +461,14 @@ const ContentPage: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* AI Question Modal */}
+      {aiReviewContent && (
+        <AIQuestionModal
+          content={aiReviewContent}
+          onClose={handleAIReviewComplete}
+        />
       )}
     </div>
   );

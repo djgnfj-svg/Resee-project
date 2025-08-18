@@ -192,8 +192,9 @@ export interface SubscriptionTierInfo {
   name: SubscriptionTier;
   display_name: string;
   max_days: number;
-  price: number;
+  price: number | string;
   features: string[];
+  coming_soon?: boolean;
 }
 
 export interface SubscriptionUpgradeData {

@@ -35,4 +35,8 @@ urlpatterns = [
     
     # Explanation evaluation
     path('evaluate-explanation/', views.ExplanationEvaluationView.as_view(), name='evaluate-explanation'),
+    
+    # Adaptive test
+    path('adaptive-test/start/', views.AdaptiveTestStartView.as_view(), name='adaptive-test-start'),
+    path('adaptive-test/<int:test_id>/answer/', views.AdaptiveTestAnswerView.as_view(), name='adaptive-test-answer'),
 ]

@@ -209,6 +209,49 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+// Adaptive Test Types
+export interface AdaptiveTest {
+  id: number;
+  user: number;
+  content_area: string;
+  target_questions: number;
+  current_difficulty: 'easy' | 'medium' | 'hard';
+  consecutive_correct: number;
+  consecutive_wrong: number;
+  total_questions: number;
+  correct_answers: number;
+  final_difficulty_level?: string;
+  estimated_proficiency?: number;
+  accuracy_rate?: number;
+  started_at: string;
+  completed_at?: string;
+}
+
+export interface AdaptiveTestQuestion {
+  id: number;
+  adaptive_test: number;
+  ai_question: AIQuestion;
+  order: number;
+  user_answer?: string;
+  is_correct?: boolean;
+  ai_score?: number;
+  time_spent_seconds?: number;
+  answered_at?: string;
+}
+
+// Question Transformer Types
+export interface TransformedQuestion {
+  id: number;
+  original_question: number;
+  transformation_type: 'reverse' | 'practical' | 'comparison' | 'troubleshoot' | 'analogy' | 'step_by_step';
+  transformed_question_text: string;
+  transformed_answer: string;
+  transformation_explanation?: string;
+  user_rating?: number;
+  is_helpful?: boolean;
+  created_at: string;
+}
+
 // Pagination for list responses
 export interface PaginatedResponse<T> {
   count: number;
