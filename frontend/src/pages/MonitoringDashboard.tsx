@@ -16,9 +16,12 @@ import { ErrorLogTable } from '../components/monitoring/ErrorLogTable';
 import { AlertPanel } from '../components/monitoring/AlertPanel';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useDashboardOverview, useAlertHistory, useAlertStatistics } from '../hooks/monitoring/useMonitoring';
+import { useAuth } from '../contexts/AuthContext';
+import { hasPermission, getUserRole } from '../utils/permissions';
 import type { MonitoringFilters } from '../types/monitoring';
 
 const MonitoringDashboard: React.FC = () => {
+  const { user } = useAuth();
   const [filters, setFilters] = useState<MonitoringFilters>({
     timeRange: '24h',
   });
@@ -93,10 +96,10 @@ const MonitoringDashboard: React.FC = () => {
 
   const tabs = [
     { id: 'overview', name: '개요', icon: ChartBarIcon },
-    { id: 'alerts', name: '알림', icon: BellIcon },
+    { id: 'alerts', name: '알림', icon: BellIcon, requiresPermission: true },
     { id: 'system', name: '시스템', icon: ServerIcon },
-    { id: 'logs', name: '로그', icon: ExclamationTriangleIcon },
-  ];
+    { id: 'logs', name: '로그', icon: ExclamationTriangleIcon, requiresPermission: true },
+  ].filter(tab => !tab.requiresPermission || hasPermission.manageAlerts(user));
 
   return (
     <Layout>
@@ -108,17 +111,22 @@ const MonitoringDashboard: React.FC = () => {
               시스템 모니터링
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              실시간 시스템 상태 및 알림 관리
+              실시간 시스템 상태 및 알림 관리 
+              <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                {getUserRole(user)}
+              </span>
             </p>
           </div>
           <div className="mt-4 flex md:ml-4 md:mt-0">
-            <button
-              type="button"
-              className="inline-flex items-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <Cog6ToothIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
-              설정
-            </button>
+            {hasPermission.manageAlerts(user) && (
+              <button
+                type="button"
+                className="inline-flex items-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                <Cog6ToothIcon className="-ml-0.5 mr-1.5 h-5 w-5" />
+                설정
+              </button>
+            )}
           </div>
         </div>
 

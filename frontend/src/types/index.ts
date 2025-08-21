@@ -3,6 +3,8 @@ export interface User {
   email: string;
   username?: string;
   is_email_verified: boolean;
+  is_staff?: boolean;
+  is_superuser?: boolean;
   created_at: string;
   updated_at: string;
   subscription?: Subscription;
