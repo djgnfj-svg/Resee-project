@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'ai_review',
     'monitoring',
     'alerts',
+    'business_intelligence',
     'payments',
     'legal',
 ]
@@ -233,6 +234,27 @@ CELERY_BEAT_SCHEDULE = {
     'update-alert-metrics-cache': {
         'task': 'alerts.tasks.update_alert_metrics_cache',
         'schedule': crontab(minute='*/5'),  # Every 5 minutes
+    },
+    # Business Intelligence tasks
+    'collect-daily-learning-patterns': {
+        'task': 'bi.collect_daily_learning_patterns',
+        'schedule': crontab(hour=0, minute=30),  # Daily at 12:30 AM
+    },
+    'update-content-effectiveness': {
+        'task': 'bi.update_content_effectiveness',
+        'schedule': crontab(hour=1, minute=30),  # Daily at 1:30 AM
+    },
+    'update-subscription-analytics': {
+        'task': 'bi.update_subscription_analytics',
+        'schedule': crontab(hour=2, minute=30),  # Daily at 2:30 AM
+    },
+    'collect-system-metrics': {
+        'task': 'bi.collect_system_metrics',
+        'schedule': crontab(hour=0, minute=15),  # Daily at 12:15 AM
+    },
+    'cleanup-old-analytics-data': {
+        'task': 'bi.cleanup_old_analytics_data',
+        'schedule': crontab(hour=5, minute=0, day_of_month=1),  # Monthly on 1st day at 5 AM
     },
 }
 
