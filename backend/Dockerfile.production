@@ -25,7 +25,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir \
     gunicorn==21.2.0 \
     whitenoise==6.6.0 \
-    sentry-sdk[django]==1.40.0
+    sentry-sdk[django]==1.40.0 \
+    dj-database-url==2.1.0 \
+    psycopg2-binary==2.9.9
 
 # 애플리케이션 코드 복사
 COPY . .
@@ -48,9 +50,9 @@ USER appuser
 # 포트 노출
 EXPOSE 8000
 
-# 헬스체크 설정
+# 헬스체크 설정 (wget도 대안으로 추가)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health/ || exit 1
+    CMD curl -f http://localhost:8000/api/health/ || wget -q --spider http://localhost:8000/api/health/ || exit 1
 
 # 기본 명령어
 CMD ["gunicorn", "resee.wsgi:application", "--bind", "0.0.0.0:8000"]

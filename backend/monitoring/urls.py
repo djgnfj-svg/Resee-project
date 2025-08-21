@@ -4,12 +4,19 @@ URL configuration for monitoring app
 from django.urls import path
 
 from . import views
+from .health import health_check_basic, health_check_detailed, readiness_check, liveness_check
 
 app_name = 'monitoring'
 
 urlpatterns = [
-    # Public health check
-    path('health/', views.health_check, name='health_check'),
+    # Health check endpoints
+    path('health/', health_check_basic, name='health_check_basic'),
+    path('health/detailed/', health_check_detailed, name='health_check_detailed'),
+    path('ready/', readiness_check, name='readiness_check'),
+    path('alive/', liveness_check, name='liveness_check'),
+    
+    # Legacy health check
+    path('health-legacy/', views.health_check, name='health_check_legacy'),
     
     # Admin dashboard endpoints
     path('dashboard/', views.dashboard_overview, name='dashboard_overview'),

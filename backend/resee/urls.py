@@ -51,6 +51,10 @@ urlpatterns = [
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     
+    # Health check endpoints (root level for load balancers)
+    path('health/', include('monitoring.urls')),
+    path('api/health/', include('monitoring.urls')),
+    
     # API endpoints
     path('api/accounts/', include('accounts.urls')),
     path('api/content/', include('content.urls')),

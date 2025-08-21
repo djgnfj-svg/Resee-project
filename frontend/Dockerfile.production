@@ -48,9 +48,9 @@ USER nextjs
 # 포트 노출
 EXPOSE 3000
 
-# 헬스체크 설정
+# 헬스체크 설정 (wget도 대안으로 추가)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:3000 || exit 1
+    CMD curl -f http://localhost:3000 || wget -q --spider http://localhost:3000 || exit 1
 
 # React 앱 서빙
 CMD ["serve", "-s", "build", "-l", "3000"]
