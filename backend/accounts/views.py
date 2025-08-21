@@ -16,6 +16,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from resee.throttling import (EmailRateThrottle, LoginRateThrottle,
                               RegistrationRateThrottle)
+from resee.error_handlers import APIErrorHandler, StandardAPIResponse
+from resee.permissions import EmailVerifiedRequired
 
 from .google_auth import GoogleAuthSerializer
 from .serializers import (AccountDeleteSerializer,
@@ -140,55 +142,33 @@ class UserViewSet(viewsets.ModelViewSet):
                     user.save()
                     logger.info(f"개발 환경: {user.email} 자동 이메일 인증 완료")
                     
-                    return Response(
-                        {
-                            'message': '회원가입이 완료되었습니다!',
+                    return StandardAPIResponse.created(
+                        data={
                             'user': UserSerializer(user).data,
                             'requires_email_verification': False
                         },
-                        status=status.HTTP_201_CREATED
+                        message='회원가입이 완료되었습니다!'
                     )
                 else:
                     # 프로덕션 환경에서는 이메일 인증 필요
                     from .tasks import send_verification_email
                     send_verification_email.delay(user.id)
                     
-                    return Response(
-                        {
-                            'message': '회원가입이 완료되었습니다. 이메일을 확인하여 인증을 완료해주세요.',
+                    return StandardAPIResponse.created(
+                        data={
                             'user': UserSerializer(user).data,
                             'requires_email_verification': True
                         },
-                        status=status.HTTP_201_CREATED
+                        message='회원가입이 완료되었습니다. 이메일을 확인하여 인증을 완료해주세요.'
                     )
             except Exception as e:
                 logger.error(f"회원가입 실패: {str(e)}")
-                return Response(
-                    {
-                        'error': '회원가입 중 오류가 발생했습니다.',
-                        'details': str(e)
-                    },
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+                return APIErrorHandler.server_error('회원가입 중 오류가 발생했습니다.')
         
         # 상세한 에러 정보 로깅
         logger.error(f"회원가입 유효성 검사 실패: {serializer.errors}")
         
-        # 에러 메시지를 한국어로 변환
-        error_messages = {}
-        for field, errors in serializer.errors.items():
-            if isinstance(errors, list):
-                error_messages[field] = errors
-            else:
-                error_messages[field] = [str(errors)]
-        
-        return Response(
-            {
-                'error': '입력 정보를 확인해주세요.',
-                'field_errors': error_messages
-            },
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return APIErrorHandler.validation_error(serializer.errors)
 
 
 class ProfileView(APIView):

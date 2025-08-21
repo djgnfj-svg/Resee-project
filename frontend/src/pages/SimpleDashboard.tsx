@@ -3,6 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { analyticsAPI } from '../utils/api';
 import { DashboardData } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EmptyDashboard from '../components/dashboard/EmptyDashboard';
+import ErrorDashboard from '../components/dashboard/ErrorDashboard';
+import DashboardHero from '../components/dashboard/DashboardHero';
+import StatsCard from '../components/dashboard/StatsCard';
 
 const SimpleDashboard: React.FC = () => {
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
