@@ -167,7 +167,7 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
         editor.commands.setContent(htmlContent);
       }
     }
-  }, [content, editor, convertToMarkdown, convertFromMarkdown]);
+  }, [content, editor]);
 
 
   const addLink = useCallback(() => {

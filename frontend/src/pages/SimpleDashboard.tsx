@@ -9,12 +9,9 @@ import DashboardHero from '../components/dashboard/DashboardHero';
 import StatsCard from '../components/dashboard/StatsCard';
 
 const SimpleDashboard: React.FC = () => {
-  const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
+  const { data: dashboardData, isLoading, error, refetch } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
     queryFn: analyticsAPI.getDashboard,
-    onError: (error: any) => {
-      alert('Error: ' + (error.userMessage || '대시보드 데이터를 불러오는데 실패했습니다.'));
-    },
   });
 
   if (isLoading) {
@@ -31,46 +28,14 @@ const SimpleDashboard: React.FC = () => {
      dashboardData.total_content === 0 && 
      dashboardData.total_reviews_30_days === 0);
 
-  if (hasNoData) {
-    return (
-      <div className="max-w-md mx-auto mt-8 text-center py-16">
-        <div className="text-6xl mb-4">📚</div>
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-          학습을 시작해보세요!
-        </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          첫 콘텐츠를 추가하고 복습을 시작하면<br />
-          여기에 학습 현황이 표시됩니다.
-        </p>
-        <div className="space-x-4">
-          <a 
-            href="/content" 
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            첫 콘텐츠 추가하기
-          </a>
-        </div>
-      </div>
-    );
+  if (error) {
+    return <ErrorDashboard onRetry={() => refetch()} />;
   }
 
-  if (error) {
-    return (
-      <div className="max-w-md mx-auto mt-8 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
-        <div className="text-4xl mb-4">😞</div>
-        <h3 className="text-lg font-semibold text-red-800 dark:text-red-300 mb-2">데이터를 불러올 수 없습니다</h3>
-        <p className="text-sm text-red-600 dark:text-red-400 mb-4">
-          대시보드 데이터를 불러오는데 문제가 발생했습니다.
-        </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-        >
-          다시 시도
-        </button>
-      </div>
-    );
+  if (hasNoData) {
+    return <EmptyDashboard />;
   }
+
 
   const stats = [
     {

@@ -32,12 +32,25 @@ const ReviewPage: React.FC = () => {
 
   // Type guard function
   const isTodayReviewsResponse = (data: any): data is TodayReviewsResponse => {
-    return data && 
-           typeof data === 'object' && 
-           'results' in data && 
-           'total_count' in data &&
-           'count' in data &&
-           Array.isArray(data.results);
+    if (!data || typeof data !== 'object') return false;
+    
+    // Check required properties with correct types
+    const hasRequiredProps = 
+      'results' in data && Array.isArray(data.results) &&
+      'total_count' in data && typeof data.total_count === 'number' &&
+      'count' in data && typeof data.count === 'number';
+    
+    if (!hasRequiredProps) return false;
+    
+    // Validate each result item has required ReviewSchedule properties
+    return data.results.every((item: any) => 
+      item && 
+      typeof item === 'object' &&
+      typeof item.id === 'number' &&
+      typeof item.next_review_date === 'string' &&
+      item.content && 
+      typeof item.content === 'object'
+    );
   };
 
   // Fetch today's reviews
