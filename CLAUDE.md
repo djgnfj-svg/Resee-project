@@ -60,14 +60,16 @@ docker-compose exec backend flake8
 docker-compose exec frontend npm test
 docker-compose exec frontend npm test -- --watchAll=false
 docker-compose exec frontend npm run test:coverage
+docker-compose exec frontend npm run test:ci  # For CI environments
 
 # Linting and type checking
 docker-compose exec frontend npm run lint
 docker-compose exec frontend npm run lint:fix
 docker-compose exec frontend npm run typecheck
 
-# Build
+# Build and quick CI
 docker-compose exec frontend npm run build
+docker-compose exec frontend npm run ci:quick  # Typecheck + build
 ```
 
 ## 🏗️ Architecture Overview
@@ -81,6 +83,7 @@ backend/
 ├── ai_review/     # AI question generation
 ├── analytics/     # Learning statistics
 ├── monitoring/    # System monitoring
+├── alerts/        # Alert system and notifications
 ├── payments/      # Stripe payment integration
 ├── legal/         # Terms, privacy policies
 └── resee/         # Django settings
@@ -91,7 +94,8 @@ backend/
 frontend/src/
 ├── components/    # Reusable components
 │   ├── ai/       # AI-related components
-│   └── analytics/ # Analytics charts
+│   ├── analytics/ # Analytics charts
+│   └── monitoring/ # Monitoring dashboard components
 ├── pages/         # Page components
 ├── contexts/      # Global state (Auth, Theme)
 ├── hooks/         # Custom React hooks
@@ -127,16 +131,15 @@ frontend/src/
    - Automatic schedule adjustment on subscription change
 
 4. **Review Intervals** (Ebbinghaus-based):
-   - Full intervals: [1, 3, 7, 14, 30, 60, 120, 180 days]
-   - FREE: Max 7 days
-   - BASIC: Max 30 days
-   - PREMIUM: Max 60 days
-   - PRO: Max 180 days
+   - FREE: [1, 3] - Max 3 days
+   - BASIC: [1, 3, 7, 14, 30, 60, 90] - Max 90 days
+   - PRO: [1, 3, 7, 14, 30, 60, 120, 180] - Max 180 days
 
 ### API Authentication
-- JWT (Access: 5 min, Refresh: 7 days)
-- Email-based login
+- JWT (Access: 60 min, Refresh: 7 days with rotation)
+- Email-based login with verification required
 - Google OAuth 2.0 support
+- Rate limiting by subscription tier (FREE: 500/hour, BASIC: 1000/hour, PRO: 2000/hour)
 
 ## 🔧 Important Debugging Commands
 
@@ -229,10 +232,69 @@ Existing schedules auto-adjusted to new limits
 - **Test User**: `test@resee.com` / `test123!`
 - **Demo**: `demo@resee.com` / `demo123!`
 
+## 🤖 AI Integration Architecture
+
+### AI Service Structure (backend/ai_review/services/)
+- **BaseAIService**: Core Claude API integration with retry logic
+- **QuestionGenerator**: Creates multiple choice, fill-in-blank, and blur questions
+- **AnswerEvaluator**: Scores user responses with detailed feedback
+
+### AI Usage Limits by Tier
+- FREE: 0 questions/day (no AI features)
+- BASIC: 30 questions/day
+- PRO: 200 questions/day (near unlimited)
+
+### AI Model Configuration
+- Primary: Claude 3 Haiku (fast, cost-effective)
+- Request timeout: 30 seconds with exponential backoff
+- Usage tracked via AIUsageTracking model
+
+## 🧪 Testing Architecture
+
+### Backend Testing Coverage
+- Base test classes: `BaseTestCase`, `BaseAPITestCase`
+- Categories: Unit tests, API integration, Celery tasks, security, performance
+- Run specific tests: `pytest -k "test_name" -v`
+
+### Frontend Testing (70% coverage threshold)
+- React Testing Library + MSW for API mocking
+- Coverage thresholds: 70% branches, functions, lines, statements
+- TypeScript strict checking with `npm run typecheck`
+
 ## 🔍 Key Design Principles
 
 1. **Overdue Review Handling**: Missed reviews don't disappear, shown on current date
 2. **Subscription-based Limits**: Each tier has access to specific review ranges
-3. **Ebbinghaus Optimization**: Scientifically-based forgetting curve intervals
+3. **Ebbinghaus Optimization**: Scientifically-based forgetting curve intervals (see /backend/review/utils.py)
 4. **Real-time Adjustments**: Subscription changes auto-adjust existing schedules
-5. **Performance**: React Query for server state caching with immediate invalidation on changes
+5. **Performance**: TanStack Query for server state caching with immediate invalidation on changes
+6. **Email Verification**: Required for subscription features and AI access
+7. **Comprehensive Monitoring**: Alert system with Slack/Email notifications for system health
+
+## 🚨 Alert System
+
+### Quick Commands
+```bash
+# Test alert integrations
+docker-compose exec backend python manage.py shell
+>>> from alerts.services.metric_collector import MetricCollector
+>>> collector = MetricCollector()
+>>> collector.get_metric_value('cpu_usage', 5)
+
+# Create alert rule via API
+curl -X POST http://localhost:8000/api/alerts/rules/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"name":"High CPU","metric_name":"cpu_usage","condition":"gt","threshold_value":80}'
+
+# Check Celery alert tasks
+docker-compose exec celery celery -A resee inspect scheduled
+```
+
+### Key Features
+- **24 Metric Types**: System, API, Database, AI, Business metrics
+- **Flexible Conditions**: >, >=, <, <=, =, != with configurable time windows
+- **Multi-channel Notifications**: Slack webhooks + Email alerts
+- **Real-time Dashboard**: Monitoring overview at `/monitoring`
+- **Alert Management**: Create/edit/resolve via API or admin interface
+
+See `ALERT_SYSTEM_README.md` for comprehensive documentation.
