@@ -62,8 +62,8 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'is_email_verified', 'weekly_goal', 'created_at', 'updated_at', 'subscription')
-        read_only_fields = ('id', 'created_at', 'updated_at', 'is_email_verified', 'subscription')
+        fields = ('id', 'email', 'username', 'is_email_verified', 'is_staff', 'is_superuser', 'weekly_goal', 'created_at', 'updated_at', 'subscription')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'is_email_verified', 'is_staff', 'is_superuser', 'subscription')
     
     def get_subscription(self, obj):
         """Get subscription data"""

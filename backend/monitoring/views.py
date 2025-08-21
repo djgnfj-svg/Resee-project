@@ -12,13 +12,14 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import (AIMetrics, APIMetrics, DatabaseMetrics, ErrorLog,
                      SystemHealth, UserActivity)
 from .utils import (check_system_health, clean_old_metrics,
                     get_performance_insights)
+from alerts.permissions import MonitoringPermission
 
 logger = logging.getLogger('monitoring')
 
@@ -61,7 +62,7 @@ logger = logging.getLogger('monitoring')
     }
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([MonitoringPermission])
 def dashboard_overview(request):
     """
     Get high-level dashboard overview for the last 24 hours
@@ -199,7 +200,7 @@ def dashboard_overview(request):
     }
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([MonitoringPermission])
 def api_performance_chart(request):
     """
     Get API performance data for charting
@@ -306,7 +307,7 @@ def api_performance_chart(request):
     }
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([MonitoringPermission])
 def error_analysis(request):
     """
     Get error analysis and trending
@@ -434,7 +435,7 @@ def error_analysis(request):
     }
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([MonitoringPermission])
 def ai_usage_analytics(request):
     """
     Get AI usage analytics and cost tracking
@@ -653,7 +654,7 @@ def health_check(request):
     }
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([MonitoringPermission])
 def performance_insights(request):
     """
     Get performance insights and recommendations
@@ -718,7 +719,7 @@ def performance_insights(request):
     }
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([MonitoringPermission])
 def cleanup_old_data(request):
     """
     Clean up old monitoring data

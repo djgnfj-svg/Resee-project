@@ -48,6 +48,39 @@ class AlertRuleSerializer(serializers.ModelSerializer):
         for email in value:
             if not isinstance(email, str):
                 raise serializers.ValidationError("All email addresses must be strings")
+    
+    def to_representation(self, instance):
+        """Filter sensitive data for non-staff users"""
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        
+        # Hide sensitive fields for non-staff users
+        if request and not request.user.is_staff:
+            # Remove sensitive notification settings
+            data.pop('slack_channel', None)
+            data.pop('email_recipients', None)
+            data.pop('created_by', None)
+            data.pop('created_by_id', None)
+            # Show limited fields only
+            return {
+                'id': data['id'],
+                'name': data['name'],
+                'severity': data['severity'],
+                'severity_display': data['severity_display'],
+                'metric_name': data['metric_name'],
+                'metric_name_display': data['metric_name_display'],
+                'is_active': data['is_active'],
+                'recent_alert_count': data.get('recent_alert_count', 0)
+            }
+        
+        return data
+    
+    def validate_email_recipients_complete(self, value):
+        """Complete email validation"""
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError
+        
+        for email in value:
             try:
                 validate_email(email)
             except ValidationError:

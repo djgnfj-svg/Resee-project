@@ -15,7 +15,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 
@@ -27,6 +27,9 @@ from .serializers import (
 )
 from .services import AlertEngine, SlackNotifier, EmailNotifier
 from .tasks import check_specific_alert_rule, test_alert_notifications
+from .permissions import (
+    MonitoringPermission, AlertRulePermission, AlertHistoryPermission, AdminOnlyPermission
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +46,7 @@ class AlertRuleListCreateView(generics.ListCreateAPIView):
     """
     queryset = AlertRule.objects.all().select_related('created_by')
     serializer_class = AlertRuleSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [AlertRulePermission]
     pagination_class = StandardResultsSetPagination
     
     def get_serializer_class(self):
@@ -111,7 +114,7 @@ class AlertRuleDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     queryset = AlertRule.objects.all().select_related('created_by')
     serializer_class = AlertRuleSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [AlertRulePermission]
 
     @swagger_auto_schema(
         operation_summary="Get alert rule",
@@ -151,7 +154,7 @@ class AlertHistoryListView(generics.ListAPIView):
     List alert history with filtering
     """
     serializer_class = AlertHistorySerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [AlertHistoryPermission]
     pagination_class = StandardResultsSetPagination
     
     def get_queryset(self):
@@ -208,7 +211,7 @@ class AlertHistoryDetailView(generics.RetrieveAPIView):
     """
     queryset = AlertHistory.objects.all().select_related('rule', 'resolved_by')
     serializer_class = AlertHistorySerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [AlertRulePermission]
 
     @swagger_auto_schema(
         operation_summary="Get alert history details",
@@ -232,7 +235,7 @@ class AlertHistoryDetailView(generics.RetrieveAPIView):
     tags=['Alerts - History']
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([AdminOnlyPermission])
 def resolve_alert(request, pk):
     """
     Resolve a specific alert
@@ -278,7 +281,7 @@ def resolve_alert(request, pk):
     tags=['Alerts - Analytics']
 )
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([AdminOnlyPermission])
 def alert_statistics(request):
     """
     Get alert statistics and metrics
@@ -316,7 +319,7 @@ def alert_statistics(request):
     tags=['Alerts - Testing']
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([AdminOnlyPermission])
 def test_slack_notification(request):
     """
     Test Slack notification integration
@@ -367,7 +370,7 @@ def test_slack_notification(request):
     tags=['Alerts - Testing']
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([AdminOnlyPermission])
 def test_email_notification(request):
     """
     Test email notification integration
@@ -418,7 +421,7 @@ def test_email_notification(request):
     tags=['Alerts - Management']
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([AdminOnlyPermission])
 def manual_trigger_check(request):
     """
     Manually trigger alert rule checks
