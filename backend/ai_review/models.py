@@ -5,13 +5,13 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from content.models import Content
-from resee.validators import validate_choice_field, validate_required_fields
+from resee.models import BaseModel, BaseUserModel
 from review.models import ReviewHistory
 
 User = get_user_model()
 
 
-class AIQuestionType(models.Model):
+class AIQuestionType(BaseModel):
     """Types of AI-generated questions."""
     QUESTION_TYPES = [
         ('multiple_choice', 'Multiple Choice'),
@@ -37,8 +37,6 @@ class AIQuestionType(models.Model):
         default=True,
         help_text="Whether this question type is available for generation"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         db_table = 'ai_question_types'
