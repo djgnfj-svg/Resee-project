@@ -35,19 +35,11 @@ docker-compose logs -f celery
 docker-compose exec backend python manage.py makemigrations
 docker-compose exec backend python manage.py migrate
 
-# Create test data
-docker-compose exec backend python manage.py create_test_users
-docker-compose exec backend python manage.py create_sample_data
-docker-compose exec backend python manage.py create_long_term_test_data --tier=pro
-docker-compose exec backend python manage.py create_realistic_user_data
-
-# Run tests
-docker-compose exec backend pytest
-docker-compose exec backend pytest -k "specific_test" -v
-docker-compose exec backend pytest --pdb  # Debug on failure
-
 # Django shell
 docker-compose exec backend python manage.py shell_plus
+
+# Create superuser
+docker-compose exec backend python manage.py createsuperuser
 
 # Code formatting
 docker-compose exec backend black .
@@ -227,10 +219,24 @@ adjust_review_schedules_on_subscription_change →
 Existing schedules auto-adjusted to new limits
 ```
 
-## 🧪 Test Accounts
-- **Admin**: `admin@resee.com` / `admin123!`
-- **Test User**: `test@resee.com` / `test123!`
-- **Demo**: `demo@resee.com` / `demo123!`
+## 🚀 베타 배포
+
+### 베타 배포 실행
+```bash
+# 환경변수 설정
+cp .env.beta.example .env.beta
+# .env.beta 파일 편집 (RDS URL, API 키 등)
+
+# 배포 실행
+chmod +x deploy-beta.sh
+./deploy-beta.sh
+```
+
+### 베타 환경 특징
+- **AWS RDS PostgreSQL**: 클라우드 데이터베이스
+- **Docker Compose**: 간소화된 컨테이너 관리
+- **보안 강화**: Rate limiting, SQL injection 방지
+- **헬스체크**: 자동 서비스 상태 모니터링
 
 ## 🤖 AI Integration Architecture
 
