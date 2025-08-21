@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'analytics',
     'ai_review',
     'monitoring',
+    'alerts',
     'payments',
     'legal',
 ]
@@ -216,12 +217,36 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'analytics.tasks.generate_daily_analytics',
         'schedule': crontab(hour=3, minute=0),  # Daily at 3 AM
     },
+    # Alert system tasks
+    'check-alert-rules': {
+        'task': 'alerts.tasks.check_alert_rules',
+        'schedule': crontab(minute='*'),  # Every minute
+    },
+    'send-daily-alert-summary': {
+        'task': 'alerts.tasks.send_daily_alert_summary',
+        'schedule': crontab(hour=9, minute=0),  # Daily at 9 AM
+    },
+    'cleanup-old-alert-history': {
+        'task': 'alerts.tasks.cleanup_old_alert_history',
+        'schedule': crontab(hour=4, minute=0),  # Daily at 4 AM
+    },
+    'update-alert-metrics-cache': {
+        'task': 'alerts.tasks.update_alert_metrics_cache',
+        'schedule': crontab(minute='*/5'),  # Every 5 minutes
+    },
 }
 
 
 # Email Configuration (base settings)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'noreply@resee.com'
+
+
+# Alert System Configuration
+SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL')
+SLACK_DEFAULT_CHANNEL = os.environ.get('SLACK_DEFAULT_CHANNEL', '#alerts')
+SLACK_BOT_NAME = os.environ.get('SLACK_BOT_NAME', 'Resee Alert Bot')
+ALERT_SUMMARY_RECIPIENTS = os.environ.get('ALERT_SUMMARY_RECIPIENTS', '').split(',') if os.environ.get('ALERT_SUMMARY_RECIPIENTS') else []
 
 
 # Cache Configuration

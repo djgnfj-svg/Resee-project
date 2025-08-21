@@ -306,6 +306,87 @@ export const weeklyGoalAPI = {
   },
 };
 
+// Monitoring API
+export const monitoringAPI = {
+  getDashboard: async () => {
+    const response = await api.get('/monitoring/dashboard/');
+    return response.data;
+  },
+  
+  getSystemHealth: async (params?: string) => {
+    const url = params ? `/monitoring/system-health/?${params}` : '/monitoring/system-health/';
+    const response = await api.get(url);
+    return response.data;
+  },
+  
+  getAPIMetrics: async (params?: string) => {
+    const url = params ? `/monitoring/api-metrics/?${params}` : '/monitoring/api-metrics/';
+    const response = await api.get(url);
+    return response.data;
+  },
+  
+  getErrorLogs: async (params?: string) => {
+    const url = params ? `/monitoring/error-logs/?${params}` : '/monitoring/error-logs/';
+    const response = await api.get(url);
+    return response.data;
+  },
+};
+
+// Alert API  
+export const alertAPI = {
+  getRules: async (params?: string) => {
+    const url = params ? `/alerts/rules/?${params}` : '/alerts/rules/';
+    const response = await api.get(url);
+    return response.data;
+  },
+  
+  createRule: async (data: any) => {
+    const response = await api.post('/alerts/rules/', data);
+    return response.data;
+  },
+  
+  updateRule: async (id: number, data: any) => {
+    const response = await api.put(`/alerts/rules/${id}/`, data);
+    return response.data;
+  },
+  
+  deleteRule: async (id: number) => {
+    const response = await api.delete(`/alerts/rules/${id}/`);
+    return response.data;
+  },
+  
+  getHistory: async (params?: string) => {
+    const url = params ? `/alerts/history/?${params}` : '/alerts/history/';
+    const response = await api.get(url);
+    return response.data;
+  },
+  
+  resolveAlert: async (id: number, data: { resolution_notes?: string }) => {
+    const response = await api.post(`/alerts/history/${id}/resolve/`, data);
+    return response.data;
+  },
+  
+  getStatistics: async () => {
+    const response = await api.get('/alerts/stats/');
+    return response.data;
+  },
+  
+  testSlack: async (data: any) => {
+    const response = await api.post('/alerts/test/slack/', data);
+    return response.data;
+  },
+  
+  testEmail: async (data: any) => {
+    const response = await api.post('/alerts/test/email/', data);
+    return response.data;
+  },
+  
+  manualTrigger: async (data: any) => {
+    const response = await api.post('/alerts/trigger/', data);
+    return response.data;
+  },
+};
+
 // Export apiClient alias for compatibility
 export const apiClient = api;
 
