@@ -17,6 +17,7 @@ from accounts.models import AIUsageTracking
 from content.models import Content
 from resee.structured_logging import ai_logger, log_api_call, log_performance
 from resee.throttling import AIEndpointThrottle
+from resee.permissions import AIFeaturesRequired
 
 from .models import (AIAdaptiveDifficultyTest, AIQuestion, AIQuestionType, AIReviewSession, AIStudyMate,
                      AISummaryNote, InstantContentCheck, LearningAnalytics,
@@ -69,7 +70,7 @@ class GenerateQuestionsView(APIView):
     """
     Generate AI questions for given content
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, AIFeaturesRequired]
     throttle_classes = [AIEndpointThrottle]
     
     @swagger_auto_schema(
@@ -89,16 +90,6 @@ class GenerateQuestionsView(APIView):
     @log_performance('ai_question_generation')
     def post(self, request):
         """Generate questions for content"""
-        # Check AI feature access
-        if not request.user.can_use_ai_features():
-            return Response(
-                {
-                    'error': 'AI features not available',
-                    'detail': 'Please upgrade your subscription and verify your email to access AI features.',
-                    'requires_subscription': True
-                },
-                status=status.HTTP_403_FORBIDDEN
-            )
         
         serializer = GenerateQuestionsSerializer(
             data=request.data,

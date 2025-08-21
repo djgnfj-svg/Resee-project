@@ -3,20 +3,18 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
+from resee.models import BaseUserModel
 
 User = get_user_model()
 
 
-class ReviewSchedule(models.Model):
+class ReviewSchedule(BaseUserModel):
     """Review schedule for content"""
     content = models.ForeignKey('content.Content', on_delete=models.CASCADE, related_name='review_schedules')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='review_schedules')
     next_review_date = models.DateTimeField()
     interval_index = models.IntegerField(default=0, help_text='Index in REVIEW_INTERVALS')
     is_active = models.BooleanField(default=True)
     initial_review_completed = models.BooleanField(default=False, help_text='Whether the initial review has been completed')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         unique_together = ['content', 'user']
@@ -82,7 +80,7 @@ class ReviewSchedule(models.Model):
         self.save()
 
 
-class ReviewHistory(models.Model):
+class ReviewHistory(BaseUserModel):
     """History of review sessions"""
     RESULT_CHOICES = [
         ('remembered', '기억함'),
@@ -91,7 +89,6 @@ class ReviewHistory(models.Model):
     ]
     
     content = models.ForeignKey('content.Content', on_delete=models.CASCADE, related_name='review_history')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='review_history')
     review_date = models.DateTimeField(auto_now_add=True)
     result = models.CharField(max_length=20, choices=RESULT_CHOICES)
     time_spent = models.IntegerField(help_text='Time spent in seconds', null=True, blank=True)
