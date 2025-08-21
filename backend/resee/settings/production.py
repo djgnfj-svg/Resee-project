@@ -15,49 +15,35 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-# Allowed hosts for production
+# Allowed hosts for production (flexible for beta)
 ALLOWED_HOSTS = [
-    'resee.com',
-    'www.resee.com',
-    '.amazonaws.com',  # ALB 도메인
-    '.elb.amazonaws.com',  # ELB 도메인
+    host.strip() 
+    for host in os.environ.get('ALLOWED_HOSTS', 'localhost').split(',')
+    if host.strip()
 ]
 
-# CloudFront 도메인 추가
-cloudfront_domain = os.environ.get('CLOUDFRONT_DOMAIN')
-if cloudfront_domain:
-    ALLOWED_HOSTS.append(cloudfront_domain)
-
-# Additional allowed hosts from environment
-additional_hosts = os.environ.get('ADDITIONAL_ALLOWED_HOSTS', '')
-if additional_hosts:
-    ALLOWED_HOSTS.extend(additional_hosts.split(','))
-
-# Database for production
-DATABASES = {
-    'default': dj_database_url.parse(
-        os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        ssl_require=True,
-    )
-}
-
-if not os.environ.get('DATABASE_URL'):
+# Database for production (RDS)
+if 'DATABASE_URL' in os.environ:
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(os.environ['DATABASE_URL'])
+    }
+    DATABASES['default']['CONN_MAX_AGE'] = 60
+else:
     raise ValueError("DATABASE_URL environment variable is required in production")
 
 # JWT Settings for production
 SIMPLE_JWT['SIGNING_KEY'] = SECRET_KEY
 
-# CORS Configuration for production
+# CORS Configuration for production (flexible for beta)
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
-    "https://resee.com",
-    "https://www.resee.com",
+    origin.strip() 
+    for origin in os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
+    if origin.strip()
 ]
 
-# Add CloudFront domain to CORS if available
-if cloudfront_domain:
-    CORS_ALLOWED_ORIGINS.append(f"https://{cloudfront_domain}")
+CORS_ALLOW_CREDENTIALS = True
 
 # Email Configuration for production
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -121,25 +107,60 @@ LOGGING['loggers'] = {
     },
 }
 
-# Production security settings
-SECURE_SSL_REDIRECT = True
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Production security settings (flexible for beta)
+# Only enable HTTPS settings if specified
+if os.environ.get('USE_HTTPS', 'false').lower() == 'true':
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+else:
+    SECURE_SSL_REDIRECT = False
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Cookie security
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# Cookie security (flexible for beta)
+SESSION_COOKIE_SECURE = os.environ.get('USE_HTTPS', 'false').lower() == 'true'
+CSRF_COOKIE_SECURE = os.environ.get('USE_HTTPS', 'false').lower() == 'true'
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Additional security headers
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+X_FRAME_OPTIONS = 'DENY'
 
 # Production-specific middleware
-PRODUCTION_MIDDLEWARE = [
-    'django.middleware.cache.UpdateCacheMiddleware',
-    'django.middleware.cache.FetchFromCacheMiddleware',
-]
-MIDDLEWARE = PRODUCTION_MIDDLEWARE + MIDDLEWARE
+MIDDLEWARE.insert(1, 'django.middleware.security.SecurityMiddleware')
+MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
+MIDDLEWARE.insert(3, 'resee.middleware.SecurityHeadersMiddleware')
+MIDDLEWARE.insert(4, 'resee.middleware.RateLimitMiddleware')
+MIDDLEWARE.insert(-1, 'resee.middleware.RequestLoggingMiddleware')
+MIDDLEWARE.insert(-1, 'resee.middleware.SQLInjectionDetectionMiddleware')
+
+# Enhanced rate limiting for production
+REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({
+    'anon': '50/hour',  # Stricter for production
+    'user': '500/hour',  # Reasonable limit
+    'login': '3/min',   # Stricter login attempts
+    'registration': '2/min',  # Stricter registration
+    'register': '2/min',
+    'email': '5/hour',  # Stricter email sending
+    'ai_endpoint': '30/hour',  # Stricter AI usage
+})
+
+# Static files configuration for production (without S3)
+if not os.environ.get('USE_S3'):
+    STATIC_URL = '/static/'
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    
+    # WhiteNoise settings
+    WHITENOISE_USE_FINDERS = True
+    WHITENOISE_AUTOREFRESH = False
+    WHITENOISE_STATIC_PREFIX = '/static/'
 
 # Production caching (longer timeouts)
 CACHE_TIMEOUT_SHORT = 300  # 5 minutes
@@ -162,6 +183,29 @@ FEATURE_FLAGS.update({
 
 # Email verification is enforced in production
 ENFORCE_EMAIL_VERIFICATION = True
+
+# Security settings for beta deployment
+ENVIRONMENT = 'production'
+RATE_LIMIT_ENABLE = os.environ.get('RATE_LIMIT_ENABLE', 'true').lower() == 'true'
+ADMIN_IP_WHITELIST = os.environ.get('ADMIN_IP_WHITELIST', '').split(',') if os.environ.get('ADMIN_IP_WHITELIST') else []
+
+# File upload security
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+FILE_UPLOAD_PERMISSIONS = 0o644
+
+# Enhanced password validation
+AUTH_PASSWORD_VALIDATORS.extend([
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 8}
+    },
+])
+
+# Session security
+SESSION_COOKIE_AGE = 3600  # 1 hour
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True
 
 # Google OAuth settings for production
 GOOGLE_OAUTH2_CLIENT_ID = os.environ.get('GOOGLE_OAUTH2_CLIENT_ID')
