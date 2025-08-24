@@ -257,15 +257,47 @@ chmod +x deploy-beta.sh
 
 ## 🧪 Testing Architecture
 
-### Backend Testing Coverage
-- Base test classes: `BaseTestCase`, `BaseAPITestCase`
-- Categories: Unit tests, API integration, Celery tasks, security, performance
-- Run specific tests: `pytest -k "test_name" -v`
+### Backend Testing
+```bash
+# Run all tests
+docker-compose exec backend python -m pytest
+
+# Run specific test file
+docker-compose exec backend python -m pytest accounts/tests.py -v
+
+# Run specific test method
+docker-compose exec backend python -m pytest -k "test_name" -v
+
+# Run with coverage
+docker-compose exec backend python -m pytest --cov=. --cov-report=html
+
+# Code quality checks
+docker-compose exec backend black . --check
+docker-compose exec backend flake8
+```
 
 ### Frontend Testing (70% coverage threshold)
-- React Testing Library + MSW for API mocking
+```bash
+# Run all tests
+docker-compose exec frontend npm test -- --watchAll=false
+
+# Run specific test file
+docker-compose exec frontend npm test ContentFormV2.test.tsx --watchAll=false
+
+# Coverage report
+docker-compose exec frontend npm run test:coverage
+
+# CI mode (coverage + exit)
+docker-compose exec frontend npm run test:ci
+
+# Quick typecheck + build
+docker-compose exec frontend npm run ci:quick
+```
+
+### Testing Environment
+- Backend: SQLite in-memory database, mocked services, disabled migrations
+- Frontend: React Testing Library + MSW for API mocking
 - Coverage thresholds: 70% branches, functions, lines, statements
-- TypeScript strict checking with `npm run typecheck`
 
 ## 🔍 Key Design Principles
 
@@ -304,3 +336,29 @@ docker-compose exec celery celery -A resee inspect scheduled
 - **Alert Management**: Create/edit/resolve via API or admin interface
 
 See `ALERT_SYSTEM_README.md` for comprehensive documentation.
+
+## 🎯 Key Development Guidelines
+
+### Test Strategy
+- Always run tests before committing: `docker-compose exec backend python -m pytest` and `docker-compose exec frontend npm run test:ci`
+- Backend uses pytest with Django test database
+- Frontend requires 70% test coverage threshold
+- Use factory-boy for test data generation in backend
+
+### Code Quality Standards
+- Backend: Black formatting + Flake8 linting
+- Frontend: ESLint + TypeScript strict mode
+- All new features require corresponding tests
+- Database changes require proper migrations
+
+### Environment Management
+- `.env` file for local development variables
+- `.env.beta` for beta deployment configuration
+- Testing environment uses in-memory databases and mocked services
+- Production settings in `backend/resee/settings/production.py`
+
+### Performance Considerations
+- Use TanStack Query for API caching in frontend
+- Review system optimized for subscription tier access patterns
+- Celery workers handle background tasks (email, notifications, AI processing)
+- Monitoring system tracks performance metrics automatically
