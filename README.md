@@ -41,6 +41,31 @@ docker-compose up -d
 - **테스트 사용자**: `test@resee.com` / `test123!`
 - **데모 계정**: `demo@resee.com` / `demo123!`
 
+## 🔄 CI/CD
+
+이 프로젝트는 GitHub Actions를 통해 자동화된 CI/CD 파이프라인을 제공합니다:
+
+### 🚀 자동 실행 (모든 push/PR)
+- **Quick Check**: Django 설정 검증, TypeScript 컴파일, 빌드 테스트
+- **Code Quality**: 코드 포맷팅, 린팅, 보안 검사
+
+### 🧪 조건부 실행
+특별한 키워드를 커밋 메시지에 포함하면 추가 테스트가 실행됩니다:
+
+- **`[test]`**: 전체 테스트 스위트 실행 (backend + frontend)
+- **`[docker]`**: Docker 통합 테스트 실행
+- **Pull Request**: 모든 테스트 자동 실행
+
+### 📊 테스트 커버리지
+- **Backend**: 280개 테스트 메서드로 85%+ 커버리지
+- **Frontend**: React Testing Library + 70% 커버리지 기준
+- **통합 테스트**: Docker 컨테이너 전체 스택 검증
+
+### ⚡ 빠른 피드백
+- Quick Check: ~5분 (핵심 검증만)
+- Full Test Suite: ~12분 (모든 테스트)
+- Docker Integration: ~15분 (전체 스택)
+
 ## 📞 지원
 
 문제가 있거나 질문이 있으시면 [GitHub Issues](https://github.com/yourusername/resee/issues)를 통해 문의해 주세요.
