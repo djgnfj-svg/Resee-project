@@ -335,39 +335,39 @@ export const monitoringAPI = {
 // Alert API  
 export const alertAPI = {
   getRules: async (params?: string) => {
-    const url = params ? `/alerts/rules/?${params}` : '/alerts/rules/';
+    const url = params ? `/monitoring/alerts/rules/?${params}` : '/monitoring/alerts/rules/';
     const response = await api.get(url);
     return response.data;
   },
   
   createRule: async (data: any) => {
-    const response = await api.post('/alerts/rules/', data);
+    const response = await api.post('/monitoring/alerts/rules/', data);
     return response.data;
   },
   
   updateRule: async (id: number, data: any) => {
-    const response = await api.put(`/alerts/rules/${id}/`, data);
+    const response = await api.put(`/monitoring/alerts/rules/${id}/`, data);
     return response.data;
   },
   
   deleteRule: async (id: number) => {
-    const response = await api.delete(`/alerts/rules/${id}/`);
+    const response = await api.delete(`/monitoring/alerts/rules/${id}/`);
     return response.data;
   },
   
   getHistory: async (params?: string) => {
-    const url = params ? `/alerts/history/?${params}` : '/alerts/history/';
+    const url = params ? `/monitoring/alerts/history/?${params}` : '/monitoring/alerts/history/';
     const response = await api.get(url);
     return response.data;
   },
   
   resolveAlert: async (id: number, data: { resolution_notes?: string }) => {
-    const response = await api.post(`/alerts/history/${id}/resolve/`, data);
+    const response = await api.post(`/monitoring/alerts/history/${id}/resolve/`, data);
     return response.data;
   },
   
   getStatistics: async () => {
-    const response = await api.get('/alerts/stats/');
+    const response = await api.get('/monitoring/alerts/stats/');
     return response.data;
   },
   

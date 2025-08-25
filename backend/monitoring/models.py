@@ -10,6 +10,8 @@ from django.utils import timezone
 
 User = get_user_model()
 
+# Import alert models
+from .alert_models import AlertRule, AlertHistory
 
 class APIMetrics(models.Model):
     """

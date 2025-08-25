@@ -7,7 +7,7 @@ Resee is a smart review platform leveraging Ebbinghaus forgetting curve theory. 
 
 ### Core Services
 - **Backend**: Django REST Framework + PostgreSQL + Celery
-- **Frontend**: React + TypeScript + TailwindCSS  
+- **Frontend**: React + TypeScript + TailwindCSS + TipTap Editor
 - **AI Service**: Claude API (Anthropic)
 - **Message Queue**: RabbitMQ (Celery broker)
 - **Cache**: Redis
@@ -69,31 +69,30 @@ docker-compose exec frontend npm run ci:quick  # Typecheck + build
 ### Backend Structure
 ```
 backend/
-├── accounts/      # User authentication, subscriptions
-├── content/       # Learning content management
-├── review/        # Review scheduling system
-├── ai_review/     # AI question generation
-├── analytics/     # Learning statistics
-├── monitoring/    # System monitoring
-├── alerts/        # Alert system and notifications
-├── payments/      # Stripe payment integration
-├── legal/         # Terms, privacy policies
-└── resee/         # Django settings
+├── accounts/           # User authentication, subscriptions, email service
+├── content/           # Learning content management
+├── review/            # Review scheduling system (Ebbinghaus algorithm)
+├── ai_review/         # AI question generation and evaluation
+├── analytics/         # Learning statistics and patterns
+├── business_intelligence/ # Advanced analytics and user insights
+├── monitoring/        # System monitoring and health checks
+├── alerts/            # Alert system with Slack/Email notifications
+├── legal/             # Terms, privacy policies, user data management
+└── resee/             # Django settings and configuration
 ```
 
 ### Frontend Structure
 ```
 frontend/src/
-├── components/    # Reusable components
-│   ├── ai/       # AI-related components
-│   ├── analytics/ # Analytics charts
-│   └── monitoring/ # Monitoring dashboard components
-├── pages/         # Page components
-├── contexts/      # Global state (Auth, Theme)
-├── hooks/         # Custom React hooks
-├── utils/         # API client utilities
-├── types/         # TypeScript definitions
-└── styles/        # Global styles
+├── components/        # Reusable components
+│   ├── analytics/    # BI dashboard, learning calendar, progress visualization
+│   └── dashboard/    # Dashboard hero, stats cards, empty states
+├── pages/            # Main application pages
+├── contexts/         # Global state (Auth, Theme)
+├── hooks/            # Custom React hooks (subscription, monitoring)
+├── utils/            # API client utilities and helpers
+├── types/            # TypeScript type definitions
+└── styles/           # Global styles and animations
 ```
 
 ### Core Model Relationships
@@ -173,8 +172,7 @@ queryClient.invalidateQueries(['learning-calendar']);
 - `ANTHROPIC_API_KEY`: Claude API key
 - `GOOGLE_OAUTH2_CLIENT_ID`: Google OAuth client ID
 - `GOOGLE_OAUTH2_CLIENT_SECRET`: Google OAuth secret
-- `STRIPE_SECRET_KEY`: Stripe secret key (production)
-- `STRIPE_WEBHOOK_SECRET`: Stripe webhook secret
+- `ENFORCE_EMAIL_VERIFICATION`: Email verification requirement (default: False)
 
 ### Required Frontend Variables
 - `REACT_APP_API_URL`: Backend API URL
@@ -219,6 +217,15 @@ adjust_review_schedules_on_subscription_change →
 Existing schedules auto-adjusted to new limits
 ```
 
+### Business Intelligence Flow
+```
+User activity → 
+BI analytics engine → 
+Generate insights → 
+Frontend BIDashboard displays → 
+UserAnalytics provides recommendations
+```
+
 ## 🚀 베타 배포
 
 ### 베타 배포 실행
@@ -244,6 +251,12 @@ chmod +x deploy-beta.sh
 - **BaseAIService**: Core Claude API integration with retry logic
 - **QuestionGenerator**: Creates multiple choice, fill-in-blank, and blur questions
 - **AnswerEvaluator**: Scores user responses with detailed feedback
+
+### Content Editor Integration
+- **TipTap Editor**: Rich text editor with Notion-like functionality
+- **Location**: `frontend/src/components/TipTapEditor.tsx`
+- **Features**: Link support, placeholder text, starter kit extensions
+- **Usage**: Integrated into ContentFormV2 for content creation
 
 ### AI Usage Limits by Tier
 - FREE: 0 questions/day (no AI features)
@@ -337,6 +350,26 @@ docker-compose exec celery celery -A resee inspect scheduled
 
 See `ALERT_SYSTEM_README.md` for comprehensive documentation.
 
+## 🔄 Recent Architecture Changes
+
+### Email System Consolidation
+The email system has been consolidated into a single service:
+- **Location**: `backend/accounts/email_service.py`
+- **Models**: EmailLog, EmailTemplate
+- **Service Class**: EmailService with template-based email sending
+- **Celery Tasks**: send_verification_email_task with retry logic
+- **Usage**: Import from `accounts.email_service` instead of separate modules
+
+### Subscription Model Enhancement
+Payment data is now stored directly in the Subscription model:
+- **New Field**: `amount_paid` in `accounts.models.Subscription`
+- **Usage**: Legal and BI services use subscription.amount_paid instead of separate payment records
+
+### Removed Components
+- **payments app**: Completely removed (unused by frontend)
+- **Frontend monitoring components**: MonitoringDashboard and related components removed
+- **Fragmented email files**: Consolidated into single service file
+
 ## 🎯 Key Development Guidelines
 
 ### Test Strategy
@@ -362,3 +395,23 @@ See `ALERT_SYSTEM_README.md` for comprehensive documentation.
 - Review system optimized for subscription tier access patterns
 - Celery workers handle background tasks (email, notifications, AI processing)
 - Monitoring system tracks performance metrics automatically
+
+## 📍 Important File Locations
+
+### Core Business Logic
+- **Ebbinghaus Algorithm**: `backend/review/utils.py`
+- **Email Service**: `backend/accounts/email_service.py`
+- **AI Question Generation**: `backend/ai_review/services/question_generator.py`
+- **Business Intelligence**: `backend/business_intelligence/services/analytics_engine.py`
+- **Alert System**: `backend/alerts/services/alert_engine.py`
+
+### Frontend Key Components
+- **TipTap Editor**: `frontend/src/components/TipTapEditor.tsx`
+- **BI Dashboard**: `frontend/src/components/analytics/BIDashboard.tsx`
+- **Learning Calendar**: `frontend/src/components/analytics/LearningCalendar.tsx`
+- **Content Form**: `frontend/src/components/ContentFormV2.tsx`
+
+### Configuration Files
+- **Django Settings**: `backend/resee/settings/base.py`
+- **Docker Compose**: `docker-compose.yml`
+- **Frontend Config**: `frontend/package.json`, `frontend/tailwind.config.js`

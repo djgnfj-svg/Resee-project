@@ -27,4 +27,15 @@ urlpatterns = [
     
     # Admin actions
     path('cleanup/', views.cleanup_old_data, name='cleanup_old_data'),
+    
+    # Alert management (integrated from alerts app)
+    path('alerts/rules/', views.AlertRuleListCreateView.as_view(), name='alert-rules-list'),
+    path('alerts/rules/<int:pk>/', views.AlertRuleDetailView.as_view(), name='alert-rule-detail'),
+    path('alerts/history/', views.AlertHistoryListView.as_view(), name='alert-history-list'),
+    path('alerts/history/<int:pk>/', views.AlertHistoryDetailView.as_view(), name='alert-history-detail'),
+    path('alerts/history/<int:pk>/resolve/', views.resolve_alert, name='resolve-alert'),
+    path('alerts/stats/', views.alert_statistics, name='alert-statistics'),
+    path('alerts/test/slack/', views.test_slack_notification, name='test-slack'),
+    path('alerts/test/email/', views.test_email_notification, name='test-email'),
+    path('alerts/trigger/', views.manual_trigger_check, name='manual-trigger'),
 ]
