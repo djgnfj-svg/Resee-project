@@ -34,16 +34,12 @@ INSTALLED_APPS = [
     'django_celery_results',
     
     # Local apps
-    'accounts',
+    'accounts',  # includes legal functionality
     'content',
     'review',
-    'analytics',
+    'analytics',  # includes business intelligence
     'ai_review',
-    'monitoring',
-    'alerts',
-    'business_intelligence',
-    'payments',
-    'legal',
+    'monitoring',  # includes alerts system
 ]
 
 MIDDLEWARE = [

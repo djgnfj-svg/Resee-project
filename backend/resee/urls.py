@@ -56,16 +56,12 @@ urlpatterns = [
     path('api/health/', include('monitoring.urls')),
     
     # API endpoints
-    path('api/accounts/', include('accounts.urls')),
+    path('api/accounts/', include('accounts.urls')),  # includes legal endpoints
     path('api/content/', include('content.urls')),
     path('api/review/', include('review.urls')),
-    path('api/analytics/', include('analytics.urls')),
+    path('api/analytics/', include('analytics.urls')),  # includes BI endpoints
     path('api/ai-review/', include('ai_review.urls')),
-    path('api/monitoring/', include('monitoring.urls')),
-    path('api/alerts/', include('alerts.urls')),
-    path('api/bi/', include('business_intelligence.urls')),
-    path('api/payments/', include('payments.urls')),
-    path('api/legal/', include('legal.urls')),
+    path('api/monitoring/', include('monitoring.urls')),  # includes alerts endpoints
 ]
 
 if settings.DEBUG:

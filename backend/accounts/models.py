@@ -224,6 +224,13 @@ class Subscription(models.Model):
         blank=True,
         help_text='Subscription end date (null for unlimited)'
     )
+    amount_paid = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text='Amount paid for subscription'
+    )
     is_active = models.BooleanField(
         default=True,
         help_text='Whether the subscription is active'

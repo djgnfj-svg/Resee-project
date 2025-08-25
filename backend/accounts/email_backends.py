@@ -71,8 +71,7 @@ class DatabaseEmailBackend(BaseEmailBackend):
             
         from django.utils import timezone
 
-        from accounts.models import \
-            EmailLog  # You'll need to create this model
+        from accounts.email_service import EmailLog
         
         num_sent = 0
         for message in email_messages:
