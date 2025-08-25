@@ -15,10 +15,9 @@ from django.db.models.functions import TruncDate, TruncHour, Coalesce
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 
-from accounts.models import Subscription
+from accounts.models import Subscription, AIUsageTracking
 from content.models import Content, Category
 from review.models import ReviewHistory, ReviewSchedule
-from ai_review.models import AIUsageTracking
 from monitoring.models import UserActivity, APIMetrics
 
 logger = logging.getLogger(__name__)

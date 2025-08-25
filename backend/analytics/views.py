@@ -859,7 +859,10 @@ class LearningCalendarView(APIView):
                 'success_rate': round(success_rate, 1),
             })
         
-        return result"""
+        return result
+
+
+"""
 Business Intelligence API views
 """
 import logging
@@ -877,9 +880,9 @@ from drf_yasg.utils import swagger_auto_schema
 
 from .models import LearningPattern, ContentEffectiveness, SubscriptionAnalytics
 from .serializers import (
-    LearningInsightsSerializer, ContentAnalyticsSerializer, 
-    SubscriptionInsightsSerializer, BusinessDashboardSerializer,
-    PerformanceTrendSerializer, LearningRecommendationSerializer
+    LearningInsightSerializer, ContentEffectivenessSerializer, 
+    SubscriptionAnalyticsSerializer, BusinessMetricsSerializer,
+    PerformanceTrendSerializer
 )
 from .services.analytics_engine import LearningAnalyticsEngine, BusinessMetricsEngine
 from .services.recommendation_engine import RecommendationEngine
@@ -910,7 +913,7 @@ class LearningInsightsView(APIView):
                             description='분석 기간 (일수)', default=30),
         ],
         responses={
-            200: LearningInsightsSerializer,
+            200: LearningInsightSerializer,
             401: "인증 필요"
         },
         tags=['Business Intelligence - Learning']
@@ -920,7 +923,7 @@ class LearningInsightsView(APIView):
         engine = LearningAnalyticsEngine(request.user)
         insights = engine.get_learning_insights(days)
         
-        serializer = LearningInsightsSerializer(insights)
+        serializer = LearningInsightSerializer(insights)
         return Response(serializer.data)
 
 
@@ -942,7 +945,7 @@ class ContentAnalyticsView(APIView):
         - 카테고리별 성과 분석
         """,
         responses={
-            200: ContentAnalyticsSerializer,
+            200: ContentEffectivenessSerializer,
             401: "인증 필요"
         },
         tags=['Business Intelligence - Content']
@@ -951,7 +954,7 @@ class ContentAnalyticsView(APIView):
         engine = LearningAnalyticsEngine(request.user)
         analytics = engine.get_content_analytics()
         
-        serializer = ContentAnalyticsSerializer(analytics)
+        serializer = ContentEffectivenessSerializer(analytics, many=True)
         return Response(serializer.data)
 
 
@@ -1009,7 +1012,7 @@ class LearningRecommendationsView(APIView):
         - 참여도 개선 방안
         """,
         responses={
-            200: LearningRecommendationSerializer(many=True),
+            200: "Learning recommendations",
             401: "인증 필요"
         },
         tags=['Business Intelligence - Recommendations']
@@ -1019,8 +1022,8 @@ class LearningRecommendationsView(APIView):
             engine = RecommendationEngine(request.user)
             recommendations = engine.generate_recommendations()
             
-            serializer = LearningRecommendationSerializer(recommendations, many=True)
-            return Response(serializer.data)
+            # serializer = LearningRecommendationSerializer(recommendations, many=True)
+            return Response(recommendations)
         except Exception as e:
             logger.error(f"Error generating recommendations for user {request.user.id}: {e}")
             return Response(
@@ -1047,7 +1050,7 @@ class SubscriptionInsightsView(APIView):
         - 복습당 비용 효율성
         """,
         responses={
-            200: SubscriptionInsightsSerializer,
+            200: SubscriptionAnalyticsSerializer,
             401: "인증 필요"
         },
         tags=['Business Intelligence - Subscription']
@@ -1106,8 +1109,8 @@ class SubscriptionInsightsView(APIView):
                 'projected_monthly_value': round(projected_value, 2),
             }
             
-            serializer = SubscriptionInsightsSerializer(data)
-            return Response(serializer.data)
+            # serializer = SubscriptionInsightsSerializer(data)
+            return Response(data)
             
         except Exception as e:
             logger.error(f"Error generating subscription insights for user {request.user.id}: {e}")
@@ -1143,7 +1146,7 @@ class BusinessDashboardView(APIView):
                             description='분석 기간 (일수)', default=30),
         ],
         responses={
-            200: BusinessDashboardSerializer,
+            200: BusinessMetricsSerializer,
             401: "인증 필요",
             403: "관리자 권한 필요"
         },
@@ -1155,8 +1158,8 @@ class BusinessDashboardView(APIView):
             engine = BusinessMetricsEngine()
             dashboard_data = engine.get_business_dashboard(days)
             
-            serializer = BusinessDashboardSerializer(dashboard_data)
-            return Response(serializer.data)
+            # serializer = BusinessDashboardSerializer(dashboard_data)
+            return Response(dashboard_data)
             
         except Exception as e:
             logger.error(f"Error generating business dashboard: {e}")

@@ -29,13 +29,14 @@ from .test_views import (
     AdaptiveTestStartView,
     AdaptiveTestAnswerView
 )
-from .analytics_views import (
-    AIReviewSessionListView,
-    InstantContentCheckView,
-    LearningAnalyticsView,
-    AIStudyMateView,
-    AISummaryNoteView
-)
+# analytics_views module not found - commented out for now
+# from .analytics_views import (
+#     AIReviewSessionListView,
+#     InstantContentCheckView,
+#     LearningAnalyticsView,
+#     AIStudyMateView,
+#     AISummaryNoteView
+# )
 from .health_views import ai_review_health
 
 __all__ = [
@@ -59,12 +60,12 @@ __all__ = [
     'AdaptiveTestStartView',
     'AdaptiveTestAnswerView',
     
-    # Analytics views
-    'AIReviewSessionListView',
-    'InstantContentCheckView',
-    'LearningAnalyticsView',
-    'AIStudyMateView',
-    'AISummaryNoteView',
+    # Analytics views - commented out (module not found)
+    # 'AIReviewSessionListView',
+    # 'InstantContentCheckView', 
+    # 'LearningAnalyticsView',
+    # 'AIStudyMateView',
+    # 'AISummaryNoteView',
     
     # Health views
     'ai_review_health'
