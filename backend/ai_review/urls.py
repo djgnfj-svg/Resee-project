@@ -21,8 +21,8 @@ urlpatterns = [
     # Answer evaluation
     path('evaluate-answer/', views.AIAnswerEvaluationView.as_view(), name='evaluate-answer'),
     
-    # Review sessions
-    path('sessions/', views.AIReviewSessionListView.as_view(), name='review-sessions'),
+    # Review sessions - commented out (view not found)
+    # path('sessions/', views.AIReviewSessionListView.as_view(), name='review-sessions'),
     
     # Fill-in-the-blank generation
     path('generate-fill-blanks/', views.GenerateFillBlanksView.as_view(), name='generate-fill-blanks'),

@@ -96,7 +96,11 @@
       "Bash(for i in {1..6})",
       "Bash(done)",
       "Bash(npm run typecheck:*)",
-      "Bash(ENFORCE_EMAIL_VERIFICATION=False docker-compose exec -T backend python manage.py shell -c \"\nimport os\nprint(''Environment variables:'')\nprint(''ENFORCE_EMAIL_VERIFICATION:'', os.environ.get(''ENFORCE_EMAIL_VERIFICATION''))\nprint()\n\nfrom django.conf import settings  \nprint(''Django settings:'')\nprint(''ENFORCE_EMAIL_VERIFICATION:'', getattr(settings, ''ENFORCE_EMAIL_VERIFICATION''))\nprint()\n\nfrom accounts.models import User\nuser_unverified = User.objects.get(email=''unverified@resee.com'')\nprint(''Final test (should work now):'')\nprint(f''unverified@resee.com is_email_verified: {user_unverified.is_email_verified}'') \nprint(f''Can upgrade subscription: {user_unverified.can_upgrade_subscription()}'')\nprint(f''Can use AI features: {user_unverified.can_use_ai_features()}'')\n\")"
+      "Bash(ENFORCE_EMAIL_VERIFICATION=False docker-compose exec -T backend python manage.py shell -c \"\nimport os\nprint(''Environment variables:'')\nprint(''ENFORCE_EMAIL_VERIFICATION:'', os.environ.get(''ENFORCE_EMAIL_VERIFICATION''))\nprint()\n\nfrom django.conf import settings  \nprint(''Django settings:'')\nprint(''ENFORCE_EMAIL_VERIFICATION:'', getattr(settings, ''ENFORCE_EMAIL_VERIFICATION''))\nprint()\n\nfrom accounts.models import User\nuser_unverified = User.objects.get(email=''unverified@resee.com'')\nprint(''Final test (should work now):'')\nprint(f''unverified@resee.com is_email_verified: {user_unverified.is_email_verified}'') \nprint(f''Can upgrade subscription: {user_unverified.can_upgrade_subscription()}'')\nprint(f''Can use AI features: {user_unverified.can_use_ai_features()}'')\n\")",
+      "mcp__github__create_issue",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "mcp__github__search_repositories"
     ]
   },
   "enableAllProjectMcpServers": true,

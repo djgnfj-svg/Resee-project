@@ -288,3 +288,94 @@ def alert_on_errors():
     except Exception as e:
         logger.error(f"Failed to check for critical errors: {e}", exc_info=True)
         return {'success': False, 'error': str(e)}
+
+
+@shared_task(name='monitoring.check_specific_alert_rule')
+def check_specific_alert_rule(rule_id):
+    """
+    Check a specific alert rule and trigger if condition is met
+    """
+    try:
+        from .alert_models import AlertRule
+        from .alert_services.alert_engine import AlertEngine
+        
+        rule = AlertRule.objects.get(id=rule_id, is_active=True)
+        engine = AlertEngine()
+        result = engine.check_rule(rule)
+        
+        return {
+            'success': True,
+            'rule_id': rule_id,
+            'triggered': result.get('triggered', False),
+            'metric_value': result.get('metric_value'),
+        }
+        
+    except AlertRule.DoesNotExist:
+        return {'success': False, 'error': 'Alert rule not found or inactive'}
+    except Exception as e:
+        logger.error(f"Failed to check alert rule {rule_id}: {e}", exc_info=True)
+        return {'success': False, 'error': str(e)}
+
+
+@shared_task(name='monitoring.test_alert_notifications')
+def test_alert_notifications(channel='both', test_message=None, email_recipients=None, slack_channel=None):
+    """
+    Test alert notification channels
+    """
+    try:
+        from .alert_services.slack_notifier import SlackNotifier  
+        from .alert_services.email_notifier import EmailNotifier
+        
+        results = {}
+        
+        if not test_message:
+            test_message = "This is a test notification from Resee Alert System"
+        
+        # Test Slack notification
+        if channel in ['slack', 'both']:
+            slack_notifier = SlackNotifier()
+            try:
+                slack_result = slack_notifier.send_notification(
+                    message=test_message,
+                    channel=slack_channel or '#alerts',
+                    severity='info'
+                )
+                results['slack'] = {
+                    'success': True,
+                    'response': slack_result
+                }
+            except Exception as e:
+                results['slack'] = {
+                    'success': False,
+                    'error': str(e)
+                }
+        
+        # Test Email notification  
+        if channel in ['email', 'both']:
+            email_notifier = EmailNotifier()
+            try:
+                recipients = email_recipients or ['admin@resee.com']
+                email_result = email_notifier.send_notification(
+                    message=test_message,
+                    recipients=recipients,
+                    subject='Test Alert Notification'
+                )
+                results['email'] = {
+                    'success': True,
+                    'response': email_result
+                }
+            except Exception as e:
+                results['email'] = {
+                    'success': False,
+                    'error': str(e)
+                }
+        
+        return {
+            'success': True,
+            'channel': channel,
+            'results': results
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to test alert notifications: {e}", exc_info=True)
+        return {'success': False, 'error': str(e)}

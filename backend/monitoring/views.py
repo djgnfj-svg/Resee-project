@@ -19,7 +19,7 @@ from .models import (AIMetrics, APIMetrics, DatabaseMetrics, ErrorLog,
                      SystemHealth, UserActivity)
 from .utils import (check_system_health, clean_old_metrics,
                     get_performance_insights)
-from alerts.permissions import MonitoringPermission
+from .permissions import MonitoringPermission
 
 logger = logging.getLogger('monitoring')
 
@@ -740,7 +740,10 @@ def cleanup_old_data(request):
         return Response(
             {'error': 'Failed to clean up old data'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )"""
+        )
+
+
+"""
 API views for alert system
 """
 import logging
@@ -767,7 +770,9 @@ from .serializers import (
     AlertHistoryResolveSerializer, AlertStatisticsSerializer,
     TestNotificationSerializer, ManualTriggerSerializer
 )
-from .services import AlertEngine, SlackNotifier, EmailNotifier
+from .alert_services.alert_engine import AlertEngine
+from .alert_services.slack_notifier import SlackNotifier
+from .alert_services.email_notifier import EmailNotifier
 from .tasks import check_specific_alert_rule, test_alert_notifications
 from .permissions import (
     MonitoringPermission, AlertRulePermission, AlertHistoryPermission, AdminOnlyPermission
