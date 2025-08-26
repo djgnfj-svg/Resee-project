@@ -290,6 +290,26 @@ def alert_on_errors():
         return {'success': False, 'error': str(e)}
 
 
+@shared_task(name='monitoring.check_alert_rules_periodic')
+def check_alert_rules_periodic():
+    """
+    Periodic task to check all active alert rules
+    """
+    try:
+        from .alert_services.alert_engine import AlertEngine
+        
+        engine = AlertEngine()
+        result = engine.check_all_rules()
+        
+        logger.info(f"Alert rules check completed: {result}")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to check alert rules: {e}", exc_info=True)
+        return {'success': False, 'error': str(e)}
+
+
 @shared_task(name='monitoring.check_specific_alert_rule')
 def check_specific_alert_rule(rule_id):
     """
@@ -301,12 +321,12 @@ def check_specific_alert_rule(rule_id):
         
         rule = AlertRule.objects.get(id=rule_id, is_active=True)
         engine = AlertEngine()
-        result = engine.check_rule(rule)
+        result = engine.check_specific_rule(rule_id)
         
         return {
             'success': True,
             'rule_id': rule_id,
-            'triggered': result.get('triggered', False),
+            'triggered': result.get('alert_triggered', False),
             'metric_value': result.get('metric_value'),
         }
         

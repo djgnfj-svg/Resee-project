@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'review',
     'analytics',  # includes business intelligence
     'ai_review',
-    'monitoring',  # includes alerts system
+    'monitoring',  # system monitoring, health checks and alerts
 ]
 
 MIDDLEWARE = [
@@ -216,20 +216,21 @@ CELERY_BEAT_SCHEDULE = {
     },
     # Alert system tasks
     'check-alert-rules': {
-        'task': 'alerts.tasks.check_alert_rules',
+        'task': 'monitoring.check_alert_rules_periodic',
         'schedule': crontab(minute='*'),  # Every minute
     },
-    'send-daily-alert-summary': {
-        'task': 'alerts.tasks.send_daily_alert_summary',
-        'schedule': crontab(hour=9, minute=0),  # Daily at 9 AM
+    'test-alert-notifications': {
+        'task': 'monitoring.test_alert_notifications',
+        'schedule': crontab(hour=9, minute=0),  # Daily at 9 AM for testing
     },
-    'cleanup-old-alert-history': {
-        'task': 'alerts.tasks.cleanup_old_alert_history',
-        'schedule': crontab(hour=4, minute=0),  # Daily at 4 AM
-    },
-    'update-alert-metrics-cache': {
-        'task': 'alerts.tasks.update_alert_metrics_cache',
+    # System monitoring tasks
+    'collect-system-health': {
+        'task': 'monitoring.collect_system_health',
         'schedule': crontab(minute='*/5'),  # Every 5 minutes
+    },
+    'cleanup-old-monitoring-data': {
+        'task': 'monitoring.cleanup_old_monitoring_data', 
+        'schedule': crontab(hour=4, minute=0),  # Daily at 4 AM
     },
     # Business Intelligence tasks
     'collect-daily-learning-patterns': {
