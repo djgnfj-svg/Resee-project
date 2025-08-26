@@ -36,6 +36,14 @@ urlpatterns = [
     # Explanation evaluation
     path('evaluate-explanation/', views.ExplanationEvaluationView.as_view(), name='evaluate-explanation'),
     
+    # Weekly test (newly implemented)
+    path('weekly-test/', views.WeeklyTestView.as_view(), name='weekly-test'),
+    path('weekly-test/start/', views.WeeklyTestStartView.as_view(), name='weekly-test-start'),
+    path('weekly-test/answer/', views.WeeklyTestAnswerView.as_view(), name='weekly-test-answer'),
+    
+    # Instant content check (newly implemented)
+    path('instant-check/', views.InstantContentCheckView.as_view(), name='instant-content-check'),
+    
     # Adaptive test
     path('adaptive-test/start/', views.AdaptiveTestStartView.as_view(), name='adaptive-test-start'),
     path('adaptive-test/<int:test_id>/answer/', views.AdaptiveTestAnswerView.as_view(), name='adaptive-test-answer'),
