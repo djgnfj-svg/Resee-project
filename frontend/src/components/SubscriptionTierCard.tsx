@@ -105,7 +105,7 @@ export const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       <div className="px-6 py-4">
         <div className="text-center mb-4">
           <div className="text-3xl font-bold text-gray-900">
-            {tier.price === 0 ? '무료' : formatPrice(tier.price)}
+            {tier.price === 0 ? '무료' : formatPrice(Number(tier.price))}
           </div>
           {tier.price > 0 && (
             <div className="text-sm text-gray-500">월 구독</div>

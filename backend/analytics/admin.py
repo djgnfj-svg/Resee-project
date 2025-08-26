@@ -59,7 +59,7 @@ class ContentEffectivenessAdmin(admin.ModelAdmin):
     ]
     list_filter = [
         'average_difficulty_rating', 'abandonment_risk_score',
-        'content__category', 'content__content_type'
+        'content__category'
     ]
     search_fields = ['content__title', 'content__category__name']
     readonly_fields = ['success_rate', 'created_at', 'updated_at']

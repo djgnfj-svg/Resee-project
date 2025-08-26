@@ -15,7 +15,7 @@ from django.utils import timezone
 from accounts.models import Subscription
 from content.models import Content
 from review.models import ReviewHistory, ReviewSchedule
-from ai_review.models import AIUsageTracking
+# from ai_review.models import AIUsageTracking  # Model doesn't exist yet
 from monitoring.models import APIMetrics, SystemHealth, ErrorLog
 
 from .models import (
@@ -308,12 +308,14 @@ def _collect_user_daily_pattern(user, target_date) -> Dict[str, Any]:
         avg_review_time = 0
     
     # AI questions generated
-    ai_questions = AIUsageTracking.objects.filter(
-        user=user,
-        usage_date=target_date
-    ).aggregate(
-        total_questions=Coalesce(Sum('questions_generated'), 0)
-    )['total_questions'] or 0
+    # TODO: Uncomment when AIUsageTracking model is created
+    # ai_questions = AIUsageTracking.objects.filter(
+    #     user=user,
+    #     usage_date=target_date
+    # ).aggregate(
+    #     total_questions=Coalesce(Sum('questions_generated'), 0)
+    # )['total_questions'] or 0
+    ai_questions = 0  # Temporary default value
     
     # Peak activity hour (from review times)
     peak_hour = None
@@ -414,12 +416,14 @@ def _calculate_subscription_analytics(user, subscription) -> Dict[str, Any]:
         review_date__gte=tier_start
     ).count()
     
-    ai_questions_used = AIUsageTracking.objects.filter(
-        user=user,
-        usage_date__gte=tier_start.date()
-    ).aggregate(
-        total=Coalesce(Sum('questions_generated'), 0)
-    )['total'] or 0
+    # TODO: Uncomment when AIUsageTracking model is created
+    # ai_questions_used = AIUsageTracking.objects.filter(
+    #     user=user,
+    #     usage_date__gte=tier_start.date()
+    # ).aggregate(
+    #     total=Coalesce(Sum('questions_generated'), 0)
+    # )['total'] or 0
+    ai_questions_used = 0  # Temporary default value
     
     # Days active (simplified)
     days_active = LearningPattern.objects.filter(
@@ -515,13 +519,19 @@ def _collect_system_metrics_data(target_date) -> Dict[str, Any]:
         avg_success_rate = 0.0
     
     # AI metrics
-    ai_usage = AIUsageTracking.objects.filter(
-        usage_date=target_date
-    ).aggregate(
-        questions=Coalesce(Sum('questions_generated'), 0),
-        cost=Coalesce(Sum('cost_usd'), Decimal('0.0000')),
-        tokens=Coalesce(Sum('tokens_used'), 0)
-    )
+    # TODO: Uncomment when AIUsageTracking model is created
+    # ai_usage = AIUsageTracking.objects.filter(
+    #     usage_date=target_date
+    # ).aggregate(
+    #     questions=Coalesce(Sum('questions_generated'), 0),
+    #     cost=Coalesce(Sum('cost_usd'), Decimal('0.0000')),
+    #     tokens=Coalesce(Sum('tokens_used'), 0)
+    # )
+    ai_usage = {
+        'questions': 0,
+        'cost': Decimal('0.0000'),
+        'tokens': 0
+    }  # Temporary default values
     
     # System performance metrics
     api_metrics = APIMetrics.objects.filter(

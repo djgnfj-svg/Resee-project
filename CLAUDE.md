@@ -74,10 +74,7 @@ backend/
 ├── review/            # Review scheduling system (Ebbinghaus algorithm)
 ├── ai_review/         # AI question generation and evaluation
 ├── analytics/         # Learning statistics and patterns
-├── business_intelligence/ # Advanced analytics and user insights
 ├── monitoring/        # System monitoring and health checks
-├── alerts/            # Alert system with Slack/Email notifications
-├── legal/             # Terms, privacy policies, user data management
 └── resee/             # Django settings and configuration
 ```
 
@@ -217,15 +214,6 @@ adjust_review_schedules_on_subscription_change →
 Existing schedules auto-adjusted to new limits
 ```
 
-### Business Intelligence Flow
-```
-User activity → 
-BI analytics engine → 
-Generate insights → 
-Frontend BIDashboard displays → 
-UserAnalytics provides recommendations
-```
-
 ## 🚀 베타 배포
 
 ### 베타 배포 실행
@@ -322,34 +310,6 @@ docker-compose exec frontend npm run ci:quick
 6. **Email Verification**: Required for subscription features and AI access
 7. **Comprehensive Monitoring**: Alert system with Slack/Email notifications for system health
 
-## 🚨 Alert System
-
-### Quick Commands
-```bash
-# Test alert integrations
-docker-compose exec backend python manage.py shell
->>> from alerts.services.metric_collector import MetricCollector
->>> collector = MetricCollector()
->>> collector.get_metric_value('cpu_usage', 5)
-
-# Create alert rule via API
-curl -X POST http://localhost:8000/api/alerts/rules/ \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{"name":"High CPU","metric_name":"cpu_usage","condition":"gt","threshold_value":80}'
-
-# Check Celery alert tasks
-docker-compose exec celery celery -A resee inspect scheduled
-```
-
-### Key Features
-- **24 Metric Types**: System, API, Database, AI, Business metrics
-- **Flexible Conditions**: >, >=, <, <=, =, != with configurable time windows
-- **Multi-channel Notifications**: Slack webhooks + Email alerts
-- **Real-time Dashboard**: Monitoring overview at `/monitoring`
-- **Alert Management**: Create/edit/resolve via API or admin interface
-
-See `ALERT_SYSTEM_README.md` for comprehensive documentation.
-
 ## 🔄 Recent Architecture Changes
 
 ### Email System Consolidation
@@ -402,8 +362,7 @@ Payment data is now stored directly in the Subscription model:
 - **Ebbinghaus Algorithm**: `backend/review/utils.py`
 - **Email Service**: `backend/accounts/email_service.py`
 - **AI Question Generation**: `backend/ai_review/services/question_generator.py`
-- **Business Intelligence**: `backend/business_intelligence/services/analytics_engine.py`
-- **Alert System**: `backend/alerts/services/alert_engine.py`
+- **Alert System**: `backend/monitoring/services/alert_engine.py`
 
 ### Frontend Key Components
 - **TipTap Editor**: `frontend/src/components/TipTapEditor.tsx`
