@@ -764,7 +764,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 
-from .models import AlertRule, AlertHistory
+from .alert_models import AlertRule, AlertHistory
 from .serializers import (
     AlertRuleSerializer, AlertRuleCreateSerializer, AlertHistorySerializer,
     AlertHistoryResolveSerializer, AlertStatisticsSerializer,
