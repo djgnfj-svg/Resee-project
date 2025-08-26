@@ -10,8 +10,8 @@ from django.utils import timezone
 
 User = get_user_model()
 
-# Import alert models
-from .alert_models import AlertRule, AlertHistory
+# Import alert models to ensure they're included in migrations
+from .alert_models import AlertRule, AlertHistory  # noqa
 
 class APIMetrics(models.Model):
     """
