@@ -26,6 +26,15 @@ from .views.chat_views import AIChatView
 
 from .views.health_views import ai_review_health
 
+from .views.test_views import (
+    WeeklyTestView,
+    WeeklyTestStartView,
+    WeeklyTestAnswerView,
+    InstantContentCheckView,
+    AdaptiveTestStartView,
+    AdaptiveTestAnswerView
+)
+
 # Import remaining views from backup file temporarily
 import logging
 from django.shortcuts import get_object_or_404

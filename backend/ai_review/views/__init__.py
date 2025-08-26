@@ -26,6 +26,8 @@ from .chat_views import AIChatView
 from .test_views import (
     WeeklyTestView,
     WeeklyTestStartView,
+    WeeklyTestAnswerView,
+    InstantContentCheckView,
     AdaptiveTestStartView,
     AdaptiveTestAnswerView
 )
@@ -57,6 +59,8 @@ __all__ = [
     # Test views
     'WeeklyTestView',
     'WeeklyTestStartView',
+    'WeeklyTestAnswerView',
+    'InstantContentCheckView',
     'AdaptiveTestStartView',
     'AdaptiveTestAnswerView',
     
