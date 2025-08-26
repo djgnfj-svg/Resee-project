@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../utils/api';
+import api from '../../utils/api';
 import type {
   DashboardOverview,
   SystemHealth,

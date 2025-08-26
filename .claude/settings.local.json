@@ -100,7 +100,8 @@
       "mcp__github__create_issue",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "mcp__github__search_repositories"
+      "mcp__github__search_repositories",
+      "Read(//mnt/c/myprojects/Resee/**)"
     ]
   },
   "enableAllProjectMcpServers": true,

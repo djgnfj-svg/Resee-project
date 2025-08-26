@@ -2,7 +2,8 @@
 Base model classes for the Resee application.
 """
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+from django.conf import settings
 
 
 class TimestampMixin(models.Model):
@@ -20,7 +21,7 @@ class UserOwnedMixin(models.Model):
     """
     Abstract model for models that belong to a user.
     """
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     class Meta:
         abstract = True

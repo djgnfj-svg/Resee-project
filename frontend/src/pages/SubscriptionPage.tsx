@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api, { authAPI } from '../utils/api';
 import { SubscriptionTierInfo, SubscriptionUpgradeData } from '../types';
-import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, XMarkIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 
 const SubscriptionPage: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
+  const [emailSignup, setEmailSignup] = useState('');
+  const [emailSubmitting, setEmailSubmitting] = useState(false);
 
   // 현재 구독 정보 조회
   const { data: currentSubscription, isLoading: subscriptionLoading } = useQuery({
@@ -16,6 +18,43 @@ const SubscriptionPage: React.FC = () => {
     queryFn: () => api.get('/accounts/subscription/').then(res => res.data),
     enabled: !!user?.is_email_verified,
   });
+
+  // Email signup handler
+  const handleEmailSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!emailSignup.trim()) {
+      toast.error('이메일을 입력해주세요.');
+      return;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailSignup)) {
+      toast.error('올바른 이메일 주소를 입력해주세요.');
+      return;
+    }
+    
+    setEmailSubmitting(true);
+    
+    try {
+      // For now, we'll just simulate the email signup
+      // In a real implementation, this would send to a backend API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success('구독 관심 신청이 완료되었습니다! 새로운 기능과 소식을 우선적으로 전해드릴게요.');
+      setEmailSignup('');
+      
+      // In a real implementation, you might want to store this in localStorage
+      // to prevent duplicate submissions
+      localStorage.setItem('email_signup_submitted', emailSignup);
+      
+    } catch (error) {
+      toast.error('신청 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setEmailSubmitting(false);
+    }
+  };
 
   // Subscription tiers data
   const subscriptionTiers: SubscriptionTierInfo[] = [
@@ -176,6 +215,46 @@ const SubscriptionPage: React.FC = () => {
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
             효과적인 학습을 위한 최적의 플랜을 선택하세요. 언제든지 업그레이드하거나 취소할 수 있습니다.
           </p>
+        </div>
+
+        {/* Email Signup Section */}
+        <div className="max-w-2xl mx-auto mb-12">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-full">
+                <EnvelopeIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              💎 프리미엄 기능에 관심이 있으신가요?
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              새로운 AI 기능과 고급 분석 도구가 출시될 때 가장 먼저 알려드릴게요.<br />
+              베타 테스트 기회와 특별 할인 혜택도 제공합니다!
+            </p>
+            
+            <form onSubmit={handleEmailSignup} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <input
+                type="email"
+                value={emailSignup}
+                onChange={(e) => setEmailSignup(e.target.value)}
+                placeholder="이메일 주소 입력"
+                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                disabled={emailSubmitting}
+              />
+              <button
+                type="submit"
+                disabled={emailSubmitting || !emailSignup.trim()}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium"
+              >
+                {emailSubmitting ? '신청 중...' : '관심 신청'}
+              </button>
+            </form>
+            
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+              스팸 메일은 보내지 않으며, 언제든지 구독을 취소할 수 있습니다.
+            </p>
+          </div>
         </div>
 
         {/* Current Subscription Status */}
