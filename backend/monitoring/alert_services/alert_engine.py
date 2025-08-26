@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.core.cache import cache
 from django.db.models import Q
 
-from ..models import AlertRule, AlertHistory
+from monitoring.alert_models import AlertRule, AlertHistory
 from .metric_collector import MetricCollector
 from .slack_notifier import SlackNotifier
 from .email_notifier import EmailNotifier
