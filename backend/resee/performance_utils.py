@@ -13,6 +13,28 @@ logger = logging.getLogger(__name__)
 class PerformanceMonitor:
     """Performance monitoring utility class"""
     
+    def __init__(self, name="operation"):
+        self.name = name
+        self.start_time = None
+        self.start_queries = None
+    
+    def __enter__(self):
+        if settings.DEBUG:
+            self.start_time = time.time()
+            self.start_queries = len(connection.queries)
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if settings.DEBUG and self.start_time is not None:
+            end_time = time.time()
+            end_queries = len(connection.queries)
+            
+            execution_time = (end_time - self.start_time) * 1000  # Convert to milliseconds
+            query_count = end_queries - self.start_queries
+            
+            self.log_execution_time(self.name, execution_time)
+            self.log_query_count(self.name, query_count)
+    
     @staticmethod
     def log_execution_time(func_name, execution_time):
         """Log function execution time"""
