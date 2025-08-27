@@ -1,0 +1,97 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: resee_db
+      POSTGRES_USER: resee_user
+      POSTGRES_PASSWORD: resee_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resee_user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: resee
+      RABBITMQ_DEFAULT_PASS: resee_password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    command: gunicorn resee.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
+      - CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=False
+      - ENVIRONMENT=production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    environment:
+      - NODE_ENV=production
+
+  celery:
+    build: ./backend
+    command: celery -A resee worker -l info
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
+      - CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DEBUG=False
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A resee inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
