@@ -28,7 +28,13 @@ if 'DATABASE_URL' in os.environ:
     DATABASES = {
         'default': dj_database_url.parse(os.environ['DATABASE_URL'])
     }
-    DATABASES['default']['CONN_MAX_AGE'] = 60
+    DATABASES['default']['CONN_MAX_AGE'] = 600  # 10 minutes for AWS RDS
+    DATABASES['default']['OPTIONS'] = {
+        'MAX_CONNS': 20,
+        'charset': 'utf8mb4',
+        'init_command': 'SET sql_mode="STRICT_TRANS_TABLES"',
+        'isolation_level': 'read committed',
+    }
 else:
     raise ValueError("DATABASE_URL environment variable is required in production")
 
@@ -230,25 +236,42 @@ if not ANTHROPIC_API_KEY:
     raise ValueError("ANTHROPIC_API_KEY environment variable is required in production")
 
 # AWS S3 Configuration for production static/media files
-if os.environ.get('USE_S3'):
-    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
-    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
-    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'ap-northeast-2')
-    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'us-east-1')
+
+if AWS_STORAGE_BUCKET_NAME and AWS_ACCESS_KEY_ID:
+    # CloudFront or direct S3 domain
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN')
+    if not AWS_S3_CUSTOM_DOMAIN:
+        AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
     
     # Static files
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
     STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
     
     # Media files
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
     
-    AWS_DEFAULT_ACL = 'public-read'
+    # S3 Settings
+    AWS_DEFAULT_ACL = None  # Use bucket policy instead
     AWS_S3_OBJECT_PARAMETERS = {
         'CacheControl': 'max-age=86400',
     }
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_QUERYSTRING_AUTH = False
+    
+    # Performance optimizations
+    AWS_S3_MAX_MEMORY_SIZE = 128 * 1024 * 1024  # 128MB
+    AWS_S3_USE_THREADS = True
+    
+else:
+    # Fallback to local static files
+    STATIC_URL = '/static/'
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Production error monitoring integration
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
