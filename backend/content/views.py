@@ -91,12 +91,8 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         ],
         responses={200: ContentSerializer(many=True)}
     )
-    @log_api_call
-    @log_performance('content_list')
-    @query_debugger
     def list(self, request, *args, **kwargs):
-        with PerformanceMonitor('content_list'):
-            return super().list(request, *args, **kwargs)
+        return super().list(request, *args, **kwargs)
     
     @swagger_auto_schema(
         operation_summary="새 콘텐츠 생성",

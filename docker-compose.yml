@@ -54,6 +54,7 @@ services:
     env_file:
       - .env
     environment:
+      - DJANGO_SETTINGS_MODULE=resee.settings.development
       - DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
       - CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -91,6 +92,7 @@ services:
     volumes:
       - ./backend:/app
     environment:
+      - DJANGO_SETTINGS_MODULE=resee.settings.development
       - DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
       - CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
