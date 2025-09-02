@@ -17,7 +17,9 @@
       "mcp__playwright__browser_snapshot",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git push:*)",
+      "mcp__github__get_file_contents"
     ],
     "deny": [],
     "ask": []
