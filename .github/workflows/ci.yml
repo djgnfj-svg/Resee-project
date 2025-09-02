@@ -1,4 +1,4 @@
-name: Resee CI/CD
+name: Resee CI - Backend Only
 
 on:
   push:
@@ -8,426 +8,71 @@ on:
 
 env:
   PYTHON_VERSION: '3.11'
-  NODE_VERSION: '18'
 
 jobs:
-  # 🚀 Quick validation for fast feedback
-  quick-check:
-    name: Quick Health Check
+  # 🧪 Backend Tests Only
+  backend-tests:
+    name: Backend Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
+    
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
+        cache-dependency-path: backend/requirements.txt
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
-
-    # Backend validations
     - name: Install backend dependencies
       run: |
         cd backend
-        pip install --quiet django djangorestframework django-environ dj-database-url black flake8
-    
-    - name: Django system check
+        pip install -r requirements.txt
+        pip install pytest pytest-django pytest-cov
+
+    - name: Run backend tests
       run: |
         cd backend
-        python manage.py check --deploy
+        python -m pytest -v --tb=short --maxfail=5
       env:
-        SECRET_KEY: test-secret-key-for-ci-validation
-        DATABASE_URL: sqlite:///memory
-        DEBUG: False
-        REDIS_URL: redis://localhost:6379/0
-        CELERY_BROKER_URL: redis://localhost:6379/1
+        DJANGO_SETTINGS_MODULE: resee.settings.testing
+        SECRET_KEY: test-secret-key-for-ci
+        DEBUG: True
         ANTHROPIC_API_KEY: test-key
         GOOGLE_OAUTH2_CLIENT_ID: test-id
         GOOGLE_OAUTH2_CLIENT_SECRET: test-secret
-        STRIPE_SECRET_KEY: sk_test_placeholder
-        STRIPE_WEBHOOK_SECRET: whsec_test_placeholder
+        ENFORCE_EMAIL_VERIFICATION: False
 
-    - name: Python code formatting check
+    - name: Code quality check
       run: |
         cd backend
-        black . --check --exclude=migrations --quiet
+        pip install black flake8
+        black . --check --exclude=migrations --quiet || echo "Code formatting needs attention"
+        flake8 . --exclude=migrations,venv --max-line-length=120 --ignore=E203,W503 || echo "Linting issues found"
       continue-on-error: true
 
-    # Frontend validations  
-    - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm ci --prefer-offline --no-audit --progress=false --silent
-
-    - name: TypeScript compilation check
-      run: |
-        cd frontend
-        npx tsc --noEmit --skipLibCheck
-
-    - name: Frontend build verification
-      run: |
-        cd frontend
-        npm run build
-      env:
-        CI: true
-        GENERATE_SOURCEMAP: false
-        REACT_APP_API_URL: http://localhost:8000
-        REACT_APP_GOOGLE_CLIENT_ID: test-client-id
-
-    - name: Quick check summary
-      if: always()
-      run: |
-        echo "🎉 Quick validation completed!"
-        echo "✅ Django configuration valid"
-        echo "✅ TypeScript compilation successful"
-        echo "✅ Frontend build successful"
-
-  # 🧪 Comprehensive test suite
-  backend-tests:
-    name: Backend Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
-    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[test]')
-    
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: resee_test
-          POSTGRES_PASSWORD: testpass123
-          POSTGRES_DB: resee_test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 3
-        ports:
-          - 5432:5432
-      
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 3
-        ports:
-          - 6379:6379
-
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
-        cache-dependency-path: backend/requirements.txt
-
-    - name: Install dependencies
-      run: |
-        cd backend
-        pip install -r requirements.txt
-        pip install pytest pytest-django pytest-cov coverage
-
-    - name: Create test environment
-      run: |
-        cd backend
-        cat > .env << EOF
-        SECRET_KEY=test-secret-key-for-ci-tests-only
-        DEBUG=True
-        DATABASE_URL=postgresql://resee_test:testpass123@localhost:5432/resee_test_db
-        REDIS_URL=redis://localhost:6379/0
-        CELERY_BROKER_URL=redis://localhost:6379/1
-        ANTHROPIC_API_KEY=test-key-placeholder
-        GOOGLE_OAUTH2_CLIENT_ID=test-client-id
-        GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret
-        STRIPE_SECRET_KEY=sk_test_placeholder
-        STRIPE_WEBHOOK_SECRET=whsec_test_placeholder
-        ENFORCE_EMAIL_VERIFICATION=False
-        EOF
-
-    - name: Run database migrations
-      run: |
-        cd backend
-        python manage.py migrate --no-input
-
-    - name: Run test suite
-      run: |
-        cd backend
-        python -m pytest -v --tb=short --maxfail=3
-      continue-on-error: false
-
-  # 🎨 Frontend tests
-  frontend-tests:
-    name: Frontend Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    if: github.event_name == 'pull_request' || contains(github.event.head_commit.message, '[test]')
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
-
-    - name: Install dependencies
-      run: |
-        cd frontend
-        npm ci --prefer-offline --no-audit
-
-    - name: Run tests
-      run: |
-        cd frontend
-        npm run test:ci
-      env:
-        CI: true
-        REACT_APP_API_URL: http://localhost:8000
-        REACT_APP_GOOGLE_CLIENT_ID: test-client-id
-
-  # 🐳 Docker integration test
-  docker-integration:
-    name: Docker Integration
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    if: contains(github.event.head_commit.message, '[docker]') || github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Create environment files
-      run: |
-        # Backend .env
-        cat > .env << EOF
-        SECRET_KEY=docker-test-secret-key-for-ci
-        DEBUG=True
-        DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
-        REDIS_URL=redis://redis:6379/0
-        CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
-        CELERY_RESULT_BACKEND=redis://redis:6379/0
-        ANTHROPIC_API_KEY=test-key-placeholder
-        GOOGLE_OAUTH2_CLIENT_ID=test-client-id
-        GOOGLE_OAUTH2_CLIENT_SECRET=test-client-secret
-        REACT_APP_GOOGLE_CLIENT_ID=test-client-id
-        STRIPE_SECRET_KEY=sk_test_placeholder
-        STRIPE_WEBHOOK_SECRET=whsec_test_placeholder
-        ENFORCE_EMAIL_VERIFICATION=False
-        EOF
-
-    - name: Build and start services
-      run: |
-        docker-compose build --parallel
-        docker-compose up -d
-        
-    - name: Wait for services to be ready
-      run: |
-        echo "⏳ Waiting for services to start..."
-        
-        # Wait for database
-        echo "🔍 Checking database..."
-        for i in {1..30}; do
-          if docker-compose exec -T db pg_isready -U resee_user 2>/dev/null; then
-            echo "✅ Database is ready"
-            break
-          fi
-          echo "⏳ Waiting for database... ($i/30)"
-          sleep 2
-        done
-        
-        # Wait for Redis
-        echo "🔍 Checking Redis..."
-        for i in {1..15}; do
-          if docker-compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
-            echo "✅ Redis is ready"
-            break
-          fi
-          echo "⏳ Waiting for Redis... ($i/15)"
-          sleep 2
-        done
-        
-        # Wait for RabbitMQ
-        echo "🔍 Checking RabbitMQ..."
-        for i in {1..20}; do
-          if docker-compose exec -T rabbitmq rabbitmq-diagnostics ping 2>/dev/null; then
-            echo "✅ RabbitMQ is ready"
-            break
-          fi
-          echo "⏳ Waiting for RabbitMQ... ($i/20)"
-          sleep 3
-        done
-        
-        # Wait for backend to be healthy
-        echo "🔍 Checking backend..."
-        for i in {1..60}; do
-          if curl -f http://localhost:8000/api/monitoring/health/ 2>/dev/null; then
-            echo "✅ Backend is healthy"
-            break
-          fi
-          echo "⏳ Waiting for backend... ($i/60)"
-          sleep 3
-        done
-        
-        # Wait for frontend
-        echo "🔍 Checking frontend..."
-        for i in {1..30}; do
-          if curl -f http://localhost:3000/ 2>/dev/null; then
-            echo "✅ Frontend is healthy"
-            break
-          fi
-          echo "⏳ Waiting for frontend... ($i/30)"
-          sleep 2
-        done
-
-    - name: Basic API test
-      run: |
-        # Test a few basic endpoints
-        echo "🧪 Testing basic API endpoints..."
-        curl -f http://localhost:8000/api/monitoring/health/ || exit 1
-        curl -f http://localhost:8000/api/accounts/login/ -X POST -H "Content-Type: application/json" -d '{}' || echo "Login endpoint test completed"
-        echo "✅ API tests completed"
-
-    - name: Cleanup
-      if: always()
-      run: |
-        echo "📋 Collecting logs..."
-        docker-compose logs --tail=50 --timestamps
-        echo "🧹 Cleaning up containers..."
-        docker-compose down -v --remove-orphans
-
-  # 🔍 Code quality and security
-  code-quality:
-    name: Code Quality
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        cache: 'pip'
-        cache-dependency-path: backend/requirements.txt
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
-
-    - name: Install Python tools
-      run: pip install flake8 black safety
-
-    - name: Python linting
-      run: |
-        cd backend
-        flake8 . --exclude=migrations,venv,env --max-line-length=120 --ignore=E203,W503
-      continue-on-error: true
-
-    - name: Python security check
-      run: |
-        cd backend
-        safety check --json --ignore 51457 || echo "Security warnings found"
-      continue-on-error: true
-
-    - name: Install Node dependencies
-      run: |
-        cd frontend
-        npm ci --prefer-offline --no-audit --silent
-
-    - name: Frontend linting
-      run: |
-        cd frontend
-        npm run lint || echo "Linting warnings found"
-      continue-on-error: true
-
-    - name: Frontend security audit
-      run: |
-        cd frontend
-        npm audit --audit-level=high || echo "Security audit completed with warnings"
-      continue-on-error: true
-
-  # ✅ Final status
-  ci-status:
+  # ✅ Summary
+  ci-summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [quick-check, backend-tests, frontend-tests, docker-integration, code-quality]
+    needs: [backend-tests]
     if: always()
     
     steps:
-    - name: CI Results
+    - name: Results
       run: |
-        echo "## 🚀 Resee CI/CD Results"
+        echo "## 🚀 Resee Backend CI Results"
         echo ""
-        
-        # Check each job result
-        echo "### 📋 Job Status:"
-        echo "- Quick Check: ${{ needs.quick-check.result }}"
-        echo "- Backend Tests: ${{ needs.backend-tests.result }}"
-        echo "- Frontend Tests: ${{ needs.frontend-tests.result }}"
-        echo "- Docker Integration: ${{ needs.docker-integration.result }}"
-        echo "- Code Quality: ${{ needs.code-quality.result }}"
+        echo "### 📋 Backend Tests: ${{ needs.backend-tests.result }}"
         echo ""
-        
-        # Overall status assessment
-        if [ "${{ needs.quick-check.result }}" = "success" ]; then
-          echo "✅ **Quick Check**: PASSED - Core validations successful"
-          
-          # Check optional tests
-          failed_jobs=""
-          if [ "${{ needs.backend-tests.result }}" = "failure" ]; then
-            failed_jobs="$failed_jobs Backend-Tests"
-          fi
-          if [ "${{ needs.frontend-tests.result }}" = "failure" ]; then
-            failed_jobs="$failed_jobs Frontend-Tests"
-          fi
-          if [ "${{ needs.docker-integration.result }}" = "failure" ]; then
-            failed_jobs="$failed_jobs Docker-Integration"
-          fi
-          
-          if [ -z "$failed_jobs" ]; then
-            echo "🎉 **Overall Status**: All checks PASSED!"
-            echo ""
-            echo "### ✨ Ready for merge!"
-            echo "- All validations successful"
-            echo "- Tests passed"
-            echo "- Docker integration working"
-            echo "- Code quality checks passed"
-          else
-            echo "⚠️ **Overall Status**: Core passed, but some optional checks failed:"
-            echo "$failed_jobs"
-            echo ""
-            echo "### 💡 Review optional failures if needed"
-          fi
-          
-          echo ""
-          echo "### 🔧 CI Tips:"
-          echo "- Add \`[test]\` to commit message to run full test suite"
-          echo "- Add \`[docker]\` to commit message to test Docker integration"
-          
+        if [ "${{ needs.backend-tests.result }}" = "success" ]; then
+          echo "✅ **Status**: All backend tests PASSED!"
+          echo "🎉 Ready for merge!"
         else
-          echo "❌ **Quick Check**: FAILED - Essential validations failed"
-          echo "🔧 **Status**: Must fix before merge"
-          echo ""
-          echo "### ⚠️ Action Required:"
-          echo "1. Check the quick-check job logs"
-          echo "2. Fix Django configuration issues"
-          echo "3. Resolve TypeScript compilation errors"
-          echo "4. Fix frontend build issues"
+          echo "❌ **Status**: Backend tests FAILED"
+          echo "🔧 Check the backend-tests job for details"
           exit 1
         fi

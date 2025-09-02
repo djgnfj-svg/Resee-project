@@ -15,7 +15,9 @@
       "Bash(curl:*)",
       "mcp__playwright__browser_console_messages",
       "mcp__playwright__browser_snapshot",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
