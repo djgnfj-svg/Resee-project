@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from resee.cache_utils import CacheManager, cached_method
 from resee.mixins import AuthorViewSetMixin, UserOwnershipMixin
 from resee.pagination import ContentPagination, OptimizedPageNumberPagination
-from resee.performance_utils import PerformanceMonitor, query_debugger
+# Performance monitoring removed for production
 from resee.structured_logging import (log_api_call, log_performance,
                                       performance_logger)
 
@@ -147,7 +147,6 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     )
     @action(detail=False, methods=['get'])
     @cached_method(timeout=600, key_prefix='content_by_category')
-    @query_debugger
     def by_category(self, request):
         """Get contents grouped by category - optimized version with error handling"""
         try:
