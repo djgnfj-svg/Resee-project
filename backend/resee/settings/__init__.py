@@ -14,19 +14,18 @@ environment = os.environ.get('ENVIRONMENT', 'development')
 if 'testing' in settings_module or 'test' in sys.argv:
     from .testing import *
 elif environment == 'production' or 'production' in settings_module:
-    from .production import *
+    # Production settings removed - use development settings for now
+    from .development import *
+    print("WARNING: Production settings not available, using development settings.")
 elif environment == 'staging' or 'staging' in settings_module:
-    # For staging environment, use production settings with some modifications
-    from .production import *
+    # Staging settings use development as base
+    from .development import *
     
     # Staging-specific overrides
     DEBUG = os.environ.get('DEBUG', 'False') == 'True'
     ALLOWED_HOSTS.extend(['staging.resee.com', 'resee-staging.herokuapp.com'])
     
-    # Less strict security in staging
-    SECURE_HSTS_SECONDS = 0
-    
-    print("Staging environment loaded (based on production settings).")
+    print("Staging environment loaded (based on development settings).")
 else:
     # Default to development
     from .development import *
