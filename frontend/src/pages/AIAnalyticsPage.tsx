@@ -43,7 +43,7 @@ const AIAnalyticsPage: React.FC = () => {
   const { data: analytics, isLoading, error } = useQuery({
     queryKey: ['learning-analytics', selectedPeriod],
     queryFn: async (): Promise<LearningAnalytics | null> => {
-      const response = await apiClient.post('/api/ai-review/analytics/', {
+      const response = await apiClient.post('/ai-review/analytics/', {
         period_type: selectedPeriod
       });
       return response.data;

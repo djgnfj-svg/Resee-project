@@ -5,11 +5,16 @@ from django.http import JsonResponse
 from django.db import connection
 from django.core.cache import cache
 from django.conf import settings
+from django.views.decorators.cache import never_cache
+from rest_framework.decorators import api_view, throttle_classes
 import time
 import logging
 
 logger = logging.getLogger(__name__)
 
+@api_view(['GET'])
+@throttle_classes([])
+@never_cache
 def health_check_basic(request):
     """
     Basic health check endpoint
@@ -21,6 +26,9 @@ def health_check_basic(request):
         'service': 'resee-backend'
     })
 
+@api_view(['GET'])
+@throttle_classes([])
+@never_cache
 def health_check_detailed(request):
     """
     Detailed health check with dependency verification
@@ -75,6 +83,9 @@ def health_check_detailed(request):
         'version': getattr(settings, 'VERSION', '1.0.0')
     })
 
+@api_view(['GET'])
+@throttle_classes([])
+@never_cache
 def readiness_check(request):
     """
     Readiness check - service is ready to receive traffic
@@ -114,6 +125,9 @@ def readiness_check(request):
         'service': 'resee-backend'
     })
 
+@api_view(['GET'])
+@throttle_classes([])
+@never_cache
 def liveness_check(request):
     """
     Liveness check - service is alive (basic functionality)

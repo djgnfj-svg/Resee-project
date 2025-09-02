@@ -3,14 +3,14 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 🏗️ Project Overview
-Resee is a smart review platform leveraging Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose.
+Resee is a smart review platform leveraging Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose with multi-environment support.
 
 ### Core Services
 - **Backend**: Django REST Framework + PostgreSQL + Celery
 - **Frontend**: React + TypeScript + TailwindCSS + TipTap Editor
 - **AI Service**: Claude API (Anthropic)
 - **Message Queue**: RabbitMQ (Celery broker)
-- **Cache**: Redis
+- **Cache**: Redis (cache + Celery results + sessions)
 - **Reverse Proxy**: Nginx
 
 ## 🎯 Common Development Commands
@@ -41,7 +41,7 @@ docker-compose exec backend python manage.py shell_plus
 # Create superuser
 docker-compose exec backend python manage.py createsuperuser
 
-# Code formatting
+# Code formatting and linting
 docker-compose exec backend black .
 docker-compose exec backend flake8
 ```
@@ -63,6 +63,32 @@ docker-compose exec frontend npm run typecheck
 docker-compose exec frontend npm run build
 docker-compose exec frontend npm run ci:quick  # Typecheck + build
 ```
+
+## 🚀 Production Deployment Commands
+
+### Automated Deployment
+```bash
+# Full production deployment with SSL (auto-detects HTTP vs HTTPS)
+./deploy-auto.sh yourdomain.com  # For domain with SSL
+./deploy-auto.sh 192.168.1.100   # For IP with HTTP only
+
+# Check deployment health
+./scripts/check-deployment.sh
+
+# Backup data before updates
+./scripts/backup-data.sh
+
+# Zero-downtime updates
+./scripts/update-deployment.sh
+
+# SSL certificate renewal
+sudo certbot renew && docker-compose restart nginx
+```
+
+### Docker Environment Files
+- **Development**: `docker-compose.yml` - Hot-reload, direct ports
+- **Production**: `docker-compose.prod.yml` - Gunicorn, optimized builds
+- **SSL Production**: `docker-compose.ssl.yml` - HTTPS with Let's Encrypt
 
 ## 🏗️ Architecture Overview
 
@@ -90,6 +116,14 @@ frontend/src/
 ├── utils/            # API client utilities and helpers
 ├── types/            # TypeScript type definitions
 └── styles/           # Global styles and animations
+```
+
+### Scripts Directory
+```
+scripts/
+├── backup-data.sh         # Comprehensive data backup
+├── check-deployment.sh    # Health check and monitoring
+└── update-deployment.sh   # Zero-downtime updates
 ```
 
 ### Core Model Relationships
@@ -170,10 +204,18 @@ queryClient.invalidateQueries(['learning-calendar']);
 - `GOOGLE_OAUTH2_CLIENT_ID`: Google OAuth client ID
 - `GOOGLE_OAUTH2_CLIENT_SECRET`: Google OAuth secret
 - `ENFORCE_EMAIL_VERIFICATION`: Email verification requirement (default: False)
+- `DJANGO_ALLOWED_HOSTS`: Comma-separated list of allowed hosts
+- `CSRF_TRUSTED_ORIGINS`: Comma-separated list of trusted origins
 
 ### Required Frontend Variables
 - `REACT_APP_API_URL`: Backend API URL
 - `REACT_APP_GOOGLE_CLIENT_ID`: Google OAuth client ID
+
+### Monitoring Variables (Optional)
+- `SLACK_WEBHOOK_URL`: Slack integration for alerts
+- `SLACK_DEFAULT_CHANNEL`: Default channel for notifications
+- `ALERT_SUMMARY_RECIPIENTS`: Email recipients for alert summaries
+- `SENTRY_DSN`: Error tracking integration
 
 ## 📋 Core Workflows
 
@@ -213,25 +255,6 @@ Django signal fires →
 adjust_review_schedules_on_subscription_change → 
 Existing schedules auto-adjusted to new limits
 ```
-
-## 🚀 베타 배포
-
-### 베타 배포 실행
-```bash
-# 환경변수 설정
-cp .env.beta.example .env.beta
-# .env.beta 파일 편집 (RDS URL, API 키 등)
-
-# 배포 실행
-chmod +x deploy-beta.sh
-./deploy-beta.sh
-```
-
-### 베타 환경 특징
-- **AWS RDS PostgreSQL**: 클라우드 데이터베이스
-- **Docker Compose**: 간소화된 컨테이너 관리
-- **보안 강화**: Rate limiting, SQL injection 방지
-- **헬스체크**: 자동 서비스 상태 모니터링
 
 ## 🤖 AI Integration Architecture
 
@@ -299,16 +322,52 @@ docker-compose exec frontend npm run ci:quick
 - Backend: SQLite in-memory database, mocked services, disabled migrations
 - Frontend: React Testing Library + MSW for API mocking
 - Coverage thresholds: 70% branches, functions, lines, statements
+- CI/CD: GitHub Actions with conditional testing and health checks
+
+## 🔐 Security Features
+
+### Production Security
+- **SSL/TLS**: Automated Let's Encrypt certificate management
+- **Firewall**: UFW configuration with essential ports only
+- **Security Headers**: HSTS, CSP, X-Frame-Options, X-Content-Type-Options
+- **Rate Limiting**: Multi-tier API throttling by subscription
+- **CSRF Protection**: Domain-based CSRF validation
+- **Session Security**: Redis-backed sessions with secure cookies
+
+### Deployment Security
+```bash
+# The deploy-auto.sh script automatically configures:
+- UFW firewall rules
+- Nginx security headers
+- SSL certificate provisioning
+- HTTP to HTTPS redirect
+- Rate limiting per IP
+```
+
+## 📊 Monitoring & Analytics
+
+### System Monitoring
+- **Health Checks**: Multi-service health monitoring endpoints
+- **Performance Tracking**: Slow query detection, memory usage alerts
+- **Alert System**: Slack/Email notifications for critical events
+- **Automated Cleanup**: Old data purging with configurable retention
+
+### Business Intelligence
+- **Learning Pattern Analysis**: Daily automated collection
+- **Content Effectiveness**: Performance-based optimization metrics
+- **Subscription Analytics**: Revenue and usage patterns
+- **System Metrics**: Infrastructure monitoring and alerts
 
 ## 🔍 Key Design Principles
 
 1. **Overdue Review Handling**: Missed reviews don't disappear, shown on current date
 2. **Subscription-based Limits**: Each tier has access to specific review ranges
-3. **Ebbinghaus Optimization**: Scientifically-based forgetting curve intervals (see /backend/review/utils.py)
+3. **Ebbinghaus Optimization**: Scientifically-based forgetting curve intervals
 4. **Real-time Adjustments**: Subscription changes auto-adjust existing schedules
-5. **Performance**: TanStack Query for server state caching with immediate invalidation on changes
+5. **Performance**: TanStack Query for server state caching with immediate invalidation
 6. **Email Verification**: Required for subscription features and AI access
-7. **Comprehensive Monitoring**: Alert system with Slack/Email notifications for system health
+7. **Clean Architecture**: Service layer abstraction, signal-based coordination
+8. **Scalability**: Horizontal scaling with Gunicorn workers and Celery
 
 ## 🔄 Recent Architecture Changes
 
@@ -330,32 +389,6 @@ Payment data is now stored directly in the Subscription model:
 - **Frontend monitoring components**: MonitoringDashboard and related components removed
 - **Fragmented email files**: Consolidated into single service file
 
-## 🎯 Key Development Guidelines
-
-### Test Strategy
-- Always run tests before committing: `docker-compose exec backend python -m pytest` and `docker-compose exec frontend npm run test:ci`
-- Backend uses pytest with Django test database
-- Frontend requires 70% test coverage threshold
-- Use factory-boy for test data generation in backend
-
-### Code Quality Standards
-- Backend: Black formatting + Flake8 linting
-- Frontend: ESLint + TypeScript strict mode
-- All new features require corresponding tests
-- Database changes require proper migrations
-
-### Environment Management
-- `.env` file for local development variables
-- `.env.beta` for beta deployment configuration
-- Testing environment uses in-memory databases and mocked services
-- Production settings in `backend/resee/settings/production.py`
-
-### Performance Considerations
-- Use TanStack Query for API caching in frontend
-- Review system optimized for subscription tier access patterns
-- Celery workers handle background tasks (email, notifications, AI processing)
-- Monitoring system tracks performance metrics automatically
-
 ## 📍 Important File Locations
 
 ### Core Business Logic
@@ -363,6 +396,7 @@ Payment data is now stored directly in the Subscription model:
 - **Email Service**: `backend/accounts/email_service.py`
 - **AI Question Generation**: `backend/ai_review/services/question_generator.py`
 - **Alert System**: `backend/monitoring/services/alert_engine.py`
+- **Deployment Script**: `deploy-auto.sh`
 
 ### Frontend Key Components
 - **TipTap Editor**: `frontend/src/components/TipTapEditor.tsx`
@@ -372,5 +406,6 @@ Payment data is now stored directly in the Subscription model:
 
 ### Configuration Files
 - **Django Settings**: `backend/resee/settings/base.py`
-- **Docker Compose**: `docker-compose.yml`
+- **Docker Compose**: `docker-compose.yml`, `docker-compose.prod.yml`, `docker-compose.ssl.yml`
 - **Frontend Config**: `frontend/package.json`, `frontend/tailwind.config.js`
+- **CI/CD Pipeline**: `.github/workflows/ci.yml`
