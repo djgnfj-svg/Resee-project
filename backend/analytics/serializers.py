@@ -6,7 +6,7 @@ from django.db.models import Avg, Count, Sum, F
 from django.utils import timezone
 from datetime import timedelta
 
-from .models import LearningPattern, ContentEffectiveness, SubscriptionAnalytics, SystemUsageMetrics
+from .models import LearningPattern, SubscriptionAnalytics, SystemUsageMetrics  # ContentEffectiveness temporarily disabled
 
 
 class LearningPatternSerializer(serializers.ModelSerializer):
@@ -23,24 +23,25 @@ class LearningPatternSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 
-class ContentEffectivenessSerializer(serializers.ModelSerializer):
-    """Serializer for content effectiveness data"""
-    content_title = serializers.CharField(source='content.title', read_only=True)
-    content_type = serializers.CharField(source='content.content_type', read_only=True)
-    category_name = serializers.CharField(source='content.category.name', read_only=True)
-    success_rate = serializers.FloatField(read_only=True)
-    
-    class Meta:
-        model = ContentEffectiveness
-        fields = [
-            'id', 'content_title', 'content_type', 'category_name',
-            'total_reviews', 'successful_reviews', 'success_rate',
-            'average_difficulty_rating', 'average_review_time_seconds',
-            'time_to_master_days', 'ai_questions_generated',
-            'ai_questions_success_rate', 'last_reviewed', 
-            'abandonment_risk_score'
-        ]
-        read_only_fields = ['id', 'success_rate']
+# Temporarily disabled - ContentEffectiveness model is commented out
+# class ContentEffectivenessSerializer(serializers.ModelSerializer):
+#     """Serializer for content effectiveness data"""
+#     content_title = serializers.CharField(source='content.title', read_only=True)
+#     content_type = serializers.CharField(source='content.content_type', read_only=True)
+#     category_name = serializers.CharField(source='content.category.name', read_only=True)
+#     success_rate = serializers.FloatField(read_only=True)
+#     
+#     class Meta:
+#         model = ContentEffectiveness
+#         fields = [
+#             'id', 'content_title', 'content_type', 'category_name',
+#             'total_reviews', 'successful_reviews', 'success_rate',
+#             'average_difficulty_rating', 'average_review_time_seconds',
+#             'time_to_master_days', 'ai_questions_generated',
+#             'ai_questions_success_rate', 'last_reviewed', 
+#             'abandonment_risk_score'
+#         ]
+#         read_only_fields = ['id', 'success_rate']
 
 
 class SubscriptionAnalyticsSerializer(serializers.ModelSerializer):

@@ -20,7 +20,15 @@
       "Bash(find:*)",
       "Bash(git push:*)",
       "mcp__github__get_file_contents",
-      "mcp__github__create_or_update_file"
+      "mcp__github__create_or_update_file",
+      "Bash(docker exec:*)",
+      "mcp__playwright__browser_evaluate",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(docker:*)",
+      "Bash(rm:*)",
+      "mcp__playwright__browser_select_option",
+      "mcp__playwright__browser_press_key",
+      "mcp__playwright__browser_take_screenshot"
     ],
     "deny": [],
     "ask": []

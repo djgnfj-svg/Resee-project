@@ -878,9 +878,10 @@ from rest_framework.views import APIView
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 
-from .models import LearningPattern, ContentEffectiveness, SubscriptionAnalytics
+from .models import LearningPattern, SubscriptionAnalytics  # ContentEffectiveness temporarily disabled
 from .serializers import (
-    LearningInsightSerializer, ContentEffectivenessSerializer, 
+    LearningInsightSerializer, 
+    # ContentEffectivenessSerializer,  # temporarily disabled
     SubscriptionAnalyticsSerializer, BusinessMetricsSerializer,
     PerformanceTrendSerializer
 )
@@ -927,35 +928,36 @@ class LearningInsightsView(APIView):
         return Response(serializer.data)
 
 
-class ContentAnalyticsView(APIView):
-    """
-    Get content effectiveness analytics for the authenticated user
-    """
-    permission_classes = [IsAuthenticated]
-    
-    @swagger_auto_schema(
-        operation_summary="콘텐츠 효율성 분석",
-        operation_description="""
-        사용자가 생성한 콘텐츠의 학습 효율성과 패턴을 분석합니다.
-        
-        **분석 항목:**
-        - 마스터한 콘텐츠 vs 어려워하는 콘텐츠
-        - 평균 마스터 소요 시간
-        - 가장/최소 효과적인 콘텐츠 유형
-        - 카테고리별 성과 분석
-        """,
-        responses={
-            200: ContentEffectivenessSerializer,
-            401: "인증 필요"
-        },
-        tags=['Business Intelligence - Content']
-    )
-    def get(self, request):
-        engine = LearningAnalyticsEngine(request.user)
-        analytics = engine.get_content_analytics()
-        
-        serializer = ContentEffectivenessSerializer(analytics, many=True)
-        return Response(serializer.data)
+# Temporarily disabled - ContentEffectiveness model is commented out
+# class ContentAnalyticsView(APIView):
+#     """
+#     Get content effectiveness analytics for the authenticated user
+#     """
+#     permission_classes = [IsAuthenticated]
+#     
+#     @swagger_auto_schema(
+#         operation_summary="콘텐츠 효율성 분석",
+#         operation_description="""
+#         사용자가 생성한 콘텐츠의 학습 효율성과 패턴을 분석합니다.
+#         
+#         **분석 항목:**
+#         - 마스터한 콘텐츠 vs 어려워하는 콘텐츠
+#         - 평균 마스터 소요 시간
+#         - 가장/최소 효과적인 콘텐츠 유형
+#         - 카테고리별 성과 분석
+#         """,
+#         responses={
+#             200: ContentEffectivenessSerializer,
+#             401: "인증 필요"
+#         },
+#         tags=['Business Intelligence - Content']
+#     )
+#     def get(self, request):
+#         engine = LearningAnalyticsEngine(request.user)
+#         analytics = engine.get_content_analytics()
+#         
+#         serializer = ContentEffectivenessSerializer(analytics, many=True)
+#         return Response(serializer.data)
 
 
 class PerformanceTrendView(APIView):
