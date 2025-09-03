@@ -243,3 +243,56 @@ def subscription_upgrade(request):
             }, status=status.HTTP_200_OK)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def subscription_cancel(request):
+    """Cancel user's subscription (downgrade to FREE)"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        user = request.user
+        logger.info(f"Starting subscription cancellation for user: {user.email}")
+        
+        # Get user's subscription
+        subscription = getattr(user, 'subscription', None)
+        if not subscription:
+            logger.error(f"User {user.email} has no subscription")
+            return Response({'error': '구독 정보를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if already FREE tier
+        if subscription.tier == SubscriptionTier.FREE:
+            logger.info(f"User {user.email} is already on FREE tier")
+            return Response({'error': '이미 무료 플랜을 사용중입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Cancel subscription by downgrading to FREE
+        from datetime import timedelta
+        from django.utils import timezone
+        
+        old_tier = subscription.tier
+        subscription.tier = SubscriptionTier.FREE
+        subscription.is_active = True  # FREE tier is always active
+        subscription.start_date = timezone.now()
+        subscription.end_date = None  # FREE tier has no end date
+        
+        # Clear payment amount for free tier
+        subscription.amount_paid = 0.0
+        subscription.save()
+        
+        logger.info(f"Subscription cancelled: {user.email} from {old_tier} to FREE")
+        
+        # Return updated subscription
+        from .serializers import SubscriptionSerializer
+        response_serializer = SubscriptionSerializer(subscription)
+        response_data = response_serializer.data
+        response_data['message'] = '구독이 성공적으로 취소되었습니다. 무료 플랜으로 변경되었습니다.'
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error in subscription cancel: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response({'error': f'구독 취소 중 오류가 발생했습니다: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
