@@ -85,6 +85,13 @@ services:
     environment:
       - REACT_APP_API_URL=http://localhost:8000/api
       - REACT_APP_GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID}
+      - HOST=0.0.0.0
+      - PORT=3000
+      - DANGEROUSLY_DISABLE_HOST_CHECK=true
+      - SKIP_PREFLIGHT_CHECK=true
+      - WDS_SOCKET_HOST=localhost
+      - WDS_SOCKET_PORT=3000
+      - FAST_REFRESH=false
 
   celery:
     build: ./backend
