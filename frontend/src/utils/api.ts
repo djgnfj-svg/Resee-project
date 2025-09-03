@@ -215,6 +215,15 @@ export const contentAPI = {
     return response.data;
   },
   
+  updateCategory: async (id: number, data: CreateCategoryData): Promise<Category> => {
+    const response = await api.put(`/content/categories/${id}/`, data);
+    return response.data;
+  },
+  
+  deleteCategory: async (id: number): Promise<void> => {
+    await api.delete(`/content/categories/${id}/`);
+  },
+  
   getContentsByCategory: async (): Promise<Record<string, Content[]>> => {
     const response = await api.get('/content/contents/by_category/');
     return response.data;
