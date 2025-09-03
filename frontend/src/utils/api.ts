@@ -305,6 +305,11 @@ export const subscriptionAPI = {
     const response = await api.post('/accounts/subscription/upgrade/', data);
     return response.data;
   },
+  
+  cancelSubscription: async (): Promise<Subscription> => {
+    const response = await api.post('/accounts/subscription/cancel/');
+    return response.data;
+  },
 };
 
 // Weekly Goal API
