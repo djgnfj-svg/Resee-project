@@ -7,6 +7,7 @@ import { Content, Category, CreateContentData, UpdateContentData } from '../type
 import { extractResults } from '../utils/helpers';
 import ContentFormV2 from '../components/ContentFormV2';
 import AIQuestionModal from '../components/AIQuestionModal';
+import CategoryManager from '../components/CategoryManager';
 import { useAuth } from '../contexts/AuthContext';
 
 const ContentPage: React.FC = () => {
@@ -17,15 +18,17 @@ const ContentPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('-created_at');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [aiReviewContent, setAIReviewContent] = useState<Content | null>(null);
   const [expandedContents, setExpandedContents] = useState<Set<number>>(new Set());
+  const [showCategoryManager, setShowCategoryManager] = useState<boolean>(false);
 
   // Check if user can access AI features
   const canUseAI = user?.subscription?.is_active && user?.is_email_verified;
 
   // Fetch contents
   const { data: contents = [], isLoading: contentsLoading } = useQuery<Content[]>({
-    queryKey: ['contents', selectedCategory, selectedPriority, sortBy],
+    queryKey: ['contents', selectedCategory, selectedPriority, sortBy, searchQuery],
     queryFn: () => {
       const params = new URLSearchParams();
       if (selectedCategory !== 'all') {
@@ -33,6 +36,9 @@ const ContentPage: React.FC = () => {
       }
       if (selectedPriority !== 'all') {
         params.append('priority', selectedPriority);
+      }
+      if (searchQuery.trim()) {
+        params.append('search', searchQuery.trim());
       }
       params.append('ordering', sortBy);
       return contentAPI.getContents(params.toString()).then(extractResults);
@@ -228,13 +234,41 @@ const ContentPage: React.FC = () => {
           <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">필터</h2>
         </div>
         
+        {/* Search */}
+        <div className="mb-4">
+          <label htmlFor="search-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            🔍 콘텐츠 검색
+          </label>
+          <input
+            id="search-input"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="제목이나 내용으로 검색하세요..."
+            className="block w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400 transition-all duration-200 px-4 py-2"
+          />
+        </div>
+
         {/* Filter Options */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Category filter */}
           <div>
-            <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              📂 카테고리
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                📂 카테고리
+              </label>
+              <button
+                onClick={() => setShowCategoryManager(true)}
+                className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 flex items-center gap-1"
+                title="카테고리 관리"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                관리
+              </button>
+            </div>
             <select
               id="category-filter"
               value={selectedCategory}
@@ -290,6 +324,17 @@ const ContentPage: React.FC = () => {
 
         {/* Active Filters Display */}
         <div className="mt-4 flex flex-wrap gap-2">
+          {searchQuery && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+              검색: "{searchQuery}"
+              <button
+                onClick={() => setSearchQuery('')}
+                className="ml-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+              >
+                ×
+              </button>
+            </span>
+          )}
           {selectedCategory !== 'all' && (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
               카테고리: {categories.find(c => c.slug === selectedCategory)?.name}
@@ -327,7 +372,12 @@ const ContentPage: React.FC = () => {
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">콘텐츠 없음</h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {selectedCategory === 'all' && selectedPriority === 'all' ? '새로운 학습 콘텐츠를 추가해보세요.' : '선택한 필터에 해당하는 콘텐츠가 없습니다.'}
+            {selectedCategory === 'all' && selectedPriority === 'all' && !searchQuery
+              ? '새로운 학습 콘텐츠를 추가해보세요.'
+              : searchQuery
+                ? `"${searchQuery}"에 대한 검색 결과가 없습니다.`
+                : '선택한 필터에 해당하는 콘텐츠가 없습니다.'
+            }
           </p>
         </div>
       ) : (
@@ -468,6 +518,13 @@ const ContentPage: React.FC = () => {
         <AIQuestionModal
           content={aiReviewContent}
           onClose={handleAIReviewComplete}
+        />
+      )}
+
+      {/* Category Manager Modal */}
+      {showCategoryManager && (
+        <CategoryManager
+          onClose={() => setShowCategoryManager(false)}
         />
       )}
     </div>

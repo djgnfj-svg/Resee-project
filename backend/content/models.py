@@ -24,6 +24,11 @@ class Category(BaseModel):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
+            # Handle cases where slugify returns empty string (e.g., emojis)
+            if not self.slug:
+                # Use a fallback slug based on the category ID or a unique identifier
+                import uuid
+                self.slug = f"category-{str(uuid.uuid4())[:8]}"
         super().save(*args, **kwargs)
 
 

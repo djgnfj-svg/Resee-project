@@ -154,7 +154,7 @@ export interface UpdateContentData extends Partial<CreateContentData> {}
 
 export interface CreateCategoryData {
   name: string;
-  description: string;
+  description?: string;
 }
 
 // Review API types
