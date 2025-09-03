@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from .models import (
     LearningPattern, 
-    ContentEffectiveness, 
+    # ContentEffectiveness,  # Temporarily disabled
     SubscriptionAnalytics, 
     SystemUsageMetrics
 )
@@ -51,32 +51,33 @@ class LearningPatternAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(ContentEffectiveness)
-class ContentEffectivenessAdmin(admin.ModelAdmin):
-    list_display = [
-        'content', 'success_rate_display', 'total_reviews', 
-        'time_to_master_days', 'abandonment_risk_score'
-    ]
-    list_filter = [
-        'average_difficulty_rating', 'abandonment_risk_score',
-        'content__category'
-    ]
-    search_fields = ['content__title', 'content__category__name']
-    readonly_fields = ['success_rate', 'created_at', 'updated_at']
-    
-    def success_rate_display(self, obj):
-        rate = obj.success_rate
-        if rate >= 80:
-            color = 'green'
-        elif rate >= 60:
-            color = 'orange'
-        else:
-            color = 'red'
-        return format_html(
-            '<span style="color: {};">{:.1f}%</span>', 
-            color, rate
-        )
-    success_rate_display.short_description = '성공률'
+# Temporarily disabled - ContentEffectiveness model is commented out
+# @admin.register(ContentEffectiveness)
+# class ContentEffectivenessAdmin(admin.ModelAdmin):
+#     list_display = [
+#         'content', 'success_rate_display', 'total_reviews', 
+#         'time_to_master_days', 'abandonment_risk_score'
+#     ]
+#     list_filter = [
+#         'average_difficulty_rating', 'abandonment_risk_score',
+#         'content__category'
+#     ]
+#     search_fields = ['content__title', 'content__category__name']
+#     readonly_fields = ['success_rate', 'created_at', 'updated_at']
+#     
+#     def success_rate_display(self, obj):
+#         rate = obj.success_rate
+#         if rate >= 80:
+#             color = 'green'
+#         elif rate >= 60:
+#             color = 'orange'
+#         else:
+#             color = 'red'
+#         return format_html(
+#             '<span style="color: {};">{:.1f}%</span>', 
+#             color, rate
+#         )
+#     success_rate_display.short_description = '성공률'
 
 
 @admin.register(SubscriptionAnalytics)
