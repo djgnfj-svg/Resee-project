@@ -12,7 +12,7 @@ urlpatterns = [
     
     # Business Intelligence views (from BI app)
     path('learning-insights/', views.LearningInsightsView.as_view(), name='learning-insights'),
-    path('content-analytics/', views.ContentAnalyticsView.as_view(), name='content-analytics'),
+    # path('content-analytics/', views.ContentAnalyticsView.as_view(), name='content-analytics'),  # temporarily disabled
     path('performance-trends/', views.PerformanceTrendView.as_view(), name='performance-trends'),
     path('recommendations/', views.LearningRecommendationsView.as_view(), name='recommendations'),
     path('subscription-insights/', views.SubscriptionInsightsView.as_view(), name='subscription-insights'),
