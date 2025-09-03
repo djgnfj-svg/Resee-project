@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 // import toast from 'react-hot-toast';
-import { authAPI, analyticsAPI } from '../utils/api';
+import { authAPI, analyticsAPI, subscriptionAPI } from '../utils/api';
 import { User, DashboardData } from '../types';
 import { CreditCardIcon } from '@heroicons/react/24/outline';
 
@@ -49,6 +49,26 @@ const ProfilePage: React.FC = () => {
     },
   });
 
+  // Cancel subscription mutation
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: subscriptionAPI.cancelSubscription,
+    onSuccess: (updatedSubscription) => {
+      alert('Success: 구독이 성공적으로 취소되었습니다. 무료 플랜으로 변경되었습니다.');
+      // Update user data with new subscription info
+      queryClient.setQueryData(['profile'], (oldData: User | undefined) => {
+        if (oldData) {
+          return { ...oldData, subscription: updatedSubscription };
+        }
+        return oldData;
+      });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (error: any) => {
+      const errorMessage = error.userMessage || '구독 취소에 실패했습니다.';
+      alert(`Error: ${errorMessage}`);
+    },
+  });
+
   const onSubmit = (data: ProfileFormData) => {
     updateProfileMutation.mutate(data);
   };
@@ -61,6 +81,19 @@ const ProfilePage: React.FC = () => {
       });
     }
     setIsEditing(false);
+  };
+
+  const handleCancelSubscription = () => {
+    if (window.confirm(
+      '정말 구독을 취소하시겠습니까?\n\n' +
+      '구독을 취소하면:\n' +
+      '• 무료 플랜으로 변경됩니다\n' +
+      '• 복습 간격이 3일로 제한됩니다\n' +
+      '• AI 기능 사용이 제한됩니다\n\n' +
+      '이 작업은 즉시 적용되며 되돌릴 수 없습니다.'
+    )) {
+      cancelSubscriptionMutation.mutate();
+    }
   };
 
 
@@ -144,7 +177,7 @@ const ProfilePage: React.FC = () => {
                     </span>
                   </div>
                 )}
-                <div className="pt-3 border-t">
+                <div className="pt-3 border-t space-y-2">
                   <Link
                     to="/subscription"
                     className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
@@ -152,6 +185,27 @@ const ProfilePage: React.FC = () => {
                     <CreditCardIcon className="w-4 h-4 mr-2" />
                     구독 관리
                   </Link>
+                  {user.subscription.tier !== 'free' && (
+                    <button
+                      onClick={handleCancelSubscription}
+                      disabled={cancelSubscriptionMutation.isPending}
+                      className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 border border-red-600 hover:border-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {cancelSubscriptionMutation.isPending ? (
+                        <>
+                          <div className="w-4 h-4 mr-2 animate-spin rounded-full border-b-2 border-red-600"></div>
+                          취소 중...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          구독 취소
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
