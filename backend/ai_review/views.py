@@ -31,6 +31,7 @@ from .views.test_views import (
     WeeklyTestStartView,
     WeeklyTestAnswerView,
     InstantContentCheckView,
+    ContentQualityCheckView,
     AdaptiveTestStartView,
     AdaptiveTestAnswerView
 )
