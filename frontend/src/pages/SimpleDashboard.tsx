@@ -150,11 +150,11 @@ const SimpleDashboard: React.FC = () => {
               오늘의 복습 시작
             </a>
             <a 
-              href="/analytics"
-              className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-4 text-white font-semibold hover:from-purple-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 block text-center"
+              href="/weekly-test"
+              className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-orange-500 to-red-600 px-6 py-4 text-white font-semibold hover:from-orange-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 block text-center"
             >
-              <span className="mr-2">📊</span>
-              고급 분석 보기
+              <span className="mr-2">📝</span>
+              주간 시험
             </a>
           </div>
         </div>
@@ -181,31 +181,6 @@ const SimpleDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Enhanced Analytics Notice */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-indigo-200 dark:border-indigo-800">
-        <div className="flex items-center mb-4">
-          <div className="text-2xl mr-3">📈</div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">향상된 분석 기능</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm dark:shadow-gray-700/20">
-            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">🎯 주간 복습 성과</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">최근 4주간의 복습 성과와 성공률을 한 눈에 확인할 수 있습니다.</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm dark:shadow-gray-700/20">
-            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">📊 일별 복습 현황</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">일별 복습 횟수와 성공률 추이를 시각적으로 분석합니다.</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm dark:shadow-gray-700/20">
-            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">🎭 복습 결과 분포</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">기억함/애매함/모름의 분포를 30일/전체 기간별로 확인합니다.</p>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm dark:shadow-gray-700/20">
-            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">🔥 연속 학습 추적</h4>
-            <p className="text-sm text-gray-600 dark:text-gray-400">연속 복습일 수와 학습 지속성을 트래킹합니다.</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
