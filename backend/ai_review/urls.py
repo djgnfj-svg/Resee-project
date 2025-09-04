@@ -40,7 +40,8 @@ urlpatterns = [
     path('weekly-test/start/', views.WeeklyTestStartView.as_view(), name='weekly-test-start'),
     path('weekly-test/answer/', views.WeeklyTestAnswerView.as_view(), name='weekly-test-answer'),
     
-    # Instant content check (newly implemented)
+    # Content quality check (newly implemented)
+    path('content-check/', views.ContentQualityCheckView.as_view(), name='content-check'),
     path('instant-check/', views.InstantContentCheckView.as_view(), name='instant-content-check'),
     
 ]
