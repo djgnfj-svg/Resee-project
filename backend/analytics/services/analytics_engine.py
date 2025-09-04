@@ -18,7 +18,7 @@ from django.contrib.auth import get_user_model
 from accounts.models import Subscription, AIUsageTracking
 from content.models import Content, Category
 from review.models import ReviewHistory, ReviewSchedule
-from monitoring.models import UserActivity, APIMetrics
+# from monitoring.models import UserActivity, APIMetrics  # monitoring app removed
 
 logger = logging.getLogger(__name__)
 User = get_user_model()

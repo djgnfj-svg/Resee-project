@@ -100,7 +100,6 @@ backend/
 ├── review/            # Review scheduling system (Ebbinghaus algorithm)
 ├── ai_review/         # AI question generation and evaluation
 ├── analytics/         # Learning statistics and patterns
-├── monitoring/        # System monitoring and health checks
 └── resee/             # Django settings and configuration
 ```
 
@@ -112,7 +111,7 @@ frontend/src/
 │   └── dashboard/    # Dashboard hero, stats cards, empty states
 ├── pages/            # Main application pages
 ├── contexts/         # Global state (Auth, Theme)
-├── hooks/            # Custom React hooks (subscription, monitoring)
+├── hooks/            # Custom React hooks (subscription)
 ├── utils/            # API client utilities and helpers
 ├── types/            # TypeScript type definitions
 └── styles/           # Global styles and animations
@@ -426,7 +425,8 @@ All 3 core AI features are now fully implemented and integrated:
 
 ### Removed Components
 - **payments app**: Completely removed (unused by frontend)
-- **Frontend monitoring components**: MonitoringDashboard and related components removed
+- **monitoring app**: Backend app completely removed with all related files
+- **Frontend monitoring components**: MonitoringDashboard, useMonitoring hook, monitoring types removed
 - **Fragmented email files**: Consolidated into single service file
 
 ## 📍 Important File Locations
@@ -436,7 +436,7 @@ All 3 core AI features are now fully implemented and integrated:
 - **Email Service**: `backend/accounts/email_service.py`
 - **AI Question Generation**: `backend/ai_review/services/question_generator.py`
 - **AI Content Quality Check**: `backend/ai_review/views/test_views.py` (ContentQualityCheckView)
-- **Alert System**: `backend/monitoring/services/alert_engine.py`
+- ~~**Alert System**: `backend/monitoring/services/alert_engine.py` (removed)~~
 - **Deployment Script**: `deploy-auto.sh`
 
 ### AI Integration Files

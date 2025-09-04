@@ -355,19 +355,20 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                   <button
                     type="button"
                     onClick={handleAIContentCheck}
-                    disabled={isChecking || !content?.trim() || !watchedTitle?.trim()}
+                    disabled={isChecking || !content?.trim() || !watchedTitle?.trim() || content.trim().length < 300}
                     className={`inline-flex items-center px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-                      !isChecking && content?.trim() && watchedTitle?.trim()
+                      !isChecking && content?.trim() && watchedTitle?.trim() && content.trim().length >= 300
                         ? 'text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg'
                         : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
                     }`}
+                    title={content.trim().length < 300 ? `AI 검사는 300자 이상에서 가능합니다 (현재 ${content.trim().length}자)` : ''}
                   >
                     {isChecking ? (
                       <LoadingSpinner className="w-4 h-4 mr-2" />
                     ) : (
                       <span className="mr-2">🤖</span>
                     )}
-                    {isChecking ? 'AI 검사 중...' : 'AI 콘텐츠 검사'}
+                    {isChecking ? 'AI 검사 중...' : content.trim().length < 300 ? 'AI 콘텐츠 검사 (300자 이상)' : 'AI 콘텐츠 검사'}
                   </button>
                 )}
 
