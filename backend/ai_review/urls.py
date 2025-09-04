@@ -48,6 +48,4 @@ urlpatterns = [
     path('adaptive-test/start/', views.AdaptiveTestStartView.as_view(), name='adaptive-test-start'),
     path('adaptive-test/<int:test_id>/answer/', views.AdaptiveTestAnswerView.as_view(), name='adaptive-test-answer'),
     
-    # AI Analytics
-    path('analytics/', views.AIAnalyticsView.as_view(), name='ai-analytics'),
 ]
