@@ -129,6 +129,14 @@ class WeeklyTestView(APIView):
     
     def get(self, request):
         """사용자의 주간 시험 목록 조회"""
+        from django.conf import settings
+        from .mock_responses import AIMockResponses
+        
+        # Use mock responses if enabled
+        if getattr(settings, 'AI_USE_MOCK_RESPONSES', True):
+            mock_response = AIMockResponses.get_weekly_test_list_response()
+            return Response(mock_response)
+            
         tests = WeeklyTest.objects.filter(user=request.user)[:10]
         serializer = WeeklyTestSerializer(tests, many=True)
         return Response(serializer.data)
@@ -137,6 +145,14 @@ class WeeklyTestView(APIView):
     @log_performance('weekly_test_creation')
     def post(self, request):
         """새로운 주간 시험 생성"""
+        from django.conf import settings
+        from .mock_responses import AIMockResponses
+        
+        # Use mock responses if enabled
+        if getattr(settings, 'AI_USE_MOCK_RESPONSES', True):
+            mock_response = AIMockResponses.get_weekly_test_response(test_type="create")
+            return Response(mock_response, status=status.HTTP_201_CREATED)
+        
         if not request.user.can_use_ai_features():
             return Response(
                 {'error': 'AI features not available'},
@@ -201,6 +217,14 @@ class WeeklyTestStartView(APIView):
     
     def post(self, request):
         """주간 시험 시작"""
+        from django.conf import settings
+        from .mock_responses import AIMockResponses
+        
+        # Use mock responses if enabled
+        if getattr(settings, 'AI_USE_MOCK_RESPONSES', True):
+            mock_response = AIMockResponses.get_weekly_test_response(test_type="start")
+            return Response(mock_response)
+        
         serializer = WeeklyTestStartSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -240,6 +264,15 @@ class AdaptiveTestStartView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def post(self, request):
+        from django.conf import settings
+        from .mock_responses import AIMockResponses
+        
+        # Use mock responses if enabled
+        if getattr(settings, 'AI_USE_MOCK_RESPONSES', True):
+            difficulty = request.data.get('difficulty', 'medium')
+            mock_response = AIMockResponses.get_adaptive_test_response(test_type="start", difficulty=difficulty)
+            return Response(mock_response)
+        
         return Response({
             'message': '적응형 테스트 기능은 현재 개발 중입니다.',
             'status': 'under_development'
@@ -251,6 +284,14 @@ class AdaptiveTestAnswerView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def post(self, request, test_id):
+        from django.conf import settings
+        from .mock_responses import AIMockResponses
+        
+        # Use mock responses if enabled
+        if getattr(settings, 'AI_USE_MOCK_RESPONSES', True):
+            mock_response = AIMockResponses.get_adaptive_test_response(test_type="answer")
+            return Response(mock_response)
+        
         return Response({
             'message': '적응형 테스트 답변 제출 기능은 현재 개발 중입니다.',
             'status': 'under_development'
@@ -302,3 +343,104 @@ class AISummaryNoteView(APIView):
             'message': 'AI 요약 노트 기능은 현재 개발 중입니다.',
             'status': 'under_development'
         }, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+class AIAnalyticsView(APIView):
+    """AI Analytics view for learning insights"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        """Generate AI-powered learning analytics"""
+        from django.conf import settings
+        from .mock_responses import AIMockResponses
+        period_type = request.data.get('period_type', 'weekly')
+        
+        # Use mock responses if enabled
+        if getattr(settings, 'AI_USE_MOCK_RESPONSES', True):
+            mock_response = AIMockResponses.get_analytics_response(period_type=period_type)
+            return Response(mock_response)
+        
+        try:
+            # Get basic analytics data from review history
+            from review.models import ReviewHistory
+            from content.models import Content
+            from django.utils import timezone
+            
+            # Calculate period dates
+            now = timezone.now()
+            if period_type == 'daily':
+                start_date = now - timedelta(days=1)
+            elif period_type == 'weekly':
+                start_date = now - timedelta(weeks=1)
+            elif period_type == 'monthly':
+                start_date = now - timedelta(days=30)
+            else:  # quarterly
+                start_date = now - timedelta(days=90)
+            
+            # Get review data for the period
+            reviews = ReviewHistory.objects.filter(
+                user=request.user,
+                review_date__gte=start_date
+            )
+            
+            # Calculate basic metrics
+            total_reviews = reviews.count()
+            if total_reviews > 0:
+                success_rate = reviews.filter(result='remembered').count() / total_reviews * 100
+                average_time = reviews.aggregate(avg_time=Avg('time_spent'))['avg_time'] or 0
+            else:
+                success_rate = 0
+                average_time = 0
+            
+            # Get content statistics
+            total_contents = Content.objects.filter(author=request.user).count()
+            
+            # Mock insights
+            insights = []
+            if success_rate > 80:
+                insights.append({
+                    'type': 'positive',
+                    'title': '훌륭한 복습 성과!',
+                    'description': f'복습 성공률이 {success_rate:.1f}%로 매우 높습니다.',
+                    'recommendation': '현재 학습 패턴을 유지하세요.'
+                })
+            elif success_rate < 50 and total_reviews > 0:
+                insights.append({
+                    'type': 'warning',
+                    'title': '복습 전략 개선이 필요합니다',
+                    'description': f'복습 성공률이 {success_rate:.1f}%로 낮습니다.',
+                    'recommendation': '복습 간격을 줄이거나 학습 방법을 바꿔보세요.'
+                })
+            
+            if total_reviews == 0:
+                insights.append({
+                    'type': 'info',
+                    'title': '복습을 시작해보세요!',
+                    'description': '아직 복습 기록이 없습니다.',
+                    'recommendation': '오늘 복습할 콘텐츠가 있는지 확인해보세요.'
+                })
+            
+            return Response({
+                'success': True,
+                'period_type': period_type,
+                'period_start': start_date.isoformat(),
+                'period_end': now.isoformat(),
+                'metrics': {
+                    'total_reviews': total_reviews,
+                    'success_rate': round(success_rate, 1),
+                    'average_time_minutes': round(average_time / 60, 1) if average_time else 0,
+                    'total_contents': total_contents,
+                },
+                'insights': insights,
+                'recommendations': [
+                    '매일 일정한 시간에 복습하는 습관을 만드세요.',
+                    '어려운 내용은 더 자주 복습하세요.',
+                    '복습 전에 내용을 한 번 더 읽어보세요.'
+                ]
+            })
+            
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': f'Analytics generation failed: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -51,7 +51,11 @@ class SubscriptionBasedThrottle(UserRateThrottle):
         if not subscription:
             self.scope = 'free'
         else:
-            tier = subscription.tier.name.lower()
+            # Handle both string and object tier types
+            if hasattr(subscription.tier, 'name'):
+                tier = subscription.tier.name.lower()
+            else:
+                tier = str(subscription.tier).lower()
             self.scope = f"{self.base_scope}_{tier}"
         
         return super().allow_request(request, view)

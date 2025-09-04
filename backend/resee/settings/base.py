@@ -214,6 +214,11 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'analytics.tasks.generate_daily_analytics',
         'schedule': crontab(hour=3, minute=0),  # Daily at 3 AM
     },
+    # Subscription auto-renewal check
+    'check-subscription-renewals': {
+        'task': 'accounts.tasks.check_and_process_subscription_renewals',
+        'schedule': crontab(hour='*/6'),  # Every 6 hours
+    },
     # Alert system tasks
     'check-alert-rules': {
         'task': 'monitoring.check_alert_rules_periodic',
@@ -297,6 +302,7 @@ ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
 AI_MODEL_NAME = 'claude-3-haiku-20240307'
 AI_MAX_TOKENS = 4000
 AI_TEMPERATURE = 0.7
+AI_USE_MOCK_RESPONSES = os.environ.get('AI_USE_MOCK_RESPONSES', 'True').lower() == 'true'
 
 
 # File Upload Configuration
