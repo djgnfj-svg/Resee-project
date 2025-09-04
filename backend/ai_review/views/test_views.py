@@ -8,6 +8,29 @@ from django.db.models import Avg, Count, Q
 from datetime import datetime, timedelta
 
 
+class WeeklyTestCategoriesView(APIView):
+    """주간시험용 카테고리 목록 조회"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """사용자의 카테고리 목록 반환"""
+        from content.models import Category
+        from ai_review.serializers import CategoryChoiceSerializer
+        
+        try:
+            categories = Category.objects.filter(user=request.user).order_by('name')
+            serializer = CategoryChoiceSerializer(categories, many=True)
+            
+            return Response({
+                'categories': serializer.data,
+                'total_count': categories.count()
+            })
+        except Exception as e:
+            return Response({
+                'error': f'카테고리 목록 조회 중 오류: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class WeeklyTestView(APIView):
     """Weekly test management view"""
     permission_classes = [permissions.IsAuthenticated]
@@ -55,11 +78,19 @@ class WeeklyTestView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def post(self, request):
-        """주간 시험 생성"""
+        """주간 시험 생성 - 카테고리 선택 및 적응형 기능 포함"""
         from ai_review.models import WeeklyTest, WeeklyTestQuestion, AIQuestion
-        from content.models import Content
+        from ai_review.serializers import WeeklyTestCreateSerializer
+        from content.models import Content, Category
         from datetime import datetime, timedelta
         import random
+        
+        # 요청 데이터 유효성 검사
+        serializer = WeeklyTestCreateSerializer(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        validated_data = serializer.validated_data
         
         try:
             # 이번 주 월요일과 일요일 계산
@@ -67,55 +98,102 @@ class WeeklyTestView(APIView):
             monday = today - timedelta(days=today.weekday())
             sunday = monday + timedelta(days=6)
             
-            # 이미 이번 주 시험이 있는지 확인
+            # 카테고리 설정
+            category = None
+            if validated_data.get('category_id'):
+                category = Category.objects.get(id=validated_data['category_id'], user=request.user)
+            
+            # 같은 카테고리의 이번 주 시험이 있는지 확인
             existing_test = WeeklyTest.objects.filter(
                 user=request.user,
+                category=category,
                 week_start_date=monday
             ).first()
             
             if existing_test:
+                category_name = category.name if category else "전체"
                 return Response({
-                    'message': '이미 이번 주 시험이 생성되어 있습니다.',
+                    'message': f'이미 {category_name} 카테고리의 이번 주 시험이 생성되어 있습니다.',
                     'test_id': existing_test.id,
                     'status': existing_test.status
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # 사용자의 콘텐츠 중 AI 문제가 있는 것들 조회
-            user_contents = Content.objects.filter(
-                author=request.user,
-                ai_questions__isnull=False
-            ).distinct()
+            # 사용자의 콘텐츠 조회 (카테고리 필터링)
+            content_filter = {'author': request.user, 'ai_questions__isnull': False}
+            if category:
+                content_filter['category'] = category
+                
+            user_contents = Content.objects.filter(**content_filter).distinct()
             
             if user_contents.count() < 3:
+                category_msg = f"{category.name} 카테고리의 " if category else ""
                 return Response({
-                    'message': 'AI 문제가 있는 콘텐츠가 최소 3개 이상 필요합니다.',
+                    'message': f'{category_msg}AI 문제가 있는 콘텐츠가 최소 3개 이상 필요합니다.',
                     'current_count': user_contents.count()
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # 주간 시험 생성
-            total_questions = request.data.get('total_questions', 15)
+            # 주간 시험 생성 (적응형 기능 포함)
+            total_questions = validated_data.get('total_questions', 10)
             weekly_test = WeeklyTest.objects.create(
                 user=request.user,
+                category=category,
                 week_start_date=monday,
                 week_end_date=sunday,
                 total_questions=total_questions,
-                difficulty_distribution={
-                    'easy': 5,
-                    'medium': 8, 
-                    'hard': 2
+                adaptive_mode=validated_data.get('adaptive_mode', True),
+                current_difficulty='medium',  # 중간 난이도로 시작
+                question_type_distribution={
+                    'multiple_choice': 6,
+                    'short_answer': 3,
+                    'essay': 1
                 },
+                time_limit_minutes=validated_data.get('time_limit_minutes', 30),
                 content_coverage=list(user_contents.values_list('id', flat=True)[:10]),
                 status='ready'
             )
             
-            # AI 문제들 중에서 랜덤하게 선택
-            available_questions = AIQuestion.objects.filter(
-                content__author=request.user,
-                is_active=True
-            ).order_by('?')[:total_questions]  # 랜덤 정렬 후 필요한 개수만큼
+            # AI 문제들 필터링 (카테고리 및 문제 유형별)
+            question_filter = {
+                'content__author': request.user,
+                'is_active': True
+            }
+            if category:
+                question_filter['content__category'] = category
+            
+            # 문제 유형별로 분배해서 선택 (객6 + 주3 + 서1)
+            questions_to_create = []
+            
+            # 객관식 6문제
+            mc_questions = AIQuestion.objects.filter(
+                **question_filter,
+                question_type__name='multiple_choice'
+            ).order_by('?')[:6]
+            
+            # 주관식 3문제  
+            sa_questions = AIQuestion.objects.filter(
+                **question_filter,
+                question_type__name='short_answer'
+            ).order_by('?')[:3]
+            
+            # 서술형 1문제
+            essay_questions = AIQuestion.objects.filter(
+                **question_filter,
+                question_type__name='essay'
+            ).order_by('?')[:1]
+            
+            # 문제 순서대로 배치
+            all_questions = list(mc_questions) + list(sa_questions) + list(essay_questions)
+            
+            if len(all_questions) < total_questions:
+                # 부족한 경우 전체 문제에서 랜덤 선택으로 채움
+                remaining_needed = total_questions - len(all_questions)
+                additional_questions = AIQuestion.objects.filter(
+                    **question_filter
+                ).exclude(id__in=[q.id for q in all_questions]).order_by('?')[:remaining_needed]
+                all_questions.extend(additional_questions)
             
             # 시험 문제 생성
-            for order, ai_question in enumerate(available_questions, 1):
+            for order, ai_question in enumerate(all_questions[:total_questions], 1):
                 WeeklyTestQuestion.objects.create(
                     weekly_test=weekly_test,
                     ai_question=ai_question,
@@ -123,16 +201,20 @@ class WeeklyTestView(APIView):
                 )
             
             # 실제 생성된 문제 수로 업데이트
-            weekly_test.total_questions = available_questions.count()
+            weekly_test.total_questions = len(all_questions[:total_questions])
             weekly_test.save()
             
+            category_name = category.name if category else "전체"
             return Response({
                 'success': True,
                 'test_id': weekly_test.id,
+                'category': category_name,
                 'total_questions': weekly_test.total_questions,
+                'adaptive_mode': weekly_test.adaptive_mode,
+                'current_difficulty': weekly_test.current_difficulty,
                 'status': weekly_test.status,
                 'week_period': f'{monday} ~ {sunday}',
-                'message': f'주간 시험이 생성되었습니다! 총 {weekly_test.total_questions}문제'
+                'message': f'{category_name} 카테고리 주간 시험이 생성되었습니다! 총 {weekly_test.total_questions}문제'
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
@@ -321,6 +403,10 @@ class WeeklyTestAnswerView(APIView):
             if is_correct:
                 weekly_test.correct_answers += 1
             
+            # 적응형 난이도 조절
+            if weekly_test.adaptive_mode:
+                weekly_test.adjust_difficulty(is_correct)
+            
             # 모든 문제 완료 확인
             if weekly_test.completed_questions >= weekly_test.total_questions:
                 weekly_test.status = 'completed'
@@ -356,7 +442,10 @@ class WeeklyTestAnswerView(APIView):
                 'is_correct': is_correct,
                 'correct_answer': correct_answer if not is_correct else None,
                 'progress': f'{weekly_test.completed_questions}/{weekly_test.total_questions}',
-                'completion_rate': weekly_test.completion_rate
+                'completion_rate': weekly_test.completion_rate,
+                'current_difficulty': weekly_test.current_difficulty,
+                'consecutive_correct': weekly_test.consecutive_correct,
+                'consecutive_wrong': weekly_test.consecutive_wrong
             }
             
             # 시험 완료시 추가 정보
@@ -379,27 +468,6 @@ class WeeklyTestAnswerView(APIView):
                 'error': f'답변 제출 중 오류: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-class AdaptiveTestStartView(APIView):
-    """Adaptive test start view"""
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def post(self, request):
-        return Response({
-            'message': '적응형 테스트 시작 기능은 현재 개발 중입니다.',
-            'status': 'under_development'
-        }, status=status.HTTP_501_NOT_IMPLEMENTED)
-
-
-class AdaptiveTestAnswerView(APIView):
-    """Adaptive test answer view"""
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def post(self, request, test_id):
-        return Response({
-            'message': '적응형 테스트 답변 기능은 현재 개발 중입니다.',
-            'status': 'under_development'
-        }, status=status.HTTP_501_NOT_IMPLEMENTED)
 
 
 class InstantContentCheckView(APIView):

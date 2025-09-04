@@ -22,7 +22,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: '콘텐츠', href: '/content', current: location.pathname === '/content' },
     { name: '복습', href: '/review', current: location.pathname === '/review' },
     { name: '주간시험', href: '/weekly-test', current: location.pathname === '/weekly-test' },
-    { name: '적응형시험', href: '/adaptive-test', current: location.pathname === '/adaptive-test' },
   ];
 
   return (
