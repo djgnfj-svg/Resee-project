@@ -17,6 +17,7 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import WeeklyTestPage from './pages/WeeklyTestPage';
+import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/design-system.css';
 import './styles/animations.css';
@@ -100,6 +101,8 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              {/* 404 페이지 - 모든 라우트의 맨 마지막에 위치 */}
+              <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Layout>
           </Router>
