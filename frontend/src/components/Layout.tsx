@@ -18,7 +18,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const navigation = [
     { name: '대시보드', href: '/dashboard', current: location.pathname === '/dashboard' },
-    { name: '분석', href: '/analytics', current: location.pathname === '/analytics' },
     { name: '콘텐츠', href: '/content', current: location.pathname === '/content' },
     { name: '복습', href: '/review', current: location.pathname === '/review' },
     { name: '주간시험', href: '/weekly-test', current: location.pathname === '/weekly-test' },

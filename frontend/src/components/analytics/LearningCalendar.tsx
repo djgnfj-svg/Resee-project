@@ -108,12 +108,18 @@ const LearningCalendar: React.FC<LearningCalendarProps> = ({ calendarData }) => 
     : null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          학습 캘린더 히트맵
-        </h2>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
+            <span className="text-3xl mr-3">📅</span>
+            학습 캘린더 히트맵
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mt-2 text-base">
+            GitHub 스타일 히트맵으로 보는 학습 기록
+          </p>
+        </div>
+        <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
           {format(dateRangeStart, 'yyyy.MM.dd')} - {format(dateRangeEnd, 'yyyy.MM.dd')}
         </div>
       </div>
