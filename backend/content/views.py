@@ -61,8 +61,9 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     queryset = Content.objects.all()
     serializer_class = ContentSerializer
     pagination_class = ContentPagination
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['category', 'priority']
+    search_fields = ['title', 'content']
     ordering_fields = ['created_at', 'updated_at', 'title']
     ordering = ['-created_at']
     
@@ -87,6 +88,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
             openapi.Parameter('category', openapi.IN_QUERY, description="카테고리로 필터링", type=openapi.TYPE_INTEGER),
             openapi.Parameter('category_slug', openapi.IN_QUERY, description="카테고리 슬러그로 필터링", type=openapi.TYPE_STRING),
             openapi.Parameter('priority', openapi.IN_QUERY, description="우선순위로 필터링 (high/medium/low)", type=openapi.TYPE_STRING),
+            openapi.Parameter('search', openapi.IN_QUERY, description="제목 및 내용에서 검색", type=openapi.TYPE_STRING),
             openapi.Parameter('ordering', openapi.IN_QUERY, description="정렬 (-created_at, title, updated_at)", type=openapi.TYPE_STRING),
         ],
         responses={200: ContentSerializer(many=True)}

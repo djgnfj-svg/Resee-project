@@ -11,6 +11,7 @@ const SubscriptionPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [emailSignup, setEmailSignup] = useState('');
   const [emailSubmitting, setEmailSubmitting] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   // 현재 구독 정보 조회
   const { data: currentSubscription, isLoading: subscriptionLoading } = useQuery({
@@ -57,6 +58,14 @@ const SubscriptionPage: React.FC = () => {
   };
 
   // Subscription tiers data
+  // Get pricing based on billing cycle
+  const getPrice = (monthlyPrice: number) => {
+    if (billingCycle === 'yearly') {
+      return Math.floor(monthlyPrice * 12 * 0.8); // 20% discount for yearly
+    }
+    return monthlyPrice;
+  };
+
   const subscriptionTiers: SubscriptionTierInfo[] = [
     {
       name: 'free',
@@ -74,7 +83,7 @@ const SubscriptionPage: React.FC = () => {
       name: 'basic',
       display_name: '베이직 (테스트 모드)',
       max_days: 90,
-      price: 9900,
+      price: getPrice(9900),
       features: [
         '최대 90일 복습 간격',
         '상세 통계 및 분석',
@@ -83,7 +92,8 @@ const SubscriptionPage: React.FC = () => {
         'AI 서술형 평가',
         'AI 채팅',
         '우선 이메일 지원',
-        '💳 테스트 모드로 결제 가능!'
+        '💳 테스트 모드로 결제 가능!',
+        ...(billingCycle === 'yearly' ? ['🎉 연간 결제 시 20% 할인!'] : [])
       ],
       coming_soon: false
     },
@@ -91,7 +101,7 @@ const SubscriptionPage: React.FC = () => {
       name: 'pro',
       display_name: '프로 (테스트 모드)',
       max_days: 180,
-      price: 19900,
+      price: getPrice(19900),
       features: [
         '최대 180일 복습 간격 (에빙하우스 최적화)',
         '완전한 장기 기억 시스템',
@@ -104,7 +114,8 @@ const SubscriptionPage: React.FC = () => {
         '데이터 내보내기',
         'API 액세스',
         '전담 고객 지원',
-        '💳 테스트 모드로 결제 가능!'
+        '💳 테스트 모드로 결제 가능!',
+        ...(billingCycle === 'yearly' ? ['🎉 연간 결제 시 20% 할인!'] : [])
       ],
       coming_soon: false
     }
@@ -127,6 +138,25 @@ const SubscriptionPage: React.FC = () => {
       
       if (!response.ok) {
         throw new Error(responseData.error || 'Failed to upgrade subscription');
+      }
+      
+      return responseData;
+    },
+    downgradeSubscription: async (data: SubscriptionUpgradeData) => {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('http://localhost:8000/api/accounts/subscription/downgrade/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      });
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Failed to downgrade subscription');
       }
       
       return responseData;
@@ -162,6 +192,36 @@ const SubscriptionPage: React.FC = () => {
     }
   });
 
+  // Subscription downgrade mutation
+  const downgradeMutation = useMutation({
+    mutationFn: (data: SubscriptionUpgradeData) => subscriptionAPI.downgradeSubscription(data),
+    onSuccess: async (data) => {
+      const refundAmount = data.refund_amount;
+      const successMessage = data.message || '구독이 성공적으로 다운그레이드되었습니다!';
+      
+      if (refundAmount && refundAmount > 0) {
+        toast.success(`${successMessage} ${refundAmount}원이 환불됩니다.`);
+      } else {
+        toast.success(successMessage);
+      }
+      
+      // Refresh user data in AuthContext to update subscription info
+      await refreshUser();
+      
+      // Invalidate all relevant queries to refresh data immediately
+      queryClient.invalidateQueries({ queryKey: ['current-subscription'] });
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+      queryClient.invalidateQueries({ queryKey: ['contents'] });
+      queryClient.invalidateQueries({ queryKey: ['todayReviews'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['learning-calendar'] });
+    },
+    onError: (error: any) => {
+      const errorMessage = error.message || '구독 다운그레이드에 실패했습니다.';
+      toast.error(errorMessage);
+    }
+  });
+
   const handleTierChange = (tier: string) => {
     if (!user?.is_email_verified) {
       toast.error('구독을 변경하려면 먼저 이메일 인증을 완료해주세요.');
@@ -183,15 +243,37 @@ const SubscriptionPage: React.FC = () => {
         `• ${newMaxDays}일보다 오래된 밀린 복습은 숨겨집니다\n` +
         `• AI 기능 및 질문 생성 제한\n` +
         `• 일부 고급 기능 사용 불가\n\n` +
-        `기존 데이터는 유지되지만 새로운 제한사항이 즉시 적용됩니다.`
+        `기존 데이터는 유지되지만 새로운 제한사항이 즉시 적용됩니다.\n` +
+        `남은 기간에 대한 환불이 처리될 예정입니다.`
       );
       
       if (!confirmed) {
         return;
       }
+      
+      downgradeMutation.mutate({ tier: tier as any, billing_cycle: billingCycle });
+    } else {
+      // For upgrades, show billing cycle confirmation for paid plans
+      if (tier !== 'free' && billingCycle === 'yearly') {
+        const monthlyPrice = tier === 'basic' ? 9900 : 19900;
+        const yearlyPrice = monthlyPrice * 12 * 0.8;
+        const savings = monthlyPrice * 12 - yearlyPrice;
+        
+        const confirmed = window.confirm(
+          `연간 결제를 선택하셨습니다.\n\n` +
+          `• 월간 결제: ₩${monthlyPrice.toLocaleString()}/월 (총 ₩${(monthlyPrice * 12).toLocaleString()}/년)\n` +
+          `• 연간 결제: ₩${yearlyPrice.toLocaleString()}/년 (20% 할인)\n` +
+          `• 절약 금액: ₩${savings.toLocaleString()}\n\n` +
+          `연간 결제로 진행하시겠습니까?`
+        );
+        
+        if (!confirmed) {
+          return;
+        }
+      }
+      
+      upgradeMutation.mutate({ tier: tier as any, billing_cycle: billingCycle });
     }
-    
-    upgradeMutation.mutate({ tier: tier as any });
   };
 
   const getCurrentTierIndex = () => {
@@ -288,6 +370,43 @@ const SubscriptionPage: React.FC = () => {
           </div>
         )}
 
+        {/* Billing Cycle Selection */}
+        <div className="mb-8 flex justify-center">
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-1 flex">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                billingCycle === 'monthly'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              월간 결제
+            </button>
+            <button
+              onClick={() => setBillingCycle('yearly')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 relative ${
+                billingCycle === 'yearly'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              연간 결제
+              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                20% 할인
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {billingCycle === 'yearly' && (
+          <div className="mb-6 text-center">
+            <p className="text-green-600 dark:text-green-400 font-medium">
+              🎉 연간 결제로 최대 20% 절약하세요!
+            </p>
+          </div>
+        )}
+
         {/* Subscription Plans Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {subscriptionTiers.map((tier, index) => {
@@ -330,14 +449,26 @@ const SubscriptionPage: React.FC = () => {
                         {tier.price}
                       </span>
                     ) : (
-                      <>
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                          ₩{tier.price.toLocaleString()}
-                        </span>
-                        <span className="text-gray-500 dark:text-gray-400 ml-2">
-                          /월
-                        </span>
-                      </>
+                      <div className="space-y-2">
+                        <div>
+                          <span className="text-4xl font-bold text-gray-900 dark:text-white">
+                            ₩{getPrice(typeof tier.price === 'number' ? tier.price : 0).toLocaleString()}
+                          </span>
+                          <span className="text-gray-500 dark:text-gray-400 ml-2">
+                            {billingCycle === 'yearly' ? '/년' : '/월'}
+                          </span>
+                        </div>
+                        {billingCycle === 'yearly' && tier.price > 0 && (
+                          <div className="text-sm">
+                            <span className="text-gray-400 line-through">
+                              ₩{(typeof tier.price === 'number' ? tier.price * 12 : 0).toLocaleString()}/년
+                            </span>
+                            <span className="text-green-600 dark:text-green-400 ml-2 font-medium">
+                              ₩{(typeof tier.price === 'number' ? tier.price * 12 * 0.2 : 0).toLocaleString()} 절약!
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                   <p className="text-gray-600 dark:text-gray-400">

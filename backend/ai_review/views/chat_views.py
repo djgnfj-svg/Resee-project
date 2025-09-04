@@ -64,7 +64,7 @@ class AIChatView(BaseAIView):
         
         try:
             # Get AI response
-            result = self.ai_service.chat_about_content(
+            result = self.chat_service.chat_about_content(
                 content_text=content.content,
                 content_title=content.title,
                 user_message=message

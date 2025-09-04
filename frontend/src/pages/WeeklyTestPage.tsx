@@ -10,7 +10,7 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
-import { apiClient } from '../utils/api';
+import { aiReviewAPI } from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 interface WeeklyTest {
@@ -51,18 +51,12 @@ const WeeklyTestPage: React.FC = () => {
   // 주간 시험 목록 조회
   const { data: tests, isLoading, error } = useQuery({
     queryKey: ['weekly-tests'],
-    queryFn: async (): Promise<WeeklyTest[]> => {
-      const response = await apiClient.get('/api/ai-review/weekly-test/');
-      return response.data;
-    }
+    queryFn: aiReviewAPI.getWeeklyTest
   });
 
   // 주간 시험 생성
   const createTestMutation = useMutation({
-    mutationFn: async (data: CreateTestData) => {
-      const response = await apiClient.post('/api/ai-review/weekly-test/', data);
-      return response.data;
-    },
+    mutationFn: aiReviewAPI.createWeeklyTest,
     onSuccess: () => {
       toast.success('주간 시험이 생성되었습니다!');
       setShowCreateModal(false);
@@ -76,12 +70,9 @@ const WeeklyTestPage: React.FC = () => {
 
   // 주간 시험 시작
   const startTestMutation = useMutation({
-    mutationFn: async (testId: number) => {
-      const response = await apiClient.post('/api/ai-review/weekly-test/start/', {
-        test_id: testId
-      });
-      return response.data;
-    },
+    mutationFn: (testId: number) => aiReviewAPI.startWeeklyTest({
+      test_id: testId
+    }),
     onSuccess: (data) => {
       toast.success('주간 시험이 시작되었습니다!');
       navigate(`/weekly-test/${data.test.id}/take`);
@@ -151,8 +142,9 @@ const WeeklyTestPage: React.FC = () => {
     );
   }
 
-  const currentTest = tests?.find(test => test.status === 'ready' || test.status === 'in_progress');
-  const completedTests = tests?.filter(test => test.status === 'completed') || [];
+  const testsArray = Array.isArray(tests) ? tests : [];
+  const currentTest = testsArray.find((test: WeeklyTest) => test.status === 'ready' || test.status === 'in_progress');
+  const completedTests = testsArray.filter((test: WeeklyTest) => test.status === 'completed');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -229,12 +221,12 @@ const WeeklyTestPage: React.FC = () => {
             <div className="mt-4">
               <h3 className="text-sm font-medium text-gray-900 mb-2">난이도 분포</h3>
               <div className="flex space-x-4">
-                {Object.entries(currentTest.difficulty_distribution).map(([level, count]) => (
+                {Object.entries(currentTest.difficulty_distribution as Record<string, number>).map(([level, count]) => (
                   <div key={level} className="flex items-center">
                     <div className={`w-3 h-3 rounded mr-2 ${
                       level === 'easy' ? 'bg-green-400' :
                       level === 'medium' ? 'bg-yellow-400' : 'bg-red-400'
-                    }`}></div>
+                    }`} />
                     <span className="text-sm text-gray-600">
                       {level === 'easy' ? '쉬움' : level === 'medium' ? '보통' : '어려움'}: {count}문항
                     </span>
@@ -262,7 +254,7 @@ const WeeklyTestPage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4">
-              {completedTests.map((test) => (
+              {completedTests.map((test: WeeklyTest) => (
                 <div key={test.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between mb-2">
                     <div className="font-medium text-gray-900">
