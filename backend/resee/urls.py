@@ -52,8 +52,7 @@ urlpatterns = [
     path('api/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     
     # Health check endpoints (root level for load balancers)
-    path('health/', include('monitoring.urls')),
-    path('api/health/', include('monitoring.urls')),
+    # Note: monitoring app removed, basic health checks handled by resee.health
     
     # API endpoints
     path('api/accounts/', include('accounts.urls')),  # includes legal endpoints
@@ -61,7 +60,6 @@ urlpatterns = [
     path('api/review/', include('review.urls')),
     path('api/analytics/', include('analytics.urls')),  # includes BI endpoints
     path('api/ai-review/', include('ai_review.urls')),
-    path('api/monitoring/', include('monitoring.urls')),  # includes alerts endpoints
 ]
 
 if settings.DEBUG:

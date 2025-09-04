@@ -696,6 +696,18 @@ class ContentQualityCheckView(APIView):
                     'error': '내용이 너무 짧습니다. 최소 10자 이상 입력해주세요.'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
+            if len(content) < 300:
+                return Response({
+                    'score': 0,
+                    'feedback': 'AI 품질 분석을 위해서는 최소 300자 이상의 내용이 필요합니다.',
+                    'strengths': [],
+                    'improvements': ['내용을 300자 이상으로 확장하여 더 자세한 AI 분석을 받아보세요.'],
+                    'processing_time_ms': 0,
+                    'status': 'insufficient_content',
+                    'required_length': 300,
+                    'current_length': len(content)
+                })
+            
             start_time = time.time()
             
             # 콘텐츠 품질 분석 로직 (간단한 기준)

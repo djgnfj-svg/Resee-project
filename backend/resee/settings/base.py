@@ -39,7 +39,6 @@ INSTALLED_APPS = [
     'review',
     'analytics',  # includes business intelligence
     'ai_review',
-    'monitoring',  # system monitoring, health checks and alerts
 ]
 
 MIDDLEWARE = [
@@ -52,7 +51,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'monitoring.middleware.MetricsCollectionMiddleware',
 ]
 
 ROOT_URLCONF = 'resee.urls'
@@ -219,24 +217,7 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'accounts.tasks.check_and_process_subscription_renewals',
         'schedule': crontab(hour='*/6'),  # Every 6 hours
     },
-    # Alert system tasks
-    'check-alert-rules': {
-        'task': 'monitoring.check_alert_rules_periodic',
-        'schedule': crontab(minute='*'),  # Every minute
-    },
-    'test-alert-notifications': {
-        'task': 'monitoring.test_alert_notifications',
-        'schedule': crontab(hour=9, minute=0),  # Daily at 9 AM for testing
-    },
-    # System monitoring tasks
-    'collect-system-health': {
-        'task': 'monitoring.collect_system_health',
-        'schedule': crontab(minute='*/5'),  # Every 5 minutes
-    },
-    'cleanup-old-monitoring-data': {
-        'task': 'monitoring.cleanup_old_monitoring_data', 
-        'schedule': crontab(hour=4, minute=0),  # Daily at 4 AM
-    },
+    # Monitoring tasks removed (monitoring app deleted)
     # Business Intelligence tasks
     'collect-daily-learning-patterns': {
         'task': 'bi.collect_daily_learning_patterns',
