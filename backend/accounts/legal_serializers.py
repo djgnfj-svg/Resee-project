@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from .models import (CookieConsent, DataDeletionRequest, DataExportRequest,
-                     LegalDocument, UserConsent)
+from .legal_models import (CookieConsent, DataDeletionRequest, DataExportRequest,
+                           LegalDocument, UserConsent)
 
 
 class LegalDocumentSerializer(serializers.ModelSerializer):

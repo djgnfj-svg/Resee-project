@@ -111,8 +111,17 @@ class AIAnswerEvaluationView(BaseAIView):
             status=status.HTTP_501_NOT_IMPLEMENTED
         )
         
-        # TODO: 향후 구현할 로직
+        # Implementation plan:
         """
+        Future implementation will include:
+        1. AI feature access validation
+        2. Answer evaluation using AI service
+        3. Feedback generation and scoring
+        4. Usage tracking and analytics
+        
+        Currently returns not implemented status.
+        
+        Example implementation structure:
         # Check AI feature access
         access_response = self.check_ai_feature_access(request)
         if access_response:

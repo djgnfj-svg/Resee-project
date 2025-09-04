@@ -308,15 +308,14 @@ def _collect_user_daily_pattern(user, target_date) -> Dict[str, Any]:
         success_rate = 0.0
         avg_review_time = 0
     
-    # AI questions generated
-    # TODO: Uncomment when AIUsageTracking model is created
-    # ai_questions = AIUsageTracking.objects.filter(
-    #     user=user,
-    #     usage_date=target_date
-    # ).aggregate(
-    #     total_questions=Coalesce(Sum('questions_generated'), 0)
-    # )['total_questions'] or 0
-    ai_questions = 0  # Temporary default value
+    # AI questions generated - using ai_review models directly
+    # Note: AIUsageTracking model doesn't exist, using alternative approach
+    from ai_review.models import AIQuestion
+    ai_questions = AIQuestion.objects.filter(
+        content__author=user,
+        created_at__date=target_date,
+        is_active=True
+    ).count()
     
     # Peak activity hour (from review times)
     peak_hour = None
@@ -417,14 +416,13 @@ def _calculate_subscription_analytics(user, subscription) -> Dict[str, Any]:
         review_date__gte=tier_start
     ).count()
     
-    # TODO: Uncomment when AIUsageTracking model is created
-    # ai_questions_used = AIUsageTracking.objects.filter(
-    #     user=user,
-    #     usage_date__gte=tier_start.date()
-    # ).aggregate(
-    #     total=Coalesce(Sum('questions_generated'), 0)
-    # )['total'] or 0
-    ai_questions_used = 0  # Temporary default value
+    # AI questions used - count from ai_review models
+    from ai_review.models import AIQuestion
+    ai_questions_used = AIQuestion.objects.filter(
+        content__author=user,
+        created_at__gte=tier_start,
+        is_active=True
+    ).count()
     
     # Days active (simplified)
     days_active = LearningPattern.objects.filter(
@@ -519,20 +517,18 @@ def _collect_system_metrics_data(target_date) -> Dict[str, Any]:
     else:
         avg_success_rate = 0.0
     
-    # AI metrics
-    # TODO: Uncomment when AIUsageTracking model is created
-    # ai_usage = AIUsageTracking.objects.filter(
-    #     usage_date=target_date
-    # ).aggregate(
-    #     questions=Coalesce(Sum('questions_generated'), 0),
-    #     cost=Coalesce(Sum('cost_usd'), Decimal('0.0000')),
-    #     tokens=Coalesce(Sum('tokens_used'), 0)
-    # )
+    # AI metrics - simplified approach using existing models
+    from ai_review.models import AIQuestion
+    ai_questions_count = AIQuestion.objects.filter(
+        created_at__date=target_date,
+        is_active=True
+    ).count()
+    
     ai_usage = {
-        'questions': 0,
-        'cost': Decimal('0.0000'),
-        'tokens': 0
-    }  # Temporary default values
+        'questions': ai_questions_count,
+        'cost': Decimal('0.0000'),  # Cost tracking not implemented
+        'tokens': 0  # Token tracking not implemented
+    }
     
     # System performance metrics
     api_metrics = APIMetrics.objects.filter(
