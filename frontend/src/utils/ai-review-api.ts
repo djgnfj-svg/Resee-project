@@ -8,6 +8,8 @@ import type {
   WeeklyTestCreateRequest,
   CategoryChoice,
   PaginatedResponse,
+  ExplanationEvaluationRequest,
+  ExplanationEvaluationResponse,
 } from '../types/ai-review';
 
 class AIReviewAPI {
@@ -25,6 +27,12 @@ class AIReviewAPI {
       title,
       content
     });
+    return response.data;
+  }
+
+  // Explanation Evaluation
+  async evaluateExplanation(request: ExplanationEvaluationRequest): Promise<ExplanationEvaluationResponse> {
+    const response = await api.post('/ai-review/evaluate-explanation/', request);
     return response.data;
   }
 

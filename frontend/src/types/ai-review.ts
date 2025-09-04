@@ -20,6 +20,28 @@ export interface ContentQualityCheckResponse {
 
 
 
+// Explanation Evaluation Types
+export interface ExplanationEvaluationRequest {
+  content_id: number;
+  user_explanation: string;
+}
+
+export interface ExplanationEvaluationResponse {
+  score: number;
+  feedback: string;
+  strengths?: string[];
+  improvements?: string[];
+  bonus_points?: string[];
+  key_concepts_covered?: string[];
+  missing_concepts?: string[];
+  content_quality_assessment?: {
+    quality_level: 'excellent' | 'good' | 'average' | 'poor';
+  };
+  evaluation_approach?: 'strict' | 'standard' | 'lenient';
+  adaptation_note?: string;
+  processing_time_ms?: number;
+}
+
 // API Response wrapper
 export interface ApiResponse<T> {
   data: T;
