@@ -1,10 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { contentAPI } from '../utils/api';
+import { toast } from 'react-hot-toast';
+import { contentAPI, apiClient } from '../utils/api';
 import { Category } from '../types';
 import { extractResults } from '../utils/helpers';
 import TipTapEditor from './TipTapEditor';
+import LoadingSpinner from './LoadingSpinner';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ContentFormData {
   title: string;
@@ -26,6 +29,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   isLoading = false,
   initialData
 }) => {
+  const { user } = useAuth();
   const { 
     register, 
     handleSubmit, 
@@ -47,7 +51,15 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   
+  // AI 콘텐츠 검사 관련 상태
+  const [showCheckResult, setShowCheckResult] = useState(false);
+  const [checkResult, setCheckResult] = useState<any>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  
   const queryClient = useQueryClient();
+
+  // Check if user can access AI features
+  const canUseAI = user?.subscription?.is_active && user?.is_email_verified;
 
   // Watch form values for real-time validation
   const watchedTitle = watch('title');
@@ -105,6 +117,31 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
       content: content,
     });
   }, [content, onSubmit]);
+
+  // AI 콘텐츠 검사 함수
+  const handleAIContentCheck = async () => {
+    if (!content.trim() || !watchedTitle?.trim()) {
+      toast.error('제목과 내용을 입력해주세요.');
+      return;
+    }
+
+    setIsChecking(true);
+    try {
+      const response = await apiClient.post('/api/ai-review/content-check/', {
+        title: watchedTitle,
+        content: content.trim()
+      });
+      
+      setCheckResult(response.data);
+      setShowCheckResult(true);
+      toast.success('AI 콘텐츠 검사가 완료되었습니다!');
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'AI 콘텐츠 검사에 실패했습니다.';
+      toast.error(message);
+    } finally {
+      setIsChecking(false);
+    }
+  };
 
 
   const priorityOptions = [
@@ -312,34 +349,162 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
                 취소
               </button>
               
-              <button
-                type="submit"
-                disabled={isLoading || !content || content.trim().length < 10}
-                className={`inline-flex items-center px-8 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-                  !isLoading && content && content.trim().length >= 10
-                    ? 'text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg'
-                    : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
-                }`}
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    저장 중...
-                  </>
-                ) : (
-                  <>
-                    <span className="mr-2">💾</span>
-                    완료
-                  </>
+              <div className="flex space-x-3">
+                {/* AI 콘텐츠 검사 버튼 */}
+                {canUseAI && (
+                  <button
+                    type="button"
+                    onClick={handleAIContentCheck}
+                    disabled={isChecking || !content?.trim() || !watchedTitle?.trim()}
+                    className={`inline-flex items-center px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+                      !isChecking && content?.trim() && watchedTitle?.trim()
+                        ? 'text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg'
+                        : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+                    }`}
+                  >
+                    {isChecking ? (
+                      <LoadingSpinner className="w-4 h-4 mr-2" />
+                    ) : (
+                      <span className="mr-2">🤖</span>
+                    )}
+                    {isChecking ? 'AI 검사 중...' : 'AI 콘텐츠 검사'}
+                  </button>
                 )}
-              </button>
+
+                <button
+                  type="submit"
+                  disabled={isLoading || !content || content.trim().length < 10}
+                  className={`inline-flex items-center px-8 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+                    !isLoading && content && content.trim().length >= 10
+                      ? 'text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg'
+                      : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+                  }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      저장 중...
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-2">💾</span>
+                      완료
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         </div>
       </div>
+
+      {/* AI 콘텐츠 검사 결과 모달 */}
+      {showCheckResult && checkResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* 모달 헤더 */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <span className="text-2xl mr-2">🤖</span>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    AI 콘텐츠 검사 결과
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowCheckResult(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* 검사 점수 */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg">
+                <div className="text-center">
+                  <div className={`text-3xl font-bold mb-2 ${
+                    checkResult.score >= 80 ? 'text-green-600' :
+                    checkResult.score >= 60 ? 'text-yellow-600' : 'text-red-600'
+                  }`}>
+                    {checkResult.score}/100
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">콘텐츠 품질 점수</div>
+                </div>
+              </div>
+
+              {/* AI 피드백 */}
+              <div className="mb-6">
+                <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">📝 AI 피드백</h4>
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <p className="text-gray-700 dark:text-gray-300">{checkResult.feedback}</p>
+                </div>
+              </div>
+
+              {/* 장점 */}
+              {checkResult.strengths && checkResult.strengths.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+                    <span className="text-green-500 mr-2">✅</span>
+                    좋은 점
+                  </h4>
+                  <div className="space-y-2">
+                    {checkResult.strengths.map((strength: string, index: number) => (
+                      <div key={index} className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-3 rounded-lg">
+                        <span className="text-green-800 dark:text-green-200">{strength}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 개선사항 */}
+              {checkResult.improvements && checkResult.improvements.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center">
+                    <span className="text-yellow-500 mr-2">💡</span>
+                    개선 제안
+                  </h4>
+                  <div className="space-y-2">
+                    {checkResult.improvements.map((improvement: string, index: number) => (
+                      <div key={index} className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-3 rounded-lg">
+                        <span className="text-yellow-800 dark:text-yellow-200">{improvement}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 종합 의견 */}
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <h5 className="font-medium text-blue-900 dark:text-blue-200 mb-2">🎯 종합 평가</h5>
+                <p className="text-sm text-blue-800 dark:text-blue-300">
+                  {checkResult.score >= 80 
+                    ? "훌륭한 콘텐츠입니다! 학습자에게 도움이 될 것 같습니다."
+                    : checkResult.score >= 60
+                    ? "괜찮은 콘텐츠네요. 몇 가지 개선사항을 반영하면 더 좋아질 것 같습니다."
+                    : "내용을 다시 검토해보세요. AI 제안사항을 참고하여 개선해보시기 바랍니다."
+                  }
+                </p>
+              </div>
+
+              {/* 확인 버튼 */}
+              <div className="text-right">
+                <button
+                  onClick={() => setShowCheckResult(false)}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

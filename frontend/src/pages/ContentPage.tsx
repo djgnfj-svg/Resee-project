@@ -6,8 +6,6 @@ import { contentAPI } from '../utils/api';
 import { Content, Category, CreateContentData, UpdateContentData } from '../types';
 import { extractResults } from '../utils/helpers';
 import ContentFormV2 from '../components/ContentFormV2';
-import AIQuestionModal from '../components/AIQuestionModal';
-import AIQuestionHistoryModal from '../components/AIQuestionHistoryModal';
 import CategoryManager from '../components/CategoryManager';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -20,8 +18,6 @@ const ContentPage: React.FC = () => {
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('-created_at');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [aiReviewContent, setAIReviewContent] = useState<Content | null>(null);
-  const [showAIHistory, setShowAIHistory] = useState<boolean>(false);
   const [expandedContents, setExpandedContents] = useState<Set<number>>(new Set());
   const [showCategoryManager, setShowCategoryManager] = useState<boolean>(false);
 
@@ -117,14 +113,6 @@ const ContentPage: React.FC = () => {
     setEditingContent(null);
   };
 
-  const handleAIReview = (content: Content) => {
-    // AI 리뷰 콘텐츠 설정
-    setAIReviewContent(content);
-  };
-
-  const handleAIReviewComplete = () => {
-    setAIReviewContent(null);
-  };
 
   const toggleContentExpansion = (contentId: number) => {
     const newExpanded = new Set(expandedContents);
@@ -184,30 +172,6 @@ const ContentPage: React.FC = () => {
     );
   }
 
-  if (aiReviewContent) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Back Button */}
-        <div className="mb-4">
-          <button
-            onClick={handleAIReviewComplete}
-            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            <svg className="-ml-0.5 mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            콘텐츠 목록으로 돌아가기
-          </button>
-        </div>
-
-        {/* AI Question Modal */}
-        <AIQuestionModal
-          content={aiReviewContent}
-          onClose={handleAIReviewComplete}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -219,17 +183,6 @@ const ContentPage: React.FC = () => {
           </p>
         </div>
         <div className="flex space-x-2">
-          {canUseAI && (
-            <button
-              onClick={() => setShowAIHistory(true)}
-              className="inline-flex items-center justify-center rounded-md bg-purple-600 dark:bg-purple-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-purple-500 dark:hover:bg-purple-400 transition-colors"
-            >
-              <svg className="-ml-0.5 mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              AI 질문 기록
-            </button>
-          )}
           <button
             onClick={() => setShowForm(true)}
             className="inline-flex items-center justify-center rounded-md bg-primary-600 dark:bg-primary-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-500 dark:hover:bg-primary-400 w-full sm:w-auto transition-colors"
@@ -450,29 +403,6 @@ const ContentPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex space-x-2 ml-4">
-                  {canUseAI ? (
-                    <button
-                      onClick={() => handleAIReview(content)}
-                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/30 rounded-full hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
-                      title="AI 스마트 학습으로 이 콘텐츠를 학습하세요"
-                    >
-                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                      </svg>
-                      AI 학습
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => window.location.href = '/subscription'}
-                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                      title="구독하고 AI 학습 기능을 사용하세요"
-                    >
-                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                      AI 학습 (구독 필요)
-                    </button>
-                  )}
                   <button
                     onClick={() => handleEdit(content)}
                     className="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 text-sm transition-colors"
@@ -528,19 +458,6 @@ const ContentPage: React.FC = () => {
         </div>
       )}
 
-      {/* AI Question Modal */}
-      {aiReviewContent && (
-        <AIQuestionModal
-          content={aiReviewContent}
-          onClose={handleAIReviewComplete}
-        />
-      )}
-      
-      {showAIHistory && (
-        <AIQuestionHistoryModal
-          onClose={() => setShowAIHistory(false)}
-        />
-      )}
 
       {/* Category Manager Modal */}
       {showCategoryManager && (
