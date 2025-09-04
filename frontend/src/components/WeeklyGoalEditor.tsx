@@ -3,13 +3,15 @@ import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface WeeklyGoalEditorProps {
   currentGoal: number;
-  onGoalUpdate: (newGoal: number) => Promise<void>;
+  onSave?: (newGoal: number) => Promise<void>;
+  onGoalUpdate?: (newGoal: number) => Promise<void>;
   disabled?: boolean;
 }
 
 const WeeklyGoalEditor: React.FC<WeeklyGoalEditorProps> = ({ 
   currentGoal, 
-  onGoalUpdate, 
+  onGoalUpdate,
+  onSave,
   disabled = false 
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -42,8 +44,11 @@ const WeeklyGoalEditor: React.FC<WeeklyGoalEditorProps> = ({
     setError(null);
 
     try {
-      await onGoalUpdate(newGoal);
-      setIsEditing(false);
+      const updateFunction = onSave || onGoalUpdate;
+      if (updateFunction) {
+        await updateFunction(newGoal);
+        setIsEditing(false);
+      }
     } catch (err: any) {
       setError(err.message || '목표 설정 중 오류가 발생했습니다.');
     } finally {
