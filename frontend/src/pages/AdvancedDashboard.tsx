@@ -315,13 +315,16 @@ const AdvancedDashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              스마트 학습 분석
+              AI 스마트 학습 분석
             </h1>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              데이터 기반 개인화된 학습 인사이트와 추천
+              AI 기반 개인화된 학습 인사이트와 맞춤형 추천
             </p>
           </div>
           <div className="flex items-center space-x-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-400">
+              🤖 AI 분석
+            </span>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
               실시간 업데이트
             </span>
@@ -433,6 +436,38 @@ const AdvancedDashboard: React.FC = () => {
                 복습 시작
               </a>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI 맞춤 추천 섹션 */}
+      {analyticsData?.recommendations && analyticsData.recommendations.length > 0 && (
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-xl shadow-lg border border-indigo-200 dark:border-indigo-700/50 p-6 mt-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+            <span className="text-2xl mr-2">💡</span>
+            AI 맞춤 학습 추천
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {analyticsData.recommendations.slice(0, 6).map((recommendation, index) => (
+              <div key={index} className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-indigo-200/50 dark:border-indigo-700/50 rounded-lg">
+                <div className="flex items-start">
+                  <span className="flex-shrink-0 w-2 h-2 bg-indigo-500 rounded-full mt-2 mr-3"></span>
+                  <div>
+                    <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                      {recommendation.title}
+                    </h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      {recommendation.message}
+                    </p>
+                    {recommendation.action && (
+                      <span className="inline-block mt-2 px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full">
+                        {recommendation.action}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
