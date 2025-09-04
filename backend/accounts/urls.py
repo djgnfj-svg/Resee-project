@@ -2,7 +2,8 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .subscription_views import (subscription_cancel, subscription_detail,
-                                 subscription_tiers, subscription_upgrade)
+                                 subscription_tiers, subscription_upgrade, subscription_downgrade, 
+                                 payment_history, toggle_auto_renewal, billing_schedule)
 from .views import (AccountDeleteView, AIUsageView, EmailVerificationView,
                     GoogleOAuthView, PasswordChangeView, ProfileView,
                     ResendVerificationView, UserViewSet, WeeklyGoalUpdateView)
@@ -26,5 +27,9 @@ urlpatterns = [
     path('subscription/', subscription_detail, name='subscription-detail'),
     path('subscription/tiers/', subscription_tiers, name='subscription-tiers'),
     path('subscription/upgrade/', subscription_upgrade, name='subscription-upgrade'),
+    path('subscription/downgrade/', subscription_downgrade, name='subscription-downgrade'),
     path('subscription/cancel/', subscription_cancel, name='subscription-cancel'),
+    path('subscription/toggle-auto-renewal/', toggle_auto_renewal, name='toggle-auto-renewal'),
+    path('payment-history/', payment_history, name='payment-history'),
+    path('billing-schedule/', billing_schedule, name='billing-schedule'),
 ]

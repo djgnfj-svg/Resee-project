@@ -14,7 +14,7 @@ from resee.structured_logging import ai_logger, log_api_call, log_performance
 from resee.throttling import AIEndpointThrottle
 from resee.permissions import AIFeaturesRequired
 
-from ..services import AIServiceError, QuestionGeneratorService
+from ..services import AIServiceError, QuestionGeneratorService, AIChatService
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,7 @@ class BaseAIView(APIView):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ai_service = QuestionGeneratorService()
+        self.chat_service = AIChatService()
     
     def check_ai_feature_access(self, request, feature_name=None):
         """Check if user can access AI features"""

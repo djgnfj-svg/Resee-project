@@ -188,6 +188,9 @@ export interface Subscription {
   is_active: boolean;
   days_remaining: number | null;
   is_expired: boolean;
+  auto_renewal?: boolean;
+  next_billing_date?: string | null;
+  payment_method?: string;
 }
 
 export interface SubscriptionTierInfo {
@@ -201,10 +204,30 @@ export interface SubscriptionTierInfo {
 
 export interface SubscriptionUpgradeData {
   tier: SubscriptionTier;
+  billing_cycle?: 'monthly' | 'yearly';
 }
 
 export interface SubscriptionUpgradeError {
   error?: string;
   email_verified?: boolean;
   tier?: string[];
+}
+
+export interface PaymentHistory {
+  id: number;
+  payment_type: 'upgrade' | 'downgrade' | 'cancellation' | 'renewal' | 'initial';
+  payment_type_display: string;
+  from_tier?: string;
+  from_tier_display?: string;
+  to_tier: string;
+  to_tier_display: string;
+  tier_display: string;
+  amount: number;
+  description: string;
+  created_at: string;
+}
+
+export interface PaymentHistoryResponse {
+  count: number;
+  results: PaymentHistory[];
 }

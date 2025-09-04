@@ -10,6 +10,7 @@ from django.core.cache import cache
 from content.models import Content
 from ..models import AIQuestion, AIQuestionType
 from .base_ai_service import BaseAIService, AIServiceError
+from ..mock_responses import AIMockResponses
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,23 @@ class QuestionGeneratorService(BaseAIService):
         """
         Generate questions for a specific type
         """
+        # Use mock responses if enabled
+        if self.use_mock_responses:
+            logger.info(f"Using mock responses for question generation: {question_type.name}")
+            content_text = content.content if content else ""
+            mock_response = AIMockResponses.get_question_generation_response(
+                content_text=content_text,
+                question_type=question_type.name,
+                difficulty=difficulty,
+                count=count
+            )
+            
+            questions = self._process_generated_questions(
+                mock_response, content, question_type, 150  # Mock processing time
+            )
+            return questions
+        
+        # Real AI implementation
         prompt = self._build_generation_prompt(content, question_type, difficulty, count)
         
         messages = [

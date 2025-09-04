@@ -28,7 +28,11 @@
       "Bash(rm:*)",
       "mcp__playwright__browser_select_option",
       "mcp__playwright__browser_press_key",
-      "mcp__playwright__browser_take_screenshot"
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_close",
+      "Bash(python test:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

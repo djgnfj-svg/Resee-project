@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import Subscription, SubscriptionTier
+from .models import Subscription, SubscriptionTier, PaymentHistory
 
 User = get_user_model()
 
@@ -217,7 +217,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'tier', 'tier_display', 'max_interval_days',
             'start_date', 'end_date', 'is_active',
-            'days_remaining', 'is_expired'
+            'days_remaining', 'is_expired', 'auto_renewal',
+            'next_billing_date', 'payment_method'
         ]
         read_only_fields = ['id', 'start_date']
     
@@ -255,3 +256,38 @@ class SubscriptionUpgradeSerializer(serializers.Serializer):
                 raise serializers.ValidationError('이미 최고 구독 등급입니다.')
         
         return value
+
+
+class PaymentHistorySerializer(serializers.ModelSerializer):
+    """Serializer for payment history records"""
+    payment_type_display = serializers.CharField(source='get_payment_type_display', read_only=True)
+    tier_display = serializers.CharField(read_only=True)
+    from_tier_display = serializers.SerializerMethodField()
+    to_tier_display = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = PaymentHistory
+        fields = [
+            'id',
+            'payment_type',
+            'payment_type_display',
+            'from_tier',
+            'from_tier_display',
+            'to_tier',
+            'to_tier_display',
+            'tier_display',
+            'amount',
+            'description',
+            'created_at'
+        ]
+        read_only_fields = fields
+    
+    def get_from_tier_display(self, obj):
+        """Get display text for from_tier"""
+        if obj.from_tier:
+            return dict(SubscriptionTier.choices).get(obj.from_tier, obj.from_tier)
+        return None
+    
+    def get_to_tier_display(self, obj):
+        """Get display text for to_tier"""
+        return dict(SubscriptionTier.choices).get(obj.to_tier, obj.to_tier)
