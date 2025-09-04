@@ -34,7 +34,11 @@
       "Bash(python test:*)",
       "Bash(python:*)",
       "Bash(__NEW_LINE__ echo \"2. Checking AIAdaptiveDifficultyTest model removed...\")",
-      "Bash(__NEW_LINE__ echo \"3. Checking API endpoints...\")"
+      "Bash(__NEW_LINE__ echo \"3. Checking API endpoints...\")",
+      "Bash(grep:*)",
+      "mcp__playwright__browser_navigate_back",
+      "Bash(npm run typecheck:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []
