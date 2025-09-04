@@ -6,9 +6,8 @@ from rest_framework import serializers
 from content.models import Content, Category
 
 from .models import (AIEvaluation, AIQuestion,
-                     AIQuestionTransformer, AIQuestionType, AIReviewSession,
-                     AIStudyMate, AISummaryNote, AIWrongAnswerClinic,
-                     InstantContentCheck, WeeklyTest,
+                     AIQuestionType, AIReviewSession,
+                     ContentUnderstandingCheck, WeeklyTest,
                      WeeklyTestQuestion)
 
 
@@ -155,28 +154,6 @@ class BlurRegionsResponseSerializer(serializers.Serializer):
     processing_time_ms = serializers.IntegerField(required=False)
 
 
-class AIChatRequestSerializer(serializers.Serializer):
-    """Serializer for AI chat request"""
-    content_id = serializers.IntegerField()
-    message = serializers.CharField(max_length=1000)
-    
-    def validate_content_id(self, value):
-        """Validate that content exists and belongs to the user"""
-        user = self.context['request'].user
-        try:
-            Content.objects.get(id=value, author=user)
-        except Content.DoesNotExist:
-            raise serializers.ValidationError("콘텐츠를 찾을 수 없거나 접근 권한이 없습니다.")
-        return value
-
-
-class AIChatResponseSerializer(serializers.Serializer):
-    """Serializer for AI chat response"""
-    message = serializers.CharField()
-    response = serializers.CharField()
-    ai_model_used = serializers.CharField(required=False)
-    processing_time_ms = serializers.IntegerField(required=False)
-    content_title = serializers.CharField(required=False)
 
 
 class ExplanationEvaluationRequestSerializer(serializers.Serializer):
@@ -340,24 +317,24 @@ class WeeklyTestAnswerSerializer(serializers.Serializer):
     time_spent_seconds = serializers.IntegerField(min_value=0, required=False)
 
 
-class InstantContentCheckSerializer(serializers.ModelSerializer):
-    """실시간 내용 검토 시리얼라이저"""
+class ContentUnderstandingCheckSerializer(serializers.ModelSerializer):
+    """콘텐츠 이해도 검사 시리얼라이저"""
     content_title = serializers.CharField(source='content.title', read_only=True)
+    accuracy_rate = serializers.ReadOnlyField()
     
     class Meta:
-        model = InstantContentCheck
+        model = ContentUnderstandingCheck
         fields = [
-            'id', 'user', 'content', 'content_title', 'check_point', 
-            'questions_count', 'correct_count', 'understanding_score', 
+            'id', 'user', 'content', 'content_title',
+            'questions_count', 'correct_count', 'understanding_score', 'accuracy_rate',
             'weak_points', 'feedback', 'duration_seconds', 'created_at'
         ]
-        read_only_fields = ['id', 'user', 'content_title', 'created_at']
+        read_only_fields = ['id', 'user', 'content_title', 'accuracy_rate', 'created_at']
 
 
-class InstantCheckRequestSerializer(serializers.Serializer):
-    """실시간 검토 요청 시리얼라이저"""
+class UnderstandingCheckRequestSerializer(serializers.Serializer):
+    """이해도 검사 요청 시리얼라이저"""
     content_id = serializers.IntegerField()
-    check_point = serializers.CharField(max_length=50, default='current')
     question_count = serializers.IntegerField(min_value=1, max_value=5, default=3)
     
     def validate_content_id(self, value):
@@ -371,165 +348,3 @@ class InstantCheckRequestSerializer(serializers.Serializer):
 
 
 
-class AIStudyMateSerializer(serializers.ModelSerializer):
-    """AI 스터디 메이트 시리얼라이저"""
-    content_title = serializers.CharField(source='content.title', read_only=True)
-    
-    class Meta:
-        model = AIStudyMate
-        fields = [
-            'id', 'user', 'content', 'content_title', 'session_type', 
-            'interaction_count', 'hints_provided', 'user_level', 
-            'adapted_explanations', 'learning_progress', 
-            'session_duration_minutes', 'effectiveness_score', 
-            'started_at', 'ended_at'
-        ]
-        read_only_fields = ['id', 'user', 'content_title', 'started_at']
-
-
-class StudyMateRequestSerializer(serializers.Serializer):
-    """스터디 메이트 요청 시리얼라이저"""
-    content_id = serializers.IntegerField()
-    struggle_point = serializers.CharField(max_length=500)
-    user_level = serializers.ChoiceField(
-        choices=['beginner', 'intermediate', 'advanced'],
-        default='intermediate'
-    )
-    session_type = serializers.ChoiceField(
-        choices=[
-            'guided_learning',
-            'hint_system', 
-            'error_analysis',
-            'concept_explanation'
-        ],
-        default='guided_learning'
-    )
-    
-    def validate_content_id(self, value):
-        user = self.context['request'].user
-        try:
-            Content.objects.get(id=value, author=user)
-        except Content.DoesNotExist:
-            raise serializers.ValidationError("콘텐츠를 찾을 수 없거나 접근 권한이 없습니다.")
-        return value
-
-
-class AISummaryNoteSerializer(serializers.ModelSerializer):
-    """AI 요약 노트 시리얼라이저"""
-    content_title = serializers.CharField(source='content.title', read_only=True)
-    
-    class Meta:
-        model = AISummaryNote
-        fields = [
-            'id', 'content', 'content_title', 'user', 'summary_type', 
-            'summary_content', 'key_concepts', 'important_terms', 
-            'visual_elements', 'study_questions', 'pdf_url', 
-            'word_count', 'compression_ratio', 'ai_model_used', 
-            'created_at'
-        ]
-        read_only_fields = [
-            'id', 'user', 'content_title', 'word_count', 
-            'compression_ratio', 'ai_model_used', 'created_at'
-        ]
-
-
-class SummaryNoteRequestSerializer(serializers.Serializer):
-    """요약 노트 요청 시리얼라이저"""
-    content_id = serializers.IntegerField()
-    summary_type = serializers.ChoiceField(
-        choices=[
-            'one_page',
-            'mind_map',
-            'key_points',
-            'cornell_notes'
-        ],
-        default='one_page'
-    )
-    user_preferences = serializers.JSONField(required=False)
-    
-    def validate_content_id(self, value):
-        user = self.context['request'].user
-        try:
-            Content.objects.get(id=value, author=user)
-        except Content.DoesNotExist:
-            raise serializers.ValidationError("콘텐츠를 찾을 수 없거나 접근 권한이 없습니다.")
-        return value
-
-
-# 새로운 AI 기능 시리얼라이저들
-class AIWrongAnswerClinicSerializer(serializers.ModelSerializer):
-    """AI 오답 클리닉 시리얼라이저"""
-    question_text = serializers.CharField(source='original_question.question_text', read_only=True)
-    content_title = serializers.CharField(source='original_question.content.title', read_only=True)
-    
-    class Meta:
-        model = AIWrongAnswerClinic
-        fields = [
-            'id', 'user', 'original_question', 'question_text', 'content_title',
-            'user_answer', 'correct_answer', 'error_analysis', 'concept_explanation',
-            'additional_tips', 'practice_question', 'improvement_score', 'is_resolved',
-            'created_at'
-        ]
-        read_only_fields = ['id', 'user', 'question_text', 'content_title', 'created_at']
-
-
-class WrongAnswerAnalysisRequestSerializer(serializers.Serializer):
-    """오답 분석 요청 시리얼라이저"""
-    question_id = serializers.IntegerField()
-    user_answer = serializers.CharField(max_length=1000)
-    
-    def validate_question_id(self, value):
-        user = self.context['request'].user
-        try:
-            question = AIQuestion.objects.get(id=value, content__author=user)
-        except AIQuestion.DoesNotExist:
-            raise serializers.ValidationError("문제를 찾을 수 없거나 접근 권한이 없습니다.")
-        return value
-
-
-
-
-class AIQuestionTransformerSerializer(serializers.ModelSerializer):
-    """AI 문제 변형기 시리얼라이저"""
-    original_question_text = serializers.CharField(source='original_question.question_text', read_only=True)
-    content_title = serializers.CharField(source='original_question.content.title', read_only=True)
-    
-    class Meta:
-        model = AIQuestionTransformer
-        fields = [
-            'id', 'original_question', 'original_question_text', 'content_title',
-            'user', 'transformation_type', 'transformed_question_text', 
-            'transformed_answer', 'transformation_explanation', 'user_rating', 
-            'is_helpful', 'created_at'
-        ]
-        read_only_fields = ['id', 'user', 'original_question_text', 'content_title', 'created_at']
-
-
-class QuestionTransformRequestSerializer(serializers.Serializer):
-    """문제 변형 요청 시리얼라이저"""
-    question_id = serializers.IntegerField()
-    transformation_type = serializers.ChoiceField(
-        choices=[
-            ('reverse', '역질문'),
-            ('practical', '실생활 적용'),
-            ('comparison', '비교형'),
-            ('troubleshoot', '문제해결형'),
-            ('analogy', '비유/예시'),
-            ('step_by_step', '단계별 풀이')
-        ]
-    )
-    
-    def validate_question_id(self, value):
-        user = self.context['request'].user
-        try:
-            question = AIQuestion.objects.get(id=value, content__author=user)
-        except AIQuestion.DoesNotExist:
-            raise serializers.ValidationError("문제를 찾을 수 없거나 접근 권한이 없습니다.")
-        return value
-
-
-class TransformationFeedbackSerializer(serializers.Serializer):
-    """변형 문제 피드백 시리얼라이저"""
-    transformation_id = serializers.IntegerField()
-    user_rating = serializers.IntegerField(min_value=1, max_value=5)
-    is_helpful = serializers.BooleanField()
