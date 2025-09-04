@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Avg, Count, Q
 from datetime import datetime, timedelta
+import time
 
 
 class WeeklyTestCategoriesView(APIView):
@@ -673,5 +674,113 @@ class AISummaryNoteView(APIView):
             'status': 'under_development'
         }, status=status.HTTP_501_NOT_IMPLEMENTED)
 
+
+class ContentQualityCheckView(APIView):
+    """Content quality check view for new content"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        """Check quality of content by title and content text"""
+        try:
+            # 요청 데이터 검증
+            title = request.data.get('title', '').strip()
+            content = request.data.get('content', '').strip()
+            
+            if not title or not content:
+                return Response({
+                    'error': '제목과 내용을 모두 입력해주세요.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if len(content) < 10:
+                return Response({
+                    'error': '내용이 너무 짧습니다. 최소 10자 이상 입력해주세요.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            start_time = time.time()
+            
+            # 콘텐츠 품질 분석 로직 (간단한 기준)
+            score = self._calculate_content_quality(title, content)
+            feedback = self._generate_feedback(title, content, score)
+            strengths = self._identify_strengths(title, content, score)
+            improvements = self._identify_improvements(title, content, score)
+            
+            processing_time = int((time.time() - start_time) * 1000)
+            
+            return Response({
+                'score': score,
+                'feedback': feedback,
+                'strengths': strengths,
+                'improvements': improvements,
+                'processing_time_ms': processing_time,
+                'status': 'success'
+            })
+            
+        except Exception as e:
+            return Response({
+                'error': f'콘텐츠 품질 분석 중 오류가 발생했습니다: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _calculate_content_quality(self, title, content):
+        """Calculate content quality score (0-100)"""
+        score = 50  # 기본 점수
+        
+        # 제목 평가
+        if len(title) >= 5:
+            score += 10
+        if len(title) <= 50:
+            score += 5
+        
+        # 내용 평가
+        if len(content) >= 100:
+            score += 15
+        if len(content) >= 500:
+            score += 10
+        
+        # 구조화 평가 (줄바꿈, 문단 등)
+        lines = content.split('\n')
+        if len(lines) >= 3:
+            score += 10
+        
+        # 최대 100점 제한
+        return min(score, 100)
+    
+    def _generate_feedback(self, title, content, score):
+        """Generate feedback message"""
+        if score >= 80:
+            return "훌륭한 콘텐츠입니다! 제목과 내용이 잘 구조화되어 있고 학습에 도움이 될 것 같습니다."
+        elif score >= 60:
+            return "좋은 콘텐츠입니다. 몇 가지 개선사항을 반영하면 더욱 좋아질 것 같습니다."
+        else:
+            return "콘텐츠를 보완하면 더 효과적인 학습 자료가 될 수 있습니다."
+    
+    def _identify_strengths(self, title, content, score):
+        """Identify content strengths"""
+        strengths = []
+        
+        if len(title) >= 5 and len(title) <= 50:
+            strengths.append("적절한 길이의 명확한 제목")
+        
+        if len(content) >= 100:
+            strengths.append("충분한 내용 분량")
+        
+        if '\n' in content:
+            strengths.append("단락으로 구조화된 내용")
+        
+        return strengths
+    
+    def _identify_improvements(self, title, content, score):
+        """Identify improvement areas"""
+        improvements = []
+        
+        if len(title) < 5:
+            improvements.append("제목을 더 구체적으로 작성해보세요")
+        
+        if len(content) < 100:
+            improvements.append("내용을 더 자세히 설명해보세요")
+        
+        if '\n' not in content:
+            improvements.append("내용을 단락으로 나누어 가독성을 높여보세요")
+        
+        return improvements
 
 
