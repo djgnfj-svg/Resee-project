@@ -7,6 +7,7 @@ import { Content, Category, CreateContentData, UpdateContentData } from '../type
 import { extractResults } from '../utils/helpers';
 import ContentFormV2 from '../components/ContentFormV2';
 import AIQuestionModal from '../components/AIQuestionModal';
+import AIQuestionHistoryModal from '../components/AIQuestionHistoryModal';
 import CategoryManager from '../components/CategoryManager';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -20,6 +21,7 @@ const ContentPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('-created_at');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [aiReviewContent, setAIReviewContent] = useState<Content | null>(null);
+  const [showAIHistory, setShowAIHistory] = useState<boolean>(false);
   const [expandedContents, setExpandedContents] = useState<Set<number>>(new Set());
   const [showCategoryManager, setShowCategoryManager] = useState<boolean>(false);
 
@@ -216,15 +218,28 @@ const ContentPage: React.FC = () => {
             학습 콘텐츠를 작성하고 관리합니다.
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center justify-center rounded-md bg-primary-600 dark:bg-primary-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-500 dark:hover:bg-primary-400 w-full sm:w-auto transition-colors"
-        >
-          <svg className="-ml-0.5 mr-1.5 h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-          </svg>
-          새 콘텐츠
-        </button>
+        <div className="flex space-x-2">
+          {canUseAI && (
+            <button
+              onClick={() => setShowAIHistory(true)}
+              className="inline-flex items-center justify-center rounded-md bg-purple-600 dark:bg-purple-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-purple-500 dark:hover:bg-purple-400 transition-colors"
+            >
+              <svg className="-ml-0.5 mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              AI 질문 기록
+            </button>
+          )}
+          <button
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center justify-center rounded-md bg-primary-600 dark:bg-primary-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-500 dark:hover:bg-primary-400 w-full sm:w-auto transition-colors"
+          >
+            <svg className="-ml-0.5 mr-1.5 h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+            </svg>
+            새 콘텐츠
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -518,6 +533,12 @@ const ContentPage: React.FC = () => {
         <AIQuestionModal
           content={aiReviewContent}
           onClose={handleAIReviewComplete}
+        />
+      )}
+      
+      {showAIHistory && (
+        <AIQuestionHistoryModal
+          onClose={() => setShowAIHistory(false)}
         />
       )}
 

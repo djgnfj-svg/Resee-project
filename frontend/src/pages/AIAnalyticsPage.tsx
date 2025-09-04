@@ -11,7 +11,7 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon
 } from '@heroicons/react/24/outline';
-import { apiClient } from '../utils/api';
+import { aiReviewAPI } from '../utils/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 interface LearningAnalytics {
@@ -42,12 +42,9 @@ const AIAnalyticsPage: React.FC = () => {
   // 학습 분석 데이터 조회
   const { data: analytics, isLoading, error } = useQuery({
     queryKey: ['learning-analytics', selectedPeriod],
-    queryFn: async (): Promise<LearningAnalytics | null> => {
-      const response = await apiClient.post('/ai-review/analytics/', {
-        period_type: selectedPeriod
-      });
-      return response.data;
-    }
+    queryFn: () => aiReviewAPI.getAnalytics({
+      period_type: selectedPeriod
+    })
   });
 
   const formatHour = (hour: number) => {
@@ -99,7 +96,7 @@ const AIAnalyticsPage: React.FC = () => {
     );
   }
 
-  const maxDayMinutes = Math.max(...Object.values(analytics.study_day_pattern));
+  const maxDayMinutes = Math.max(...Object.values((analytics?.study_day_pattern || {}) as Record<string, number>));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -144,7 +141,7 @@ const AIAnalyticsPage: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">총 학습시간</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {Math.round(analytics.total_study_minutes / 60)}시간
+                  {Math.round((analytics?.total_study_minutes || 0) / 60)}시간
                 </p>
               </div>
             </div>
@@ -157,8 +154,8 @@ const AIAnalyticsPage: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">평균 정답률</p>
-                <p className={`text-2xl font-bold ${getScoreColor(analytics.average_accuracy)}`}>
-                  {analytics.average_accuracy.toFixed(0)}%
+                <p className={`text-2xl font-bold ${getScoreColor(analytics?.average_accuracy || 0)}`}>
+                  {(analytics?.average_accuracy || 0).toFixed(0)}%
                 </p>
               </div>
             </div>
@@ -171,8 +168,8 @@ const AIAnalyticsPage: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">학습 효율성</p>
-                <p className={`text-2xl font-bold ${getScoreColor(analytics.efficiency_score)}`}>
-                  {analytics.efficiency_score.toFixed(0)}점
+                <p className={`text-2xl font-bold ${getScoreColor(analytics?.efficiency_score || 0)}`}>
+                  {(analytics?.efficiency_score || 0).toFixed(0)}점
                 </p>
               </div>
             </div>
@@ -185,8 +182,8 @@ const AIAnalyticsPage: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">기억 유지율</p>
-                <p className={`text-2xl font-bold ${getScoreColor(analytics.retention_rate)}`}>
-                  {analytics.retention_rate.toFixed(0)}%
+                <p className={`text-2xl font-bold ${getScoreColor(analytics?.retention_rate || 0)}`}>
+                  {(analytics?.retention_rate || 0).toFixed(0)}%
                 </p>
               </div>
             </div>
@@ -204,7 +201,7 @@ const AIAnalyticsPage: React.FC = () => {
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-2">요일별 학습시간</p>
               <div className="space-y-2">
-                {Object.entries(analytics.study_day_pattern).map(([day, minutes]) => (
+                {Object.entries((analytics?.study_day_pattern || {}) as Record<string, number>).map(([day, minutes]: [string, number]) => (
                   <div key={day} className="flex items-center">
                     <div className="w-8 text-sm text-gray-600">{getDayLabel(day)}</div>
                     <div className="flex-1 mx-3">
@@ -212,7 +209,7 @@ const AIAnalyticsPage: React.FC = () => {
                         <div 
                           className="bg-indigo-600 h-2 rounded-full"
                           style={{ width: `${(minutes / maxDayMinutes) * 100}%` }}
-                        ></div>
+                        />
                       </div>
                     </div>
                     <div className="w-12 text-sm text-gray-900 text-right">
@@ -227,13 +224,13 @@ const AIAnalyticsPage: React.FC = () => {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">집중 시간대</span>
                 <span className="font-medium text-gray-900">
-                  {formatHour(analytics.peak_study_hour)}
+                  {formatHour(analytics?.peak_study_hour || 0)}
                 </span>
               </div>
               <div className="flex justify-between text-sm mt-2">
                 <span className="text-gray-600">일 평균 학습</span>
                 <span className="font-medium text-gray-900">
-                  {analytics.average_daily_minutes}분
+                  {(analytics?.average_daily_minutes || 0)}분
                 </span>
               </div>
             </div>
@@ -249,7 +246,7 @@ const AIAnalyticsPage: React.FC = () => {
                 잘하는 분야
               </h4>
               <div className="space-y-2">
-                {analytics.strong_categories.slice(0, 3).map((category, index) => (
+                {(analytics?.strong_categories || []).slice(0, 3).map((category: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
                     <span className="text-sm text-green-800">{category.category}</span>
                     <span className="text-sm font-medium text-green-600">{category.score}%</span>
@@ -264,7 +261,7 @@ const AIAnalyticsPage: React.FC = () => {
                 보완이 필요한 분야
               </h4>
               <div className="space-y-2">
-                {analytics.weak_categories.slice(0, 3).map((category, index) => (
+                {(analytics?.weak_categories || []).slice(0, 3).map((category: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded">
                     <span className="text-sm text-red-800">{category.category}</span>
                     <span className="text-sm font-medium text-red-600">{category.score}%</span>
@@ -284,7 +281,7 @@ const AIAnalyticsPage: React.FC = () => {
               AI 추천 집중 분야
             </h3>
             <div className="space-y-3">
-              {analytics.recommended_focus_areas.map((area, index) => (
+              {(analytics?.recommended_focus_areas || []).map((area: string, index: number) => (
                 <div key={index} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800">{area}</p>
                 </div>
@@ -299,7 +296,7 @@ const AIAnalyticsPage: React.FC = () => {
               개인화된 학습 팁
             </h3>
             <div className="space-y-3">
-              {analytics.personalized_tips.map((tip, index) => (
+              {(analytics?.personalized_tips || []).map((tip: string, index: number) => (
                 <div key={index} className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
                   <p className="text-sm text-indigo-800">{tip}</p>
                 </div>
@@ -309,14 +306,14 @@ const AIAnalyticsPage: React.FC = () => {
         </div>
 
         {/* 예상 개선 분야 */}
-        {analytics.predicted_improvement_areas.length > 0 && (
+        {(analytics?.predicted_improvement_areas || []).length > 0 && (
           <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <ChartBarIcon className="h-5 w-5 text-blue-500 mr-2" />
               예상 개선 가능 분야
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {analytics.predicted_improvement_areas.map((area, index) => (
+              {(analytics?.predicted_improvement_areas || []).map((area: string, index: number) => (
                 <div key={index} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800">{area}</p>
                 </div>

@@ -19,7 +19,8 @@ from review.models import ReviewHistory, ReviewSchedule
 from monitoring.models import APIMetrics, SystemHealth, ErrorLog
 
 from .models import (
-    LearningPattern, ContentEffectiveness, 
+    LearningPattern, 
+    # ContentEffectiveness,  # Commented out in models.py
     SubscriptionAnalytics, SystemUsageMetrics
 )
 

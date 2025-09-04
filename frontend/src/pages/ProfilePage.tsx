@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 // import toast from 'react-hot-toast';
 import { authAPI, analyticsAPI, subscriptionAPI } from '../utils/api';
-import { User, DashboardData } from '../types';
+import { User, DashboardData, PaymentHistory } from '../types';
 import { CreditCardIcon } from '@heroicons/react/24/outline';
 
 interface ProfileFormData {
@@ -26,6 +26,12 @@ const ProfilePage: React.FC = () => {
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
     queryFn: analyticsAPI.getDashboard,
+  });
+
+  // Fetch payment history
+  const { data: paymentHistoryData, isLoading: paymentHistoryLoading } = useQuery({
+    queryKey: ['payment-history'],
+    queryFn: subscriptionAPI.getPaymentHistory,
   });
 
   // Form setup
@@ -50,6 +56,26 @@ const ProfilePage: React.FC = () => {
   });
 
   // Cancel subscription mutation
+  const toggleAutoRenewalMutation = useMutation({
+    mutationFn: subscriptionAPI.toggleAutoRenewal,
+    onSuccess: (updatedSubscription) => {
+      const isEnabled = updatedSubscription.auto_renewal;
+      alert(`Success: 자동갱신이 ${isEnabled ? '활성화' : '비활성화'}되었습니다.`);
+      // Update user data with new subscription info
+      queryClient.setQueryData(['profile'], (oldData: User | undefined) => {
+        if (oldData) {
+          return { ...oldData, subscription: updatedSubscription };
+        }
+        return oldData;
+      });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (error: any) => {
+      const errorMessage = error.userMessage || '자동갱신 설정 변경에 실패했습니다.';
+      alert(`Error: ${errorMessage}`);
+    },
+  });
+
   const cancelSubscriptionMutation = useMutation({
     mutationFn: subscriptionAPI.cancelSubscription,
     onSuccess: (updatedSubscription) => {
@@ -176,6 +202,36 @@ const ProfilePage: React.FC = () => {
                       {user.subscription.days_remaining}일
                     </span>
                   </div>
+                )}
+                {user.subscription.tier !== 'free' && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">자동갱신</span>
+                      <button
+                        onClick={() => toggleAutoRenewalMutation.mutate()}
+                        disabled={toggleAutoRenewalMutation.isPending}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          user.subscription.auto_renewal
+                            ? 'bg-green-600'
+                            : 'bg-gray-300'
+                        } ${toggleAutoRenewalMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            user.subscription.auto_renewal ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                    {user.subscription.auto_renewal && user.subscription.next_billing_date && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">다음 결제일</span>
+                        <span className="font-medium text-gray-900">
+                          {new Date(user.subscription.next_billing_date).toLocaleDateString('ko-KR')}
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
                 <div className="pt-3 border-t space-y-2">
                   <Link
@@ -310,6 +366,65 @@ const ProfilePage: React.FC = () => {
               </div>
 
             </form>
+          </div>
+
+          {/* Payment History */}
+          <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">결제 이력</h3>
+            {paymentHistoryLoading ? (
+              <div className="flex items-center justify-center h-24">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : paymentHistoryData?.results && paymentHistoryData.results.length > 0 ? (
+              <div className="space-y-3">
+                {paymentHistoryData.results.map((history: PaymentHistory) => (
+                  <div key={history.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            history.payment_type === 'upgrade' || history.payment_type === 'initial' 
+                              ? 'bg-green-100 text-green-800'
+                              : history.payment_type === 'cancellation'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {history.payment_type_display}
+                          </span>
+                          <span className="text-sm font-medium text-gray-900">
+                            {history.tier_display}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {history.description}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(history.created_at).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      <div className="text-right ml-4">
+                        <p className="text-lg font-semibold text-gray-900">
+                          {history.amount > 0 ? `₩${history.amount.toLocaleString()}` : '무료'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="mt-2 text-sm text-gray-600">아직 결제 이력이 없습니다</p>
+              </div>
+            )}
           </div>
 
           {/* Account Statistics */}

@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 
 from ..models import AIEvaluation, AIQuestion
 from .base_ai_service import BaseAIService, AIServiceError
+from ..mock_responses import AIMockResponses
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,22 @@ class AnswerEvaluatorService(BaseAIService):
             Dictionary with evaluation results
         """
         try:
-            # Generate evaluation prompt
+            # Use mock responses if enabled
+            if self.use_mock_responses:
+                logger.info("Using mock responses for answer evaluation")
+                mock_response = AIMockResponses.get_answer_evaluation_response(
+                    question_text=question.question_text,
+                    correct_answer=question.correct_answer,
+                    user_answer=user_answer,
+                    question_type=question.question_type.name
+                )
+                
+                evaluation_result = self._process_evaluation_result(
+                    mock_response, question, user_answer, user, 120  # Mock processing time
+                )
+                return evaluation_result
+            
+            # Real AI implementation
             prompt = self._build_evaluation_prompt(question, user_answer)
             
             messages = [

@@ -21,6 +21,8 @@ class BaseAIService:
     def __init__(self):
         """Initialize Claude service with configuration from Django settings"""
         api_key = getattr(settings, 'ANTHROPIC_API_KEY', None)
+        self.use_mock_responses = getattr(settings, 'AI_USE_MOCK_RESPONSES', True)  # 기본적으로 mock 사용
+        
         try:
             self.client = anthropic.Anthropic(
                 api_key=api_key or 'test-key'  # Fallback for testing

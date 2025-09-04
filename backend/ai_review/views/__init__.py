@@ -31,14 +31,7 @@ from .test_views import (
     AdaptiveTestStartView,
     AdaptiveTestAnswerView
 )
-# analytics_views module not found - commented out for now
-# from .analytics_views import (
-#     AIReviewSessionListView,
-#     InstantContentCheckView,
-#     LearningAnalyticsView,
-#     AIStudyMateView,
-#     AISummaryNoteView
-# )
+from .analytics_views import AIAnalyticsView
 from .health_views import ai_review_health
 
 __all__ = [
@@ -64,12 +57,8 @@ __all__ = [
     'AdaptiveTestStartView',
     'AdaptiveTestAnswerView',
     
-    # Analytics views - commented out (module not found)
-    # 'AIReviewSessionListView',
-    # 'InstantContentCheckView', 
-    # 'LearningAnalyticsView',
-    # 'AIStudyMateView',
-    # 'AISummaryNoteView',
+    # Analytics views
+    'AIAnalyticsView',
     
     # Health views
     'ai_review_health'
