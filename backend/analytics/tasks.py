@@ -16,7 +16,7 @@ from accounts.models import Subscription
 from content.models import Content
 from review.models import ReviewHistory, ReviewSchedule
 # from ai_review.models import AIUsageTracking  # Model doesn't exist yet
-from monitoring.models import APIMetrics, SystemHealth, ErrorLog
+# Note: monitoring.models removed with monitoring app deletion
 
 from .models import (
     LearningPattern, 
