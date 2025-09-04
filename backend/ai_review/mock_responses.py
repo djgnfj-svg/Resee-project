@@ -309,59 +309,6 @@ class AIMockResponses:
             ]
         }
 
-    @staticmethod
-    def get_analytics_response(period_type="weekly"):
-        """AI 분석 mock 응답 - LearningAnalytics 인터페이스와 일치"""
-        return {
-            "id": random.randint(1, 1000),
-            "period_type": period_type,
-            "period_start": (datetime.now() - timedelta(days=7)).isoformat(),
-            "period_end": datetime.now().isoformat(),
-            "total_study_minutes": random.randint(180, 420),  # 3-7시간
-            "average_daily_minutes": random.randint(25, 60),
-            "peak_study_hour": random.randint(9, 21),  # 9-21시
-            "study_day_pattern": {
-                "mon": random.randint(30, 90),
-                "tue": random.randint(20, 80),
-                "wed": random.randint(40, 100),
-                "thu": random.randint(35, 85),
-                "fri": random.randint(25, 75),
-                "sat": random.randint(50, 120),
-                "sun": random.randint(30, 90)
-            },
-            "total_contents_studied": random.randint(8, 25),
-            "total_reviews_completed": random.randint(15, 45),
-            "average_accuracy": round(random.uniform(65, 95), 1),
-            "weak_categories": [
-                {"category": "알고리즘", "score": random.randint(60, 75)},
-                {"category": "데이터베이스", "score": random.randint(65, 80)},
-                {"category": "네트워크", "score": random.randint(55, 70)}
-            ],
-            "strong_categories": [
-                {"category": "프론트엔드", "score": random.randint(85, 95)},
-                {"category": "백엔드", "score": random.randint(80, 90)},
-                {"category": "기초개념", "score": random.randint(88, 98)}
-            ],
-            "recommended_focus_areas": [
-                "알고리즘 기초 개념 재정리가 필요합니다",
-                "데이터베이스 쿼리 최적화 학습을 추천합니다",
-                "네트워크 프로토콜 이해도를 높이면 좋겠습니다"
-            ],
-            "personalized_tips": [
-                "오전 시간대에 집중도가 높으니 어려운 개념을 이때 학습하세요",
-                "짧은 시간이라도 매일 꾸준히 복습하는 것이 효과적입니다",
-                "이론 학습 후 바로 실습 문제를 풀어보세요",
-                "틀린 문제는 다음 날 다시 한 번 확인해보세요"
-            ],
-            "predicted_improvement_areas": [
-                "알고리즘 정답률 15% 향상 예상",
-                "데이터베이스 이해도 개선 기대",
-                "전반적 학습 효율성 증대"
-            ],
-            "efficiency_score": round(random.uniform(75, 95), 1),
-            "retention_rate": round(random.uniform(80, 95), 1),
-            "created_at": datetime.now().isoformat()
-        }
 
     @staticmethod
     def get_explanation_evaluation_response(user_explanation=""):
