@@ -1,9 +1,9 @@
 import json
 import os
-import tempfile
 from datetime import timedelta
 
 from django.conf import settings
+from django.db import models
 from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import generics, status
@@ -12,14 +12,14 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import (CookieConsent, DataDeletionRequest, DataExportRequest,
-                     LegalDocument, UserConsent)
-from .serializers import (CookieConsentSerializer, CreateConsentSerializer,
-                          DataDeletionRequestSerializer,
-                          DataExportRequestSerializer,
-                          GDPRDataExportSerializer, LegalDocumentSerializer,
-                          UpdateCookieConsentSerializer, UserConsentSerializer)
-from .services import GDPRService
+from .legal_models import (CookieConsent, DataDeletionRequest, DataExportRequest,
+                           LegalDocument, UserConsent)
+from .legal_serializers import (CookieConsentSerializer, CreateConsentSerializer,
+                                DataDeletionRequestSerializer,
+                                DataExportRequestSerializer,
+                                GDPRDataExportSerializer, LegalDocumentSerializer,
+                                UpdateCookieConsentSerializer, UserConsentSerializer)
+from .utils import collect_client_info
 
 
 class LegalDocumentDetailView(generics.RetrieveAPIView):
@@ -47,7 +47,7 @@ class UserConsentListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        return UserConsent.objects.filter(user=self.request.user).order_by('-consented_at')
+        return UserConsent.objects.filter(user=self.request.user).select_related('user').order_by('-consented_at')
 
 
 class CreateConsentView(APIView):
@@ -76,8 +76,7 @@ class CreateConsentView(APIView):
                     )
             
             # IP 주소 및 User Agent 수집
-            ip_address = self.get_client_ip(request)
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            client_info = collect_client_info(request)
             
             # 동의 기록 생성/업데이트
             consent, created = UserConsent.objects.update_or_create(
@@ -86,8 +85,8 @@ class CreateConsentView(APIView):
                 document_version=document_version,
                 defaults={
                     'is_consented': is_consented,
-                    'ip_address': ip_address,
-                    'user_agent': user_agent
+                    'ip_address': client_info['ip_address'],
+                    'user_agent': client_info['user_agent']
                 }
             )
             
@@ -96,14 +95,6 @@ class CreateConsentView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    def get_client_ip(self, request):
-        """클라이언트 IP 주소 추출"""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
 
 
 class DataDeletionRequestView(APIView):
@@ -138,7 +129,7 @@ class DataDeletionRequestView(APIView):
     
     def get(self, request):
         """삭제 요청 상태 조회"""
-        deletion_requests = DataDeletionRequest.objects.filter(user=request.user)
+        deletion_requests = DataDeletionRequest.objects.filter(user=request.user).select_related('user')
         serializer = DataDeletionRequestSerializer(deletion_requests, many=True)
         return Response(serializer.data)
 
@@ -174,7 +165,7 @@ class DataExportRequestView(APIView):
     
     def get(self, request):
         """내보내기 요청 상태 조회"""
-        export_requests = DataExportRequest.objects.filter(user=request.user)
+        export_requests = DataExportRequest.objects.filter(user=request.user).select_related('user')
         serializer = DataExportRequestSerializer(export_requests, many=True)
         return Response(serializer.data)
 
@@ -258,8 +249,7 @@ class CookieConsentView(APIView):
         serializer = UpdateCookieConsentSerializer(data=request.data)
         if serializer.is_valid():
             # 클라이언트 정보 수집
-            ip_address = self.get_client_ip(request)
-            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            client_info = collect_client_info(request)
             
             # 동의 기록 생성
             consent_data = {
@@ -267,8 +257,8 @@ class CookieConsentView(APIView):
                 'analytics_cookies': serializer.validated_data['analytics_cookies'],
                 'marketing_cookies': serializer.validated_data['marketing_cookies'],
                 'functional_cookies': serializer.validated_data['functional_cookies'],
-                'ip_address': ip_address,
-                'user_agent': user_agent
+                'ip_address': client_info['ip_address'],
+                'user_agent': client_info['user_agent']
             }
             
             if request.user.is_authenticated:
@@ -286,14 +276,6 @@ class CookieConsentView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    def get_client_ip(self, request):
-        """클라이언트 IP 주소 추출"""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
 
 
 @api_view(['GET'])
@@ -364,16 +346,15 @@ def withdraw_consent(request):
         ).latest('consented_at')
         
         # 동의 철회 기록 생성
-        ip_address = request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0] or request.META.get('REMOTE_ADDR')
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        client_info = collect_client_info(request)
         
         UserConsent.objects.create(
             user=request.user,
             consent_type=consent_type,
             document_version=consent.document_version,
             is_consented=False,
-            ip_address=ip_address,
-            user_agent=user_agent
+            ip_address=client_info['ip_address'],
+            user_agent=client_info['user_agent']
         )
         
         return Response({'message': '동의가 철회되었습니다.'})
