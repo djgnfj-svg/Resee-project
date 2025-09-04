@@ -258,10 +258,27 @@ Existing schedules auto-adjusted to new limits
 
 ## 🤖 AI Integration Architecture
 
+### AI Features Overview
+Resee integrates 3 core AI features using Claude API for enhanced learning:
+
+1. **Weekly Tests**: Adaptive difficulty testing with category-based questions
+2. **Content Quality Check**: Real-time content analysis and feedback
+3. **Explanation Evaluation**: AI-powered descriptive review assessment
+
 ### AI Service Structure (backend/ai_review/services/)
 - **BaseAIService**: Core Claude API integration with retry logic
 - **QuestionGenerator**: Creates multiple choice, fill-in-blank, and blur questions
 - **AnswerEvaluator**: Scores user responses with detailed feedback
+
+### AI API Endpoints
+```
+/api/ai-review/
+├── weekly-test/start/           # Start adaptive weekly test
+├── weekly-test/answer/          # Submit test answers
+├── content-check/               # Content quality analysis
+├── explanation-evaluation/      # Evaluate user explanations
+└── instant-check/              # Alternative content check
+```
 
 ### Content Editor Integration
 - **TipTap Editor**: Rich text editor with Notion-like functionality
@@ -270,14 +287,30 @@ Existing schedules auto-adjusted to new limits
 - **Usage**: Integrated into ContentFormV2 for content creation
 
 ### AI Usage Limits by Tier
-- FREE: 0 questions/day (no AI features)
-- BASIC: 30 questions/day
-- PRO: 200 questions/day (near unlimited)
+- **FREE**: No AI features (upgrade required)
+- **BASIC**: 30 AI requests/day (weekly tests, content checks, explanations)
+- **PRO**: 200 requests/day (near unlimited usage)
+
+### Review Mode Architecture
+The review system now supports dual modes:
+
+1. **Card Mode (All Tiers)**: 
+   - Traditional flip-card interface
+   - Show/hide content functionality
+   - Self-assessment (remembered/partial/forgot)
+
+2. **Explanation Mode (BASIC+)**:
+   - User writes explanation in text area
+   - AI evaluates explanation quality (0-100 score)
+   - Detailed feedback with strengths/improvements
+   - Concept coverage analysis
+   - Original content comparison
 
 ### AI Model Configuration
 - Primary: Claude 3 Haiku (fast, cost-effective)
 - Request timeout: 30 seconds with exponential backoff
 - Usage tracked via AIUsageTracking model
+- Mock responses available for development (`AI_USE_MOCK_RESPONSES=True`)
 
 ## 🧪 Testing Architecture
 
@@ -384,6 +417,13 @@ Payment data is now stored directly in the Subscription model:
 - **New Field**: `amount_paid` in `accounts.models.Subscription`
 - **Usage**: Legal and BI services use subscription.amount_paid instead of separate payment records
 
+### AI System Completion (Latest)
+All 3 core AI features are now fully implemented and integrated:
+- **Weekly Tests**: Complete with adaptive difficulty and category support
+- **Content Quality Check**: NEW endpoint `/ai-review/content-check/` added
+- **Explanation Evaluation**: Integrated into review page with dual-mode interface
+- **Frontend Integration**: Review page supports card/explanation toggle with subscription gating
+
 ### Removed Components
 - **payments app**: Completely removed (unused by frontend)
 - **Frontend monitoring components**: MonitoringDashboard and related components removed
@@ -395,10 +435,18 @@ Payment data is now stored directly in the Subscription model:
 - **Ebbinghaus Algorithm**: `backend/review/utils.py`
 - **Email Service**: `backend/accounts/email_service.py`
 - **AI Question Generation**: `backend/ai_review/services/question_generator.py`
+- **AI Content Quality Check**: `backend/ai_review/views/test_views.py` (ContentQualityCheckView)
 - **Alert System**: `backend/monitoring/services/alert_engine.py`
 - **Deployment Script**: `deploy-auto.sh`
 
+### AI Integration Files
+- **AI Views**: `backend/ai_review/views/test_views.py`
+- **AI URLs**: `backend/ai_review/urls.py`
+- **AI API Client**: `frontend/src/utils/ai-review-api.ts`
+- **AI Types**: `frontend/src/types/ai-review.ts`
+
 ### Frontend Key Components
+- **Review Page**: `frontend/src/pages/ReviewPage.tsx` (dual-mode review system)
 - **TipTap Editor**: `frontend/src/components/TipTapEditor.tsx`
 - **BI Dashboard**: `frontend/src/components/analytics/BIDashboard.tsx`
 - **Learning Calendar**: `frontend/src/components/analytics/LearningCalendar.tsx`
