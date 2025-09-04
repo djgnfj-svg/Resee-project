@@ -26,9 +26,8 @@ from .test_views import (
     WeeklyTestView,
     WeeklyTestStartView,
     WeeklyTestAnswerView,
-    InstantContentCheckView,
-    AdaptiveTestStartView,
-    AdaptiveTestAnswerView
+    WeeklyTestCategoriesView,
+    InstantContentCheckView
 )
 from .health_views import ai_review_health
 
@@ -51,9 +50,8 @@ __all__ = [
     'WeeklyTestView',
     'WeeklyTestStartView',
     'WeeklyTestAnswerView',
+    'WeeklyTestCategoriesView',
     'InstantContentCheckView',
-    'AdaptiveTestStartView',
-    'AdaptiveTestAnswerView',
     
     
     # Health views

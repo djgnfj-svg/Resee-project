@@ -32,7 +32,9 @@
       "mcp__playwright__browser_wait_for",
       "mcp__playwright__browser_close",
       "Bash(python test:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(__NEW_LINE__ echo \"2. Checking AIAdaptiveDifficultyTest model removed...\")",
+      "Bash(__NEW_LINE__ echo \"3. Checking API endpoints...\")"
     ],
     "deny": [],
     "ask": []

@@ -18,7 +18,6 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import WeeklyTestPage from './pages/WeeklyTestPage';
-import AdaptiveTestPage from './pages/AdaptiveTestPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/design-system.css';
 import './styles/animations.css';
@@ -107,14 +106,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <WeeklyTestPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/adaptive-test" 
-                element={
-                  <ProtectedRoute>
-                    <AdaptiveTestPage />
                   </ProtectedRoute>
                 } 
               />
