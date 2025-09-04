@@ -515,11 +515,6 @@ export const aiReviewAPI = {
     return response.data;
   },
 
-  // AI Analytics
-  getAnalytics: async (data: any): Promise<any> => {
-    const response = await api.post('/ai-review/analytics/', data);
-    return response.data;
-  },
 };
 
 // Export apiClient alias for compatibility
