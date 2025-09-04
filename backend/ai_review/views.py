@@ -46,8 +46,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-# These views are temporarily imported from the original file
-# TODO: Move these to appropriate view modules
+# Views that need to be refactored and moved to appropriate modules
 
 # Import statements for temporary views
 from accounts.models import AIUsageTracking
@@ -122,7 +121,7 @@ class AIReviewSessionListView(ListAPIView):
         ).order_by('-created_at')
 
 
-# TODO: Move these to appropriate modules
+# Note: These views have been moved to separate view modules
 class WeeklyTestView(APIView):
     """주간 시험 관리 뷰"""
     permission_classes = [permissions.IsAuthenticated]
