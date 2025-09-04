@@ -97,6 +97,20 @@ FEATURE_FLAGS.update({
     'ENABLE_DETAILED_LOGGING': True,
 })
 
+# Disable rate limiting in development
+RATE_LIMIT_ENABLE = False
+
+# Override DRF throttling rates for development
+REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
+    'anon': '10000/hour',     # Much higher for development
+    'user': '10000/hour',     # Much higher for development  
+    'login': '100/min',       # Higher for development
+    'registration': '100/min', # Higher for development
+    'register': '100/min',    # Higher for development
+    'email': '1000/hour',     # Higher for development
+    'ai_endpoint': '1000/hour', # Higher for development
+}
+
 # Development AI settings (with fallbacks)
 AI_ENABLE_MOCK_RESPONSES = os.environ.get('AI_ENABLE_MOCK_RESPONSES', 'False') == 'True'
 
