@@ -541,25 +541,21 @@ class WeeklyTestQuestion(models.Model):
         return f"{self.weekly_test} - Q{self.order}"
 
 
-class InstantContentCheck(models.Model):
+class ContentUnderstandingCheck(models.Model):
     """
-    실시간 내용 검토 모델
+    콘텐츠 이해도 검사 모델 - 작성 완료 후 AI가 이해도를 체크
     """
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='instant_checks',
-        help_text="검토를 수행한 사용자"
+        related_name='understanding_checks',
+        help_text="검사를 받은 사용자"
     )
     content = models.ForeignKey(
         Content,
         on_delete=models.CASCADE,
-        related_name='instant_checks',
-        help_text="검토 대상 콘텐츠"
-    )
-    check_point = models.CharField(
-        max_length=50,
-        help_text="검토 시점 (예: 50%, 완료 등)"
+        related_name='understanding_checks',
+        help_text="검사 대상 콘텐츠"
     )
     questions_count = models.IntegerField(
         default=3,
@@ -584,310 +580,27 @@ class InstantContentCheck(models.Model):
         help_text="AI 생성 피드백"
     )
     duration_seconds = models.IntegerField(
-        help_text="검토 소요 시간 (초)"
+        help_text="검사 소요 시간 (초)"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        db_table = 'ai_instant_content_checks'
+        db_table = 'ai_content_understanding_checks'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['user', 'content', 'created_at']),
         ]
     
     def __str__(self):
-        return f"{self.user.email} - {self.content.title} @ {self.check_point}"
-
-
-class AIStudyMate(models.Model):
-    """
-    AI 스터디 메이트 세션 모델
-    """
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='study_mate_sessions',
-        help_text="학습자"
-    )
-    content = models.ForeignKey(
-        Content,
-        on_delete=models.CASCADE,
-        related_name='study_mate_sessions',
-        help_text="학습 콘텐츠"
-    )
-    session_type = models.CharField(
-        max_length=30,
-        choices=[
-            ('guided_learning', '가이드 학습'),
-            ('hint_system', '힌트 시스템'),
-            ('error_analysis', '오답 분석'),
-            ('concept_explanation', '개념 설명')
-        ],
-        help_text="세션 유형"
-    )
-    interaction_count = models.IntegerField(
-        default=0,
-        help_text="상호작용 횟수"
-    )
-    hints_provided = models.JSONField(
-        default=list,
-        help_text="제공된 힌트 목록"
-    )
-    user_level = models.CharField(
-        max_length=20,
-        choices=[
-            ('beginner', '초급'),
-            ('intermediate', '중급'),
-            ('advanced', '고급')
-        ],
-        default='intermediate',
-        help_text="감지된 사용자 수준"
-    )
-    adapted_explanations = models.JSONField(
-        default=list,
-        help_text="수준별 맞춤 설명"
-    )
-    learning_progress = models.JSONField(
-        default=dict,
-        help_text="학습 진행 상황 추적"
-    )
-    session_duration_minutes = models.IntegerField(
-        default=0,
-        help_text="세션 지속 시간 (분)"
-    )
-    effectiveness_score = models.FloatField(
-        null=True,
-        blank=True,
-        validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
-        help_text="세션 효과성 점수"
-    )
-    started_at = models.DateTimeField(
-        auto_now_add=True,
-        help_text="세션 시작 시간"
-    )
-    ended_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text="세션 종료 시간"
-    )
+        return f"{self.user.email} - {self.content.title} 이해도 검사"
     
-    class Meta:
-        db_table = 'ai_study_mate_sessions'
-        ordering = ['-started_at']
-        indexes = [
-            models.Index(fields=['user', 'content', 'started_at']),
-        ]
-    
-    def __str__(self):
-        return f"{self.user.email} - {self.session_type} ({self.started_at})"
-
-
-class AISummaryNote(models.Model):
-    """
-    AI 생성 요약 노트 모델
-    """
-    content = models.ForeignKey(
-        Content,
-        on_delete=models.CASCADE,
-        related_name='ai_summaries',
-        help_text="원본 콘텐츠"
-    )
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='ai_summaries',
-        help_text="요청한 사용자"
-    )
-    summary_type = models.CharField(
-        max_length=30,
-        choices=[
-            ('one_page', '1페이지 요약'),
-            ('mind_map', '마인드맵'),
-            ('key_points', '핵심 포인트'),
-            ('cornell_notes', '코넬 노트')
-        ],
-        default='one_page',
-        help_text="요약 형식"
-    )
-    summary_content = models.TextField(
-        help_text="요약 내용"
-    )
-    key_concepts = models.JSONField(
-        default=list,
-        help_text="핵심 개념 목록"
-    )
-    important_terms = models.JSONField(
-        default=list,
-        help_text="중요 용어 및 정의"
-    )
-    visual_elements = models.JSONField(
-        default=dict,
-        help_text="시각적 요소 (다이어그램, 차트 등)"
-    )
-    study_questions = models.JSONField(
-        default=list,
-        help_text="학습 확인 질문"
-    )
-    pdf_url = models.URLField(
-        blank=True,
-        help_text="생성된 PDF 파일 URL"
-    )
-    word_count = models.IntegerField(
-        default=0,
-        help_text="요약 단어 수"
-    )
-    compression_ratio = models.FloatField(
-        default=0.0,
-        help_text="압축률 (원본 대비 요약 비율)"
-    )
-    ai_model_used = models.CharField(
-        max_length=100,
-        blank=True,
-        help_text="사용된 AI 모델"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        db_table = 'ai_summary_notes'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['content', 'user', 'created_at']),
-            models.Index(fields=['summary_type', 'created_at']),
-        ]
-    
-    def __str__(self):
-        return f"{self.content.title} - {self.summary_type} ({self.user.email})"
-
-
-class AIWrongAnswerClinic(models.Model):
-    """
-    AI 오답 클리닉 - 틀린 문제에 대한 맞춤형 해설
-    """
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='wrong_answer_clinics',
-        help_text="질문한 사용자"
-    )
-    original_question = models.ForeignKey(
-        AIQuestion,
-        on_delete=models.CASCADE,
-        related_name='clinic_sessions',
-        help_text="원본 문제"
-    )
-    user_answer = models.TextField(
-        help_text="사용자의 오답"
-    )
-    correct_answer = models.TextField(
-        help_text="정답"
-    )
-    
-    # AI 분석 결과
-    error_analysis = models.TextField(
-        help_text="오답 원인 분석"
-    )
-    concept_explanation = models.TextField(
-        help_text="핵심 개념 재설명"
-    )
-    additional_tips = models.JSONField(
-        default=list,
-        help_text="추가 학습 팁"
-    )
-    practice_question = models.JSONField(
-        null=True,
-        blank=True,
-        help_text="연습 문제"
-    )
-    
-    # 메타 정보
-    improvement_score = models.FloatField(
-        null=True,
-        blank=True,
-        help_text="재시도 후 향상도"
-    )
-    is_resolved = models.BooleanField(
-        default=False,
-        help_text="문제 해결 여부"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        db_table = 'ai_wrong_answer_clinics'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['user', 'created_at']),
-            models.Index(fields=['original_question', 'is_resolved']),
-        ]
-    
-    def __str__(self):
-        return f"{self.user.email} - {self.original_question.question_text[:50]}..."
+    @property
+    def accuracy_rate(self):
+        """정답률 계산"""
+        if self.questions_count == 0:
+            return 0.0
+        return (self.correct_count / self.questions_count) * 100.0
 
 
 
-class AIQuestionTransformer(models.Model):
-    """
-    AI 문제 변형기 - 같은 개념을 다양하게 묻기
-    """
-    original_question = models.ForeignKey(
-        AIQuestion,
-        on_delete=models.CASCADE,
-        related_name='transformations',
-        help_text="원본 문제"
-    )
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='question_transformations',
-        help_text="변형을 요청한 사용자"
-    )
-    
-    transformation_type = models.CharField(
-        max_length=30,
-        choices=[
-            ('reverse', '역질문'),
-            ('practical', '실생활 적용'),
-            ('comparison', '비교형'),
-            ('troubleshoot', '문제해결형'),
-            ('analogy', '비유/예시'),
-            ('step_by_step', '단계별 풀이')
-        ],
-        help_text="변형 방식"
-    )
-    
-    transformed_question_text = models.TextField(
-        help_text="변형된 문제"
-    )
-    transformed_answer = models.TextField(
-        help_text="변형 문제 답안"
-    )
-    transformation_explanation = models.TextField(
-        blank=True,
-        help_text="변형 의도 설명"
-    )
-    
-    # 사용자 피드백
-    user_rating = models.IntegerField(
-        null=True,
-        blank=True,
-        choices=[(i, f"{i}점") for i in range(1, 6)],
-        help_text="사용자 평점 (1-5)"
-    )
-    is_helpful = models.BooleanField(
-        null=True,
-        blank=True,
-        help_text="도움되었는지 여부"
-    )
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        db_table = 'ai_question_transformers'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['user', 'transformation_type']),
-            models.Index(fields=['original_question', 'created_at']),
-        ]
-    
-    def __str__(self):
-        return f"{self.original_question.question_text[:30]}... → {self.transformation_type}"
+

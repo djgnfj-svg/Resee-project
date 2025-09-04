@@ -21,7 +21,6 @@ from .evaluation_views import (
     AIAnswerEvaluationView,
     ExplanationEvaluationView
 )
-from .chat_views import AIChatView
 from .test_views import (
     WeeklyTestView,
     WeeklyTestStartView,
@@ -43,8 +42,6 @@ __all__ = [
     'AIAnswerEvaluationView',
     'ExplanationEvaluationView',
     
-    # Chat views
-    'AIChatView',
     
     # Test views
     'WeeklyTestView',
