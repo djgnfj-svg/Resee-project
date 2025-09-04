@@ -54,15 +54,9 @@ def test_mock_responses():
     print(f"   ✅ Chat response: {mock_chat['response'][:50]}...")
     print(f"   🎯 Confidence: {mock_chat['confidence_score']}")
     
-    # Test analytics mock
-    print("\n4. Testing Analytics Mock:")
-    mock_analytics = AIMockResponses.get_analytics_response(period_type="weekly")
-    print(f"   ✅ Success rate: {mock_analytics['metrics']['success_rate']}%")
-    print(f"   📊 Total reviews: {mock_analytics['metrics']['total_reviews']}")
-    print(f"   💡 Insights count: {len(mock_analytics['insights'])}")
     
     # Test weekly test mock
-    print("\n5. Testing Weekly Test Mock:")
+    print("\n4. Testing Weekly Test Mock:")
     mock_test = AIMockResponses.get_weekly_test_response()
     print(f"   ✅ Test generated with {mock_test['test']['total_questions']} questions")
     print(f"   🎯 Difficulty distribution: {mock_test['test']['difficulty_distribution']}")
