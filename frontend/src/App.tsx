@@ -18,7 +18,6 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import WeeklyTestPage from './pages/WeeklyTestPage';
-import AIAnalyticsPage from './pages/AIAnalyticsPage';
 import AdaptiveTestPage from './pages/AdaptiveTestPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/design-system.css';
@@ -108,14 +107,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <WeeklyTestPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/ai-analytics" 
-                element={
-                  <ProtectedRoute>
-                    <AIAnalyticsPage />
                   </ProtectedRoute>
                 } 
               />
