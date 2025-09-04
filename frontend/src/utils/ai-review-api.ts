@@ -3,19 +3,10 @@
  */
 import api from './api';
 import type {
-  AIQuestionType,
-  AIQuestion,
-  GenerateQuestionsRequest,
-  AIAnswerEvaluationRequest,
-  AIAnswerEvaluationResponse,
-  FillBlankRequest,
-  FillBlankResponse,
-  BlurRegionsRequest,
-  BlurRegionsResponse,
-  AIChatRequest,
-  AIChatResponse,
-  ExplanationEvaluationRequest,
-  ExplanationEvaluationResponse,
+  WeeklyTest,
+  WeeklyTestQuestion,
+  WeeklyTestCreateRequest,
+  CategoryChoice,
   PaginatedResponse,
 } from '../types/ai-review';
 
@@ -26,54 +17,56 @@ class AIReviewAPI {
     return response.data;
   }
 
-  // Question Types
-  async getQuestionTypes(): Promise<AIQuestionType[]> {
-    const response = await api.get<PaginatedResponse<AIQuestionType>>('/ai-review/question-types/');
+
+
+  // AI Content Quality Check
+  async checkContentQuality(title: string, content: string): Promise<any> {
+    const response = await api.post('/ai-review/content-check/', {
+      title,
+      content
+    });
+    return response.data;
+  }
+
+  // Weekly Test
+  async getWeeklyTestCategories(): Promise<CategoryChoice[]> {
+    const response = await api.get('/ai-review/weekly-test/categories/');
+    return response.data;
+  }
+
+  async createWeeklyTest(request: WeeklyTestCreateRequest): Promise<WeeklyTest> {
+    const response = await api.post('/ai-review/weekly-test/', request);
+    return response.data;
+  }
+
+  async startWeeklyTest(testId: number): Promise<WeeklyTest> {
+    const response = await api.post('/ai-review/weekly-test/start/', { test_id: testId });
+    return response.data;
+  }
+
+  async answerWeeklyTestQuestion(
+    questionId: number, 
+    userAnswer: string, 
+    timeSpent?: number
+  ): Promise<{ is_correct: boolean; ai_score?: number; next_question?: WeeklyTestQuestion }> {
+    const response = await api.post('/ai-review/weekly-test/answer/', {
+      question_id: questionId,
+      user_answer: userAnswer,
+      time_spent_seconds: timeSpent
+    });
+    return response.data;
+  }
+
+  async getWeeklyTest(testId: number): Promise<WeeklyTest> {
+    const response = await api.get(`/ai-review/weekly-test/${testId}/`);
+    return response.data;
+  }
+
+  async getUserWeeklyTests(): Promise<WeeklyTest[]> {
+    const response = await api.get('/api/ai-review/weekly-tests/');
     return response.data.results;
   }
 
-  // Question Generation
-  async generateQuestions(request: GenerateQuestionsRequest): Promise<AIQuestion[]> {
-    const response = await api.post('/ai-review/generate-questions/', request);
-    return response.data;
-  }
-
-  // Get questions for specific content
-  async getContentQuestions(contentId: number): Promise<AIQuestion[]> {
-    const response = await api.get<PaginatedResponse<AIQuestion>>(`/ai-review/content/${contentId}/questions/`);
-    return response.data.results;
-  }
-
-  // Answer evaluation
-  async evaluateAnswer(request: AIAnswerEvaluationRequest): Promise<AIAnswerEvaluationResponse> {
-    const response = await api.post('/ai-review/evaluate-answer/', request);
-    return response.data;
-  }
-
-
-  // Fill-in-blank generation
-  async generateFillBlanks(request: FillBlankRequest): Promise<FillBlankResponse> {
-    const response = await api.post('/ai-review/generate-fill-blanks/', request);
-    return response.data;
-  }
-
-  // Blur regions identification
-  async identifyBlurRegions(request: BlurRegionsRequest): Promise<BlurRegionsResponse> {
-    const response = await api.post('/ai-review/identify-blur-regions/', request);
-    return response.data;
-  }
-
-  // AI Chat
-  async chatAboutContent(request: AIChatRequest): Promise<AIChatResponse> {
-    const response = await api.post('/ai-review/chat/', request);
-    return response.data;
-  }
-
-  // Explanation evaluation
-  async evaluateExplanation(request: ExplanationEvaluationRequest): Promise<ExplanationEvaluationResponse> {
-    const response = await api.post('/ai-review/evaluate-explanation/', request);
-    return response.data;
-  }
 
   // Utility functions
 
@@ -88,14 +81,6 @@ class AIReviewAPI {
     }
   }
 
-  getQuestionTypeLabel(type: string): string {
-    switch (type) {
-      case 'multiple_choice': return '객관식';
-      case 'fill_blank': return '빈칸 채우기';
-      case 'blur_processing': return '블러 처리';
-      default: return type;
-    }
-  }
 
   getScoreLabel(score: number): string {
     if (score >= 0.9) return '우수';
