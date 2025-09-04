@@ -275,13 +275,20 @@ class AIReviewSession(models.Model):
 
 class WeeklyTest(models.Model):
     """
-    주간 종합 시험 모델
+    주간 종합 시험 모델 - 적응형 난이도 조절 기능 포함
     """
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='weekly_tests',
         help_text="시험을 본 사용자"
+    )
+    category = models.ForeignKey(
+        'content.Category',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        help_text="선택한 카테고리 (None이면 전체 콘텐츠)"
     )
     week_start_date = models.DateField(
         help_text="주간 시작일 (월요일)"
@@ -290,9 +297,47 @@ class WeeklyTest(models.Model):
         help_text="주간 종료일 (일요일)"
     )
     total_questions = models.IntegerField(
-        default=15,
+        default=10,
         validators=[MinValueValidator(5), MaxValueValidator(30)],
         help_text="총 문제 수"
+    )
+    
+    # 적응형 난이도 조절 기능
+    adaptive_mode = models.BooleanField(
+        default=True,
+        help_text="적응형 모드 활성화"
+    )
+    current_difficulty = models.CharField(
+        max_length=20,
+        choices=[
+            ('easy', '쉬움'),
+            ('medium', '보통'), 
+            ('hard', '어려움')
+        ],
+        default='medium',
+        help_text="현재 난이도"
+    )
+    consecutive_correct = models.IntegerField(
+        default=0,
+        help_text="연속 정답 수"
+    )
+    consecutive_wrong = models.IntegerField(
+        default=0,
+        help_text="연속 오답 수"
+    )
+    
+    # 문제 유형별 분배 (객관식 6 + 주관식 3 + 서술형 1)
+    question_type_distribution = models.JSONField(
+        default=dict,
+        help_text="문제 유형별 분배 {'multiple_choice': 6, 'short_answer': 3, 'essay': 1}"
+    )
+    
+    # 추정 숙련도
+    estimated_proficiency = models.FloatField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
+        help_text="추정 숙련도 (0-100)"
     )
     completed_questions = models.IntegerField(
         default=0,
@@ -359,10 +404,11 @@ class WeeklyTest(models.Model):
     
     class Meta:
         db_table = 'ai_weekly_tests'
-        ordering = ['-week_start_date']
-        unique_together = ['user', 'week_start_date']
+        ordering = ['-created_at']
+        unique_together = ['user', 'category', 'week_start_date']
         indexes = [
             models.Index(fields=['user', 'week_start_date']),
+            models.Index(fields=['user', 'category']),
             models.Index(fields=['status', 'created_at']),
         ]
     
@@ -400,6 +446,45 @@ class WeeklyTest(models.Model):
             elapsed = (timezone.now() - self.started_at).total_seconds() / 60
             return elapsed > self.time_limit_minutes
         return False
+    
+    def adjust_difficulty(self, is_correct):
+        """적응형 난이도 조절"""
+        if not self.adaptive_mode:
+            return
+            
+        if is_correct:
+            self.consecutive_correct += 1
+            self.consecutive_wrong = 0
+            
+            # 연속 2회 정답 시 난이도 상승
+            if self.consecutive_correct >= 2:
+                if self.current_difficulty == 'easy':
+                    self.current_difficulty = 'medium'
+                elif self.current_difficulty == 'medium':
+                    self.current_difficulty = 'hard'
+                self.consecutive_correct = 0
+        else:
+            self.consecutive_wrong += 1
+            self.consecutive_correct = 0
+            
+            # 연속 2회 오답 시 난이도 하락
+            if self.consecutive_wrong >= 2:
+                if self.current_difficulty == 'hard':
+                    self.current_difficulty = 'medium'
+                elif self.current_difficulty == 'medium':
+                    self.current_difficulty = 'easy'
+                self.consecutive_wrong = 0
+        
+        self.save(update_fields=['current_difficulty', 'consecutive_correct', 'consecutive_wrong'])
+    
+    def get_question_type_for_order(self, order):
+        """문제 순서에 따른 문제 유형 반환 (객6 + 주3 + 서1)"""
+        if order <= 6:
+            return 'multiple_choice'
+        elif order <= 9:
+            return 'short_answer'
+        else:
+            return 'essay'
 
 
 class WeeklyTestQuestion(models.Model):
@@ -738,76 +823,6 @@ class AIWrongAnswerClinic(models.Model):
     def __str__(self):
         return f"{self.user.email} - {self.original_question.question_text[:50]}..."
 
-
-class AIAdaptiveDifficultyTest(models.Model):
-    """
-    AI 난이도 조절 시험 - 실시간 난이도 조절
-    """
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='adaptive_tests',
-        help_text="시험 응시자"
-    )
-    content_area = models.CharField(
-        max_length=100,
-        help_text="시험 범위 (카테고리 또는 콘텐츠 그룹)"
-    )
-    target_questions = models.IntegerField(
-        default=10,
-        help_text="목표 문제 수"
-    )
-    
-    # 난이도 조절 상태
-    current_difficulty = models.CharField(
-        max_length=20,
-        choices=[
-            ('easy', '쉬움'),
-            ('medium', '보통'),
-            ('hard', '어려움')
-        ],
-        default='medium',
-        help_text="현재 난이도"
-    )
-    consecutive_correct = models.IntegerField(
-        default=0,
-        help_text="연속 정답 수"
-    )
-    consecutive_wrong = models.IntegerField(
-        default=0,
-        help_text="연속 오답 수"
-    )
-    
-    # 시험 결과
-    total_questions = models.IntegerField(default=0)
-    correct_answers = models.IntegerField(default=0)
-    final_difficulty_level = models.CharField(max_length=20, blank=True)
-    estimated_proficiency = models.FloatField(
-        null=True,
-        blank=True,
-        help_text="추정 숙련도 (0-100)"
-    )
-    
-    started_at = models.DateTimeField(auto_now_add=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    
-    class Meta:
-        db_table = 'ai_adaptive_difficulty_tests'
-        ordering = ['-started_at']
-        indexes = [
-            models.Index(fields=['user', 'started_at']),
-            models.Index(fields=['content_area', 'completed_at']),
-        ]
-    
-    def __str__(self):
-        status = "완료" if self.completed_at else "진행중"
-        return f"{self.user.email} - {self.content_area} ({status})"
-    
-    @property
-    def accuracy_rate(self):
-        if self.total_questions == 0:
-            return 0.0
-        return (self.correct_answers / self.total_questions) * 100.0
 
 
 class AIQuestionTransformer(models.Model):

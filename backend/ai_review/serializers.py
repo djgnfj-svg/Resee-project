@@ -3,12 +3,12 @@ Serializers for AI Review API
 """
 from rest_framework import serializers
 
-from content.models import Content
+from content.models import Content, Category
 
-from .models import (AIAdaptiveDifficultyTest, AIEvaluation, AIQuestion,
+from .models import (AIEvaluation, AIQuestion,
                      AIQuestionTransformer, AIQuestionType, AIReviewSession,
                      AIStudyMate, AISummaryNote, AIWrongAnswerClinic,
-                     InstantContentCheck, LearningAnalytics, WeeklyTest,
+                     InstantContentCheck, WeeklyTest,
                      WeeklyTestQuestion)
 
 
@@ -242,24 +242,28 @@ class ExplanationEvaluationResponseSerializer(serializers.Serializer):
 
 # 새로운 AI 기능 시리얼라이저들
 class WeeklyTestSerializer(serializers.ModelSerializer):
-    """주간 시험 시리얼라이저"""
+    """주간 시험 시리얼라이저 - 적응형 기능 포함"""
     accuracy_rate = serializers.ReadOnlyField()
     completion_rate = serializers.ReadOnlyField()
     time_spent_minutes = serializers.ReadOnlyField()
+    category_name = serializers.CharField(source='category.name', read_only=True)
     
     class Meta:
         model = WeeklyTest
         fields = [
-            'id', 'user', 'week_start_date', 'week_end_date',
+            'id', 'user', 'category', 'category_name', 'week_start_date', 'week_end_date',
             'total_questions', 'completed_questions', 'correct_answers',
             'score', 'time_limit_minutes', 'started_at', 'completed_at',
+            'adaptive_mode', 'current_difficulty', 'consecutive_correct', 'consecutive_wrong',
+            'question_type_distribution', 'estimated_proficiency',
             'difficulty_distribution', 'content_coverage', 'weak_areas',
             'improvement_from_last_week', 'status', 'accuracy_rate',
             'completion_rate', 'time_spent_minutes', 'created_at'
         ]
         read_only_fields = [
-            'id', 'user', 'accuracy_rate', 'completion_rate',
-            'time_spent_minutes', 'created_at'
+            'id', 'user', 'category_name', 'accuracy_rate', 'completion_rate',
+            'time_spent_minutes', 'consecutive_correct', 'consecutive_wrong',
+            'estimated_proficiency', 'created_at'
         ]
 
 
@@ -282,16 +286,46 @@ class WeeklyTestQuestionSerializer(serializers.ModelSerializer):
 
 
 class WeeklyTestCreateSerializer(serializers.Serializer):
-    """주간 시험 생성 요청 시리얼라이저"""
+    """주간 시험 생성 요청 시리얼라이저 - 카테고리 선택 포함"""
+    category_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="카테고리 ID (없으면 전체 콘텐츠 대상)"
+    )
     time_limit_minutes = serializers.ChoiceField(
         choices=[(30, '30분'), (60, '60분'), (0, '무제한')],
         default=30
     )
-    difficulty_distribution = serializers.DictField(
-        child=serializers.IntegerField(min_value=0),
-        required=False,
-        help_text="난이도별 문제 수 분포 {'easy': 5, 'medium': 8, 'hard': 2}"
+    adaptive_mode = serializers.BooleanField(
+        default=True,
+        help_text="적응형 모드 활성화"
     )
+    total_questions = serializers.IntegerField(
+        default=10,
+        min_value=5,
+        max_value=30,
+        help_text="총 문제 수"
+    )
+    
+    def validate_category_id(self, value):
+        """카테고리 유효성 검증"""
+        if value is not None:
+            from content.models import Category
+            user = self.context['request'].user
+            try:
+                category = Category.objects.get(id=value, user=user)
+                return value
+            except Category.DoesNotExist:
+                raise serializers.ValidationError("존재하지 않거나 접근 권한이 없는 카테고리입니다.")
+        return value
+
+
+class CategoryChoiceSerializer(serializers.ModelSerializer):
+    """카테고리 선택을 위한 시리얼라이저"""
+    
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'description']
 
 
 class WeeklyTestStartSerializer(serializers.Serializer):
@@ -335,31 +369,6 @@ class InstantCheckRequestSerializer(serializers.Serializer):
         return value
 
 
-class LearningAnalyticsSerializer(serializers.ModelSerializer):
-    """학습 분석 시리얼라이저"""
-    
-    class Meta:
-        model = LearningAnalytics
-        fields = [
-            'id', 'user', 'period_type', 'period_start', 'period_end',
-            'total_study_minutes', 'average_daily_minutes', 'peak_study_hour',
-            'study_day_pattern', 'total_contents_studied', 'total_reviews_completed',
-            'average_accuracy', 'weak_categories', 'strong_categories',
-            'recommended_focus_areas', 'personalized_tips',
-            'predicted_improvement_areas', 'efficiency_score',
-            'retention_rate', 'created_at'
-        ]
-        read_only_fields = ['id', 'user', 'created_at']
-
-
-class AnalyticsRequestSerializer(serializers.Serializer):
-    """분석 요청 시리얼라이저"""
-    period_type = serializers.ChoiceField(
-        choices=['daily', 'weekly', 'monthly', 'quarterly'],
-        default='monthly'
-    )
-    period_start = serializers.DateField(required=False)
-    period_end = serializers.DateField(required=False)
 
 
 class AIStudyMateSerializer(serializers.ModelSerializer):
@@ -478,32 +487,6 @@ class WrongAnswerAnalysisRequestSerializer(serializers.Serializer):
         return value
 
 
-class AIAdaptiveDifficultyTestSerializer(serializers.ModelSerializer):
-    """AI 난이도 조절 시험 시리얼라이저"""
-    accuracy_rate = serializers.ReadOnlyField()
-    
-    class Meta:
-        model = AIAdaptiveDifficultyTest
-        fields = [
-            'id', 'user', 'content_area', 'target_questions', 'current_difficulty',
-            'consecutive_correct', 'consecutive_wrong', 'total_questions', 
-            'correct_answers', 'final_difficulty_level', 'estimated_proficiency',
-            'accuracy_rate', 'started_at', 'completed_at'
-        ]
-        read_only_fields = ['id', 'user', 'accuracy_rate', 'started_at']
-
-
-class AdaptiveTestStartSerializer(serializers.Serializer):
-    """적응형 시험 시작 시리얼라이저"""
-    content_area = serializers.CharField(max_length=100)
-    target_questions = serializers.IntegerField(min_value=5, max_value=20, default=10)
-
-
-class AdaptiveTestAnswerSerializer(serializers.Serializer):
-    """적응형 시험 답안 제출 시리얼라이저"""
-    test_id = serializers.IntegerField()
-    user_answer = serializers.CharField(max_length=1000)
-    time_spent_seconds = serializers.IntegerField(min_value=0, required=False)
 
 
 class AIQuestionTransformerSerializer(serializers.ModelSerializer):
