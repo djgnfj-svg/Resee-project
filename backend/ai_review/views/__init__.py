@@ -6,7 +6,6 @@ This package contains all AI review related views, organized by functionality:
 - evaluation_views: Answer evaluation and feedback
 - chat_views: AI chat functionality
 - test_views: Weekly tests and adaptive testing
-- analytics_views: Learning analytics and insights
 - health_views: Health check endpoints
 """
 
@@ -31,7 +30,6 @@ from .test_views import (
     AdaptiveTestStartView,
     AdaptiveTestAnswerView
 )
-from .analytics_views import AIAnalyticsView
 from .health_views import ai_review_health
 
 __all__ = [
@@ -57,8 +55,6 @@ __all__ = [
     'AdaptiveTestStartView',
     'AdaptiveTestAnswerView',
     
-    # Analytics views
-    'AIAnalyticsView',
     
     # Health views
     'ai_review_health'
