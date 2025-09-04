@@ -11,7 +11,6 @@ import RegisterPage from './pages/RegisterPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
 import VerificationPendingPage from './pages/VerificationPendingPage';
 import SimpleDashboard from './pages/SimpleDashboard';
-import AdvancedDashboard from './pages/AdvancedDashboard';
 import ContentPage from './pages/ContentPage';
 import ReviewPage from './pages/ReviewPage';
 import ProfilePage from './pages/ProfilePage';
@@ -50,14 +49,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <SimpleDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/analytics" 
-                element={
-                  <ProtectedRoute>
-                    <AdvancedDashboard />
                   </ProtectedRoute>
                 } 
               />
