@@ -12,10 +12,14 @@ def create_review_schedule_on_content_creation(sender, instance, created, **kwar
     """Create review schedule when new content is created"""
     if created:
         # Import here to avoid circular imports
-        from review.tasks import create_review_schedule_for_content
+        from review.models import ReviewSchedule
+        from django.utils import timezone
 
-        # Create review schedule asynchronously
-        create_review_schedule_for_content.delay(
-            content_id=instance.id,
-            user_id=instance.author.id
+        # Create review schedule synchronously (start with 1 day interval)
+        next_review_date = timezone.now().date() + timezone.timedelta(days=1)
+        ReviewSchedule.objects.create(
+            content=instance,
+            user=instance.author,
+            next_review_date=next_review_date,
+            interval_index=0  # First interval
         )

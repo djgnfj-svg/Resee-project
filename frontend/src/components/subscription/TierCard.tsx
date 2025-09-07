@@ -1,13 +1,13 @@
 import React from 'react';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { SubscriptionTierInfo } from '../../types';
+import { SubscriptionTierInfo, SubscriptionTier } from '../../types';
 
 interface TierCardProps {
   tier: SubscriptionTierInfo;
   currentTier?: string;
   billingCycle: 'monthly' | 'yearly';
   isPopular?: boolean;
-  onUpgrade?: (tierName: string, billingCycle: 'monthly' | 'yearly') => void;
+  onUpgrade?: (tier: SubscriptionTier, billingCycle: 'monthly' | 'yearly') => void;
   upgrading?: boolean;
 }
 
@@ -88,7 +88,7 @@ const TierCard: React.FC<TierCardProps> = ({
           </div>
         ) : canUpgrade ? (
           <button
-            onClick={() => onUpgrade?.(tier.name, billingCycle)}
+            onClick={() => onUpgrade?.(tier.name as SubscriptionTier, billingCycle)}
             disabled={upgrading}
             className={`w-full py-3 px-6 rounded-lg font-medium text-center transition-all duration-200 ${
               isPopular

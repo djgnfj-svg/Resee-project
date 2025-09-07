@@ -9,11 +9,6 @@ django-filter==23.4
 psycopg2-binary==2.9.9
 dj-database-url==2.1.0
 
-# Celery
-celery==5.3.4
-django-celery-beat==2.5.0
-django-celery-results==2.5.1
-amqp==5.2.0
 
 # Redis
 redis==5.0.1
