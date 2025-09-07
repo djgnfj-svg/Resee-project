@@ -1,0 +1,31 @@
+# Build stage
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy source code
+COPY . .
+
+# Build args for environment variables
+ARG REACT_APP_API_URL
+ARG REACT_APP_GOOGLE_CLIENT_ID
+
+# Set environment variables for build
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+ENV REACT_APP_GOOGLE_CLIENT_ID=$REACT_APP_GOOGLE_CLIENT_ID
+
+# Build the app
+RUN npm run build
+
+# Create a simple container to hold the build
+FROM alpine:latest
+WORKDIR /app
+COPY --from=builder /app/build /app/build
+
+# This container just holds the build files
+# The actual serving is done by the nginx service
+CMD ["tail", "-f", "/dev/null"]
