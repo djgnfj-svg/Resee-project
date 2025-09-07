@@ -50,9 +50,7 @@ CACHES = {
     }
 }
 
-# Disable Celery in tests (run tasks synchronously)
-CELERY_TASK_ALWAYS_EAGER = True
-CELERY_TASK_EAGER_PROPAGATES = True
+# Email service runs synchronously (Celery removed)
 
 # Testing-specific logging (minimal)
 LOGGING = {
