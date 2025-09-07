@@ -38,7 +38,9 @@
       "Bash(grep:*)",
       "mcp__playwright__browser_navigate_back",
       "Bash(npm run typecheck:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(cloc:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []
