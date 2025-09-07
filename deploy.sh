@@ -34,20 +34,21 @@ if [ ! -f ".env.prod" ]; then
     fi
     echo ""
     
-    # ANTHROPIC API KEY 입력
-    read -p "🔑 ANTHROPIC_API_KEY 입력: " ANTHROPIC_KEY
-    while [ -z "$ANTHROPIC_KEY" ]; do
-        echo "   ❌ ANTHROPIC_API_KEY는 필수입니다!"
-        read -p "🔑 ANTHROPIC_API_KEY 입력: " ANTHROPIC_KEY
-    done
+    # SECRET_KEY 입력
+    read -p "🔑 SECRET_KEY 입력 (엔터시 자동생성): " INPUT_SECRET_KEY
+    if [ ! -z "$INPUT_SECRET_KEY" ]; then
+        SECRET_KEY=$INPUT_SECRET_KEY
+    else
+        SECRET_KEY=$(openssl rand -base64 50 | tr -d "=+/" | cut -c1-50)
+        echo "   → 자동 생성됨: ${SECRET_KEY:0:20}..."
+    fi
     echo ""
     
     # Google OAuth (선택사항)
     read -p "🔗 Google OAuth Client ID (선택사항, 엔터로 건너뛰기): " GOOGLE_CLIENT_ID
     echo ""
     
-    # 랜덤 패스워드 생성
-    SECRET_KEY=$(openssl rand -base64 50 | tr -d "=+/" | cut -c1-50)
+    # 랜덤 DB 패스워드 생성
     DB_PASSWORD=$(openssl rand -base64 20 | tr -d "=+/" | cut -c1-16)
     
     echo "🔐 생성된 보안 정보:"
@@ -64,7 +65,7 @@ POSTGRES_DB=resee_db
 POSTGRES_USER=resee_user
 POSTGRES_PASSWORD=${DB_PASSWORD}
 REDIS_URL=redis://redis:6379/0
-ANTHROPIC_API_KEY=${ANTHROPIC_KEY}
+ANTHROPIC_API_KEY=
 REACT_APP_API_URL=http://${DOMAIN}/api
 REACT_APP_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 TIME_ZONE=Asia/Seoul
