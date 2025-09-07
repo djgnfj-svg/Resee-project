@@ -75,9 +75,13 @@ services:
       - FAST_REFRESH=false
 
   nginx:
-    build: ./nginx
+    image: nginx:alpine
     ports:
       - "80:80"
+    volumes:
+      - ./nginx/development.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_volume:/app/static
+      - media_volume:/app/media
     depends_on:
       - backend
       - frontend
@@ -85,3 +89,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  static_volume:
+  media_volume:

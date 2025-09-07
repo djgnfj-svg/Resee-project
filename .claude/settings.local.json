@@ -40,7 +40,8 @@
       "Bash(npm run typecheck:*)",
       "Bash(npx tsc:*)",
       "Bash(cloc:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(./deploy.sh)"
     ],
     "deny": [],
     "ask": []
