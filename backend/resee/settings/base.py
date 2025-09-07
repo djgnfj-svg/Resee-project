@@ -8,7 +8,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
-from celery.schedules import crontab
+# Celery removed - using synchronous processing
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -29,9 +29,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     'drf_yasg',
-    'celery',
-    'django_celery_beat',
-    'django_celery_results',
+    # Celery apps removed - using synchronous processing
     
     # Local apps
     'accounts',  # includes legal functionality
