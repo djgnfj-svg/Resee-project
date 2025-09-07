@@ -154,9 +154,8 @@ class DataExportRequestView(APIView):
         # 새 요청 생성
         export_request = DataExportRequest.objects.create(user=request.user)
         
-        # 백그라운드에서 데이터 내보내기 처리
-        from .tasks import process_data_export
-        process_data_export.delay(export_request.id)
+        # TODO: 데이터 내보내기 처리를 동기 방식으로 구현 필요
+        # 현재는 Celery 제거로 비활성화됨
         
         return Response(
             DataExportRequestSerializer(export_request).data,

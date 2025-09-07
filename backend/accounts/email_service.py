@@ -4,7 +4,6 @@
 import logging
 from typing import Any, Dict, Optional
 
-from celery import shared_task
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
@@ -220,64 +219,86 @@ class EmailService:
             return False
 
 
-@shared_task(bind=True, max_retries=3)
-def send_verification_email_task(self, user_id: int):
-    """
-    이메일 인증 태스크 (재시도 로직 포함)
-    """
-    try:
-        user = User.objects.get(id=user_id)
-        
-        # 이미 인증된 사용자는 스킵
-        if user.is_email_verified:
-            logger.info(f"User {user.email} already verified, skipping")
-            return
+    def send_verification_email(self, user_id: int):
+        """
+        이메일 인증 전송 (동기 방식)
+        """
+        try:
+            user = User.objects.get(id=user_id)
             
-        # 토큰 생성
-        token = user.generate_email_verification_token()
-        
-        # 이메일 발송
-        context = {
-            'user': user,
-            'verification_url': f"{settings.FRONTEND_URL}/verify-email?token={token}&email={user.email}",
-            'company_name': getattr(settings, 'COMPANY_NAME', 'Your Company'),
-            'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@yourcompany.com'),
-            'expiry_hours': settings.EMAIL_VERIFICATION_TIMEOUT_DAYS * 24,
-        }
-        
-        success = EmailService.send_template_email(
-            template_name='email_verification',
-            context=context,
-            subject=f"[{context['company_name']}] 이메일 인증을 완료해주세요",
-            recipient_email=user.email
-        )
-        
-        if not success:
-            raise Exception("Failed to send email")
+            # 이미 인증된 사용자는 스킵
+            if user.is_email_verified:
+                logger.info(f"User {user.email} already verified, skipping")
+                return True
+                
+            # 토큰 생성
+            token = user.generate_email_verification_token()
             
-        logger.info(f"Verification email sent to {user.email}")
-        return True
-        
-    except User.DoesNotExist:
-        logger.error(f"User with id {user_id} does not exist")
-        raise
-        
-    except Exception as exc:
-        logger.error(f"Failed to send verification email (attempt {self.request.retries + 1}): {str(exc)}")
-        
-        # 재시도 로직
-        if self.request.retries < self.max_retries:
-            # 지수 백오프: 2^retry_count * 60초
-            countdown = (2 ** self.request.retries) * 60
-            logger.info(f"Retrying in {countdown} seconds...")
-            raise self.retry(exc=exc, countdown=countdown)
-        else:
-            # 최대 재시도 횟수 초과시 알림 발송
-            logger.critical(
-                f"Max retries exceeded for user {user_id} email verification. "
-                f"Manual intervention required. User email: {user.email}"
+            # 이메일 발송
+            context = {
+                'user': user,
+                'verification_url': f"{settings.FRONTEND_URL}/verify-email?token={token}&email={user.email}",
+                'company_name': getattr(settings, 'COMPANY_NAME', 'Your Company'),
+                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@yourcompany.com'),
+                'expiry_hours': settings.EMAIL_VERIFICATION_TIMEOUT_DAYS * 24,
+            }
+            
+            success = self.send_template_email(
+                template_name='email_verification',
+                context=context,
+                subject=f"[{context['company_name']}] 이메일 인증을 완료해주세요",
+                recipient_email=user.email
             )
-            raise
+            
+            if success:
+                logger.info(f"Verification email sent to {user.email}")
+            else:
+                logger.error(f"Failed to send verification email to {user.email}")
+                
+            return success
+            
+        except User.DoesNotExist:
+            logger.error(f"User with id {user_id} does not exist")
+            return False
+            
+        except Exception as exc:
+            logger.error(f"Failed to send verification email: {str(exc)}")
+            return False
+
+    def send_welcome_email(self, user_id: int):
+        """
+        웰컴 이메일 전송 (동기 방식)
+        """
+        try:
+            user = User.objects.get(id=user_id)
+            
+            context = {
+                'user': user,
+                'company_name': getattr(settings, 'COMPANY_NAME', 'Your Company'),
+                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@yourcompany.com'),
+            }
+            
+            success = self.send_template_email(
+                template_name='welcome_email',
+                context=context,
+                subject=f"[{context['company_name']}] 환영합니다!",
+                recipient_email=user.email
+            )
+            
+            if success:
+                logger.info(f"Welcome email sent to {user.email}")
+            else:
+                logger.error(f"Failed to send welcome email to {user.email}")
+                
+            return success
+            
+        except User.DoesNotExist:
+            logger.error(f"User with id {user_id} does not exist")
+            return False
+            
+        except Exception as exc:
+            logger.error(f"Failed to send welcome email: {str(exc)}")
+            return False
 
 
 # 이메일 템플릿 상수

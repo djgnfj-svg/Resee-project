@@ -28,22 +28,6 @@ services:
       timeout: 3s
       retries: 5
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    environment:
-      RABBITMQ_DEFAULT_USER: resee
-      RABBITMQ_DEFAULT_PASS: resee_password
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
     build: ./backend
     command: python manage.py runserver 0.0.0.0:8000
@@ -56,8 +40,6 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=resee.settings.development
       - DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
-      - CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - REDIS_URL=redis://redis:6379/0
       - DEBUG=True
       - SECRET_KEY=your-secret-key-for-development
@@ -71,8 +53,6 @@ services:
       db:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
 
   frontend:
@@ -94,25 +74,6 @@ services:
       - WDS_SOCKET_PORT=3000
       - FAST_REFRESH=false
 
-  celery:
-    build: ./backend
-    command: celery -A resee worker -l info
-    volumes:
-      - ./backend:/app
-    environment:
-      - DJANGO_SETTINGS_MODULE=resee.settings.development
-      - DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
-      - CELERY_BROKER_URL=amqp://resee:resee_password@rabbitmq:5672//
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    depends_on:
-      - backend
-    healthcheck:
-      test: ["CMD-SHELL", "celery -A resee inspect ping || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
   nginx:
     build: ./nginx
     ports:
@@ -124,4 +85,3 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  rabbitmq_data:
