@@ -188,58 +188,6 @@ SIMPLE_JWT = {
 }
 
 
-# Celery Configuration
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
-CELERY_ENABLE_UTC = True
-
-# Celery Beat Configuration
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-CELERY_BEAT_SCHEDULE = {
-    'cleanup-expired-reviews': {
-        'task': 'review.tasks.cleanup_expired_reviews',
-        'schedule': crontab(hour=2, minute=0),  # Daily at 2 AM
-    },
-    'update-review-streaks': {
-        'task': 'analytics.tasks.update_review_streaks',
-        'schedule': crontab(hour=1, minute=0),  # Daily at 1 AM
-    },
-    'generate-daily-analytics': {
-        'task': 'analytics.tasks.generate_daily_analytics',
-        'schedule': crontab(hour=3, minute=0),  # Daily at 3 AM
-    },
-    # Subscription auto-renewal check
-    'check-subscription-renewals': {
-        'task': 'accounts.tasks.check_and_process_subscription_renewals',
-        'schedule': crontab(hour='*/6'),  # Every 6 hours
-    },
-    # Monitoring tasks removed (monitoring app deleted)
-    # Business Intelligence tasks
-    'collect-daily-learning-patterns': {
-        'task': 'bi.collect_daily_learning_patterns',
-        'schedule': crontab(hour=0, minute=30),  # Daily at 12:30 AM
-    },
-    'update-content-effectiveness': {
-        'task': 'bi.update_content_effectiveness',
-        'schedule': crontab(hour=1, minute=30),  # Daily at 1:30 AM
-    },
-    'update-subscription-analytics': {
-        'task': 'bi.update_subscription_analytics',
-        'schedule': crontab(hour=2, minute=30),  # Daily at 2:30 AM
-    },
-    'collect-system-metrics': {
-        'task': 'bi.collect_system_metrics',
-        'schedule': crontab(hour=0, minute=15),  # Daily at 12:15 AM
-    },
-    'cleanup-old-analytics-data': {
-        'task': 'bi.cleanup_old_analytics_data',
-        'schedule': crontab(hour=5, minute=0, day_of_month=1),  # Monthly on 1st day at 5 AM
-    },
-}
 
 
 # Email Configuration (base settings)

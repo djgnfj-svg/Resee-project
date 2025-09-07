@@ -151,8 +151,9 @@ class UserViewSet(viewsets.ModelViewSet):
                     )
                 else:
                     # 프로덕션 환경에서는 이메일 인증 필요
-                    from .tasks import send_verification_email
-                    send_verification_email.delay(user.id)
+                    from .email_service import EmailService
+                    email_service = EmailService()
+                    email_service.send_verification_email(user.id)
                     
                     return StandardAPIResponse.created(
                         data={
@@ -414,7 +415,9 @@ class EmailVerificationView(APIView):
             
             # Send welcome email
             from .tasks import send_welcome_email
-            send_welcome_email.delay(user.id)
+            from .email_service import EmailService
+            email_service = EmailService()
+            email_service.send_welcome_email(user.id)
             
             return Response(
                 {
@@ -511,8 +514,9 @@ class ResendVerificationView(APIView):
                     )
             
             # Send verification email
-            from .tasks import send_verification_email
-            send_verification_email.delay(user.id)
+            from .email_service import EmailService
+            email_service = EmailService()
+            email_service.send_verification_email(user.id)
             
             logger.info(f"Verification email resent to {user.email}")
             
