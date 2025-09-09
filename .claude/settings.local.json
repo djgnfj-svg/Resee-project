@@ -41,7 +41,9 @@
       "Bash(npx tsc:*)",
       "Bash(cloc:*)",
       "Bash(chmod:*)",
-      "Bash(./deploy.sh)"
+      "Bash(./deploy.sh)",
+      "Bash(cat:*)",
+      "mcp__playwright__browser_network_requests"
     ],
     "deny": [],
     "ask": []

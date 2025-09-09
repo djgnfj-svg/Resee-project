@@ -42,7 +42,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const userData = await authAPI.getProfile();
         setUser(userData);
       } catch (error) {
-        console.error('Failed to fetch user:', error);
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         setUser(null);
@@ -113,7 +112,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       return response;
     } catch (error) {
-      console.error('Google login failed:', error);
       throw error;
     }
   };
@@ -129,7 +127,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData = await authAPI.getProfile();
       setUser(userData);
     } catch (error) {
-      console.error('Failed to refresh user data:', error);
     }
   };
 

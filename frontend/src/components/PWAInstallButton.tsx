@@ -50,7 +50,6 @@ const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
         setCanInstall(false);
       }
     } catch (error) {
-      console.error('[PWA] Install failed:', error);
     } finally {
       setIsInstalling(false);
     }
