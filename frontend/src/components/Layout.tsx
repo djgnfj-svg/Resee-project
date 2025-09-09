@@ -5,6 +5,7 @@ import { ThemeToggle } from './ThemeToggle';
 import WelcomeModal from './WelcomeModal';
 import PWAInstallButton from './PWAInstallButton';
 import NetworkStatus from './NetworkStatus';
+import Footer from './Footer';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,7 +25,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 flex flex-col">
       <nav className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between">
@@ -212,11 +213,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         )}
       </nav>
 
-      <main className="py-4 sm:py-6">
+      <main className="flex-1 py-4 sm:py-6">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {children}
         </div>
       </main>
+
+      <Footer />
 
       {/* Welcome Modal for new users */}
       <WelcomeModal
