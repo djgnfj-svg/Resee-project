@@ -20,7 +20,6 @@ const VerificationPendingPage: React.FC = () => {
       const response = await resendVerificationEmail(email);
       setResendMessage(response.message || '인증 이메일이 재발송되었습니다.');
     } catch (error: any) {
-      console.error('Resend verification failed:', error);
       setResendError(error.userMessage || '이메일 재발송에 실패했습니다.');
     } finally {
       setResendLoading(false);

@@ -91,7 +91,6 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       onSuccess?.();
       
     } catch (error: any) {
-      console.error('Google 로그인 실패:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Google 로그인에 실패했습니다.';
       onError?.(errorMessage);
     }

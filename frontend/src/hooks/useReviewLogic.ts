@@ -108,7 +108,6 @@ export const useReviewLogic = () => {
       setIsEvaluating(false);
     },
     onError: (error) => {
-      console.error('Explanation evaluation failed:', error);
       setIsEvaluating(false);
     },
   });
