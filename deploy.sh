@@ -34,14 +34,12 @@ if [ ! -f ".env.prod" ]; then
     fi
     echo ""
     
-    # SECRET_KEY 입력
-    read -p "🔑 SECRET_KEY 입력 (엔터시 자동생성): " INPUT_SECRET_KEY
-    if [ ! -z "$INPUT_SECRET_KEY" ]; then
-        SECRET_KEY=$INPUT_SECRET_KEY
-    else
-        SECRET_KEY=$(openssl rand -base64 50 | tr -d "=+/" | cut -c1-50)
-        echo "   → 자동 생성됨: ${SECRET_KEY:0:20}..."
-    fi
+    # SECRET_KEY 입력 (필수)
+    read -p "🔑 SECRET_KEY 입력: " SECRET_KEY
+    while [ -z "$SECRET_KEY" ]; do
+        echo "   ❌ SECRET_KEY는 필수입니다!"
+        read -p "🔑 SECRET_KEY 입력: " SECRET_KEY
+    done
     echo ""
     
     # Google OAuth (선택사항)
