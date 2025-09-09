@@ -117,11 +117,19 @@ export const useReviewLogic = () => {
     const currentReview = reviews[currentReviewIndex];
     if (!userExplanation.trim() || !currentReview) return;
 
+    // AI 기능 준비중 메시지 표시
+    import('react-hot-toast').then(({ default: toast }) => {
+      toast('🚧 AI 기능은 현재 준비 중입니다');
+    });
+    return;
+
+    /* 준비중 - 아래 코드는 일시적으로 비활성화
     setIsEvaluating(true);
     evaluateExplanationMutation.mutate({
       content_id: currentReview.content.id,
       user_explanation: userExplanation.trim(),
     });
+    */
   }, [userExplanation, reviews, currentReviewIndex, evaluateExplanationMutation, setIsEvaluating]);
 
   const handleExplanationReviewComplete = useCallback((result: 'remembered' | 'partial' | 'forgot') => {

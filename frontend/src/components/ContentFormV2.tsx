@@ -125,6 +125,11 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
       return;
     }
 
+    // AI 기능 준비중 메시지 표시
+    toast('🚧 AI 기능은 현재 준비 중입니다');
+    return;
+
+    /* 준비중 - 아래 코드는 일시적으로 비활성화
     setIsChecking(true);
     try {
       const response = await apiClient.post('/api/ai-review/content-check/', {
@@ -141,6 +146,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
     } finally {
       setIsChecking(false);
     }
+    */
   };
 
 
