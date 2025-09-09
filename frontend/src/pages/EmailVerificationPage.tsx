@@ -46,7 +46,6 @@ const EmailVerificationPage: React.FC = () => {
       }, 3000);
 
     } catch (error: any) {
-      console.error('Email verification failed:', error);
       setStatus({
         loading: false,
         success: false,
@@ -81,7 +80,6 @@ const EmailVerificationPage: React.FC = () => {
         error: '',
       }));
     } catch (error: any) {
-      console.error('Resend verification failed:', error);
       setStatus(prev => ({
         ...prev,
         error: error.userMessage || '이메일 재발송에 실패했습니다.',
