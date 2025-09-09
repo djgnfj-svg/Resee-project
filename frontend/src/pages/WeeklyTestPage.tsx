@@ -82,30 +82,42 @@ const WeeklyTestPage: React.FC = () => {
 
   // 주간 시험 생성
   const createTestMutation = useMutation({
-    mutationFn: aiReviewAPI.createWeeklyTest,
+    mutationFn: async (data: any) => {
+      // AI 기능 준비중 메시지 표시
+      toast('🚧 AI 기능은 현재 준비 중입니다');
+      throw new Error('AI 기능 준비중');
+    },
     onSuccess: () => {
       toast.success('주간 시험이 생성되었습니다!');
       setShowCreateModal(false);
       queryClient.invalidateQueries({ queryKey: ['weekly-tests'] });
     },
     onError: (error: any) => {
-      const message = error.response?.data?.detail || '시험 생성에 실패했습니다.';
-      toast.error(message);
+      // 준비중 에러는 별도 메시지 표시 안함
+      if (error.message !== 'AI 기능 준비중') {
+        const message = error.response?.data?.detail || '시험 생성에 실패했습니다.';
+        toast.error(message);
+      }
     }
   });
 
   // 주간 시험 시작
   const startTestMutation = useMutation({
-    mutationFn: (testId: number) => aiReviewAPI.startWeeklyTest({
-      test_id: testId
-    }),
-    onSuccess: (data) => {
+    mutationFn: async (testId: number) => {
+      // AI 기능 준비중 메시지 표시
+      toast('🚧 AI 기능은 현재 준비 중입니다');
+      throw new Error('AI 기능 준비중');
+    },
+    onSuccess: (data: any) => {
       toast.success('주간 시험이 시작되었습니다!');
       navigate(`/weekly-test/${data.test.id}/take`);
     },
     onError: (error: any) => {
-      const message = error.response?.data?.detail || '시험 시작에 실패했습니다.';
-      toast.error(message);
+      // 준비중 에러는 별도 메시지 표시 안함
+      if (error.message !== 'AI 기능 준비중') {
+        const message = error.response?.data?.detail || '시험 시작에 실패했습니다.';
+        toast.error(message);
+      }
     }
   });
 
