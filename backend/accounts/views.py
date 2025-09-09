@@ -136,8 +136,11 @@ class UserViewSet(viewsets.ModelViewSet):
                 user = serializer.save()
                 logger.info(f"회원가입 성공: {user.email}")
                 
-                # 개발 환경에서는 자동으로 이메일 인증 완료 처리
-                if settings.DEBUG:
+                # 이메일 인증 강제 설정 확인
+                enforce_email_verification = getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True)
+                
+                # ENFORCE_EMAIL_VERIFICATION이 False이고 개발환경일 때만 자동 인증
+                if settings.DEBUG and not enforce_email_verification:
                     user.is_email_verified = True
                     user.save()
                     logger.info(f"개발 환경: {user.email} 자동 이메일 인증 완료")
