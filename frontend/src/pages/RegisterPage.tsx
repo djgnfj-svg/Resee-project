@@ -33,7 +33,6 @@ const RegisterPage: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      console.error('회원가입 에러:', err.response?.data);
       
       if (err.response?.data?.field_errors) {
         setFieldErrors(err.response.data.field_errors);
