@@ -36,6 +36,40 @@ fi
 
 log_success ".env.prod 파일을 찾았습니다."
 
+# 필수 환경변수 검증
+log_info "필수 환경변수를 검증합니다..."
+source .env.prod
+
+# 필수 환경변수 배열
+required_vars=(
+    "SECRET_KEY"
+    "ANTHROPIC_API_KEY"
+    "ALLOWED_HOSTS"
+    "CSRF_TRUSTED_ORIGINS"
+    "POSTGRES_DB"
+    "POSTGRES_USER"
+    "POSTGRES_PASSWORD"
+)
+
+missing_vars=()
+for var in "${required_vars[@]}"; do
+    if [ -z "${!var}" ]; then
+        missing_vars+=("$var")
+    fi
+done
+
+if [ ${#missing_vars[@]} -ne 0 ]; then
+    log_error "다음 필수 환경변수가 설정되지 않았습니다:"
+    for var in "${missing_vars[@]}"; do
+        echo "  - $var"
+    done
+    echo ""
+    echo "📋 .env.prod 파일을 확인하고 누락된 변수들을 설정해주세요."
+    exit 1
+fi
+
+log_success "모든 필수 환경변수가 설정되었습니다."
+
 # Swap 메모리 확인 및 추가
 log_info "메모리 상태를 확인합니다..."
 total_mem=$(free -m | awk 'NR==2{print $2}')
