@@ -2,6 +2,7 @@
 Production settings for Resee
 """
 import os
+import dj_database_url
 from .base import *
 
 # Security settings - SECRET_KEY is mandatory in production
@@ -33,13 +34,13 @@ SECURE_HSTS_PRELOAD = True
 # SESSION_COOKIE_SECURE = True
 # CSRF_COOKIE_SECURE = True
 
-# Database
+# Database configuration - Override any previous DATABASES setting
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'resee_db'),
-        'USER': os.environ.get('POSTGRES_USER', 'resee_user'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+        'NAME': 'resee_db',
+        'USER': 'resee_user',
+        'PASSWORD': 'y8Z41ifFLrJBi3Rkbml0zDujyj6w0EfJa89Oo6gcAAk',
         'HOST': 'db',
         'PORT': '5432',
         'CONN_MAX_AGE': 300,
@@ -176,3 +177,21 @@ if SENTRY_DSN:
         send_default_pii=False,
         environment='production',
     )
+
+# FINAL DATABASE OVERRIDE - Ensure this is the last DATABASES setting
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'resee_db',
+        'USER': 'resee_user',
+        'PASSWORD': 'y8Z41ifFLrJBi3Rkbml0zDujyj6w0EfJa89Oo6gcAAk',
+        'HOST': 'db',
+        'PORT': '5432',
+        'CONN_MAX_AGE': 300,
+        'OPTIONS': {
+            'connect_timeout': 10,
+            'server_side_binding': True,
+        },
+        'CONN_HEALTH_CHECKS': True,
+    }
+}
