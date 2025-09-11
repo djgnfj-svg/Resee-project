@@ -4,6 +4,14 @@ Production settings for Resee
 import os
 from .base import *
 
+# Security settings - SECRET_KEY is mandatory in production
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is required in production")
+
+# JWT Settings for production
+SIMPLE_JWT['SIGNING_KEY'] = SECRET_KEY
+
 # Debug settings
 DEBUG = False
 TEMPLATE_DEBUG = False
@@ -20,7 +28,7 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-# SSL settings (uncomment when using HTTPS)
+# SSL settings (will be enabled later when HTTPS is set up)
 # SECURE_SSL_REDIRECT = True
 # SESSION_COOKIE_SECURE = True
 # CSRF_COOKIE_SECURE = True
@@ -37,7 +45,9 @@ DATABASES = {
         'CONN_MAX_AGE': 300,
         'OPTIONS': {
             'connect_timeout': 10,
+            'server_side_binding': True,
         },
+        'CONN_HEALTH_CHECKS': True,
     }
 }
 
@@ -52,10 +62,15 @@ CACHES = {
             'CONNECTION_POOL_KWARGS': {
                 'max_connections': 50,
                 'retry_on_timeout': True,
+                'socket_connect_timeout': 5,
+                'socket_timeout': 5,
+                'health_check_interval': 30,
             }
         },
         'KEY_PREFIX': 'resee_prod',
         'TIMEOUT': 300,
+        'VERSION': 1,
+        'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
     }
 }
 

@@ -22,13 +22,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . /app/
 
-# Create logs directory (fix for production logging)
-RUN mkdir -p /app/logs
+# Create necessary directories
+RUN mkdir -p /app/logs /app/static /app/media
 
-# Static files will be collected at runtime with proper environment
-
-# Create non-root user
-RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+# Create non-root user and set proper permissions
+RUN adduser --disabled-password --gecos '' appuser && \
+    chown -R appuser:appuser /app && \
+    chmod -R 755 /app/static /app/media /app/logs
 USER appuser
 
 # Expose port
