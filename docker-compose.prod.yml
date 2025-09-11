@@ -69,7 +69,7 @@ services:
         REACT_APP_API_URL: ${REACT_APP_API_URL}
         REACT_APP_GOOGLE_CLIENT_ID: ${REACT_APP_GOOGLE_CLIENT_ID:-}
     volumes:
-      - frontend_build:/app/build
+      - frontend_build:/app
     restart: unless-stopped
 
   nginx:
