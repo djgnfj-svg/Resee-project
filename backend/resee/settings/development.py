@@ -41,7 +41,13 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # Email Configuration for development
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '25'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@resee.com')
 
 # Development-specific apps
 DEVELOPMENT_APPS = [
@@ -61,6 +67,7 @@ INTERNAL_IPS = [
 
 # Email verification bypass for development
 ENFORCE_EMAIL_VERIFICATION = os.environ.get('ENFORCE_EMAIL_VERIFICATION', 'False') == 'True'
+EMAIL_VERIFICATION_TIMEOUT_DAYS = 3  # 이메일 인증 유효기간 (일)
 
 # Development logging (less verbose)
 LOGGING['loggers'] = {
@@ -131,6 +138,9 @@ MONITORING.update({
     'ENABLE_ERROR_TRACKING': True,
     'SLOW_QUERY_THRESHOLD': 2.0,  # More lenient in development
 })
+
+# Frontend URL for email links
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
 
 # Google OAuth settings for development
 GOOGLE_OAUTH2_CLIENT_ID = os.environ.get('GOOGLE_OAUTH2_CLIENT_ID')
