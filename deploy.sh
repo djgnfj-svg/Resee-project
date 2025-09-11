@@ -104,9 +104,17 @@ log_info ".env.prod를 .env로 복사합니다..."
 cp .env.prod .env
 log_success "환경변수 설정 완료"
 
-# 기존 컨테이너 정리
-log_info "기존 컨테이너 정리 중..."
+# 기존 컨테이너 및 이미지 정리
+log_info "기존 컨테이너 및 이미지 정리 중..."
 $COMPOSE_CMD -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
+
+# 사용하지 않는 이미지 정리 (빌드 캐시 포함)
+log_info "사용하지 않는 Docker 이미지 정리 중..."
+docker system prune -f --volumes 2>/dev/null || true
+
+# frontend_build 볼륨 강제 재생성 (정적 파일 이슈 해결)
+log_info "frontend 빌드 볼륨 초기화 중..."
+docker volume rm resee-project_frontend_build 2>/dev/null || true
 
 # 이미지 빌드 및 컨테이너 시작
 log_info "Docker 이미지 빌드 및 컨테이너 시작... (5-10분 소요)"
