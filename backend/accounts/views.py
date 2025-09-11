@@ -137,10 +137,10 @@ class UserViewSet(viewsets.ModelViewSet):
                 logger.info(f"회원가입 성공: {user.email}")
                 
                 # 이메일 인증 강제 설정 확인
-                enforce_email_verification = getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True)
+                enforce_email_verification = getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', False)
                 
-                # ENFORCE_EMAIL_VERIFICATION이 False이고 개발환경일 때만 자동 인증
-                if settings.DEBUG and not enforce_email_verification:
+                # 개발환경이거나 ENFORCE_EMAIL_VERIFICATION이 False일 때 자동 인증
+                if not enforce_email_verification:
                     user.is_email_verified = True
                     user.save()
                     logger.info(f"개발 환경: {user.email} 자동 이메일 인증 완료")
@@ -417,7 +417,6 @@ class EmailVerificationView(APIView):
             logger.info(f"Email verification successful for user {user.email}")
             
             # Send welcome email
-            from .tasks import send_welcome_email
             from .email_service import EmailService
             email_service = EmailService()
             email_service.send_welcome_email(user.id)
