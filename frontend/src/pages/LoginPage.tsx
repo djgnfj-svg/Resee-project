@@ -27,6 +27,13 @@ const LoginPage: React.FC = () => {
       await login(data);
       navigate(from, { replace: true });
     } catch (err: any) {
+      // Check if email verification is required first
+      if (err.response?.data?.email_verification_required) {
+        const email = err.response.data.email || data.email;
+        navigate(`/verification-pending?email=${encodeURIComponent(email)}`);
+        return;
+      }
+      
       // Use userMessage from API interceptor if available
       let errorMessage = err.userMessage;
       
@@ -43,7 +50,7 @@ const LoginPage: React.FC = () => {
         }
       }
       
-      // Check if the error is related to email verification
+      // Check if the error is related to email verification (fallback)
       if (errorMessage.includes('이메일 인증')) {
         setShowEmailVerificationLink(true);
         setUserEmail(data.email);
