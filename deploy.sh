@@ -1,13 +1,22 @@
 #!/bin/bash
 
-# Resee 간단 배포 스크립트  
-# 사용법: ./deploy.sh [DOMAIN]
-# 예시: ./deploy.sh mydomain.com
+# Resee 프로덕션 배포 스크립트
+# 사용법: ./deploy.sh
 
 set -e
 
-DOMAIN=${1:-localhost}
-echo "🚀 Resee 배포 시작... (도메인: $DOMAIN)"
+echo "🚀 Resee 프로덕션 배포를 시작합니다..."
+
+# 색상 정의
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+log_info() { echo -e "📋 $1"; }
+log_success() { echo -e "${GREEN}✅ $1${NC}"; }
+log_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
+log_error() { echo -e "${RED}❌ $1${NC}"; }
 
 # Docker Compose 명령 확인
 if command -v docker-compose &> /dev/null; then
@@ -16,87 +25,124 @@ else
     COMPOSE_CMD="docker compose"
 fi
 
-# .env.prod 파일 생성 (없으면)
+# .env.prod 파일 확인
 if [ ! -f ".env.prod" ]; then
-    echo "📝 .env.prod 파일 생성..."
-    echo ""
-    
-    # 대화형 입력
-    echo "🔧 필수 설정 정보를 입력해주세요:"
-    echo ""
-    
-    # 도메인 확인
-    echo "🌐 현재 도메인: $DOMAIN"
-    read -p "   다른 도메인 사용하시겠습니까? (현재 도메인 사용하려면 엔터): " INPUT_DOMAIN
-    if [ ! -z "$INPUT_DOMAIN" ]; then
-        DOMAIN=$INPUT_DOMAIN
-        echo "   → 도메인 변경됨: $DOMAIN"
-    fi
-    echo ""
-    
-    # SECRET_KEY 입력 (필수)
-    read -p "🔑 SECRET_KEY 입력: " SECRET_KEY
-    while [ -z "$SECRET_KEY" ]; do
-        echo "   ❌ SECRET_KEY는 필수입니다!"
-        read -p "🔑 SECRET_KEY 입력: " SECRET_KEY
-    done
-    echo ""
-    
-    # Google OAuth (선택사항)
-    read -p "🔗 Google OAuth Client ID (선택사항, 엔터로 건너뛰기): " GOOGLE_CLIENT_ID
-    echo ""
-    
-    # 랜덤 DB 패스워드 생성
-    DB_PASSWORD=$(openssl rand -base64 20 | tr -d "=+/" | cut -c1-16)
-    
-    echo "🔐 생성된 보안 정보:"
-    echo "   SECRET_KEY: ${SECRET_KEY:0:20}..."
-    echo "   DB_PASSWORD: $DB_PASSWORD"
-    echo ""
-    
-    cat > .env.prod << EOF
-SECRET_KEY=${SECRET_KEY}
-DEBUG=False
-ALLOWED_HOSTS=${DOMAIN},localhost,127.0.0.1
-DATABASE_URL=postgresql://resee_user:${DB_PASSWORD}@postgres:5432/resee_db
-POSTGRES_DB=resee_db
-POSTGRES_USER=resee_user
-POSTGRES_PASSWORD=${DB_PASSWORD}
-REDIS_URL=redis://redis:6379/0
-ANTHROPIC_API_KEY=
-REACT_APP_API_URL=http://${DOMAIN}/api
-REACT_APP_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-TIME_ZONE=Asia/Seoul
-EOF
-    
-    echo "✅ .env.prod 파일이 생성되었습니다!"
-    echo ""
-else
-    echo "📋 기존 .env.prod 파일을 사용합니다."
-    echo ""
+    log_error ".env.prod 파일이 존재하지 않습니다!"
+    echo "다음 중 하나를 수행해주세요:"
+    echo "1. .env.example을 복사: cp .env.example .env.prod"
+    echo "2. 기존 .env.prod 파일을 프로젝트 루트로 복사"
+    exit 1
 fi
 
+log_success ".env.prod 파일을 찾았습니다."
+
+# Swap 메모리 확인 및 추가
+log_info "메모리 상태를 확인합니다..."
+total_mem=$(free -m | awk 'NR==2{print $2}')
+swap_mem=$(free -m | awk 'NR==3{print $2}')
+
+if [ "$total_mem" -lt 4000 ] && [ "$swap_mem" -lt 2000 ]; then
+    log_warning "메모리가 부족합니다. Swap 메모리를 추가합니다..."
+    
+    # 4GB Swap 파일 생성
+    sudo fallocate -l 4G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1024 count=4194304
+    sudo chmod 600 /swapfile
+    sudo mkswap /swapfile
+    sudo swapon /swapfile
+    
+    # 영구 설정 (중복 방지)
+    if ! grep -q '/swapfile' /etc/fstab; then
+        echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+    fi
+    
+    log_success "Swap 메모리 4GB 추가 완료"
+    free -h
+else
+    log_success "메모리가 충분합니다."
+fi
+
+# 환경변수 파일 처리 (핵심!)
+log_info ".env.prod를 .env로 복사합니다..."
+cp .env.prod .env
+log_success "환경변수 설정 완료"
+
 # 기존 컨테이너 정리
-echo "🧹 기존 컨테이너 정리..."
-$COMPOSE_CMD -f docker-compose.prod.yml down || true
+log_info "기존 컨테이너 정리 중..."
+$COMPOSE_CMD -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
 
-# 빌드 및 시작
-echo "🔨 Docker 이미지 빌드..."
-$COMPOSE_CMD -f docker-compose.prod.yml build
+# 이미지 빌드 및 컨테이너 시작
+log_info "Docker 이미지 빌드 및 컨테이너 시작... (5-10분 소요)"
+if $COMPOSE_CMD -f docker-compose.prod.yml up -d --build; then
+    log_success "컨테이너 시작 완료"
+else
+    log_error "컨테이너 시작 실패"
+    exit 1
+fi
 
-echo "🚀 서비스 시작..."
-$COMPOSE_CMD -f docker-compose.prod.yml up -d
+# 백엔드 서비스 대기
+log_info "백엔드 서비스 시작 대기 중..."
+sleep 15
 
-# 마이그레이션
-echo "📊 DB 마이그레이션..."
-sleep 10
-$COMPOSE_CMD -f docker-compose.prod.yml exec -T backend python manage.py migrate
+# 헬스체크
+max_attempts=30
+attempt=0
+while [ $attempt -lt $max_attempts ]; do
+    if $COMPOSE_CMD -f docker-compose.prod.yml exec -T backend curl -f http://localhost:8000/api/health/ &>/dev/null; then
+        log_success "백엔드 서비스 정상 시작"
+        break
+    fi
+    attempt=$((attempt + 1))
+    echo -n "."
+    sleep 2
+done
 
-echo "📁 정적 파일 수집..."
-$COMPOSE_CMD -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --noinput
+if [ $attempt -eq $max_attempts ]; then
+    log_error "백엔드 서비스 시작 실패"
+    echo "로그 확인:"
+    $COMPOSE_CMD -f docker-compose.prod.yml logs backend --tail=20
+    exit 1
+fi
 
+# 데이터베이스 마이그레이션
+log_info "데이터베이스 마이그레이션 실행 중..."
+if $COMPOSE_CMD -f docker-compose.prod.yml exec -T backend python manage.py migrate; then
+    log_success "데이터베이스 마이그레이션 완료"
+else
+    log_error "데이터베이스 마이그레이션 실패"
+    exit 1
+fi
+
+# 정적 파일 수집
+log_info "정적 파일 수집 중..."
+if $COMPOSE_CMD -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --noinput; then
+    log_success "정적 파일 수집 완료"
+else
+    log_warning "정적 파일 수집 실패했지만 계속 진행"
+fi
+
+# 최종 상태 확인
 echo ""
-echo "✅ 배포 완료!"
-echo "📱 앱 접속: http://${DOMAIN}"
-echo "🔧 관리자: http://${DOMAIN}/admin"
-echo "👤 슈퍼유저 생성: $COMPOSE_CMD -f docker-compose.prod.yml exec backend python manage.py createsuperuser"
+echo "=== 🎉 배포 완료! ==="
+echo ""
+echo "📋 컨테이너 상태:"
+$COMPOSE_CMD -f docker-compose.prod.yml ps
+echo ""
+echo "🌐 접속 정보:"
+echo "  메인 사이트: http://reseeall.com"
+echo "  API 상태: http://reseeall.com/api/health/"
+echo "  관리자: http://reseeall.com/admin/"
+echo ""
+echo "🔧 관리 명령어:"
+echo "  로그 확인: $COMPOSE_CMD -f docker-compose.prod.yml logs -f"
+echo "  재시작: $COMPOSE_CMD -f docker-compose.prod.yml restart"
+echo "  중지: $COMPOSE_CMD -f docker-compose.prod.yml down"
+echo ""
+
+# 슈퍼유저 생성 옵션
+read -p "관리자 계정을 지금 생성하시겠습니까? (y/N): " create_admin
+if [[ $create_admin =~ ^[Yy]$ ]]; then
+    log_info "관리자 계정 생성 중..."
+    $COMPOSE_CMD -f docker-compose.prod.yml exec backend python manage.py createsuperuser
+fi
+
+log_success "배포가 성공적으로 완료되었습니다! 🚀"
