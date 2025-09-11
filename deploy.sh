@@ -44,8 +44,12 @@ swap_mem=$(free -m | awk 'NR==3{print $2}')
 if [ "$total_mem" -lt 4000 ] && [ "$swap_mem" -lt 2000 ]; then
     log_warning "메모리가 부족합니다. Swap 메모리를 추가합니다..."
     
-    # 4GB Swap 파일 생성
-    sudo fallocate -l 4G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1024 count=4194304
+    # 기존 swapfile 정리
+    sudo swapoff /swapfile 2>/dev/null || true
+    sudo rm -f /swapfile
+    
+    # 2GB Swap 파일 생성 (디스크 공간 절약)
+    sudo fallocate -l 2G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1024 count=2097152
     sudo chmod 600 /swapfile
     sudo mkswap /swapfile
     sudo swapon /swapfile
@@ -55,7 +59,7 @@ if [ "$total_mem" -lt 4000 ] && [ "$swap_mem" -lt 2000 ]; then
         echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
     fi
     
-    log_success "Swap 메모리 4GB 추가 완료"
+    log_success "Swap 메모리 2GB 추가 완료"
     free -h
 else
     log_success "메모리가 충분합니다."
@@ -102,6 +106,19 @@ if [ $attempt -eq $max_attempts ]; then
     $COMPOSE_CMD -f docker-compose.prod.yml logs backend --tail=20
     exit 1
 fi
+
+# 로그 디렉토리 생성 (프로덕션 설정 오류 방지)
+log_info "로그 디렉토리를 생성합니다..."
+if $COMPOSE_CMD -f docker-compose.prod.yml exec -T backend mkdir -p /app/logs; then
+    log_success "로그 디렉토리 생성 완료"
+else
+    log_warning "로그 디렉토리 생성 실패했지만 계속 진행"
+fi
+
+# 백엔드 재시작 (로그 설정 적용)
+log_info "백엔드 서비스를 재시작합니다..."
+$COMPOSE_CMD -f docker-compose.prod.yml restart backend
+sleep 5
 
 # 데이터베이스 마이그레이션
 log_info "데이터베이스 마이그레이션 실행 중..."
