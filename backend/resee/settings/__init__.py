@@ -14,9 +14,7 @@ environment = os.environ.get('ENVIRONMENT', 'development')
 if 'testing' in settings_module or 'test' in sys.argv:
     from .testing import *
 elif environment == 'production' or 'production' in settings_module:
-    # Production settings removed - use development settings for now
-    from .development import *
-    print("WARNING: Production settings not available, using development settings.")
+    from .production import *
 elif environment == 'staging' or 'staging' in settings_module:
     # Staging settings use development as base
     from .development import *
