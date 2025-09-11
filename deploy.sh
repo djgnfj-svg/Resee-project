@@ -49,6 +49,11 @@ required_vars=(
     "POSTGRES_DB"
     "POSTGRES_USER"
     "POSTGRES_PASSWORD"
+    "FRONTEND_URL"
+    "ENFORCE_EMAIL_VERIFICATION"
+    "EMAIL_HOST_USER"
+    "EMAIL_HOST_PASSWORD"
+    "DEFAULT_FROM_EMAIL"
 )
 
 missing_vars=()
@@ -186,10 +191,31 @@ echo ""
 echo "📋 컨테이너 상태:"
 $COMPOSE_CMD -f docker-compose.prod.yml ps
 echo ""
+
+# 이메일 설정 확인
+log_info "이메일 인증 설정을 확인합니다..."
+if $COMPOSE_CMD -f docker-compose.prod.yml exec -T backend python manage.py shell -c "
+from django.conf import settings
+print(f'ENFORCE_EMAIL_VERIFICATION: {getattr(settings, \"ENFORCE_EMAIL_VERIFICATION\", \"NOT_SET\")}')
+print(f'FRONTEND_URL: {getattr(settings, \"FRONTEND_URL\", \"NOT_SET\")}')
+print(f'EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}')
+print(f'Settings module: {settings.SETTINGS_MODULE}')
+" 2>/dev/null; then
+    log_success "이메일 설정 확인 완료"
+else
+    log_warning "이메일 설정 확인 실패"
+fi
+echo ""
+
 echo "🌐 접속 정보:"
 echo "  메인 사이트: http://reseeall.com"
 echo "  API 상태: http://reseeall.com/api/health/"
 echo "  관리자: http://reseeall.com/admin/"
+echo ""
+echo "📧 이메일 인증:"
+echo "  - 회원가입 시 이메일 인증 필수"
+echo "  - 인증 링크: https://reseeall.com/verify-email"
+echo "  - Gmail SMTP 사용: $EMAIL_HOST_USER"
 echo ""
 echo "🔧 관리 명령어:"
 echo "  로그 확인: $COMPOSE_CMD -f docker-compose.prod.yml logs -f"

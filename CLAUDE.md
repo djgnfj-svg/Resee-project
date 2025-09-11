@@ -99,21 +99,49 @@ docker-compose exec frontend npm run ci:quick  # Typecheck + build
 
 ## 🌐 Environment Variables
 
-### Required Backend
+### Environment Files
+- **`.env`**: Development environment (DEBUG=True, localhost URLs)
+- **`.env.prod`**: Production environment (DEBUG=False, production URLs)
+
+### Development Environment (`.env`)
+```bash
+# Core Settings
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+DJANGO_SETTINGS_MODULE=resee.settings.development
+FRONTEND_URL=http://localhost:3000
+REACT_APP_API_URL=http://localhost:8000/api
+
+# Email Settings (for testing)
+ENFORCE_EMAIL_VERIFICATION=True  # Set to False to skip email verification
+```
+
+### Production Environment (`.env.prod`)
+```bash
+# Core Settings
+DEBUG=False
+ALLOWED_HOSTS=reseeall.com,www.reseeall.com
+DJANGO_SETTINGS_MODULE=resee.settings.production
+FRONTEND_URL=https://reseeall.com
+REACT_APP_API_URL=https://reseeall.com/api
+
+# Email Settings
+ENFORCE_EMAIL_VERIFICATION=True  # Always True in production
+EMAIL_HOST_USER=your-gmail@gmail.com
+EMAIL_HOST_PASSWORD=your-gmail-app-password
+```
+
+### Required Backend Variables
 - `SECRET_KEY`: Django secret key (generate 50+ char random string)
 - `ANTHROPIC_API_KEY`: Claude API key
 - `DATABASE_URL`: PostgreSQL connection
 - `REDIS_URL`: Redis connection
+- `FRONTEND_URL`: Frontend URL for email links
+- `ENFORCE_EMAIL_VERIFICATION`: Enable/disable email verification
 
-### Required Frontend
+### Required Frontend Variables
 - `REACT_APP_API_URL`: Backend API URL
 - `REACT_APP_GOOGLE_CLIENT_ID`: Google OAuth client ID (optional)
-
-### Production Settings
-- `DEBUG=False`
-- `ALLOWED_HOSTS`: Comma-separated domains/IPs
-- `CSRF_TRUSTED_ORIGINS`: Comma-separated URLs
-- `ENFORCE_EMAIL_VERIFICATION`: Enable for production
 
 ## 📋 Core Workflows
 
@@ -162,21 +190,34 @@ docker-compose up -d
 
 ## 🚀 Deployment
 
-### Quick Production Setup
+### Development Deployment
 ```bash
-# Copy and configure environment
-cp .env.example .env.prod
-# Edit .env.prod with production values
+# Use .env file (development environment)
+docker-compose up -d
 
-# For production deployment
+# Run migrations
+docker-compose exec backend python manage.py migrate
+```
+
+### Production Deployment
+```bash
+# Use .env.prod file (production environment)
+docker-compose --env-file .env.prod up -d
+
+# Or with production compose file
 docker-compose -f docker-compose.prod.yml up -d
 
 # Run migrations
-docker-compose -f docker-compose.prod.yml exec backend python manage.py migrate
+docker-compose exec backend python manage.py migrate
 
 # Collect static files
-docker-compose -f docker-compose.prod.yml exec backend python manage.py collectstatic --noinput
+docker-compose exec backend python manage.py collectstatic --noinput
 ```
+
+### Environment File Usage
+- **Development**: Uses `.env` automatically
+- **Production**: Must specify `--env-file .env.prod`
+- **Email Verification**: Controlled by `ENFORCE_EMAIL_VERIFICATION` setting
 
 ### Minimum Server Requirements
 - 2GB RAM (t3.small or equivalent)
