@@ -200,7 +200,7 @@ const WeeklyTestPage: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => alert('개발중입니다')}
               className="bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors font-medium"
             >
               새 시험 생성
