@@ -22,9 +22,12 @@ export interface RegisterData {
 }
 
 export interface RegisterResponse {
+  success: boolean;
   message: string;
-  user: User;
-  requires_email_verification?: boolean;
+  data: {
+    user: User;
+    requires_email_verification?: boolean;
+  };
 }
 
 export interface AuthTokens {
