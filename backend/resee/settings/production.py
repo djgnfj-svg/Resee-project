@@ -84,6 +84,7 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 # Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = '/app/static'
+STATICFILES_DIRS = []  # Clear STATICFILES_DIRS in production to avoid conflict with STATIC_ROOT
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
