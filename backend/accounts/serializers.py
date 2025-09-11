@@ -38,8 +38,12 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 
             # 환경변수로 이메일 인증 강제 여부 제어
             from django.conf import settings
-            if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not user.is_email_verified:
-                raise serializers.ValidationError('이메일 인증을 완료해주세요.')
+            if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', False) and not user.is_email_verified:
+                raise serializers.ValidationError({
+                    'email_verification_required': True,
+                    'email': user.email,
+                    'message': '이메일 인증을 완료해주세요.'
+                })
 
             # Set the user for token generation
             self.user = user

@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const response = await authAPI.register(data);
     
     // If email verification is required, don't auto-login
-    if (response.requires_email_verification) {
+    if (response.data?.requires_email_verification) {
       return response;
     }
     

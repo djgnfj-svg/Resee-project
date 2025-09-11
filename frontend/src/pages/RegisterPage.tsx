@@ -25,7 +25,7 @@ const RegisterPage: React.FC = () => {
       const response = await registerUser(data);
       
       // Check if email verification is required
-      if (response?.requires_email_verification) {
+      if (response?.data?.requires_email_verification) {
         // Redirect to verification pending page
         navigate(`/verification-pending?email=${encodeURIComponent(data.email)}`);
       } else {
