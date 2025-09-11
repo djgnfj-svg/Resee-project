@@ -33,24 +33,36 @@ def validate_environment():
     """Validate critical environment variables"""
     warnings = []
     
-    if not SECRET_KEY or SECRET_KEY == 'django-insecure-development-key-change-this-in-production':
+    # Try to get SECRET_KEY from globals, skip validation if not available
+    try:
+        secret_key = globals().get('SECRET_KEY', '')
+    except:
+        return warnings
+    
+    if not secret_key or secret_key == 'django-insecure-development-key-change-this-in-production':
         if environment == 'production':
             warnings.append("CRITICAL: SECRET_KEY not set or using default in production!")
-        elif len(SECRET_KEY) < 50:
+        elif len(secret_key) < 50:
             warnings.append("WARNING: SECRET_KEY should be at least 50 characters long")
     
     if environment == 'production':
-        if DEBUG:
-            warnings.append("CRITICAL: DEBUG=True in production environment!")
-        
-        if not DATABASES.get('default', {}).get('NAME'):
-            warnings.append("CRITICAL: Database not configured in production!")
-        
-        if CORS_ALLOW_ALL_ORIGINS:
-            warnings.append("CRITICAL: CORS_ALLOW_ALL_ORIGINS=True in production!")
+        try:
+            if globals().get('DEBUG'):
+                warnings.append("CRITICAL: DEBUG=True in production environment!")
+            
+            if not globals().get('DATABASES', {}).get('default', {}).get('NAME'):
+                warnings.append("CRITICAL: Database not configured in production!")
+            
+            if globals().get('CORS_ALLOW_ALL_ORIGINS'):
+                warnings.append("CRITICAL: CORS_ALLOW_ALL_ORIGINS=True in production!")
+        except:
+            pass
     
-    if ANTHROPIC_API_KEY == 'test-api-key' and environment == 'production':
-        warnings.append("CRITICAL: Using test AI API key in production!")
+    try:
+        if globals().get('ANTHROPIC_API_KEY') == 'test-api-key' and environment == 'production':
+            warnings.append("CRITICAL: Using test AI API key in production!")
+    except:
+        pass
     
     return warnings
 
