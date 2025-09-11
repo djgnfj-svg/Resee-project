@@ -22,6 +22,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . /app/
 
+# Create logs directory (fix for production logging)
+RUN mkdir -p /app/logs
+
 # Static files will be collected at runtime with proper environment
 
 # Create non-root user
