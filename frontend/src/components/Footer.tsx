@@ -44,9 +44,6 @@ const Footer: React.FC = () => {
         
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm">
           <p>© 2025 Resee. All rights reserved.</p>
-          <p className="mt-2 text-xs text-gray-400">
-            사업자등록번호: [등록 예정] | 대표: [대표자명] | 주소: [사업장 주소]
-          </p>
         </div>
       </div>
     </footer>
