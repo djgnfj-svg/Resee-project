@@ -593,6 +593,95 @@ class BillingSchedule(models.Model):
         )
 
 
+class EmailSubscription(models.Model):
+    """Email subscription for launch notifications and marketing"""
+    email = models.EmailField(
+        unique=True,
+        help_text='Email address for subscription notifications'
+    )
+    subscribed_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text='When the email was subscribed'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Whether the subscription is active'
+    )
+    unsubscribed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the user unsubscribed'
+    )
+    source = models.CharField(
+        max_length=100,
+        default='subscription_page',
+        help_text='Source of the email subscription'
+    )
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        help_text='IP address when subscribed'
+    )
+    user_agent = models.TextField(
+        blank=True,
+        help_text='User agent when subscribed'
+    )
+    
+    class Meta:
+        db_table = 'accounts_email_subscription'
+        verbose_name = 'Email Subscription'
+        verbose_name_plural = 'Email Subscriptions'
+        ordering = ['-subscribed_at']
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['is_active', '-subscribed_at']),
+        ]
+    
+    def __str__(self):
+        status = "Active" if self.is_active else "Unsubscribed"
+        return f"{self.email} - {status}"
+    
+    def unsubscribe(self):
+        """Unsubscribe this email"""
+        self.is_active = False
+        self.unsubscribed_at = timezone.now()
+        self.save()
+    
+    @classmethod
+    def get_active_count(cls):
+        """Get total count of active subscriptions"""
+        return cls.objects.filter(is_active=True).count()
+    
+    @classmethod
+    def subscribe_email(cls, email, source='subscription_page', ip_address=None, user_agent=''):
+        """Subscribe an email with duplicate handling"""
+        # Check if email already exists
+        existing = cls.objects.filter(email=email).first()
+        
+        if existing:
+            if existing.is_active:
+                return existing, False  # Already subscribed
+            else:
+                # Reactivate existing subscription
+                existing.is_active = True
+                existing.unsubscribed_at = None
+                existing.subscribed_at = timezone.now()
+                existing.source = source
+                existing.ip_address = ip_address
+                existing.user_agent = user_agent
+                existing.save()
+                return existing, True  # Resubscribed
+        else:
+            # Create new subscription
+            subscription = cls.objects.create(
+                email=email,
+                source=source,
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+            return subscription, True  # Newly subscribed
+
+
 # Signal to create free subscription for new users
 @receiver(post_save, sender=User)
 def create_user_subscription(sender, instance, created, **kwargs):
