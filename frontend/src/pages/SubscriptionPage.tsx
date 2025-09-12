@@ -160,42 +160,49 @@ const SubscriptionPage: React.FC = () => {
             에빙하우스 망각곡선을 활용한 스마트 복습 시스템
           </p>
 
-          {!user.is_email_verified && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-8 max-w-2xl mx-auto">
-              <p className="text-yellow-800 dark:text-yellow-300 font-medium">
-                ⚠️ 이메일 인증 필요
-              </p>
-              <p className="text-yellow-700 dark:text-yellow-400 text-sm mt-1">
-                구독을 변경하려면 먼저 이메일 인증을 완료해주세요.
-              </p>
-            </div>
-          )}
+          {/* Coming Soon Notice */}
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-lg p-6 mb-8 max-w-2xl mx-auto">
+            <p className="text-indigo-800 dark:text-indigo-300 font-bold text-lg mb-2">
+              🚀 곧 출시됩니다!
+            </p>
+            <p className="text-indigo-700 dark:text-indigo-400 text-sm mb-4">
+              더 나은 서비스를 위해 유료 구독은 사용자 200명 달성 후 오픈 예정입니다.
+              지금 이메일을 등록하시면 오픈 소식을 가장 먼저 받아보실 수 있습니다!
+            </p>
+          </div>
         </div>
 
-        {/* Billing Toggle */}
-        <BillingToggle 
-          billingCycle={billingCycle}
-          setBillingCycle={setBillingCycle}
-        />
-
-        {/* Subscription Tiers */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          {subscriptionTiers.map((tier, index) => (
-            <TierCard
-              key={tier.name}
-              tier={tier}
-              currentTier={user.subscription?.tier}
-              billingCycle={billingCycle}
-              isPopular={tier.name === 'basic'}
-              onUpgrade={handleTierUpgrade}
-              upgrading={upgradeMutation.isPending}
-            />
-          ))}
-        </div>
-
-        {/* Email Signup */}
-        <div className="max-w-md mx-auto">
+        {/* Email Signup - Moved to Top */}
+        <div className="max-w-md mx-auto mb-16">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+              📧 오픈 알림 신청
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              유료 구독 오픈 시 가장 먼저 알려드립니다
+            </p>
+          </div>
           <EmailSignup />
+        </div>
+
+        {/* Subscription Tiers Preview */}
+        <div className="mb-8">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 text-center mb-8">
+            📋 예정된 구독 플랜
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            {subscriptionTiers.map((tier, index) => (
+              <TierCard
+                key={tier.name}
+                tier={tier}
+                currentTier={user.subscription?.tier}
+                billingCycle={billingCycle}
+                isPopular={tier.name === 'basic'}
+                onUpgrade={handleTierUpgrade}
+                upgrading={upgradeMutation.isPending}
+              />
+            ))}
+          </div>
         </div>
 
         {/* FAQ Section */}
@@ -236,11 +243,11 @@ const SubscriptionPage: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  언제든지 플랜을 변경할 수 있나요?
+                  언제 유료 구독이 오픈되나요?
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  네, 언제든지 업그레이드나 다운그레이드가 가능합니다. 
-                  다운그레이드 시 남은 기간에 대한 환불도 자동으로 처리됩니다.
+                  더 안정적인 서비스 제공을 위해 사용자 200명 달성 후 오픈 예정입니다. 
+                  이메일을 등록하시면 오픈 소식을 가장 먼저 받아보실 수 있습니다.
                 </p>
               </div>
             </div>
