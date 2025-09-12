@@ -5,7 +5,7 @@ from .subscription_views import (subscription_cancel, subscription_detail,
                                  subscription_tiers, subscription_upgrade, subscription_downgrade, 
                                  payment_history, toggle_auto_renewal, billing_schedule)
 from .views import (AccountDeleteView, AIUsageView, EmailVerificationView,
-                    GoogleOAuthView, PasswordChangeView, ProfileView,
+                    EmailSubscriptionView, GoogleOAuthView, PasswordChangeView, ProfileView,
                     ResendVerificationView, UserViewSet, WeeklyGoalUpdateView)
 
 app_name = 'accounts'
@@ -23,6 +23,7 @@ urlpatterns = [
     path('google-oauth/', GoogleOAuthView.as_view(), name='google-oauth'),
     path('weekly-goal/', WeeklyGoalUpdateView.as_view(), name='weekly-goal-update'),
     path('ai-usage/', AIUsageView.as_view(), name='ai-usage'),
+    path('email-signup/', EmailSubscriptionView.as_view(), name='email-signup'),
     # Subscription endpoints
     path('subscription/', subscription_detail, name='subscription-detail'),
     path('subscription/tiers/', subscription_tiers, name='subscription-tiers'),

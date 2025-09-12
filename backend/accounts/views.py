@@ -901,3 +901,117 @@ class SubscriptionUpgradeView(APIView):
                 {'error': '구독 업그레이드 중 오류가 발생했습니다.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class EmailSubscriptionView(APIView):
+    """Email subscription for launch notifications"""
+    permission_classes = [AllowAny]
+    throttle_classes = [EmailRateThrottle]
+    
+    @swagger_auto_schema(
+        operation_summary="이메일 구독 신청",
+        operation_description="""출시 알림을 위한 이메일 구독을 신청합니다.
+        
+        **요청 예시:**
+        ```json
+        {
+          "email": "user@example.com"
+        }
+        ```
+        
+        **응답 예시:**
+        ```json
+        {
+          "message": "구독 관심 신청이 완료되었습니다! 새로운 기능과 소식을 우선적으로 전해드릴게요.",
+          "email": "user@example.com",
+          "subscribed": true
+        }
+        ```
+        """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['email'],
+            properties={
+                'email': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    format=openapi.FORMAT_EMAIL,
+                    description='구독할 이메일 주소'
+                ),
+            }
+        ),
+        responses={
+            200: openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'message': openapi.Schema(type=openapi.TYPE_STRING),
+                    'email': openapi.Schema(type=openapi.TYPE_STRING),
+                    'subscribed': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                }
+            ),
+            400: "잘못된 요청",
+            429: "요청 횟수 제한 초과"
+        }
+    )
+    def post(self, request):
+        try:
+            email = request.data.get('email', '').strip().lower()
+            
+            if not email:
+                return Response(
+                    {'error': '이메일을 입력해주세요.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Basic email validation
+            from django.core.validators import validate_email
+            from django.core.exceptions import ValidationError
+            
+            try:
+                validate_email(email)
+            except ValidationError:
+                return Response(
+                    {'error': '올바른 이메일 주소를 입력해주세요.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get client IP and user agent for tracking
+            def get_client_ip(request):
+                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                if x_forwarded_for:
+                    ip = x_forwarded_for.split(',')[0]
+                else:
+                    ip = request.META.get('REMOTE_ADDR')
+                return ip
+            
+            ip_address = get_client_ip(request)
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            
+            # Subscribe email
+            from .models import EmailSubscription
+            subscription, is_new = EmailSubscription.subscribe_email(
+                email=email,
+                source='subscription_page',
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+            
+            if is_new:
+                logger.info(f"New email subscription: {email} from IP {ip_address}")
+                message = "구독 관심 신청이 완료되었습니다! 새로운 기능과 소식을 우선적으로 전해드릴게요."
+            else:
+                logger.info(f"Duplicate email subscription attempt: {email}")
+                message = "이미 구독이 신청된 이메일입니다. 소식을 기다려주세요!"
+            
+            return Response({
+                'message': message,
+                'email': email,
+                'subscribed': is_new,
+                'total_subscribers': EmailSubscription.get_active_count()
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Email subscription failed: {str(e)}")
+            return Response(
+                {'error': '신청 중 오류가 발생했습니다. 다시 시도해주세요.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
