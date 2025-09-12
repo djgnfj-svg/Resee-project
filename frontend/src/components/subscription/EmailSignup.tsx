@@ -28,17 +28,31 @@ const EmailSignup: React.FC<EmailSignupProps> = ({ className = '' }) => {
     setEmailSubmitting(true);
     
     try {
-      // For now, we'll just simulate the email signup
-      // In a real implementation, this would send to a backend API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call real API endpoint
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/accounts/email-signup/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: emailSignup.trim()
+        })
+      });
       
-      toast.success('구독 관심 신청이 완료되었습니다! 새로운 기능과 소식을 우선적으로 전해드릴게요.');
-      setEmailSignup('');
+      const data = await response.json();
       
-      // Store in localStorage to prevent duplicate submissions
-      localStorage.setItem('email_signup_submitted', emailSignup);
+      if (response.ok) {
+        toast.success(data.message || '구독 관심 신청이 완료되었습니다!');
+        setEmailSignup('');
+        
+        // Store in localStorage to show user feedback
+        localStorage.setItem('email_signup_submitted', emailSignup);
+      } else {
+        toast.error(data.error || '신청 중 오류가 발생했습니다.');
+      }
       
     } catch (error) {
+      console.error('Email signup error:', error);
       toast.error('신청 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setEmailSubmitting(false);
