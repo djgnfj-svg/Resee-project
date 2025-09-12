@@ -74,33 +74,13 @@ const TierCard: React.FC<TierCardProps> = ({
       </div>
 
       <div className="mt-auto">
-        {isCurrentTier ? (
-          <div className="w-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 py-3 px-6 rounded-lg font-medium text-center">
-            현재 플랜
-          </div>
-        ) : tier.coming_soon ? (
-          <div className="w-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 py-3 px-6 rounded-lg font-medium text-center">
-            출시 예정
-          </div>
-        ) : tier.name === 'free' ? (
+        {tier.name === 'free' ? (
           <div className="w-full bg-green-500 text-white py-3 px-6 rounded-lg font-medium text-center">
-            무료 사용하기
+            현재 무료 플랜
           </div>
-        ) : canUpgrade ? (
-          <button
-            onClick={() => onUpgrade?.(tier.name as SubscriptionTier, billingCycle)}
-            disabled={upgrading}
-            className={`w-full py-3 px-6 rounded-lg font-medium text-center transition-all duration-200 ${
-              isPopular
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
-                : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {upgrading ? '처리 중...' : '업그레이드'}
-          </button>
         ) : (
-          <div className="w-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 py-3 px-6 rounded-lg font-medium text-center">
-            사용 불가
+          <div className="w-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 py-3 px-6 rounded-lg font-medium text-center border-2 border-indigo-200 dark:border-indigo-700">
+            🚀 사용자 200명 후 오픈
           </div>
         )}
       </div>
