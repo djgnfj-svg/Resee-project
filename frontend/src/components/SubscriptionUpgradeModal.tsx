@@ -76,7 +76,7 @@ export const SubscriptionUpgradeModal: React.FC<SubscriptionUpgradeModalProps> =
         
         <div className="relative bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
           <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">구독 플랜 선택</h2>
+            <h2 className="text-2xl font-bold text-gray-900">유료 구독 안내</h2>
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -86,89 +86,32 @@ export const SubscriptionUpgradeModal: React.FC<SubscriptionUpgradeModalProps> =
           </div>
 
           <div className="p-6">
-            <>
-              {/* Email verification banner */}
-              {user && !user.is_email_verified && (
-                <EmailVerificationBanner />
-              )}
-
-              {/* Error message */}
-              {upgradeError && (
-              <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-red-700">
-                    {getUpgradeErrorMessage(upgradeError)}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Success message */}
-            {upgradeSuccess && (
-              <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
-                    <X className="w-3 h-3 text-white" />
-                  </div>
-                  <div className="text-sm text-green-700 font-medium">
-                    구독이 성공적으로 업그레이드되었습니다!
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Loading state */}
-            {isLoadingTiers ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="bg-gray-200 rounded-xl h-96" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              /* Subscription tiers */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {subscriptionTiers?.map((tier) => (
-                  <SubscriptionTierCard
-                    key={tier.name}
-                    tier={tier}
-                    currentTier={subscription?.tier}
-                    isLoading={isUpgrading && selectedTier === tier.name}
-                    onSelect={handleTierSelect}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Additional information */}
-            <div className="mt-8 bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                구독 플랜 비교
+            {/* Coming Soon Message */}
+            <div className="text-center py-12">
+              <div className="text-6xl mb-6">🚀</div>
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                곧 출시됩니다!
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">복습 주기</h4>
-                  <ul className="space-y-1">
-                    <li>• <strong>무료:</strong> 최대 7일까지</li>
-                    <li>• <strong>베이직:</strong> 최대 30일까지</li>
-                    <li>• <strong>프리미엄:</strong> 최대 60일까지</li>
-                    <li>• <strong>프로:</strong> 최대 90일까지</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">학습 효과</h4>
-                  <ul className="space-y-1">
-                    <li>• 더 긴 복습 주기로 장기 기억 강화</li>
-                    <li>• 망각곡선을 활용한 효율적 학습</li>
-                    <li>• 개인별 맞춤 복습 스케줄</li>
-                    <li>• 과학적으로 검증된 학습법</li>
-                  </ul>
+              <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+                더 나은 서비스를 위해 유료 구독은 사용자 200명 달성 후 오픈 예정입니다.
+                지금 이메일을 등록하시면 오픈 소식을 가장 먼저 받아보실 수 있습니다!
+              </p>
+              
+              <div className="max-w-md mx-auto mb-8">
+                <div className="bg-indigo-50 rounded-lg p-6 border-2 border-indigo-200">
+                  <h4 className="font-bold text-indigo-900 mb-3">📧 오픈 알림 신청</h4>
+                  <p className="text-sm text-indigo-700 mb-4">
+                    유료 구독 오픈 시 가장 먼저 알려드립니다
+                  </p>
+                  <button
+                    onClick={onClose}
+                    className="w-full bg-indigo-500 text-white py-3 px-6 rounded-lg hover:bg-indigo-600 transition-all font-semibold"
+                  >
+                    이메일 등록하러 가기
+                  </button>
                 </div>
               </div>
             </div>
-            </>
           </div>
         </div>
       </div>
