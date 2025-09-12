@@ -54,6 +54,7 @@ __pycache__/
 # MCP Configuration
 .mcp.json
 .env.production
+.playwright-mcp/
 
 # Development scripts and reports
 *test_report*.json
