@@ -48,6 +48,12 @@ class Content(BaseModel):
     
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['author', '-created_at'], name='content_author_created'),
+            models.Index(fields=['author', 'category', '-created_at'], name='content_author_category_created'),
+            models.Index(fields=['category', '-created_at'], name='content_category_created'),
+            models.Index(fields=['priority', '-created_at'], name='content_priority_created'),
+        ]
     
     def __str__(self):
         return self.title
