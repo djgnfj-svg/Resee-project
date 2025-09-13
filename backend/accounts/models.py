@@ -646,6 +646,7 @@ class EmailSubscription(models.Model):
         self.is_active = False
         self.unsubscribed_at = timezone.now()
         self.save()
+
     
     @classmethod
     def get_active_count(cls):
