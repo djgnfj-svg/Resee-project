@@ -7,10 +7,12 @@ import time
 
 from django.conf import settings
 from django.core.cache import cache
+from django.db import connection
 from django.http import HttpResponseForbidden, JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)
+performance_logger = logging.getLogger('resee.performance')
 
 
 class SecurityHeadersMiddleware(MiddlewareMixin):
@@ -359,3 +361,250 @@ class SQLInjectionDetectionMiddleware(MiddlewareMixin):
             if re.search(pattern, value_lower, re.IGNORECASE):
                 return True
         return False
+
+
+class QueryPerformanceMonitoringMiddleware(MiddlewareMixin):
+    """
+    Middleware to monitor database query performance
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # Get settings with defaults
+        self.slow_query_threshold = getattr(settings, 'MONITORING', {}).get(
+            'SLOW_QUERY_THRESHOLD', 1.0
+        )
+        self.query_count_threshold = 50
+        self.enable_performance_tracking = getattr(settings, 'MONITORING', {}).get(
+            'ENABLE_PERFORMANCE_TRACKING', True
+        )
+        super().__init__(get_response)
+
+    def process_request(self, request):
+        if not self.enable_performance_tracking:
+            return
+
+        # Reset query log and store initial state
+        connection.queries_log.clear()
+        request._start_time = time.time()
+        request._start_queries = len(connection.queries)
+        request._db_queries_start = list(connection.queries)
+
+    def process_response(self, request, response):
+        if not self.enable_performance_tracking:
+            return response
+
+        # Calculate metrics
+        end_time = time.time()
+        start_time = getattr(request, '_start_time', end_time)
+        start_queries = getattr(request, '_start_queries', 0)
+
+        total_time = end_time - start_time
+        current_queries = connection.queries
+        query_count = len(current_queries) - start_queries
+
+        # Calculate query execution time
+        query_time = 0.0
+        slow_queries = []
+        duplicate_queries = {}
+
+        for query in current_queries[start_queries:]:
+            query_exec_time = float(query.get('time', 0))
+            query_time += query_exec_time
+
+            # Track slow queries
+            if query_exec_time > self.slow_query_threshold:
+                slow_queries.append({
+                    'sql': query['sql'][:200] + '...' if len(query['sql']) > 200 else query['sql'],
+                    'time': query_exec_time
+                })
+
+            # Track duplicate queries
+            sql = query['sql']
+            if sql in duplicate_queries:
+                duplicate_queries[sql] += 1
+            else:
+                duplicate_queries[sql] = 1
+
+        # Find duplicate queries (N+1 problems)
+        duplicates = {sql: count for sql, count in duplicate_queries.items() if count > 1}
+
+        # Log performance metrics
+        self._log_performance_metrics(
+            request, response, total_time, query_count, query_time, slow_queries, duplicates
+        )
+
+        return response
+
+    def _log_performance_metrics(self, request, response, total_time, query_count,
+                                query_time, slow_queries, duplicates):
+        """Log detailed performance metrics"""
+        path = request.path
+        method = request.method
+        status_code = response.status_code
+        user_id = getattr(request.user, 'id', None) if hasattr(request, 'user') else None
+
+        # Base metrics
+        metrics = {
+            'method': method,
+            'path': path,
+            'status_code': status_code,
+            'total_time': round(total_time, 3),
+            'query_count': query_count,
+            'query_time': round(query_time, 3),
+            'user_id': user_id,
+        }
+
+        # Log slow requests
+        if total_time > self.slow_query_threshold:
+            performance_logger.warning(
+                f"SLOW_REQUEST: {method} {path} - "
+                f"Time: {total_time:.3f}s, Queries: {query_count}, "
+                f"Query Time: {query_time:.3f}s, Status: {status_code}, User: {user_id}",
+                extra=metrics
+            )
+
+        # Log requests with too many queries (potential N+1 problems)
+        if query_count > self.query_count_threshold:
+            performance_logger.warning(
+                f"HIGH_QUERY_COUNT: {method} {path} - "
+                f"Queries: {query_count}, Time: {total_time:.3f}s, Status: {status_code}",
+                extra=metrics
+            )
+
+        # Log slow individual queries
+        for slow_query in slow_queries:
+            performance_logger.warning(
+                f"SLOW_QUERY: {method} {path} - "
+                f"Time: {slow_query['time']:.3f}s, SQL: {slow_query['sql']}",
+                extra={**metrics, 'sql': slow_query['sql'], 'sql_time': slow_query['time']}
+            )
+
+        # Log duplicate queries (N+1 indicators)
+        for sql, count in duplicates.items():
+            if count > 3:  # Only log if more than 3 duplicates
+                performance_logger.warning(
+                    f"DUPLICATE_QUERIES: {method} {path} - "
+                    f"SQL executed {count} times: {sql[:100]}...",
+                    extra={**metrics, 'duplicate_sql': sql[:100], 'duplicate_count': count}
+                )
+
+        # Log all API requests for analysis (info level)
+        if path.startswith('/api/'):
+            performance_logger.info(
+                f"API_REQUEST: {method} {path} - "
+                f"Time: {total_time:.3f}s, Queries: {query_count}, Status: {status_code}",
+                extra=metrics
+            )
+
+
+class DatabaseHealthMonitoringMiddleware(MiddlewareMixin):
+    """
+    Middleware to monitor database connection health and performance
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.connection_error_count = 0
+        self.last_health_check = 0
+        super().__init__(get_response)
+
+    def process_request(self, request):
+        current_time = time.time()
+
+        # Perform health check every 60 seconds
+        if current_time - self.last_health_check > 60:
+            self._check_database_health()
+            self.last_health_check = current_time
+
+    def process_response(self, request, response):
+        # Monitor database connection pool
+        try:
+            if hasattr(connection, 'connection') and connection.connection:
+                # Add database health headers for monitoring
+                response['X-Database-Status'] = 'healthy'
+
+                # Monitor connection pool if available
+                if hasattr(connection.connection, 'get_dsn_parameters'):
+                    response['X-Database-Pool'] = 'postgresql'
+        except Exception as e:
+            performance_logger.error(f"Database connection error: {e}")
+            response['X-Database-Status'] = 'unhealthy'
+
+        return response
+
+    def _check_database_health(self):
+        """Perform basic database health check"""
+        try:
+            with connection.cursor() as cursor:
+                start_time = time.time()
+                cursor.execute("SELECT 1")
+                query_time = time.time() - start_time
+
+                # Log slow health checks
+                if query_time > 1.0:
+                    performance_logger.warning(
+                        f"SLOW_DB_HEALTH_CHECK: {query_time:.3f}s",
+                        extra={'health_check_time': query_time}
+                    )
+
+                # Reset error count on success
+                self.connection_error_count = 0
+
+        except Exception as e:
+            self.connection_error_count += 1
+            performance_logger.error(
+                f"DATABASE_HEALTH_CHECK_FAILED: {e} (error count: {self.connection_error_count})",
+                extra={'db_error_count': self.connection_error_count, 'error': str(e)}
+            )
+
+
+class MemoryUsageMonitoringMiddleware(MiddlewareMixin):
+    """
+    Middleware to monitor memory usage during requests
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.memory_threshold = getattr(settings, 'MONITORING', {}).get(
+            'MEMORY_USAGE_THRESHOLD', 500
+        )  # 500MB threshold
+        super().__init__(get_response)
+
+    def process_request(self, request):
+        try:
+            import psutil
+            process = psutil.Process()
+            request._memory_start = process.memory_info().rss
+        except ImportError:
+            # psutil not available
+            request._memory_start = None
+
+    def process_response(self, request, response):
+        if not hasattr(request, '_memory_start') or request._memory_start is None:
+            return response
+
+        try:
+            import psutil
+            process = psutil.Process()
+            current_memory = process.memory_info().rss
+            memory_used = (current_memory - request._memory_start) / 1024 / 1024  # MB
+
+            # Log high memory usage requests
+            if current_memory / 1024 / 1024 > self.memory_threshold:
+                performance_logger.warning(
+                    f"HIGH_MEMORY_USAGE: {request.method} {request.path} - "
+                    f"Memory: {current_memory / 1024 / 1024:.1f}MB, "
+                    f"Request usage: {memory_used:.1f}MB",
+                    extra={
+                        'memory_usage_mb': current_memory / 1024 / 1024,
+                        'request_memory_mb': memory_used,
+                        'path': request.path,
+                        'method': request.method
+                    }
+                )
+
+        except ImportError:
+            pass
+
+        return response
