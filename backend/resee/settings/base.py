@@ -276,13 +276,8 @@ HEALTH_CHECK = {
 }
 
 
-# Monitoring Configuration
-MONITORING = {
-    'ENABLE_PERFORMANCE_TRACKING': True,
-    'ENABLE_ERROR_TRACKING': True,
-    'SLOW_QUERY_THRESHOLD': 1.0,  # seconds
-    'MEMORY_USAGE_THRESHOLD': 500,  # MB
-}
+# Basic Logging Configuration (simplified)
+# Complex monitoring removed - using Django's built-in logging
 
 
 # Feature Flags
