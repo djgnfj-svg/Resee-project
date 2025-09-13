@@ -19,6 +19,11 @@ class ReviewSchedule(BaseUserModel):
     class Meta:
         unique_together = ['content', 'user']
         ordering = ['next_review_date']
+        indexes = [
+            models.Index(fields=['user', 'next_review_date', 'is_active'], name='review_schedule_user_date_active'),
+            models.Index(fields=['next_review_date'], name='review_schedule_next_date'),
+            models.Index(fields=['user', 'is_active'], name='review_schedule_user_active'),
+        ]
     
     def __str__(self):
         return f"{self.user.username} - {self.content.title} - {self.next_review_date}"
@@ -97,6 +102,12 @@ class ReviewHistory(BaseUserModel):
     class Meta:
         ordering = ['-review_date']
         verbose_name_plural = 'Review histories'
+        indexes = [
+            models.Index(fields=['user', '-review_date'], name='review_history_user_date'),
+            models.Index(fields=['content', '-review_date'], name='review_history_content_date'),
+            models.Index(fields=['user', 'result', '-review_date'], name='review_history_user_result_date'),
+            models.Index(fields=['-review_date'], name='review_history_date_only'),
+        ]
     
     def __str__(self):
         return f"{self.user.username} - {self.content.title} - {self.result}"

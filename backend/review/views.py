@@ -122,7 +122,13 @@ class TodayReviewView(APIView):
             # OR initial reviews not yet completed
             Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date) | 
             Q(initial_review_completed=False)
-        ).select_related('content', 'content__category').order_by('next_review_date')
+        ).select_related(
+            'content',
+            'content__category',
+            'content__author'
+        ).prefetch_related(
+            'content__ai_questions'
+        ).order_by('next_review_date')
         
         # Category filter
         category_slug = request.query_params.get('category_slug', None)
@@ -352,14 +358,67 @@ class CategoryReviewStatsView(APIView):
         )
         result = {}
         
-        for category in categories:
-            # Use utility functions for consistent calculations
-            today_reviews = get_today_reviews_count(request.user, category=category)
-            total_content = request.user.contents.filter(category=category).count()
-            success_rate, total_reviews_30_days, _ = calculate_success_rate(
-                request.user, category=category, days=30
+        # Import additional Django aggregation functions
+        from django.db.models import Count, Avg, Case, When, IntegerField
+        from django.utils import timezone
+        from datetime import timedelta
+
+        # Get user-accessible categories with content count in one query
+        categories = categories.annotate(
+            total_content=Count(
+                'content',
+                filter=Q(content__author=request.user)
             )
-            
+        )
+
+        # Get today's reviews aggregated by category
+        today = timezone.now().date()
+        today_reviews_by_category = ReviewSchedule.objects.filter(
+            user=request.user,
+            is_active=True,
+            next_review_date__date=today
+        ).values('content__category').annotate(
+            today_count=Count('id')
+        )
+        today_reviews_dict = {
+            item['content__category']: item['today_count']
+            for item in today_reviews_by_category
+        }
+
+        # Get 30-day review history aggregated by category
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        reviews_30_days = ReviewHistory.objects.filter(
+            user=request.user,
+            review_date__gte=thirty_days_ago
+        ).values('content__category').annotate(
+            total_reviews=Count('id'),
+            success_rate=Avg(
+                Case(
+                    When(result='remembered', then=100),
+                    When(result='partial', then=50),
+                    When(result='forgot', then=0),
+                    output_field=IntegerField()
+                )
+            )
+        )
+
+        reviews_30_days_dict = {}
+        for item in reviews_30_days:
+            category_id = item['content__category']
+            reviews_30_days_dict[category_id] = {
+                'total_reviews': item['total_reviews'],
+                'success_rate': round(item['success_rate'] or 0, 1)
+            }
+
+        # Build optimized result
+        for category in categories:
+            # Get aggregated data
+            today_reviews = today_reviews_dict.get(category.id, 0)
+            total_content = category.total_content
+            reviews_data = reviews_30_days_dict.get(category.id, {})
+            total_reviews_30_days = reviews_data.get('total_reviews', 0)
+            success_rate = reviews_data.get('success_rate', 0.0)
+
             # Only include categories with content or reviews
             if total_content > 0 or total_reviews_30_days > 0:
                 result[category.slug] = {
