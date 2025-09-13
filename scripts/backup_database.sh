@@ -33,6 +33,23 @@ log "Starting database backup..."
 if docker exec "${CONTAINER_NAME}" pg_dump -U "${DB_USER}" "${DB_NAME}" | gzip > "${BACKUP_DIR}/${BACKUP_FILE}"; then
     log "SUCCESS: Database backup created - ${BACKUP_FILE}"
     log "Backup size: $(du -h "${BACKUP_DIR}/${BACKUP_FILE}" | cut -f1)"
+
+    # Verify backup integrity
+    log "Verifying backup integrity..."
+    if gunzip -t "${BACKUP_DIR}/${BACKUP_FILE}" 2>/dev/null; then
+        log "SUCCESS: Backup integrity verified"
+    else
+        log "ERROR: Backup file is corrupted, removing invalid backup"
+        rm -f "${BACKUP_DIR}/${BACKUP_FILE}"
+        exit 1
+    fi
+
+    # Test if backup contains actual data
+    if [ $(stat -c%s "${BACKUP_DIR}/${BACKUP_FILE}") -lt 1000 ]; then
+        log "ERROR: Backup file is too small (< 1KB), likely empty"
+        rm -f "${BACKUP_DIR}/${BACKUP_FILE}"
+        exit 1
+    fi
 else
     log "ERROR: Database backup failed"
     exit 1
