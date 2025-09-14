@@ -64,7 +64,7 @@ class Content(BaseModel):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['author', '-created_at'], name='content_author_created'),
-            models.Index(fields=['author', 'category', '-created_at'], name='content_author_category_created'),
+            models.Index(fields=['author', 'category', '-created_at'], name='content_auth_cat_created'),
             models.Index(fields=['category', '-created_at'], name='content_category_created'),
             models.Index(fields=['priority', '-created_at'], name='content_priority_created'),
         ]
