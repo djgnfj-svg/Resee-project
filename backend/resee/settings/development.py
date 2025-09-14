@@ -132,12 +132,8 @@ SECURE_HSTS_SECONDS = 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
 
-# Development-specific monitoring
-MONITORING.update({
-    'ENABLE_PERFORMANCE_TRACKING': True,
-    'ENABLE_ERROR_TRACKING': True,
-    'SLOW_QUERY_THRESHOLD': 2.0,  # More lenient in development
-})
+# Development-specific settings
+# Monitoring disabled for simplified setup
 
 # Frontend URL for email links
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')

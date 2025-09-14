@@ -683,6 +683,8 @@ class EmailSubscription(models.Model):
             return subscription, True  # Newly subscribed
 
 
+
+
 # Signal to create free subscription for new users
 @receiver(post_save, sender=User)
 def create_user_subscription(sender, instance, created, **kwargs):
