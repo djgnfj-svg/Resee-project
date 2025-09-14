@@ -43,7 +43,10 @@
       "Bash(chmod:*)",
       "Bash(./deploy.sh)",
       "Bash(cat:*)",
-      "mcp__playwright__browser_network_requests"
+      "mcp__playwright__browser_network_requests",
+      "Bash(./scripts/backup_manager.sh:*)",
+      "Bash(bash:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

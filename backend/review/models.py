@@ -32,7 +32,7 @@ class ReviewSchedule(BaseUserModel):
         unique_together = ['content', 'user']
         ordering = ['next_review_date']
         indexes = [
-            models.Index(fields=['user', 'next_review_date', 'is_active'], name='review_schedule_user_date_active'),
+            models.Index(fields=['user', 'next_review_date', 'is_active'], name='review_sched_user_active'),
             models.Index(fields=['next_review_date'], name='review_schedule_next_date'),
             models.Index(fields=['user', 'is_active'], name='review_schedule_user_active'),
         ]
@@ -155,7 +155,7 @@ class ReviewHistory(BaseUserModel):
         indexes = [
             models.Index(fields=['user', '-review_date'], name='review_history_user_date'),
             models.Index(fields=['content', '-review_date'], name='review_history_content_date'),
-            models.Index(fields=['user', 'result', '-review_date'], name='review_history_user_result_date'),
+            models.Index(fields=['user', 'result', '-review_date'], name='review_hist_user_result'),
             models.Index(fields=['-review_date'], name='review_history_date_only'),
         ]
         constraints = [
