@@ -21,6 +21,12 @@ TEMPLATE_DEBUG = False
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
 
+# CORS settings for production
+CORS_ALLOWED_ORIGINS = [
+    "https://reseeall.com",
+    "https://www.reseeall.com",
+]
+
 # Security headers
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -29,10 +35,11 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-# SSL settings (will be enabled later when HTTPS is set up)
-# SECURE_SSL_REDIRECT = True
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
+# SSL settings for production (ALB handles SSL termination)
+SECURE_SSL_REDIRECT = False  # ALB handles SSL, don't redirect at Django level
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = True  # Only send session cookies over HTTPS
+CSRF_COOKIE_SECURE = True    # Only send CSRF cookies over HTTPS
 
 # Database configuration - Override any previous DATABASES setting
 DATABASES = {
