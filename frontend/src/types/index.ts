@@ -56,6 +56,40 @@ export interface Content {
   next_review_date?: string;
 }
 
+export interface ContentUsage {
+  current: number;
+  limit: number;
+  remaining: number;
+  percentage: number;
+  can_create: boolean;
+  tier: 'free' | 'basic' | 'pro';
+}
+
+export interface ContentListResponse {
+  results: Content[];
+  usage: ContentUsage;
+  count: number;
+  next: string | null;
+  previous: string | null;
+}
+
+export interface CategoryUsage {
+  current: number;
+  limit: number;
+  remaining: number;
+  percentage: number;
+  can_create: boolean;
+  tier: 'free' | 'basic' | 'pro';
+}
+
+export interface CategoryListResponse {
+  results: Category[];
+  usage: CategoryUsage;
+  count: number;
+  next: string | null;
+  previous: string | null;
+}
+
 export interface ReviewSchedule {
   id: number;
   content: Content;

@@ -1,12 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { contentAPI } from '../utils/api';
-import { Category } from '../types';
+import { Category, ContentUsage } from '../types';
 import { extractResults } from '../utils/helpers';
 import TipTapEditor from './TipTapEditor';
 import { useAuth } from '../contexts/AuthContext';
+import FormHeader from './contentform/FormHeader';
+import TitleField from './contentform/TitleField';
+import CategoryField from './contentform/CategoryField';
+import PriorityField from './contentform/PriorityField';
 
 interface ContentFormData {
   title: string;
@@ -44,15 +48,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   });
 
   const [content, setContent] = useState<string>(initialData?.content || '');
-  
-  // 카테고리 생성 관련 상태
-  const [showCreateCategory, setShowCreateCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  
-  
-  const queryClient = useQueryClient();
-
+  const [contentUsage, setContentUsage] = useState<ContentUsage | null>(null);
 
   // Watch form values for real-time validation
   const watchedTitle = watch('title');
@@ -64,45 +60,22 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
     queryFn: () => contentAPI.getCategories().then(extractResults),
   });
 
-  // 카테고리 생성 mutation
-  const createCategoryMutation = useMutation({
-    mutationFn: contentAPI.createCategory,
-    onSuccess: (newCategory) => {
-      // 기존 카테고리 목록에 새 카테고리를 즉시 추가
-      queryClient.setQueryData<Category[]>(['categories'], (oldCategories = []) => {
-        const categoryExists = oldCategories.some(cat => cat.id === newCategory.id);
-        return categoryExists ? oldCategories : [...oldCategories, newCategory];
-      });
-      
-      // React가 새 카테고리로 리렌더링할 시간을 준 후 자동 선택
-      setTimeout(() => {
-        setValue('category', newCategory.id);
-      }, 100);
-      
-      // UI 초기화
-      setShowCreateCategory(false);
-      setNewCategoryName('');
-      setIsCreatingCategory(false);
-      
-      alert(`카테고리 "${newCategory.name}"가 생성되어 선택되었습니다! 🎉`);
+  // Fetch content usage
+  const { data: contentsData } = useQuery({
+    queryKey: ['contents-usage'],
+    queryFn: async () => {
+      const response = await contentAPI.getContents();
+      if (response.usage) {
+        setContentUsage(response.usage);
+      }
+      return response;
     },
-    onError: (error: any) => {
-      setIsCreatingCategory(false);
-      const errorMessage = error.response?.data?.name?.[0] || '카테고리 생성에 실패했습니다.';
-      alert(`오류: ${errorMessage}`);
-    }
   });
 
-  const handleCreateCategory = useCallback(async () => {
-    const categoryName = newCategoryName.trim();
-    if (!categoryName) return;
-    
-    setIsCreatingCategory(true);
-    createCategoryMutation.mutate({ 
-      name: categoryName,
-      description: `개인 커스텀 카테고리: ${categoryName}` 
-    });
-  }, [newCategoryName, createCategoryMutation]);
+  // Check if user can create content
+  const canCreateContent = contentUsage ? contentUsage.can_create : true;
+  const isAtLimit = contentUsage ? contentUsage.current >= contentUsage.limit : false;
+
 
   const onFormSubmit = useCallback((data: ContentFormData) => {
     onSubmit({
@@ -124,174 +97,68 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   };
 
 
-  const priorityOptions = [
-    { value: 'high', label: '높음', color: 'red', emoji: '🔴', description: '매우 중요한 내용' },
-    { value: 'medium', label: '보통', color: 'yellow', emoji: '🟡', description: '일반적인 내용' },
-    { value: 'low', label: '낮음', color: 'green', emoji: '🟢', description: '참고용 내용' }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-lg">
           {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-4 sm:p-6 lg:p-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white">
-                  {initialData ? '콘텐츠 수정' : '새 콘텐츠 만들기'}
-                </h1>
-                <p className="text-sm sm:text-base text-indigo-100 dark:text-indigo-200 mt-2">
-                  정보를 입력하여 학습 콘텐츠를 만들어보세요
-                </p>
-              </div>
-            </div>
-          </div>
+          <FormHeader isEdit={!!initialData} />
 
           <form onSubmit={handleSubmit(onFormSubmit)} className="p-8 space-y-8">
+            {/* Content Usage Info */}
+            {contentUsage && (
+              <div className={`p-4 rounded-xl ${isAtLimit ? 'bg-red-50 dark:bg-red-900/20' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm font-medium ${isAtLimit ? 'text-red-800 dark:text-red-200' : 'text-blue-800 dark:text-blue-200'}`}>
+                      콘텐츠 사용량: {contentUsage.current} / {contentUsage.limit}개
+                    </p>
+                    <p className={`text-xs mt-1 ${isAtLimit ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                      {isAtLimit
+                        ? '콘텐츠 생성 제한에 도달했습니다. 더 많은 콘텐츠를 생성하려면 구독을 업그레이드하세요.'
+                        : `${contentUsage.remaining}개 더 생성 가능 (${contentUsage.tier === 'free' ? '무료' : contentUsage.tier === 'basic' ? '베이직' : '프로'} 플랜)`
+                      }
+                    </p>
+                  </div>
+                  {isAtLimit && (
+                    <button
+                      type="button"
+                      onClick={() => window.location.href = '/settings#subscription'}
+                      className="px-4 py-2 text-xs font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all"
+                    >
+                      업그레이드
+                    </button>
+                  )}
+                </div>
+                <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all ${isAtLimit ? 'bg-red-500' : 'bg-blue-500'}`}
+                    style={{ width: `${Math.min(contentUsage.percentage, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Title */}
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
-                제목 <span className="text-red-500">*</span>
-              </label>
-              <input
-                {...register('title', { 
-                  required: '제목을 입력해주세요.',
-                  minLength: { value: 3, message: '제목은 최소 3글자 이상이어야 합니다.' }
-                })}
-                type="text"
-                className={`w-full px-4 py-4 text-lg border-2 rounded-xl transition-all duration-200 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
-                  errors.title 
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-200 dark:border-red-500 dark:focus:border-red-400 dark:focus:ring-red-800' 
-                    : watchedTitle && watchedTitle.trim().length >= 3
-                    ? 'border-green-300 focus:border-green-500 focus:ring-green-200 dark:border-green-500 dark:focus:border-green-400 dark:focus:ring-green-800'
-                    : 'border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 dark:border-gray-600 dark:focus:border-indigo-400 dark:focus:ring-indigo-800'
-                } focus:ring-4`}
-                placeholder="예: React Hook 완벽 가이드"
-              />
-              {errors.title && (
-                <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
-                  <span className="mr-1">❌</span>
-                  {errors.title.message}
-                </p>
-              )}
-              {watchedTitle && watchedTitle.trim().length >= 3 && !errors.title && (
-                <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
-                  <span className="mr-1">✅</span>
-                  좋은 제목이에요!
-                </p>
-              )}
-            </div>
+            <TitleField
+              register={register}
+              errors={errors}
+              watchedTitle={watchedTitle}
+            />
 
             {/* Category */}
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
-                카테고리
-              </label>
-              
-              <div className="flex gap-2">
-                <select
-                  {...register('category')}
-                  className="flex-1 px-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-800 focus:outline-none transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                >
-                  <option value="">카테고리를 선택하세요 (선택사항)</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-                
-                <button
-                  type="button"
-                  onClick={() => setShowCreateCategory(true)}
-                  className="px-4 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors duration-200 whitespace-nowrap"
-                  title="새 카테고리 만들기"
-                >
-                  + 새 카테고리
-                </button>
-              </div>
-              
-              {/* 인라인 카테고리 생성 */}
-              {showCreateCategory && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-medium text-gray-900 dark:text-gray-100">새 카테고리 만들기</h4>
-                      <button
-                        type="button"
-                        onClick={() => setShowCreateCategory(false)}
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    
-                    <input
-                      type="text"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      placeholder="카테고리 이름 (예: 📚 영어학습, 💻 프로그래밍)"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      onKeyPress={(e) => e.key === 'Enter' && handleCreateCategory()}
-                    />
-                    
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleCreateCategory}
-                        disabled={!newCategoryName.trim() || isCreatingCategory}
-                        className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors duration-200"
-                      >
-                        {isCreatingCategory ? '생성중...' : '생성'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowCreateCategory(false);
-                          setNewCategoryName('');
-                        }}
-                        className="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200"
-                      >
-                        취소
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <CategoryField
+              register={register}
+              setValue={setValue}
+              categories={categories}
+            />
 
             {/* Priority */}
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
-                중요도 <span className="text-red-500">*</span>
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {priorityOptions.map((option) => (
-                  <label key={option.value} className="relative cursor-pointer">
-                    <input
-                      {...register('priority', { required: true })}
-                      type="radio"
-                      value={option.value}
-                      className="sr-only"
-                    />
-                    <div className={`p-3 rounded-lg border-2 text-center transition-all duration-200 ${
-                        watchedPriority === option.value
-                          ? option.color === 'red' 
-                            ? 'border-red-400 bg-red-50 dark:bg-red-900/20 ring-2 ring-red-200 dark:ring-red-800'
-                            : option.color === 'yellow'
-                            ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 ring-2 ring-yellow-200 dark:ring-yellow-800'
-                            : 'border-green-400 bg-green-50 dark:bg-green-900/20 ring-2 ring-green-200 dark:ring-green-800'
-                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                      }`}>
-                      <div className="text-xl mb-1">{option.emoji}</div>
-                      <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{option.label}</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">{option.description}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
+            <PriorityField
+              register={register}
+              watchedPriority={watchedPriority}
+            />
 
             {/* Content */}
             <div className="space-y-3">
@@ -333,12 +200,13 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
 
                 <button
                   type="submit"
-                  disabled={isLoading || !content || content.trim().length < 10}
+                  disabled={isLoading || !content || content.trim().length < 10 || !canCreateContent}
                   className={`inline-flex items-center px-8 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-                    !isLoading && content && content.trim().length >= 10
+                    !isLoading && content && content.trim().length >= 10 && canCreateContent
                       ? 'text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg'
                       : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
                   }`}
+                  title={!canCreateContent ? '콘텐츠 생성 제한에 도달했습니다' : ''}
                 >
                   {isLoading ? (
                     <>
