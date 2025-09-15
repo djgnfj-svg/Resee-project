@@ -36,8 +36,9 @@ describe('LoginPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/이메일을 입력해주세요/i)).toBeInTheDocument();
-      expect(screen.getByText(/비밀번호를 입력해주세요/i)).toBeInTheDocument();
     });
+
+    expect(screen.getByText(/비밀번호를 입력해주세요/i)).toBeInTheDocument();
   });
 
   it('allows user to input email and password', () => {
