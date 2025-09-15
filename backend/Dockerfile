@@ -7,14 +7,15 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 ENV DJANGO_SETTINGS_MODULE=resee.settings
 
-# 시스템 패키지 업데이트 및 필수 패키지 설치
-RUN apt-get update && apt-get install -y \
+# 시스템 패키지 업데이트 및 필수 패키지 설치 (멀티스테이지 빌드 최적화)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     build-essential \
     libpq-dev \
     postgresql-client \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # 작업 디렉토리 설정
 WORKDIR /app
@@ -30,16 +31,15 @@ COPY . .
 # 디렉토리 생성
 RUN mkdir -p /app/media /app/static /app/logs
 
-# 정적 파일 수집 (프로덕션용)
-RUN python manage.py collectstatic --noinput --settings=resee.settings || true
+# 정적 파일 수집은 실행 시점에 처리
 
 # 보안을 위해 non-root 사용자 생성
 RUN adduser --disabled-password --gecos '' appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
-# 헬스체크 추가
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# 헬스체크 추가 (간격 최적화)
+HEALTHCHECK --interval=60s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/api/health/ || exit 1
 
 # 포트 노출
