@@ -38,15 +38,51 @@ class CategoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
         responses={200: CategorySerializer(many=True)}
     )
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        response = super().list(request, *args, **kwargs)
+        # Add category usage metadata to response
+        if hasattr(response, 'data'):
+            response.data = {
+                'results': response.data.get('results', response.data),
+                'usage': request.user.get_category_usage(),
+                'count': response.data.get('count') if isinstance(response.data, dict) else len(response.data),
+                'next': response.data.get('next') if isinstance(response.data, dict) else None,
+                'previous': response.data.get('previous') if isinstance(response.data, dict) else None,
+            }
+        return response
     
     @swagger_auto_schema(
         operation_summary="새 카테고리 생성",
         operation_description="새로운 개인 커스텀 카테고리를 생성합니다. 이모지나 색상은 name 필드에 포함 가능합니다.",
         request_body=CategorySerializer,
-        responses={201: CategorySerializer()}
+        responses={
+            201: CategorySerializer(),
+            402: openapi.Response(
+                description="카테고리 생성 제한 초과",
+                examples={
+                    "application/json": {
+                        "error": "카테고리 생성 제한에 도달했습니다",
+                        "usage": {
+                            "current": 3,
+                            "limit": 3,
+                            "tier": "free"
+                        },
+                        "message": "더 많은 카테고리를 생성하려면 구독을 업그레이드하세요"
+                    }
+                }
+            )
+        }
     )
     def create(self, request, *args, **kwargs):
+        # Check category creation limit
+        user = request.user
+        if not user.can_create_category():
+            usage = user.get_category_usage()
+            return Response({
+                'error': '카테고리 생성 제한에 도달했습니다',
+                'usage': usage,
+                'message': '더 많은 카테고리를 생성하려면 구독을 업그레이드하세요'
+            }, status=status.HTTP_402_PAYMENT_REQUIRED)
+
         return super().create(request, *args, **kwargs)
 
 
@@ -94,15 +130,51 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         responses={200: ContentSerializer(many=True)}
     )
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        response = super().list(request, *args, **kwargs)
+        # Add content usage metadata to response
+        if hasattr(response, 'data'):
+            response.data = {
+                'results': response.data.get('results', response.data),
+                'usage': request.user.get_content_usage(),
+                'count': response.data.get('count') if isinstance(response.data, dict) else len(response.data),
+                'next': response.data.get('next') if isinstance(response.data, dict) else None,
+                'previous': response.data.get('previous') if isinstance(response.data, dict) else None,
+            }
+        return response
     
     @swagger_auto_schema(
         operation_summary="새 콘텐츠 생성",
         operation_description="새로운 학습 콘텐츠를 생성합니다. 자동으로 복습 스케줄이 생성됩니다.",
         request_body=ContentSerializer,
-        responses={201: ContentSerializer()}
+        responses={
+            201: ContentSerializer(),
+            402: openapi.Response(
+                description="콘텐츠 생성 제한 초과",
+                examples={
+                    "application/json": {
+                        "error": "콘텐츠 생성 제한에 도달했습니다",
+                        "usage": {
+                            "current": 10,
+                            "limit": 10,
+                            "tier": "free"
+                        },
+                        "message": "더 많은 콘텐츠를 생성하려면 구독을 업그레이드하세요"
+                    }
+                }
+            )
+        }
     )
     def create(self, request, *args, **kwargs):
+        # Check content creation limit
+        user = request.user
+        if not user.can_create_content():
+            usage = user.get_content_usage()
+            return Response({
+                'error': '콘텐츠 생성 제한에 도달했습니다',
+                'usage': usage,
+                'message': '더 많은 콘텐츠를 생성하려면 구독을 업그레이드하세요'
+            }, status=status.HTTP_402_PAYMENT_REQUIRED)
+
         return super().create(request, *args, **kwargs)
     
     @swagger_auto_schema(
