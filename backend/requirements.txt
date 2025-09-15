@@ -16,7 +16,7 @@ django-redis==5.4.0
 
 # Authentication
 djangorestframework-simplejwt==5.4.0
-django-allauth==0.65.1
+django-allauth==65.11.2
 dj-rest-auth==7.0.0
 
 # Social Authentication
