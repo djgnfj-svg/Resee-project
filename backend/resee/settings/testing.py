@@ -111,10 +111,7 @@ STRIPE_PRICE_ID_PREMIUM = 'price_test_premium'
 STRIPE_PRICE_ID_PRO = 'price_test_pro'
 
 # Testing-specific monitoring (disabled)
-MONITORING.update({
-    'ENABLE_PERFORMANCE_TRACKING': False,
-    'ENABLE_ERROR_TRACKING': False,
-})
+# Note: MONITORING system was removed with monitoring app cleanup
 
 # Faster password hashing for tests
 PASSWORD_HASHERS = [
