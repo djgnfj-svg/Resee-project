@@ -171,7 +171,7 @@ class User(AbstractUser):
         """Get list of AI features available for user's subscription tier"""
         if not self.can_use_ai_features():
             return []
-            
+
         tier_features = {
             SubscriptionTier.FREE: [],
             SubscriptionTier.BASIC: [
@@ -187,8 +187,80 @@ class User(AbstractUser):
                 'explanation_evaluation'
             ]
         }
-        
+
         return tier_features.get(self.subscription.tier, [])
+
+    def get_content_limit(self):
+        """Get content creation limit based on subscription tier"""
+        if not hasattr(self, 'subscription') or not self.subscription.is_active or self.subscription.is_expired():
+            tier = SubscriptionTier.FREE
+        else:
+            tier = self.subscription.tier
+
+        tier_limits = {
+            SubscriptionTier.FREE: 3,       # 3 contents for free users
+            SubscriptionTier.BASIC: 10,     # 10 contents for basic users
+            SubscriptionTier.PRO: 50,       # 50 contents for pro users
+        }
+
+        return tier_limits.get(tier, 3)
+
+    def can_create_content(self):
+        """Check if user can create more content based on subscription limit"""
+        from content.models import Content
+        current_count = Content.objects.filter(author=self).count()
+        return current_count < self.get_content_limit()
+
+    def get_content_usage(self):
+        """Get content usage statistics for the user"""
+        from content.models import Content
+        current_count = Content.objects.filter(author=self).count()
+        limit = self.get_content_limit()
+
+        return {
+            'current': current_count,
+            'limit': limit,
+            'remaining': max(0, limit - current_count),
+            'percentage': (current_count / limit * 100) if limit > 0 else 0,
+            'can_create': current_count < limit,
+            'tier': self.subscription.tier if hasattr(self, 'subscription') else SubscriptionTier.FREE
+        }
+
+    def get_category_limit(self):
+        """Get category creation limit based on subscription tier"""
+        if not hasattr(self, 'subscription') or not self.subscription.is_active or self.subscription.is_expired():
+            tier = SubscriptionTier.FREE
+        else:
+            tier = self.subscription.tier
+
+        tier_limits = {
+            SubscriptionTier.FREE: 3,       # 3 categories for free users
+            SubscriptionTier.BASIC: 15,     # 15 categories for basic users
+            SubscriptionTier.PRO: 50,       # 50 categories for pro users
+        }
+
+        return tier_limits.get(tier, 3)
+
+    def can_create_category(self):
+        """Check if user can create more categories based on subscription limit"""
+        from content.models import Category
+        current_count = Category.objects.filter(user=self).count()
+        return current_count < self.get_category_limit()
+
+    def get_category_usage(self):
+        """Get category usage statistics for the user"""
+        from content.models import Category
+        current_count = Category.objects.filter(user=self).count()
+        limit = self.get_category_limit()
+
+        return {
+            'current': current_count,
+            'limit': limit,
+            'remaining': max(0, limit - current_count),
+            'percentage': (current_count / limit * 100) if limit > 0 else 0,
+            'can_create': current_count < limit,
+            'tier': self.subscription.tier if hasattr(self, 'subscription') else SubscriptionTier.FREE
+        }
 
 
 class SubscriptionTier(models.TextChoices):
