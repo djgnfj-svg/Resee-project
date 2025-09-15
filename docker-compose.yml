@@ -2,9 +2,9 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: resee_db
-      POSTGRES_USER: resee_user
-      POSTGRES_PASSWORD: resee_password
+      POSTGRES_DB: ${POSTGRES_DB:-resee_db}
+      POSTGRES_USER: ${POSTGRES_USER:-resee_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -24,8 +24,8 @@ services:
     command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
+      interval: 10s
+      timeout: 5s
       retries: 5
 
   backend:
@@ -39,15 +39,15 @@ services:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=resee.settings.development
-      - DATABASE_URL=postgresql://resee_user:resee_password@db:5432/resee_db
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-resee_user}:${POSTGRES_PASSWORD:-resee_password}@db:5432/${POSTGRES_DB:-resee_db}
       - REDIS_URL=redis://redis:6379/0
-      - DEBUG=True
-      - SECRET_KEY=your-secret-key-for-development
-      - ALLOWED_HOSTS=*
+      - DEBUG=${DEBUG:-True}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
       - GOOGLE_OAUTH2_CLIENT_ID=${GOOGLE_OAUTH2_CLIENT_ID}
       - GOOGLE_OAUTH2_CLIENT_SECRET=${GOOGLE_OAUTH2_CLIENT_SECRET}
-      - AI_USE_MOCK_RESPONSES=True
-      - ENFORCE_EMAIL_VERIFICATION=True
+      - AI_USE_MOCK_RESPONSES=${AI_USE_MOCK_RESPONSES:-True}
+      - ENFORCE_EMAIL_VERIFICATION=${ENFORCE_EMAIL_VERIFICATION:-True}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     depends_on:
       db:

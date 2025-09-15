@@ -192,38 +192,60 @@ docker-compose up -d
 
 ### Development Deployment
 ```bash
-# Use .env file (development environment)
+# 1. 환경 설정 파일 준비
+cp .env.example .env
+# .env 파일을 편집하여 필요한 값들을 설정
+
+# 2. 개발 환경 시작
 docker-compose up -d
 
-# Run migrations
+# 3. 초기 설정
 docker-compose exec backend python manage.py migrate
+docker-compose exec backend python manage.py createsuperuser
+
+# 4. 헬스체크 확인
+curl http://localhost:8000/api/health/
 ```
 
 ### Production Deployment
 ```bash
-# Use .env.prod file (production environment)
-docker-compose --env-file .env.prod up -d
+# 1. 환경 설정 파일 준비
+cp .env.example .env.prod
+# .env.prod 파일을 편집하여 프로덕션 값들을 설정
 
-# Or with production compose file
-docker-compose -f docker-compose.prod.yml up -d
+# 2. 보안 검사 실행
+docker-compose exec backend python manage.py health_check --detailed
 
-# Run migrations
+# 3. 프로덕션 빌드 및 시작
+docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
+
+# 4. 초기 설정
 docker-compose exec backend python manage.py migrate
-
-# Collect static files
 docker-compose exec backend python manage.py collectstatic --noinput
+
+# 5. 최종 헬스체크
+curl https://your-domain.com/api/health/detailed/
 ```
 
+### 🔐 보안 체크리스트
+- [ ] `.env` 파일의 모든 비밀번호와 키 변경
+- [ ] `SECRET_KEY` 50자 이상 랜덤 문자열로 설정
+- [ ] `DEBUG=False` (프로덕션)
+- [ ] `ALLOWED_HOSTS` 정확한 도메인으로 설정
+- [ ] HTTPS 인증서 설정
+- [ ] 방화벽 설정 (필요한 포트만 오픈)
+
 ### Environment File Usage
-- **Development**: Uses `.env` automatically
-- **Production**: Must specify `--env-file .env.prod`
-- **Email Verification**: Controlled by `ENFORCE_EMAIL_VERIFICATION` setting
+- **Development**: `.env` 파일 사용 (템플릿: `.env.example`)
+- **Production**: `.env.prod` 파일 사용
+- **Email Verification**: `ENFORCE_EMAIL_VERIFICATION` 설정으로 제어
+- **AI Services**: `AI_USE_MOCK_RESPONSES=True`로 개발 중 비용 절약
 
 ### Minimum Server Requirements
-- 2GB RAM (t3.small or equivalent)
-- 20GB storage
-- Ubuntu 22.04 LTS
-- Docker & Docker Compose installed
+- **Development**: 2GB RAM, 10GB storage
+- **Production**: 4GB RAM, 20GB storage, SSD 권장
+- **OS**: Ubuntu 22.04 LTS 또는 최신 안정 버전
+- **Docker**: Docker Engine 20.10+ & Docker Compose v2
 
 ## 🔄 Recent Architecture Changes
 
@@ -239,6 +261,14 @@ docker-compose exec backend python manage.py collectstatic --noinput
 - **N+1 Query Fixes**: 75-80% API response time improvement
 - **Query Optimization**: select_related/prefetch_related implementation
 - **Performance Gains**: TodayReviewView (200ms→50ms), CategoryStats (500ms→100ms)
+
+### Security & Production Hardening (2025-09-15)
+- **Environment Security**: Removed hardcoded secrets from docker-compose.yml
+- **Django Security**: Enhanced CORS, CSP, session/cookie security settings
+- **Docker Optimization**: Multi-stage builds, non-root users, health checks
+- **Dependency Updates**: Updated to latest stable versions (Django 4.2.16, etc.)
+- **Monitoring**: Added comprehensive health check endpoints
+- **Production Ready**: Optimized configurations for production deployment
 
 ### Previous Changes
 - **Celery & RabbitMQ Removal**: Async tasks → synchronous processing

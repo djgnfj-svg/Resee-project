@@ -12,10 +12,8 @@ from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
-from accounts.views import EmailTokenObtainPairView
-
-from .health import (detailed_health_check, health_check, liveness_check,
-                     readiness_check)
+from accounts.views import (EmailTokenObtainPairView, health_detailed,
+                            health_check, liveness_check, readiness_check)
 
 # API documentation schema
 schema_view = get_schema_view(
@@ -33,9 +31,9 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin_site.urls),
     
-    # Health checks
+    # Health checks (for monitoring and load balancers)
     path('api/health/', health_check, name='health'),
-    path('api/health/detailed/', detailed_health_check, name='detailed_health'),
+    path('api/health/detailed/', health_detailed, name='detailed_health'),
     path('api/health/ready/', readiness_check, name='readiness'),
     path('api/health/live/', liveness_check, name='liveness'),
     
