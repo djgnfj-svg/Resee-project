@@ -5,11 +5,13 @@ import {
   CreateContentData,
   UpdateContentData,
   CreateCategoryData,
-  PaginatedResponse
+  PaginatedResponse,
+  ContentListResponse,
+  CategoryListResponse
 } from '../../types';
 
 export const contentAPI = {
-  getContents: async (params?: string): Promise<PaginatedResponse<Content> | Content[]> => {
+  getContents: async (params?: string): Promise<ContentListResponse> => {
     const url = params ? `/content/contents/?${params}` : '/content/contents/';
     const response = await api.get(url);
     return response.data;
@@ -29,7 +31,7 @@ export const contentAPI = {
     await api.delete(`/content/contents/${id}/`);
   },
 
-  getCategories: async (): Promise<PaginatedResponse<Category> | Category[]> => {
+  getCategories: async (): Promise<CategoryListResponse> => {
     const response = await api.get('/content/categories/');
     return response.data;
   },
