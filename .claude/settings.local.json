@@ -46,7 +46,14 @@
       "mcp__playwright__browser_network_requests",
       "Bash(./scripts/backup_manager.sh:*)",
       "Bash(bash:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(unset REDIS_URL)",
+      "Bash(unset REDIS_PASSWORD)",
+      "Bash(env)",
+      "Bash(unset:*)",
+      "Read(//home/djgnf/**)",
+      "Read(//etc/**)",
+      "Bash(export REDIS_URL=redis://redis:6379/0)"
     ],
     "deny": [],
     "ask": []

@@ -32,13 +32,17 @@ DATABASES = {
 # JWT Settings for development
 SIMPLE_JWT['SIGNING_KEY'] = SECRET_KEY
 
-# CORS Configuration for development
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS Configuration for development (보안 강화)
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://frontend:3000",
 ]
+
+# 개발환경에서는 HTTPS 관련 설정 비활성화
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
 # Email Configuration for development
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
@@ -152,12 +156,10 @@ STRIPE_PRICE_ID_PRO = os.environ.get('STRIPE_PRICE_ID_PRO')
 
 # Development environment validation
 if not ANTHROPIC_API_KEY and not AI_ENABLE_MOCK_RESPONSES:
-    print("WARNING: ANTHROPIC_API_KEY not set. AI features may not work.")
+    import warnings
+    warnings.warn("ANTHROPIC_API_KEY not set. AI features may not work.", UserWarning)
 
-if not GOOGLE_OAUTH2_CLIENT_ID:
-    print("WARNING: GOOGLE_OAUTH2_CLIENT_ID not set. Google OAuth will not work.")
-
-print(f"Development environment loaded. DEBUG={DEBUG}")
-print(f"Database: {DATABASES['default']['NAME']}@{DATABASES['default']['HOST']}")
-print(f"Email verification enforced: {ENFORCE_EMAIL_VERIFICATION}")
-print(f"AI mock responses: {AI_ENABLE_MOCK_RESPONSES}")
+# Development environment configuration complete
+# Google OAuth: Enabled if GOOGLE_OAUTH2_CLIENT_ID is set
+# Email verification: Controlled by ENFORCE_EMAIL_VERIFICATION
+# AI responses: Mock mode controlled by AI_ENABLE_MOCK_RESPONSES
