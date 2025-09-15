@@ -16,7 +16,7 @@ django-redis==5.4.0
 
 # Authentication
 djangorestframework-simplejwt==5.4.0
-django-allauth==0.65.1
+django-allauth==65.11.2
 dj-rest-auth==7.0.0
 
 # Social Authentication
@@ -61,4 +61,4 @@ stripe==12.1.0
 pytest==8.3.4
 pytest-django==4.9.0
 factory-boy==3.3.1
-faker==33.5.3
+faker==37.7.0
