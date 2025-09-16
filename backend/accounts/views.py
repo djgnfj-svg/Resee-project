@@ -552,7 +552,7 @@ class GoogleOAuthView(APIView):
         **요청 예시:**
         ```json
         {
-          "credential": "google_oauth2_credential_token"
+          "token": "google_oauth2_credential_token"
         }
         ```
         
