@@ -35,11 +35,15 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-# SSL settings for production (ALB handles SSL termination)
-SECURE_SSL_REDIRECT = False  # ALB handles SSL, don't redirect at Django level
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# SSL settings for production (CloudFlare handles SSL termination)
+SECURE_SSL_REDIRECT = False  # CloudFlare handles SSL, don't redirect at Django level
+SECURE_PROXY_SSL_HEADER = ('HTTP_CF_VISITOR', '{"scheme":"https"}')
 SESSION_COOKIE_SECURE = True  # Only send session cookies over HTTPS
 CSRF_COOKIE_SECURE = True    # Only send CSRF cookies over HTTPS
+
+# CloudFlare specific headers
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
 
 # Database configuration - Override any previous DATABASES setting
 DATABASES = {
