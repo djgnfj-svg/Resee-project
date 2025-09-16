@@ -53,7 +53,9 @@
       "Bash(unset:*)",
       "Read(//home/djgnf/**)",
       "Read(//etc/**)",
-      "Bash(export REDIS_URL=redis://redis:6379/0)"
+      "Bash(export REDIS_URL=redis://redis:6379/0)",
+      "Bash(gh run list:*)",
+      "Bash(sudo rm:*)"
     ],
     "deny": [],
     "ask": []
