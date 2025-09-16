@@ -18,12 +18,54 @@ log_success() { echo -e "${GREEN}✅ $1${NC}"; }
 log_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
 log_error() { echo -e "${RED}❌ $1${NC}"; }
 
+# Docker 설치 확인 및 자동 설치
+log_info "Docker 설치 상태를 확인합니다..."
+if ! command -v docker &> /dev/null; then
+    log_warning "Docker가 설치되지 않았습니다. 자동으로 설치합니다..."
+
+    # Docker 설치
+    sudo apt update
+    sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli containerd.io
+
+    # Docker 서비스 시작
+    sudo systemctl start docker
+    sudo systemctl enable docker
+
+    # 현재 사용자를 docker 그룹에 추가
+    sudo usermod -aG docker $USER
+
+    log_success "Docker 설치가 완료되었습니다."
+    log_warning "Docker 그룹 권한 적용을 위해 다시 로그인하거나 다음 명령어를 실행해주세요:"
+    echo "newgrp docker"
+    echo "그 후 ./deploy.sh를 다시 실행해주세요."
+    exit 0
+else
+    log_success "Docker가 이미 설치되어 있습니다."
+fi
+
+# Docker Compose 설치 확인
+if ! command -v docker-compose &> /dev/null; then
+    log_warning "Docker Compose가 설치되지 않았습니다. 자동으로 설치합니다..."
+
+    # Docker Compose 설치
+    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+
+    log_success "Docker Compose 설치가 완료되었습니다."
+fi
+
 # Docker Compose 명령 확인
 if command -v docker-compose &> /dev/null; then
     COMPOSE_CMD="docker-compose"
 else
     COMPOSE_CMD="docker compose"
 fi
+
+log_success "Docker 환경이 준비되었습니다."
 
 # .env.prod 파일 확인
 if [ ! -f ".env.prod" ]; then
