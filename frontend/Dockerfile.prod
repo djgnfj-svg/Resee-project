@@ -30,8 +30,8 @@ FROM nginx:alpine AS production
 
 # 보안 및 성능 최적화
 RUN apk add --no-cache curl \
-    && addgroup -g 101 -S nginx \
-    && adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
+    && (addgroup -g 101 -S nginx || true) \
+    && (adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx || true)
 
 # 빌드 결과물 복사
 COPY --from=builder /app/build /usr/share/nginx/html
