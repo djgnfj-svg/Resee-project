@@ -55,7 +55,7 @@ django-extensions==3.2.3
 django-debug-toolbar==4.2.0
 
 # Payment Processing
-stripe==12.1.0
+stripe==12.5.1
 
 # Testing
 pytest==8.3.4
