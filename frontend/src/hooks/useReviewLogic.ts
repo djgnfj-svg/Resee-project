@@ -55,9 +55,13 @@ export const useReviewLogic = () => {
     queryFn: async () => {
       const params = selectedCategory !== 'all' ? `?category_slug=${selectedCategory}` : '';
       const data = await reviewAPI.getTodayReviews(params);
-      
+
+      // Always try to extract total_count if it exists
+      if (data && typeof data === 'object' && 'total_count' in data) {
+        setTotalSchedules((data as any).total_count || 0);
+      }
+
       if (isTodayReviewsResponse(data)) {
-        setTotalSchedules(data.total_count || 0);
         return data.results;
       } else {
         return extractResults(data) as ReviewSchedule[];
@@ -85,11 +89,13 @@ export const useReviewLogic = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['learning-calendar'] });
       queryClient.invalidateQueries({ queryKey: ['advanced-analytics'] });
-      
-      const { data: updatedReviews } = await refetch();
-      
-      if (updatedReviews && updatedReviews.length > 0) {
-        const newIndex = Math.min(currentReviewIndex, updatedReviews.length - 1);
+
+      // Don't refetch immediately to avoid state reset
+      // const { data: updatedReviews } = await refetch();
+
+      // Update index based on current reviews (will be updated by invalidateQueries)
+      if (reviews && reviews.length > 1) {
+        const newIndex = Math.min(currentReviewIndex, reviews.length - 2); // -2 because one review was completed
         setCurrentReviewIndex(newIndex);
       } else {
         setCurrentReviewIndex(0);

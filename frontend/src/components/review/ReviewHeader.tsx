@@ -51,7 +51,7 @@ const ReviewHeader: React.FC<ReviewHeaderProps> = ({
               {reviews.length - reviewsCompleted}개 남음
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              전체: {totalSchedules}개 | 완료: {reviewsCompleted}개
+              완료: {reviewsCompleted}개
             </div>
             <div className="text-xs text-gray-400 dark:text-gray-500">
               {currentReviewIndex + 1}번째 학습 중
