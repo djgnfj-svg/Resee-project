@@ -6,7 +6,6 @@ from django.core.management.base import BaseCommand
 from django.db import connection, connections
 from django.conf import settings
 from django.core.cache import cache
-import redis
 import anthropic
 
 
@@ -33,12 +32,12 @@ class Command(BaseCommand):
             errors.append('Database connection failed')
             self.stdout.write(self.style.ERROR('❌ Database: Failed'))
 
-        # Redis check
-        if self._check_redis():
-            self.stdout.write(self.style.SUCCESS('✅ Redis: Connected'))
+        # Cache check (Local Memory)
+        if self._check_cache():
+            self.stdout.write(self.style.SUCCESS('✅ Cache: Available'))
         else:
-            errors.append('Redis connection failed')
-            self.stdout.write(self.style.ERROR('❌ Redis: Failed'))
+            errors.append('Cache system failed')
+            self.stdout.write(self.style.ERROR('❌ Cache: Failed'))
 
         # AI Service check
         ai_status = self._check_ai_service()
@@ -79,13 +78,13 @@ class Command(BaseCommand):
                 self.stdout.write(f'Database error: {e}')
             return False
 
-    def _check_redis(self):
+    def _check_cache(self):
         try:
             cache.set('health_check', 'ok', 30)
             return cache.get('health_check') == 'ok'
         except Exception as e:
             if hasattr(self, 'detailed') and self.detailed:
-                self.stdout.write(f'Redis error: {e}')
+                self.stdout.write(f'Cache error: {e}')
             return False
 
     def _check_ai_service(self):

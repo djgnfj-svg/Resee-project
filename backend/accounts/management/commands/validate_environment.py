@@ -186,14 +186,13 @@ class Command(BaseCommand):
         
         env_vars = [
             'SECRET_KEY', 'DEBUG', 'ALLOWED_HOSTS', 'DATABASE_URL',
-            'REDIS_URL', 'CELERY_BROKER_URL', 'EMAIL_BACKEND',
-            'FRONTEND_URL', 'ENVIRONMENT'
+            'EMAIL_BACKEND', 'FRONTEND_URL', 'ENVIRONMENT'
         ]
         
         for var in env_vars:
             value = os.environ.get(var, 'Not set')
             # Mask sensitive values
-            if var in ['SECRET_KEY', 'DATABASE_URL', 'REDIS_URL', 'CELERY_BROKER_URL']:
+            if var in ['SECRET_KEY', 'DATABASE_URL']:
                 if value != 'Not set':
                     value = f"{value[:10]}...{value[-5:]}" if len(value) > 15 else "***"
             
