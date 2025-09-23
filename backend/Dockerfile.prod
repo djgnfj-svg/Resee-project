@@ -28,7 +28,8 @@ RUN mkdir -p /app/logs /app/static /app/media
 # Create non-root user and set proper permissions
 RUN adduser --disabled-password --gecos '' appuser && \
     chown -R appuser:appuser /app && \
-    chmod -R 755 /app/static /app/media /app/logs
+    chmod -R 755 /app/static /app/media && \
+    chmod -R 775 /app/logs
 USER appuser
 
 # Expose port
