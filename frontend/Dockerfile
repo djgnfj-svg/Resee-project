@@ -1,10 +1,7 @@
 FROM node:18-alpine
 
-# 보안 및 성능 최적화
-RUN apk add --no-cache \
-    curl \
-    && addgroup -g 1001 -S nodejs \
-    && adduser -S reactapp -u 1001
+# curl 설치 (헬스체크용)
+RUN apk add --no-cache curl
 
 WORKDIR /app
 
@@ -14,10 +11,6 @@ RUN npm ci --silent
 
 # 소스 코드 복사
 COPY . .
-
-# 소유권 변경
-RUN chown -R reactapp:nodejs /app
-USER reactapp
 
 # 헬스체크 추가
 HEALTHCHECK --interval=60s --timeout=10s --start-period=40s --retries=3 \

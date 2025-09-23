@@ -1061,7 +1061,7 @@ def health_detailed(request):
         }
         health_data['status'] = 'degraded'
 
-    # Redis/Cache check
+    # Cache check (Local Memory)
     cache_start = time.time()
     try:
         cache.set('health_check', 'test', 30)
