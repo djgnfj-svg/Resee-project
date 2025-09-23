@@ -45,50 +45,25 @@ CSRF_COOKIE_SECURE = True    # Only send CSRF cookies over HTTPS
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
 
-# Database configuration - Override any previous DATABASES setting
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'resee_db',
-        'USER': 'resee_user',
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': 'db',
-        'PORT': '5432',
-        'CONN_MAX_AGE': 300,
-        'OPTIONS': {
-            'connect_timeout': 10,
-            'server_side_binding': True,
-        },
-        'CONN_HEALTH_CHECKS': True,
-    }
-}
+# Database configuration will be set at the end of this file
 
-# Cache settings
+# Cache settings - Local Memory Cache (No Redis needed)
 CACHES = {
     'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL', 'redis://redis:6379/0'),
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'resee-prod-cache',
         'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'PASSWORD': os.environ.get('REDIS_PASSWORD', ''),
-            'CONNECTION_POOL_KWARGS': {
-                'max_connections': 50,
-                'retry_on_timeout': True,
-                'socket_connect_timeout': 5,
-                'socket_timeout': 5,
-                'health_check_interval': 30,
-            }
+            'MAX_ENTRIES': 5000,  # More entries for production
+            'CULL_FREQUENCY': 4,
         },
         'KEY_PREFIX': 'resee_prod',
         'TIMEOUT': 300,
         'VERSION': 1,
-        'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
     }
 }
 
-# Session settings
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
+# Session settings - Database Backend (No Redis needed)
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 86400  # 1 day
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
@@ -180,8 +155,7 @@ SENTRY_DSN = os.environ.get('SENTRY_DSN')
 if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
-    from sentry_sdk.integrations.redis import RedisIntegration
-    
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[
@@ -189,27 +163,21 @@ if SENTRY_DSN:
                 transaction_style='url',
                 middleware_spans=True,
             ),
-            RedisIntegration(),
         ],
         traces_sample_rate=0.1,
         send_default_pii=False,
         environment='production',
     )
 
-# FINAL DATABASE OVERRIDE - Ensure this is the last DATABASES setting
+# FINAL DATABASE OVERRIDE - Use Supabase DATABASE_URL
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'resee_db',
-        'USER': 'resee_user',
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': 'db',
-        'PORT': '5432',
-        'CONN_MAX_AGE': 300,
-        'OPTIONS': {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=300,
+        conn_health_checks=True,
+        options={
             'connect_timeout': 10,
             'server_side_binding': True,
-        },
-        'CONN_HEALTH_CHECKS': True,
-    }
+        }
+    )
 }

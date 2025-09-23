@@ -16,17 +16,14 @@ DEBUG = True
 # Allowed hosts for development
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend', '0.0.0.0']
 
-# Database for development
+# Database for development - Use DATABASE_URL from environment
+# Will use DATABASE_URL from .env file, no hardcoded credentials
+import dj_database_url
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'resee_db'),
-        'USER': os.environ.get('DB_USER', 'resee_user'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'resee_password'),
-        'HOST': os.environ.get('DB_HOST', 'db'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-        'CONN_MAX_AGE': 60,
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=60
+    )
 }
 
 # JWT Settings for development

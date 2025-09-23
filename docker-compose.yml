@@ -1,30 +1,19 @@
 services:
-  db:
+  postgres:
     image: postgres:15
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-resee_db}
-      POSTGRES_USER: ${POSTGRES_USER:-resee_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-resee_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U resee_user"]
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-postgres}"]
       interval: 5s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -39,21 +28,10 @@ services:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=resee.settings.development
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-resee_user}:${POSTGRES_PASSWORD:-resee_password}@db:5432/${POSTGRES_DB:-resee_db}
-      - REDIS_URL=redis://redis:6379/0
-      - DEBUG=${DEBUG:-True}
-      - SECRET_KEY=${SECRET_KEY}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
-      - GOOGLE_OAUTH2_CLIENT_ID=${GOOGLE_OAUTH2_CLIENT_ID}
-      - GOOGLE_OAUTH2_CLIENT_SECRET=${GOOGLE_OAUTH2_CLIENT_SECRET}
-      - AI_USE_MOCK_RESPONSES=${AI_USE_MOCK_RESPONSES:-True}
-      - ENFORCE_EMAIL_VERIFICATION=${ENFORCE_EMAIL_VERIFICATION:-True}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+
 
   frontend:
     build: ./frontend
@@ -63,8 +41,10 @@ services:
       - /app/node_modules
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
-      - REACT_APP_API_URL=http://localhost:8000/api
+      - REACT_APP_API_URL=/api
       - REACT_APP_GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID}
       - HOST=0.0.0.0
       - PORT=3000
@@ -88,6 +68,5 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
   static_volume:
   media_volume:
