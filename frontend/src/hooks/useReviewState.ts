@@ -47,7 +47,6 @@ export const useReviewState = () => {
     setCurrentReviewIndex(0);
     setShowContent(false);
     setIsFlipped(false);
-    setReviewsCompleted(0);
   }, []);
 
   return {
