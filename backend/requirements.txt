@@ -9,11 +9,6 @@ django-filter==24.3
 psycopg2-binary==2.9.9
 dj-database-url==2.1.0
 
-
-# Redis
-redis==5.0.1
-django-redis==5.4.0
-
 # Authentication
 djangorestframework-simplejwt==5.4.0
 django-allauth==65.11.2

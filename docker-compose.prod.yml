@@ -1,32 +1,6 @@
 services:
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-resee_db}
-      POSTGRES_USER: ${POSTGRES_USER:-resee_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-resee_password}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-resee_user}"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "auth", "${REDIS_PASSWORD:-redis_password}", "ping"]
-      interval: 30s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
+  # PostgreSQL removed - Using Supabase instead
+  # Redis removed - Using local memory cache instead
 
   backend:
     build:
@@ -36,23 +10,12 @@ services:
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
+    env_file:
+      - .env.prod
     environment:
       - DJANGO_SETTINGS_MODULE=resee.settings.production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-resee_user}:${POSTGRES_PASSWORD:-resee_password}@db:5432/${POSTGRES_DB:-resee_db}
-      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_password}@redis:6379/0
-      - SECRET_KEY=${SECRET_KEY}
-      - DEBUG=False
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
-      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - GOOGLE_OAUTH2_CLIENT_ID=${GOOGLE_OAUTH2_CLIENT_ID:-}
-      - GOOGLE_OAUTH2_CLIENT_SECRET=${GOOGLE_OAUTH2_CLIENT_SECRET:-}
-      - ENFORCE_EMAIL_VERIFICATION=${ENFORCE_EMAIL_VERIFICATION:-True}
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      # DATABASE_URL and other settings from .env.prod file
+    # No dependencies - Using external Supabase
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
@@ -68,6 +31,8 @@ services:
       args:
         REACT_APP_API_URL: ${REACT_APP_API_URL}
         REACT_APP_GOOGLE_CLIENT_ID: ${REACT_APP_GOOGLE_CLIENT_ID:-}
+    env_file:
+      - .env.prod
     volumes:
       - frontend_build:/app
     restart: unless-stopped
@@ -87,8 +52,8 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
-  redis_data:
+  # postgres_data removed - Using Supabase
+  # redis_data removed - Using local memory cache
   static_volume:
   media_volume:
   frontend_build:

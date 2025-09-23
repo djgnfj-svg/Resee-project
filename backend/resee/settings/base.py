@@ -43,12 +43,15 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'resee.middleware.BasicRateLimitMiddleware',  # Rate limiting
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'resee.middleware.SecurityHeadersMiddleware',  # Security headers
+    'resee.middleware.RequestLoggingMiddleware',  # Request logging
 ]
 
 ROOT_URLCONF = 'resee.urls'
@@ -200,21 +203,21 @@ SLACK_BOT_NAME = os.environ.get('SLACK_BOT_NAME', 'Resee Alert Bot')
 ALERT_SUMMARY_RECIPIENTS = os.environ.get('ALERT_SUMMARY_RECIPIENTS', '').split(',') if os.environ.get('ALERT_SUMMARY_RECIPIENTS') else []
 
 
-# Cache Configuration
+# Cache Configuration - Local Memory Cache (Redis removed)
 CACHES = {
     'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL', 'redis://redis:6379/1'),
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'resee-cache',
         'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'MAX_ENTRIES': 1000,
+            'CULL_FREQUENCY': 4,
         }
     }
 }
 
 
-# Session Configuration
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
+# Session Configuration - Database Backend (Redis removed)
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 86400  # 1 day
 
 
@@ -271,7 +274,7 @@ LOGGING = {
 # Health Check Configuration
 HEALTH_CHECK = {
     'DATABASE_TIMEOUT': 5,
-    'REDIS_TIMEOUT': 3,
+    'CACHE_TIMEOUT': 3,  # Redis removed - Local Memory Cache
     'AI_SERVICE_TIMEOUT': 10,
 }
 

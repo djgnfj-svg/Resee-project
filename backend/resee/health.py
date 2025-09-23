@@ -74,7 +74,7 @@ def detailed_health_check(request):
         }
         overall_healthy = False
     
-    # Check cache (Redis)
+    # Check cache (Local Memory)
     try:
         cache.set('health_check', 'ok', timeout=1)
         if cache.get('health_check') == 'ok':
