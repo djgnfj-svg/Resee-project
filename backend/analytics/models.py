@@ -6,10 +6,12 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+from resee.models import BaseUserModel, BaseModel
+
 User = get_user_model()
 
 
-class LearningPattern(models.Model):
+class LearningPattern(BaseModel):
     """
     Track user learning patterns and behaviors
     """
@@ -44,9 +46,6 @@ class LearningPattern(models.Model):
     # Streak tracking
     consecutive_days = models.IntegerField(default=0, help_text="Current learning streak")
     
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
     class Meta:
         db_table = 'bi_learning_pattern'
         unique_together = ['user', 'date']
@@ -61,70 +60,9 @@ class LearningPattern(models.Model):
         return f"{self.user.email} - {self.date}"
 
 
-# Temporarily disabled - causing deletion issues without proper migrations
-# class ContentEffectiveness(models.Model):
-#     """
-#     Analyze effectiveness of different types of content
-#     """
-#     content = models.OneToOneField(
-#         'content.Content', 
-#         on_delete=models.CASCADE, 
-#         related_name='effectiveness_stats'
-#     )
-#     
-#     # Review performance
-#     total_reviews = models.IntegerField(default=0)
-#     successful_reviews = models.IntegerField(default=0)
-#     average_difficulty_rating = models.FloatField(
-#         default=0.0,
-#         validators=[MinValueValidator(1.0), MaxValueValidator(5.0)],
-#         help_text="User-rated difficulty (1-5 scale)"
-#     )
-#     
-#     # Time metrics
-#     average_review_time_seconds = models.IntegerField(default=0)
-#     time_to_master_days = models.IntegerField(
-#         null=True, blank=True,
-#         help_text="Days taken to consistently remember (3 successful reviews in a row)"
-#     )
-#     
-#     # AI interaction
-#     ai_questions_generated = models.IntegerField(default=0)
-#     ai_questions_success_rate = models.FloatField(
-#         default=0.0,
-#         validators=[MinValueValidator(0.0), MaxValueValidator(100.0)]
-#     )
-#     
-#     # Engagement metrics
-#     last_reviewed = models.DateTimeField(null=True, blank=True)
-#     abandonment_risk_score = models.FloatField(
-#         default=0.0,
-#         validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
-#         help_text="Risk score for content abandonment (0-100)"
-#     )
-#     
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-#     
-#     class Meta:
-#         db_table = 'bi_content_effectiveness'
-#         indexes = [
-#             models.Index(fields=['average_difficulty_rating']),
-#             models.Index(fields=['abandonment_risk_score']),
-#             models.Index(fields=['time_to_master_days']),
-#         ]
-#     
-#     @property
-#     def success_rate(self):
-#         if self.total_reviews == 0:
-#             return 0.0
-#         return (self.successful_reviews / self.total_reviews) * 100
-#     
-#     def __str__(self):
-#         return f"Effectiveness: {self.content.title}"
 
 
-class SubscriptionAnalytics(models.Model):
+class SubscriptionAnalytics(BaseModel):
     """
     Track subscription behavior and conversion metrics
     """
@@ -170,10 +108,7 @@ class SubscriptionAnalytics(models.Model):
         validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
         help_text="Risk of subscription cancellation (0-100)"
     )
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         db_table = 'bi_subscription_analytics'
         indexes = [
@@ -188,7 +123,7 @@ class SubscriptionAnalytics(models.Model):
         return f"{self.user.email} - {self.subscription_tier} ({self.tier_start_date.date()})"
 
 
-class SystemUsageMetrics(models.Model):
+class SystemUsageMetrics(BaseModel):
     """
     Track system-wide usage metrics for business insights
     """
@@ -228,10 +163,7 @@ class SystemUsageMetrics(models.Model):
     average_api_response_time_ms = models.IntegerField(default=0)
     error_rate_percentage = models.FloatField(default=0.0)
     uptime_percentage = models.FloatField(default=100.0)
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         db_table = 'bi_system_usage_metrics'
         ordering = ['-date']

@@ -46,7 +46,7 @@ class AIQuestionType(BaseModel):
         return self.display_name
 
 
-class AIQuestion(models.Model):
+class AIQuestion(BaseModel):
     """AI-generated questions for content review."""
     content = models.ForeignKey(
         Content,
@@ -98,8 +98,6 @@ class AIQuestion(models.Model):
         default=True,
         help_text="Whether this question is available for review sessions"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         db_table = 'ai_questions'
@@ -131,7 +129,7 @@ class AIQuestion(models.Model):
             raise ValidationError("정답은 선택지 중 하나여야 합니다.")
 
 
-class AIEvaluation(models.Model):
+class AIEvaluation(BaseUserModel):
     """
     AI evaluation of user answers to questions
     """
@@ -140,12 +138,6 @@ class AIEvaluation(models.Model):
         on_delete=models.CASCADE,
         related_name='evaluations',
         help_text="Question that was answered"
-    )
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='ai_evaluations',
-        help_text="User who answered the question"
     )
     user_answer = models.TextField(
         help_text="The user's answer to the question"
@@ -179,7 +171,6 @@ class AIEvaluation(models.Model):
         blank=True,
         help_text="Time taken for AI evaluation in milliseconds"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         db_table = 'ai_evaluations'
@@ -197,7 +188,7 @@ class AIEvaluation(models.Model):
         return f"{self.user.email} - {question_preview} - {self.ai_score}"
 
 
-class AIReviewSession(models.Model):
+class AIReviewSession(BaseModel):
     """
     AI-enhanced review session tracking
     """
@@ -249,8 +240,6 @@ class AIReviewSession(models.Model):
         blank=True,
         help_text="Session notes or observations"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         db_table = 'ai_review_sessions'
@@ -273,16 +262,10 @@ class AIReviewSession(models.Model):
         return (self.questions_answered / self.questions_generated) * 100.0
 
 
-class WeeklyTest(models.Model):
+class WeeklyTest(BaseUserModel):
     """
     주간 종합 시험 모델 - 적응형 난이도 조절 기능 포함
     """
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='weekly_tests',
-        help_text="시험을 본 사용자"
-    )
     category = models.ForeignKey(
         'content.Category',
         on_delete=models.CASCADE,
@@ -399,8 +382,6 @@ class WeeklyTest(models.Model):
         default='draft',
         help_text="시험 상태"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         db_table = 'ai_weekly_tests'
@@ -541,16 +522,10 @@ class WeeklyTestQuestion(models.Model):
         return f"{self.weekly_test} - Q{self.order}"
 
 
-class ContentUnderstandingCheck(models.Model):
+class ContentUnderstandingCheck(BaseUserModel):
     """
     콘텐츠 이해도 검사 모델 - 작성 완료 후 AI가 이해도를 체크
     """
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='understanding_checks',
-        help_text="검사를 받은 사용자"
-    )
     content = models.ForeignKey(
         Content,
         on_delete=models.CASCADE,
@@ -582,7 +557,6 @@ class ContentUnderstandingCheck(models.Model):
     duration_seconds = models.IntegerField(
         help_text="검사 소요 시간 (초)"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         db_table = 'ai_content_understanding_checks'

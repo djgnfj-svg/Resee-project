@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -37,7 +38,6 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
                 raise serializers.ValidationError('비활성화된 계정입니다.')
 
             # 환경변수로 이메일 인증 강제 여부 제어
-            from django.conf import settings
             if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', False) and not user.is_email_verified:
                 raise serializers.ValidationError({
                     'email_verification_required': True,
@@ -66,8 +66,8 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'is_email_verified', 'is_staff', 'is_superuser', 'weekly_goal', 'created_at', 'updated_at', 'subscription')
-        read_only_fields = ('id', 'created_at', 'updated_at', 'is_email_verified', 'is_staff', 'is_superuser', 'subscription')
+        fields = ('id', 'email', 'username', 'is_email_verified', 'is_staff', 'is_superuser', 'weekly_goal', 'date_joined', 'subscription')
+        read_only_fields = ('id', 'date_joined', 'is_email_verified', 'is_staff', 'is_superuser', 'subscription')
     
     def get_subscription(self, obj):
         """Get subscription data"""
