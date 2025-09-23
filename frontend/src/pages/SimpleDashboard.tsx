@@ -104,11 +104,13 @@ const SimpleDashboard: React.FC = () => {
   const { data: analyticsData, isLoading: analyticsLoading } = useQuery<AdvancedAnalyticsData>({
     queryKey: ['advanced-analytics'],
     queryFn: () => api.get('/analytics/advanced/').then(res => res.data),
+    enabled: false, // Temporarily disable until backend endpoint is implemented
   });
 
   const { data: calendarData, isLoading: calendarLoading } = useQuery<CalendarData>({
     queryKey: ['learning-calendar'],
     queryFn: () => api.get('/analytics/calendar/').then(res => res.data),
+    enabled: false, // Temporarily disable until backend endpoint is implemented
     retry: 3,
     retryDelay: 1000,
   });

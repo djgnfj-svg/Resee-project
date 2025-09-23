@@ -215,3 +215,80 @@ docker-compose exec backend python manage.py health_check
 - **Worker Configuration**: Single Gunicorn worker with 2 threads optimized for Supabase
 - **Backup System**: Removed local backup scripts (Supabase handles backups)
 - **Health Checks**: Updated to check local cache instead of Redis
+
+## End-to-End Testing Results (2025-09-24)
+
+Comprehensive Playwright MCP testing performed covering user journeys, core functionality, responsive design, and performance.
+
+### ✅ Verified Features
+
+**Core Application Flow**:
+- Homepage loads correctly at `http://localhost`
+- Dashboard displays user analytics (reviewtest님 with 12 content items, 2 reviews due, 85.7% success rate)
+- Content management shows 12 programming topics, all scheduled for tomorrow review
+- Review interface displays Ebbinghaus system with keyboard shortcut instructions
+
+**Responsive Design**:
+- Mobile (375px): Hamburger menu appears and functions correctly
+- Tablet (768px): Layout adapts properly with navigation visible
+- Desktop (1920px): Full navigation and optimal layout
+
+**Authentication & Navigation**:
+- User session maintained within single page
+- Navigation between main sections (Dashboard, Content, Review) works
+- Theme toggle (light/dark mode) functional
+
+**Ebbinghaus Review System Core**:
+- Review scheduling algorithm visible ("첫 번째 복습" status)
+- Content display with difficulty levels (보통) and categories (경제)
+- Keyboard shortcut instructions displayed (Space, 1, 2, 3)
+
+### ❌ Known Issues
+
+**Critical Review System Issues**:
+- ReviewControls component not rendering (모름/애매함/기억함 buttons missing)
+- Keyboard shortcuts (1, 2, 3) not triggering review completion
+- Review state management issue preventing full review workflow
+
+**Performance & Network Issues**:
+- Multiple 404 errors on analytics endpoints:
+  - `/api/analytics/advanced/` (4 requests)
+  - `/api/analytics/calendar/` (4 requests)
+- Authentication state not persistent across page navigation
+- Bundle.js served with 304/200 status (acceptable caching)
+
+**Data Consistency**:
+- User "reviewtest님" on FREE plan but has 12/3 content items (limit exceeded)
+- Subscription tier enforcement not working correctly
+
+### 🔧 Recommendations
+
+**High Priority**:
+1. Fix ReviewControls rendering in `frontend/src/components/review/ReviewControls.tsx`
+2. Debug review completion state management in `useReviewLogic.ts`
+3. Implement missing analytics endpoints or remove calls
+4. Fix authentication persistence across navigation
+
+**Medium Priority**:
+1. Enforce subscription limits properly for FREE tier users
+2. Add error handling for failed API requests
+3. Optimize React Query invalidation strategy
+
+**Testing Architecture**:
+- Use Playwright MCP for systematic E2E testing
+- Test mobile-first responsive design
+- Verify keyboard shortcuts in review system
+- Monitor network requests for performance bottlenecks
+
+### AI Features Status (Post-Removal)
+
+**Removed Components**:
+- AI question generation pipeline (`ai_review/services/`)
+- Anthropic Claude API integration
+- AI-powered review suggestions
+- Rate limiting for AI features
+
+**Remaining AI References**:
+- Environment variables (`ANTHROPIC_API_KEY`, `AI_USE_MOCK_RESPONSES`) still in settings
+- Some AI-related code may remain in codebase but inactive
+- Subscription tier AI limits still defined but unused
