@@ -3,7 +3,25 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-Resee is a smart review platform leveraging Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose with 5 containers: Backend, Frontend, PostgreSQL, Redis, and Nginx.
+Resee is a smart review platform leveraging Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose with 5 containers: Backend, Frontend, PostgreSQL, and Nginx. Uses local PostgreSQL for development and Supabase for production.
+
+## 접속 방법 (Access URLs)
+
+### 개발 환경 접속
+```bash
+# 1. Nginx를 통한 통합 접속 (권장)
+http://localhost          # 또는 http://localhost:80
+# → Frontend + Backend API 통합, 프로덕션과 동일한 구조
+
+# 2. 개발 서버 직접 접속
+http://localhost:3000     # React 개발 서버 (Hot reload 지원)
+http://localhost:8000/api # Django API 서버 직접 접속
+
+# 3. 관리자 페이지
+http://localhost:8000/admin  # Django Admin
+```
+
+**중요**: Nginx 통합 접속(`http://localhost`)을 사용하면 프로덕션 환경과 동일한 구조로 테스트할 수 있습니다.
 
 ## Common Development Commands
 
@@ -15,6 +33,7 @@ docker-compose up -d
 # View logs
 docker-compose logs -f backend
 docker-compose logs -f frontend
+docker-compose logs -f nginx
 ```
 
 ### Backend Commands
@@ -70,7 +89,7 @@ The review system implements Ebbinghaus forgetting curve theory through a synchr
 **AI Question Generation Pipeline**:
 - Frontend triggers via `useAIFeatures` hook → Backend `ai_review/views.py` → `ai_review/services/` (Claude API or mock based on `AI_USE_MOCK_RESPONSES`)
 - Rate limiting enforced at view level based on subscription tier
-- Results cached in Redis for 24 hours
+- Results cached in local memory for 24 hours
 
 **Review Scheduling System**:
 - `ReviewSchedule` model tracks progress with `interval_index` (0-7 based on tier)
@@ -80,25 +99,48 @@ The review system implements Ebbinghaus forgetting curve theory through a synchr
 
 ### Critical Environment Variables
 
-**Backend** (`.env` for dev, `.env.prod` for production):
-- `DJANGO_SETTINGS_MODULE`: `resee.settings.development` or `resee.settings.production`
+**Development** (`.env`):
+- `DJANGO_SETTINGS_MODULE`: `resee.settings.development`
+- `DATABASE_URL`: `postgresql://postgres:postgres123@postgres:5432/resee_dev` (Local Docker PostgreSQL)
+- `ANTHROPIC_API_KEY`: Optional for dev (uses mock when not set)
+- `ENFORCE_EMAIL_VERIFICATION`: `False` to skip email verification
+- `AI_USE_MOCK_RESPONSES`: `True` to avoid API costs
+
+**Production** (`.env.prod`):
+- `DJANGO_SETTINGS_MODULE`: `resee.settings.production`
+- `DATABASE_URL`: Supabase PostgreSQL connection string
+- `SUPABASE_URL`: Supabase project API URL
+- `SUPABASE_ANON_KEY`: Supabase anonymous key for API access
 - `ANTHROPIC_API_KEY`: Required for AI features
-- `ENFORCE_EMAIL_VERIFICATION`: Set to `False` in dev to skip email verification
-- `AI_USE_MOCK_RESPONSES`: Set to `True` in dev to avoid API costs
+- `ENFORCE_EMAIL_VERIFICATION`: `True` for production
+- `AI_USE_MOCK_RESPONSES`: `False` for real AI responses
 
 **Frontend**:
 - `REACT_APP_API_URL`: Must match backend URL (`http://localhost:8000/api` for dev)
 - `REACT_APP_GOOGLE_CLIENT_ID`: Optional for Google OAuth
 
-## Production Deployment
+## Environment Setup
 
+### Local Development
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Start services (PostgreSQL, Backend, Frontend, Nginx)
+docker-compose up -d
+
+# Apply migrations
+docker-compose exec backend python manage.py migrate
+
+# Create superuser (optional)
+docker-compose exec backend python manage.py createsuperuser
+```
+
+### Production Deployment
 ```bash
 # Prepare production environment
-cp .env.example .env.prod
-# Edit .env.prod with production values
-
-# Run health checks
-docker-compose exec backend python manage.py health_check --detailed
+cp .env.prod.example .env.prod
+# Edit .env.prod with production values (Supabase credentials)
 
 # Deploy with production compose file
 docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
@@ -137,10 +179,25 @@ docker-compose exec backend python manage.py collectstatic --noinput
 ### Performance Optimization
 - Use `select_related()` and `prefetch_related()` for Django queries
 - Implement pagination (default: 20 items per page)
-- Cache expensive operations in Redis
+- Cache expensive operations in local memory cache
 - Frontend uses React Query for server state management
 
 ### Testing Requirements
 - Backend: 70% coverage minimum (`pytest --cov`)
 - Frontend: 70% coverage minimum (`npm run test:coverage`)
 - Run linting before commits: `npm run lint` and `black .`
+
+## Test Accounts (Supabase Production)
+
+### Admin Account
+- **Email**: `superadmin@reseeall.com`
+- **Password**: `Admin@123456`
+- **Role**: Superuser with full admin access
+- **Subscription**: PRO tier
+
+### Portfolio Demo Account
+- **Email**: `portfolio@reseeall.com`
+- **Password**: `Portfolio@123`
+- **Role**: Regular user with 6 months of learning history
+- **Subscription**: PRO tier
+- **Content**: 3 categories, 4 contents with review history
