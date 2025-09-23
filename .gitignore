@@ -85,3 +85,5 @@ debug_utils.py
 # Resume and personal documents
 RESUME-*.md
 README-DEPLOYMENT.md
+.env.prod
+.env
