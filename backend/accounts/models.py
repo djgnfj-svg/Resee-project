@@ -1,12 +1,16 @@
+import logging
 import secrets
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+
+from resee.models import BaseModel, TimestampMixin
 
 
 class UserManager(BaseUserManager):
@@ -69,9 +73,6 @@ class User(AbstractUser):
         help_text='주간 복습 목표 횟수'
     )
     
-    # 생성일자, 업데이트일자
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []  # No additional required fields for email-only auth
@@ -122,145 +123,63 @@ class User(AbstractUser):
     
     def get_max_review_interval(self):
         """Get maximum review interval based on subscription"""
-        if hasattr(self, 'subscription') and self.subscription.is_active and not self.subscription.is_expired():
-            return self.subscription.max_interval_days
-        return 3  # Default FREE tier
-    
+        from .services import SubscriptionService
+        return SubscriptionService(self).get_max_review_interval()
+
     def has_active_subscription(self):
         """Check if user has an active subscription"""
-        if not hasattr(self, 'subscription'):
-            return False
-        return self.subscription.is_active and not self.subscription.is_expired()
+        from .services import SubscriptionService
+        return SubscriptionService(self).has_active_subscription()
     
     def can_upgrade_subscription(self):
         """Check if user can upgrade subscription"""
-        from django.conf import settings
-        if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not self.is_email_verified:
-            return False
-        
-        if hasattr(self, 'subscription') and self.subscription.tier == SubscriptionTier.PRO:
-            return False
-        
-        return True
-    
+        from .services import PermissionService
+        return PermissionService(self).can_upgrade_subscription()
+
     def can_use_ai_features(self):
         """Check if user can use AI features based on subscription"""
-        from django.conf import settings
-        if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not self.is_email_verified:
-            return False
-            
-        if not hasattr(self, 'subscription'):
-            return False
-            
-        return self.subscription.is_active and not self.subscription.is_expired()
+        from .services import PermissionService
+        return PermissionService(self).can_use_ai_features()
     
     def get_ai_question_limit(self):
         """Get AI question generation limit per day based on subscription tier"""
-        if not hasattr(self, 'subscription') or not self.subscription.is_active or self.subscription.is_expired():
-            return 0
-        
-        tier_limits = {
-            SubscriptionTier.FREE: 0,         # No AI features for free users
-            SubscriptionTier.BASIC: 30,       # 30 questions per day
-            SubscriptionTier.PRO: 200,        # 200 questions per day (unlimited-like)
-        }
-        
-        return tier_limits.get(self.subscription.tier, 0)
-    
+        from .services import PermissionService
+        return PermissionService(self).get_ai_question_limit()
+
     def get_ai_features_list(self):
         """Get list of AI features available for user's subscription tier"""
-        if not self.can_use_ai_features():
-            return []
-
-        tier_features = {
-            SubscriptionTier.FREE: [],
-            SubscriptionTier.BASIC: [
-                'multiple_choice',
-                'ai_chat',
-                'explanation_evaluation'  # 서술형 평가 추가
-            ],
-            SubscriptionTier.PRO: [
-                'multiple_choice',
-                'fill_blank',
-                'blur_processing',
-                'ai_chat',
-                'explanation_evaluation'
-            ]
-        }
-
-        return tier_features.get(self.subscription.tier, [])
+        from .services import PermissionService
+        return PermissionService(self).get_ai_features_list()
 
     def get_content_limit(self):
         """Get content creation limit based on subscription tier"""
-        if not hasattr(self, 'subscription') or not self.subscription.is_active or self.subscription.is_expired():
-            tier = SubscriptionTier.FREE
-        else:
-            tier = self.subscription.tier
-
-        tier_limits = {
-            SubscriptionTier.FREE: 3,       # 3 contents for free users
-            SubscriptionTier.BASIC: 10,     # 10 contents for basic users
-            SubscriptionTier.PRO: 50,       # 50 contents for pro users
-        }
-
-        return tier_limits.get(tier, 3)
+        from .services import PermissionService
+        return PermissionService(self).get_content_limit()
 
     def can_create_content(self):
         """Check if user can create more content based on subscription limit"""
-        from content.models import Content
-        current_count = Content.objects.filter(author=self).count()
-        return current_count < self.get_content_limit()
+        from .services import PermissionService
+        return PermissionService(self).can_create_content()
 
     def get_content_usage(self):
         """Get content usage statistics for the user"""
-        from content.models import Content
-        current_count = Content.objects.filter(author=self).count()
-        limit = self.get_content_limit()
-
-        return {
-            'current': current_count,
-            'limit': limit,
-            'remaining': max(0, limit - current_count),
-            'percentage': (current_count / limit * 100) if limit > 0 else 0,
-            'can_create': current_count < limit,
-            'tier': self.subscription.tier if hasattr(self, 'subscription') else SubscriptionTier.FREE
-        }
+        from .services import PermissionService
+        return PermissionService(self).get_content_usage()
 
     def get_category_limit(self):
         """Get category creation limit based on subscription tier"""
-        if not hasattr(self, 'subscription') or not self.subscription.is_active or self.subscription.is_expired():
-            tier = SubscriptionTier.FREE
-        else:
-            tier = self.subscription.tier
-
-        tier_limits = {
-            SubscriptionTier.FREE: 3,       # 3 categories for free users
-            SubscriptionTier.BASIC: 15,     # 15 categories for basic users
-            SubscriptionTier.PRO: 50,       # 50 categories for pro users
-        }
-
-        return tier_limits.get(tier, 3)
+        from .services import PermissionService
+        return PermissionService(self).get_category_limit()
 
     def can_create_category(self):
         """Check if user can create more categories based on subscription limit"""
-        from content.models import Category
-        current_count = Category.objects.filter(user=self).count()
-        return current_count < self.get_category_limit()
+        from .services import PermissionService
+        return PermissionService(self).can_create_category()
 
     def get_category_usage(self):
         """Get category usage statistics for the user"""
-        from content.models import Category
-        current_count = Category.objects.filter(user=self).count()
-        limit = self.get_category_limit()
-
-        return {
-            'current': current_count,
-            'limit': limit,
-            'remaining': max(0, limit - current_count),
-            'percentage': (current_count / limit * 100) if limit > 0 else 0,
-            'can_create': current_count < limit,
-            'tier': self.subscription.tier if hasattr(self, 'subscription') else SubscriptionTier.FREE
-        }
+        from .services import PermissionService
+        return PermissionService(self).get_category_usage()
 
 
 class SubscriptionTier(models.TextChoices):
@@ -276,7 +195,7 @@ class BillingCycle(models.TextChoices):
     YEARLY = 'yearly', '연간'
 
 
-class Subscription(models.Model):
+class Subscription(BaseModel):
     """User subscription model"""
     user = models.OneToOneField(
         User, 
@@ -341,8 +260,6 @@ class Subscription(models.Model):
         blank=True,
         help_text='Next billing amount'
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         db_table = 'accounts_subscription'
@@ -473,7 +390,7 @@ class PaymentHistory(models.Model):
             return dict(SubscriptionTier.choices).get(self.to_tier, self.to_tier)
 
 
-class AIUsageTracking(models.Model):
+class AIUsageTracking(BaseModel):
     """Track daily AI feature usage per user"""
     user = models.ForeignKey(
         User,
@@ -492,8 +409,6 @@ class AIUsageTracking(models.Model):
         default=0,
         help_text='Number of AI evaluations performed on this date'
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         db_table = 'accounts_ai_usage_tracking'
@@ -583,7 +498,7 @@ class AIUsageTracking(models.Model):
         }
 
 
-class BillingSchedule(models.Model):
+class BillingSchedule(BaseModel):
     """Track future billing schedules and payments"""
     
     class ScheduleStatus(models.TextChoices):
@@ -636,8 +551,6 @@ class BillingSchedule(models.Model):
         blank=True,
         help_text='When this billing was processed'
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         db_table = 'accounts_billing_schedule'

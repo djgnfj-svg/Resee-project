@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-Resee is a smart review platform leveraging Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose with 5 containers: Backend, Frontend, PostgreSQL, and Nginx. Uses local PostgreSQL for development and Supabase for production.
+Resee is a smart review platform leveraging Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose. Uses local PostgreSQL for development and Supabase for production with single Gunicorn worker configuration.
 
 ## 접속 방법 (Access URLs)
 
@@ -142,12 +142,15 @@ docker-compose exec backend python manage.py createsuperuser
 cp .env.prod.example .env.prod
 # Edit .env.prod with production values (Supabase credentials)
 
-# Deploy with production compose file
+# Deploy with production compose file (optimized for single worker)
 docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 
 # Initial setup
 docker-compose exec backend python manage.py migrate
 docker-compose exec backend python manage.py collectstatic --noinput
+
+# Health check
+docker-compose exec backend python manage.py health_check
 ```
 
 ## Key File Locations
@@ -166,7 +169,8 @@ docker-compose exec backend python manage.py collectstatic --noinput
 
 ### Configuration
 - **Django Settings**: `backend/resee/settings/{base,development,production}.py`
-- **Docker Compose**: `docker-compose.yml` (dev), `docker-compose.prod.yml` (prod)
+- **Docker Compose**: `docker-compose.yml` (dev), `docker-compose.prod.yml` (prod, single worker)
+- **Cache System**: Local memory cache (no Redis dependency)
 
 ## Development Guidelines
 
@@ -179,8 +183,9 @@ docker-compose exec backend python manage.py collectstatic --noinput
 ### Performance Optimization
 - Use `select_related()` and `prefetch_related()` for Django queries
 - Implement pagination (default: 20 items per page)
-- Cache expensive operations in local memory cache
+- Cache expensive operations in local memory cache (24-hour TTL)
 - Frontend uses React Query for server state management
+- Single Gunicorn worker with 2 threads for production efficiency
 
 ### Testing Requirements
 - Backend: 70% coverage minimum (`pytest --cov`)
@@ -201,3 +206,12 @@ docker-compose exec backend python manage.py collectstatic --noinput
 - **Role**: Regular user with 6 months of learning history
 - **Subscription**: PRO tier
 - **Content**: 3 categories, 4 contents with review history
+
+## Architecture Notes
+
+### Production Optimizations (2025-09)
+- **Database**: Migrated from local PostgreSQL to Supabase for production
+- **Cache**: Removed Redis dependency, using Django local memory cache
+- **Worker Configuration**: Single Gunicorn worker with 2 threads optimized for Supabase
+- **Backup System**: Removed local backup scripts (Supabase handles backups)
+- **Health Checks**: Updated to check local cache instead of Redis
