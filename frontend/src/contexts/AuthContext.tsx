@@ -80,17 +80,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (data: RegisterData) => {
     const response = await authAPI.register(data);
-    
+
     // If email verification is required, don't auto-login
     if (response.data?.requires_email_verification) {
       return response;
     }
-    
+
     // Old behavior: automatically log in for users who don't need email verification
     await login({ email: data.email, password: data.password });
-    // Show welcome modal for new users
-    setShowWelcome(true);
-    
+    // Skip welcome modal and go directly to dashboard
+
     return response;
   };
 
@@ -105,10 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // 사용자 정보 설정
       setUser(response.user);
       
-      // 신규 사용자인 경우 환영 모달 표시
-      if (response.is_new_user) {
-        setShowWelcome(true);
-      }
+      // Skip welcome modal for Google signups too
       
       return response;
     } catch (error) {

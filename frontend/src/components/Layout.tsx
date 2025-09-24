@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
-import WelcomeModal from './WelcomeModal';
 import PWAInstallButton from './PWAInstallButton';
 import NetworkStatus from './NetworkStatus';
 import Footer from './Footer';
@@ -12,7 +11,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout, isAuthenticated, showWelcome, setShowWelcome } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const location = useLocation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -221,12 +220,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       <Footer />
 
-      {/* Welcome Modal for new users */}
-      <WelcomeModal
-        isOpen={showWelcome}
-        onClose={() => setShowWelcome(false)}
-        userName={user?.username || user?.email.split('@')[0]}
-      />
+      {/* Welcome Modal removed - users go directly to dashboard */}
     </div>
   );
 };
