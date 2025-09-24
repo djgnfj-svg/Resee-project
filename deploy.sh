@@ -82,20 +82,21 @@ log_success ".env.prod 파일을 찾았습니다."
 log_info "필수 환경변수를 검증합니다..."
 source .env.prod
 
-# 필수 환경변수 배열
+# 필수 환경변수 배열 (AI 제거, Supabase 사용)
 required_vars=(
     "SECRET_KEY"
-    "ANTHROPIC_API_KEY"
+    "DATABASE_URL"
+    "SUPABASE_URL"
+    "SUPABASE_ANON_KEY"
     "ALLOWED_HOSTS"
     "CSRF_TRUSTED_ORIGINS"
-    "POSTGRES_DB"
-    "POSTGRES_USER"
-    "POSTGRES_PASSWORD"
     "FRONTEND_URL"
     "ENFORCE_EMAIL_VERIFICATION"
     "EMAIL_HOST_USER"
     "EMAIL_HOST_PASSWORD"
     "DEFAULT_FROM_EMAIL"
+    "REACT_APP_API_URL"
+    "DJANGO_SETTINGS_MODULE"
 )
 
 missing_vars=()
