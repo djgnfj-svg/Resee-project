@@ -156,13 +156,17 @@ log_success "환경변수 설정 완료"
 log_info "기존 컨테이너 및 이미지 정리 중..."
 $COMPOSE_CMD -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
 
-# 사용하지 않는 이미지 정리 (빌드 캐시 포함)
+# 사용하지 않는 이미지 정리 (빌드 캐시 포함, 볼륨 제외)
 log_info "사용하지 않는 Docker 이미지 정리 중..."
-docker system prune -f --volumes 2>/dev/null || true
+docker system prune -f 2>/dev/null || true
 
 # frontend_build 볼륨 강제 재생성 (정적 파일 이슈 해결)
 log_info "frontend 빌드 볼륨 초기화 중..."
 docker volume rm resee-project_frontend_build 2>/dev/null || true
+
+# nginx 이미지 캐시도 제거 (설정 파일 변경 반영을 위해)
+log_info "nginx 이미지 캐시 제거 중..."
+docker rmi nginx:alpine 2>/dev/null || true
 
 # 이미지 빌드 및 컨테이너 시작
 log_info "Docker 이미지 빌드 및 컨테이너 시작... (5-10분 소요)"
@@ -251,9 +255,9 @@ fi
 echo ""
 
 echo "🌐 접속 정보:"
-echo "  메인 사이트: http://reseeall.com"
-echo "  API 상태: http://reseeall.com/api/health/"
-echo "  관리자: http://reseeall.com/admin/"
+echo "  메인 사이트: https://reseeall.com"
+echo "  API 상태: https://reseeall.com/api/health/"
+echo "  관리자: https://reseeall.com/admin/"
 echo ""
 echo "📧 이메일 인증:"
 echo "  - 회원가입 시 이메일 인증 필수"
