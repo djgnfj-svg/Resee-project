@@ -128,7 +128,6 @@ export interface DashboardData {
   total_content: number;
   success_rate: number;
   total_reviews_30_days: number;
-  streak_days: number;
 }
 
 export interface ResultDistribution {

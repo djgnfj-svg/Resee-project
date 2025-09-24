@@ -28,33 +28,11 @@ class DashboardStatsView(APIView):
         # 30-day success rate
         success_rate, total_reviews_30_days, _ = calculate_success_rate(user, days=30)
 
-        # Simple streak calculation
-        streak_days = self._calculate_streak(user)
-
         return Response({
             'today_reviews': today_reviews,
             'pending_reviews': pending_reviews,
             'total_content': total_content,
             'success_rate': success_rate,
             'total_reviews_30_days': total_reviews_30_days,
-            'streak_days': streak_days,
         })
 
-    def _calculate_streak(self, user):
-        """Calculate consecutive days of completed reviews"""
-        today = timezone.now().date()
-        streak = 0
-
-        for i in range(30):  # Check last 30 days max
-            check_date = today - timedelta(days=i)
-            has_review = ReviewHistory.objects.filter(
-                user=user,
-                review_date__date=check_date
-            ).exists()
-
-            if has_review:
-                streak += 1
-            else:
-                break
-
-        return streak

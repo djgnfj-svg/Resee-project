@@ -11,7 +11,7 @@ const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'notifications' | 'security' | 'data'>('notifications');
 
   // Fetch user profile
-  const { data: user, isLoading } = useQuery<User>({
+  const { isLoading } = useQuery<User>({
     queryKey: ['profile'],
     queryFn: authAPI.getProfile,
   });

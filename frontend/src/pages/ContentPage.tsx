@@ -7,10 +7,8 @@ import ContentFormV2 from '../components/ContentFormV2';
 import CategoryManager from '../components/CategoryManager';
 import ContentFilters from '../components/content/ContentFilters';
 import ContentList from '../components/content/ContentList';
-import { useAuth } from '../contexts/AuthContext';
 
 const ContentPage: React.FC = () => {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingContent, setEditingContent] = useState<Content | null>(null);
@@ -21,8 +19,6 @@ const ContentPage: React.FC = () => {
   const [expandedContents, setExpandedContents] = useState<Set<number>>(new Set());
   const [showCategoryManager, setShowCategoryManager] = useState<boolean>(false);
 
-  // Check if user can access AI features
-  const canUseAI = user?.subscription?.is_active && user?.is_email_verified;
 
   // Fetch contents
   const { data: contents = [], isLoading: contentsLoading } = useQuery<Content[]>({

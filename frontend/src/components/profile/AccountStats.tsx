@@ -17,7 +17,7 @@ const AccountStats: React.FC = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
               {stats?.total_content || 0}
@@ -35,12 +35,6 @@ const AccountStats: React.FC = () => {
               {stats?.success_rate ? `${Math.round(stats.success_rate)}%` : '0%'}
             </div>
             <div className="text-sm text-gray-600">성공률</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
-              {stats?.streak_days || 0}
-            </div>
-            <div className="text-sm text-gray-600">연속 일수</div>
           </div>
         </div>
       )}

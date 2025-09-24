@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import api from '../utils/api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SubscriptionTierInfo, SubscriptionUpgradeData, SubscriptionTier } from '../types';
 import { toast } from 'react-hot-toast';
-import BillingToggle from '../components/subscription/BillingToggle';
 import TierCard from '../components/subscription/TierCard';
 import EmailSignup from '../components/subscription/EmailSignup';
 
 const SubscriptionPage: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [billingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   // Get pricing based on billing cycle
   const getPrice = (monthlyPrice: number) => {
@@ -66,9 +64,6 @@ const SubscriptionPage: React.FC = () => {
     }
   ];
 
-  const getCurrentTierIndex = () => {
-    return subscriptionTiers.findIndex(tier => tier.name === user?.subscription?.tier) || 0;
-  };
 
   // Subscription API
   const subscriptionAPI = {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -30,6 +30,33 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   // Google Client ID가 설정되지 않았으면 컴포넌트를 렌더링하지 않음
   const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
+  const handleCredentialResponse = useCallback(async (response: any) => {
+    try {
+      const { credential } = response;
+
+      if (!credential) {
+        throw new Error('Google 인증 정보를 받지 못했습니다.');
+      }
+
+      // 백엔드 API 호출
+      await loginWithGoogle(credential);
+
+      // 커스텀 리다이렉트 경로가 있으면 우선 사용
+      if (redirectTo) {
+        navigate(redirectTo);
+      } else {
+        // 신규/기존 사용자 모두 대시보드로
+        navigate('/dashboard');
+      }
+
+      onSuccess?.();
+
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message || 'Google 로그인에 실패했습니다.';
+      onError?.(errorMessage);
+    }
+  }, [loginWithGoogle, navigate, redirectTo, onSuccess, onError]);
+
   const initializeGoogleSignIn = React.useCallback(() => {
     if (!window.google || !buttonRef.current) return;
 
@@ -49,7 +76,7 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       text: 'signin_with',
       logo_alignment: 'left',
     });
-  }, [clientId]);
+  }, [clientId, handleCredentialResponse]);
 
   useEffect(() => {
     // Google Client ID가 없으면 초기화하지 않음
@@ -71,34 +98,6 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       };
     }
   }, [clientId, initializeGoogleSignIn]);
-
-
-  const handleCredentialResponse = async (response: any) => {
-    try {
-      const { credential } = response;
-      
-      if (!credential) {
-        throw new Error('Google 인증 정보를 받지 못했습니다.');
-      }
-
-      // 백엔드 API 호출
-      const result = await loginWithGoogle(credential);
-      
-      // 커스텀 리다이렉트 경로가 있으면 우선 사용
-      if (redirectTo) {
-        navigate(redirectTo);
-      } else {
-        // 신규/기존 사용자 모두 대시보드로
-        navigate('/dashboard');
-      }
-      
-      onSuccess?.();
-      
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.message || 'Google 로그인에 실패했습니다.';
-      onError?.(errorMessage);
-    }
-  };
 
   // Google Client ID가 설정되지 않았으면 준비 중 버튼 표시
   if (!clientId || disabled) {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CheckIcon } from '@heroicons/react/24/outline';
 import { SubscriptionTierInfo, SubscriptionTier } from '../../types';
 
 interface TierCardProps {
@@ -19,8 +19,6 @@ const TierCard: React.FC<TierCardProps> = ({
   onUpgrade,
   upgrading = false,
 }) => {
-  const isCurrentTier = currentTier === tier.name;
-  const canUpgrade = tier.name !== 'free' && !tier.coming_soon && !isCurrentTier;
 
   return (
     <div className={`relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/25 border ${

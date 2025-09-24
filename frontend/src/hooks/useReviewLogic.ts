@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reviewAPI, contentAPI } from '../utils/api';
 import { ReviewSchedule, Category, TodayReviewsResponse } from '../types';
@@ -44,7 +44,7 @@ export const useReviewLogic = () => {
   const queryClient = useQueryClient();
 
   // Fetch today's reviews
-  const { data: reviewData, isLoading, refetch } = useQuery<ReviewSchedule[]>({
+  const { data: reviewData, isLoading } = useQuery<ReviewSchedule[]>({
     queryKey: ['todayReviews', selectedCategory],
     queryFn: async () => {
       const params = selectedCategory !== 'all' ? `?category_slug=${selectedCategory}` : '';
@@ -63,7 +63,7 @@ export const useReviewLogic = () => {
     }
   });
 
-  const reviews: ReviewSchedule[] = reviewData || [];
+  const reviews: ReviewSchedule[] = useMemo(() => reviewData || [], [reviewData]);
 
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({

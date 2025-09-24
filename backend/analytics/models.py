@@ -25,7 +25,6 @@ class DailyStats(BaseModel):
         validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
         help_text="Daily success rate percentage"
     )
-    study_streak_days = models.IntegerField(default=0, help_text="Current study streak")
 
     class Meta:
         db_table = 'analytics_daily_stats'

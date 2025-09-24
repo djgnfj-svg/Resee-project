@@ -11,14 +11,12 @@ interface Stat {
 
 interface DashboardStatsProps {
   todayReviews: number;
-  streakDays: number;
   totalContent: number;
   successRate: number;
 }
 
 const DashboardStats: React.FC<DashboardStatsProps> = ({
   todayReviews,
-  streakDays,
   totalContent,
   successRate
 }) => {
@@ -30,14 +28,6 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
       icon: '🎯',
       color: 'text-blue-600',
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-    },
-    {
-      name: '복습 연속일',
-      value: streakDays,
-      unit: '일',
-      icon: '🔥',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50 dark:bg-orange-900/20',
     },
     {
       name: '전체 콘텐츠',

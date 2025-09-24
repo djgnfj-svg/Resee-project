@@ -7,8 +7,4 @@ export const analyticsAPI = {
     return response.data;
   },
 
-  getReviewStats: async (): Promise<Record<string, any>> => {
-    const response = await api.get('/analytics/review-stats/');
-    return response.data;
-  },
 };

@@ -5,7 +5,6 @@ import {
   CreateContentData,
   UpdateContentData,
   CreateCategoryData,
-  PaginatedResponse,
   ContentListResponse,
   CategoryListResponse
 } from '../../types';

@@ -6,7 +6,6 @@ export { subscriptionAPI } from './api/subscription';
 export { analyticsAPI } from './api/analytics';
 
 // Re-export individual functions for backward compatibility
-export { authAPI as weeklyGoalAPI } from './api/auth'; // updateWeeklyGoal is in authAPI
 export const verifyEmail = (token: string, email: string) => {
   return import('./api/auth').then(({ authAPI }) => authAPI.verifyEmail(token, email));
 };

@@ -3,7 +3,9 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-Resee is a smart review platform leveraging Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose. Uses local PostgreSQL for development and Supabase for production with single Gunicorn worker configuration.
+Resee is a focused spaced repetition learning platform implementing the Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose. Uses local PostgreSQL for development and Supabase for production with single Gunicorn worker configuration.
+
+**Key Focus**: Pure learning tool without gamification - focuses on effective knowledge retention through scientifically-proven spaced repetition intervals.
 
 ## 접속 방법 (Access URLs)
 
@@ -77,7 +79,7 @@ The review system implements Ebbinghaus forgetting curve theory through a synchr
 
 1. **Content Creation Flow**: User creates content → Django signal (`content/signals.py`) → ReviewSchedule created synchronously → Available for review next day
 2. **Review Process**: User reviews content → Update `interval_index` based on performance → Calculate next review date using tier-specific intervals
-3. **Subscription Tiers Control**: Review intervals (FREE: [1,3], BASIC: [1,3,7,14,30,60,90], PRO: [1,3,7,14,30,60,120,180]) and AI usage limits (FREE: 0/day, BASIC: 30/day, PRO: 200/day)
+3. **Subscription Tiers Control**: Review intervals (FREE: [1,3], BASIC: [1,3,7,14,30,60,90], PRO: [1,3,7,14,30,60,120,180]) based on Ebbinghaus forgetting curve
 
 ### Cross-Component Integrations
 
@@ -86,34 +88,25 @@ The review system implements Ebbinghaus forgetting curve theory through a synchr
 - Token refresh handled automatically via `refreshAuthToken()` in `api.ts`
 - Subscription tier checked in views via `has_subscription_permission()` decorator
 
-**AI Question Generation Pipeline**:
-- Frontend triggers via `useAIFeatures` hook → Backend `ai_review/views.py` → `ai_review/services/` (Claude API or mock based on `AI_USE_MOCK_RESPONSES`)
-- Rate limiting enforced at view level based on subscription tier
-- Results cached in local memory for 24 hours
-
 **Review Scheduling System**:
 - `ReviewSchedule` model tracks progress with `interval_index` (0-7 based on tier)
-- `review/utils.py:calculate_next_review_date()` implements the core algorithm
+- `review/utils.py:calculate_next_review_date()` implements the core Ebbinghaus algorithm
 - Frontend `ReviewPage.tsx` fetches today's reviews via `/api/review/today/`
-- Performance recorded in `ReviewHistory` for analytics
+- Performance recorded in `ReviewHistory` for simple progress tracking
 
 ### Critical Environment Variables
 
 **Development** (`.env`):
 - `DJANGO_SETTINGS_MODULE`: `resee.settings.development`
 - `DATABASE_URL`: `postgresql://postgres:postgres123@postgres:5432/resee_dev` (Local Docker PostgreSQL)
-- `ANTHROPIC_API_KEY`: Optional for dev (uses mock when not set)
 - `ENFORCE_EMAIL_VERIFICATION`: `False` to skip email verification
-- `AI_USE_MOCK_RESPONSES`: `True` to avoid API costs
 
 **Production** (`.env.prod`):
 - `DJANGO_SETTINGS_MODULE`: `resee.settings.production`
 - `DATABASE_URL`: Supabase PostgreSQL connection string
 - `SUPABASE_URL`: Supabase project API URL
 - `SUPABASE_ANON_KEY`: Supabase anonymous key for API access
-- `ANTHROPIC_API_KEY`: Required for AI features
 - `ENFORCE_EMAIL_VERIFICATION`: `True` for production
-- `AI_USE_MOCK_RESPONSES`: `False` for real AI responses
 
 **Frontend**:
 - `REACT_APP_API_URL`: Must match backend URL (`http://localhost:8000/api` for dev)
@@ -159,10 +152,11 @@ docker-compose exec backend python manage.py health_check
 - **Ebbinghaus Algorithm**: `backend/review/utils.py`
 - **Review Schedule Signal**: `backend/content/signals.py`
 - **Subscription Logic**: `backend/accounts/models.py:Subscription`
-- **AI Services**: `backend/ai_review/services/`
+- **Simple Analytics**: `backend/analytics/views.py` (basic dashboard statistics only)
 
 ### Frontend Architecture
 - **API Client with JWT**: `frontend/src/utils/api.ts`
+- **Simple Dashboard**: `frontend/src/pages/SimpleDashboard.tsx` (focus on core metrics)
 - **Review System UI**: `frontend/src/pages/ReviewPage.tsx`
 - **Type Definitions**: `frontend/src/types/`
 - **Auth Context**: `frontend/src/contexts/AuthContext.tsx`
@@ -215,6 +209,8 @@ docker-compose exec backend python manage.py health_check
 - **Worker Configuration**: Single Gunicorn worker with 2 threads optimized for Supabase
 - **Backup System**: Removed local backup scripts (Supabase handles backups)
 - **Health Checks**: Updated to check local cache instead of Redis
+- **Gamification Removal**: Removed all streak tracking, achievement systems, and complex analytics (2025-09-25)
+- **Bundle Size**: Reduced frontend bundle by 123.99 kB through analytics component cleanup
 
 ## End-to-End Testing Results (2025-09-24)
 
@@ -224,7 +220,7 @@ Comprehensive Playwright MCP testing performed covering user journeys, core func
 
 **Core Application Flow**:
 - Homepage loads correctly at `http://localhost`
-- Dashboard displays user analytics (reviewtest님 with 12 content items, 2 reviews due, 85.7% success rate)
+- Dashboard displays simplified user metrics (content count, pending reviews, success rate)
 - Content management shows 12 programming topics, all scheduled for tomorrow review
 - Review interface displays Ebbinghaus system with keyboard shortcut instructions
 
@@ -250,29 +246,27 @@ Comprehensive Playwright MCP testing performed covering user journeys, core func
 - Keyboard shortcuts (1, 2, 3) not triggering review completion
 - Review state management issue preventing full review workflow
 
-**Performance & Network Issues**:
-- Multiple 404 errors on analytics endpoints:
-  - `/api/analytics/advanced/` (4 requests)
-  - `/api/analytics/calendar/` (4 requests)
+**Performance & Network Issues** (RESOLVED 2025-09-25):
+- ✅ Removed 404 errors on analytics endpoints (advanced analytics removed)
 - Authentication state not persistent across page navigation
-- Bundle.js served with 304/200 status (acceptable caching)
+- ✅ Bundle size optimized (reduced by 123.99 kB)
 
 **Data Consistency**:
-- User "reviewtest님" on FREE plan but has 12/3 content items (limit exceeded)
-- Subscription tier enforcement not working correctly
+- Subscription tier enforcement needs verification for FREE tier limits
+- Content limit validation should be implemented client-side
 
 ### 🔧 Recommendations
 
 **High Priority**:
 1. Fix ReviewControls rendering in `frontend/src/components/review/ReviewControls.tsx`
 2. Debug review completion state management in `useReviewLogic.ts`
-3. Implement missing analytics endpoints or remove calls
+3. ✅ RESOLVED: Removed complex analytics endpoints, using simple dashboard only
 4. Fix authentication persistence across navigation
 
 **Medium Priority**:
 1. Enforce subscription limits properly for FREE tier users
 2. Add error handling for failed API requests
-3. Optimize React Query invalidation strategy
+3. ✅ RESOLVED: Optimized React Query usage with simplified dashboard
 
 **Testing Architecture**:
 - Use Playwright MCP for systematic E2E testing
@@ -280,16 +274,62 @@ Comprehensive Playwright MCP testing performed covering user journeys, core func
 - Verify keyboard shortcuts in review system
 - Monitor network requests for performance bottlenecks
 
-### AI Features Status (Post-Removal)
+### Recent Major Changes (2025-09-25)
 
-**Removed Components**:
-- AI question generation pipeline (`ai_review/services/`)
-- Anthropic Claude API integration
-- AI-powered review suggestions
-- Rate limiting for AI features
+**✅ Gamification System Removal**:
+- Removed all streak tracking (study_streak_days, current_streak, max_streak)
+- Removed achievement statistics and perfect session tracking
+- Removed learning efficiency and performance metrics
+- Database migration applied: `analytics.0003_remove_gamification_fields`
 
-**Remaining AI References**:
-- Environment variables (`ANTHROPIC_API_KEY`, `AI_USE_MOCK_RESPONSES`) still in settings
-- Some AI-related code may remain in codebase but inactive
-- Subscription tier AI limits still defined but unused
-- ## **4-5. 스토리지 추가** 이게 이해가 안가네? 우리 supabase 쓰지 않나 저게 무슨소리임?
+**✅ Complex Analytics Cleanup**:
+- Removed advanced analytics components: ProgressVisualization, LearningCalendar
+- Removed chart components: PerformanceMetrics, WeeklyProgressChart, MonthlyTrendsChart, CategoryPieChart
+- Removed unused utilities: chart-helpers.ts, WeeklyGoalEditor
+- Simplified to basic dashboard with core metrics only
+
+**✅ Frontend Optimization**:
+- Removed recharts dependency (123.99 kB bundle reduction)
+- Cleaned up unused imports and interfaces
+- Simplified SimpleDashboard to focus on essential review metrics
+
+**✅ AI Features Status (Previously Removed)**:
+- AI question generation pipeline removed
+- Anthropic Claude API integration removed
+- AI-powered review suggestions removed
+- Legacy environment variables remain but unused
+
+**Current Focus**: Pure spaced repetition learning tool without distractions
+
+## Current System State (2025-09-25)
+
+### ✅ Core Features (Maintained)
+- **Ebbinghaus Spaced Repetition**: Scientific review intervals based on subscription tier
+- **Content Management**: Create, edit, and organize learning materials
+- **Review System**: Structured review workflow with performance tracking
+- **Subscription Tiers**: FREE (3-day max), BASIC (90-day), PRO (180-day) intervals
+- **User Authentication**: Email-based auth with JWT token management
+- **Responsive Design**: Mobile-first design with dark/light theme support
+
+### 🚫 Removed Features (Simplified)
+- Streak tracking and gamification elements
+- Complex analytics and performance charts
+- AI-powered question generation
+- Advanced progress visualizations
+- Achievement systems and badges
+- Weekly goal setting and efficiency metrics
+
+### 📊 Technical Metrics
+- **Frontend Bundle**: Reduced by 123.99 kB (removing recharts and complex analytics)
+- **Component Count**: Simplified to 88 TypeScript/React files
+- **Database**: Clean analytics tables (removed gamification fields)
+- **API Endpoints**: Focused on essential `/api/analytics/dashboard/` only
+- **Test Coverage**: Backend analytics tests passing (3/3)
+
+### 🎯 Architecture Philosophy
+**Focus on Learning Effectiveness**:
+- Minimize cognitive load and distractions
+- Prioritize scientifically-proven spaced repetition
+- Simple, intuitive user interface
+- Essential metrics only (reviews completed, success rate, content count)
+- Fast performance with optimized bundle size
