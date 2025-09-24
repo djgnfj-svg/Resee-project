@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { ExplanationEvaluationResponse } from '../types/ai-review';
 
 export interface ReviewState {
   selectedCategory: string;
@@ -9,12 +8,7 @@ export interface ReviewState {
   startTime: number;
   reviewsCompleted: number;
   totalSchedules: number;
-  reviewMode: 'card' | 'explanation';
-  userExplanation: string;
-  evaluationResult: ExplanationEvaluationResponse | null;
-  isEvaluating: boolean;
   showUpgradeModal: boolean;
-  showEvaluation: boolean;
 }
 
 export const useReviewState = () => {
@@ -25,22 +19,12 @@ export const useReviewState = () => {
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [reviewsCompleted, setReviewsCompleted] = useState(0);
   const [totalSchedules, setTotalSchedules] = useState(0);
-  
-  // Review mode states
-  const [reviewMode, setReviewMode] = useState<'card' | 'explanation'>('card');
-  const [userExplanation, setUserExplanation] = useState('');
-  const [evaluationResult, setEvaluationResult] = useState<ExplanationEvaluationResponse | null>(null);
-  const [isEvaluating, setIsEvaluating] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [showEvaluation, setShowEvaluation] = useState(false);
 
   const resetReviewState = useCallback(() => {
     setIsFlipped(false);
     setShowContent(false);
     setStartTime(Date.now());
-    setUserExplanation('');
-    setEvaluationResult(null);
-    setShowEvaluation(false);
   }, []);
 
   const resetCategoryState = useCallback(() => {
@@ -64,18 +48,8 @@ export const useReviewState = () => {
     setReviewsCompleted,
     totalSchedules,
     setTotalSchedules,
-    reviewMode,
-    setReviewMode,
-    userExplanation,
-    setUserExplanation,
-    evaluationResult,
-    setEvaluationResult,
-    isEvaluating,
-    setIsEvaluating,
     showUpgradeModal,
     setShowUpgradeModal,
-    showEvaluation,
-    setShowEvaluation,
     resetReviewState,
     resetCategoryState,
   };

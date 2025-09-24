@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .subscription_views import (subscription_cancel, subscription_detail,
                                  subscription_tiers, subscription_upgrade, subscription_downgrade, 
                                  payment_history, toggle_auto_renewal, billing_schedule)
-from .views import (AccountDeleteView, AIUsageView, EmailVerificationView,
+from .views import (AccountDeleteView, EmailVerificationView,
                     EmailSubscriptionView, GoogleOAuthView, PasswordChangeView, ProfileView,
                     ResendVerificationView, UserViewSet, WeeklyGoalUpdateView)
 
@@ -22,7 +22,6 @@ urlpatterns = [
     path('resend-verification/', ResendVerificationView.as_view(), name='resend-verification'),
     path('google-oauth/', GoogleOAuthView.as_view(), name='google-oauth'),
     path('weekly-goal/', WeeklyGoalUpdateView.as_view(), name='weekly-goal-update'),
-    path('ai-usage/', AIUsageView.as_view(), name='ai-usage'),
     path('email-signup/', EmailSubscriptionView.as_view(), name='email-signup'),
     # Subscription endpoints
     path('subscription/', subscription_detail, name='subscription-detail'),

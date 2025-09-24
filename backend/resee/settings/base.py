@@ -36,7 +36,6 @@ INSTALLED_APPS = [
     'content',
     'review',
     'analytics',  # includes business intelligence
-    'ai_review',
 ]
 
 MIDDLEWARE = [
@@ -149,7 +148,6 @@ REST_FRAMEWORK = {
         'registration': '3/min',
         'register': '3/min',
         'email': '10/hour',
-        'ai_endpoint': '50/hour',
     },
 }
 
@@ -226,12 +224,6 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False  # Will be overridden in development
 
 
-# AI Service Configuration
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
-AI_MODEL_NAME = 'claude-3-haiku-20240307'
-AI_MAX_TOKENS = 4000
-AI_TEMPERATURE = 0.7
-AI_USE_MOCK_RESPONSES = os.environ.get('AI_USE_MOCK_RESPONSES', 'True').lower() == 'true'
 
 
 # File Upload Configuration
@@ -274,7 +266,6 @@ LOGGING = {
 HEALTH_CHECK = {
     'DATABASE_TIMEOUT': 5,
     'CACHE_TIMEOUT': 3,  # Redis removed - Local Memory Cache
-    'AI_SERVICE_TIMEOUT': 10,
 }
 
 
@@ -284,7 +275,6 @@ HEALTH_CHECK = {
 
 # Feature Flags
 FEATURE_FLAGS = {
-    'ENABLE_AI_FEATURES': True,
     'ENABLE_WEEKLY_TESTS': True,
     'ENABLE_ANALYTICS': True,
     'ENABLE_PAYMENT_SYSTEM': True,
@@ -295,22 +285,18 @@ FEATURE_FLAGS = {
 SUBSCRIPTION_SETTINGS = {
     'FREE_TIER_LIMITS': {
         'max_content': 50,
-        'max_ai_questions': 10,
         'review_interval_days': 7,
     },
     'BASIC_TIER_LIMITS': {
         'max_content': 200,
-        'max_ai_questions': 50,
         'review_interval_days': 30,
     },
     'PREMIUM_TIER_LIMITS': {
         'max_content': 1000,
-        'max_ai_questions': 200,
         'review_interval_days': 60,
     },
     'PRO_TIER_LIMITS': {
         'max_content': -1,  # Unlimited
-        'max_ai_questions': -1,  # Unlimited
         'review_interval_days': 180,
     },
 }

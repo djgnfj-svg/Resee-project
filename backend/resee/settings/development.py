@@ -85,10 +85,6 @@ LOGGING['loggers'] = {
         'handlers': ['console'],
         'level': 'DEBUG',
     },
-    'ai_review': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
-    },
     'review': {
         'handlers': ['console'],
         'level': 'DEBUG',
@@ -116,11 +112,7 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'registration': '100/min', # Higher for development
     'register': '100/min',    # Higher for development
     'email': '1000/hour',     # Higher for development
-    'ai_endpoint': '1000/hour', # Higher for development
 }
-
-# Development AI settings (with fallbacks)
-AI_ENABLE_MOCK_RESPONSES = os.environ.get('AI_ENABLE_MOCK_RESPONSES', 'False') == 'True'
 
 # Development caching (shorter timeouts)
 CACHE_TIMEOUT_SHORT = 60  # 1 minute
@@ -152,11 +144,7 @@ STRIPE_PRICE_ID_PREMIUM = os.environ.get('STRIPE_PRICE_ID_PREMIUM')
 STRIPE_PRICE_ID_PRO = os.environ.get('STRIPE_PRICE_ID_PRO')
 
 # Development environment validation
-if not ANTHROPIC_API_KEY and not AI_ENABLE_MOCK_RESPONSES:
-    import warnings
-    warnings.warn("ANTHROPIC_API_KEY not set. AI features may not work.", UserWarning)
 
 # Development environment configuration complete
 # Google OAuth: Enabled if GOOGLE_OAUTH2_CLIENT_ID is set
 # Email verification: Controlled by ENFORCE_EMAIL_VERIFICATION
-# AI responses: Mock mode controlled by AI_ENABLE_MOCK_RESPONSES

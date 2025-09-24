@@ -34,7 +34,7 @@ class ReviewScheduleViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     
     # Query optimization configuration
     select_related_fields = ['content', 'content__category', 'user']
-    prefetch_related_fields = ['content__ai_questions']
+    prefetch_related_fields = []
     
     @swagger_auto_schema(
         operation_summary="복습 스케줄 목록 조회",
@@ -125,9 +125,7 @@ class TodayReviewView(APIView):
         ).select_related(
             'content',
             'content__category',
-            'content__author'
-        ).prefetch_related(
-            'content__ai_questions'
+            'user'
         ).order_by('next_review_date')
         
         # Category filter

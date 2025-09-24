@@ -4,7 +4,6 @@ export { contentAPI } from './api/content';
 export { reviewAPI } from './api/review';
 export { subscriptionAPI } from './api/subscription';
 export { analyticsAPI } from './api/analytics';
-export { aiReviewAPI } from './api/ai-review';
 
 // Re-export individual functions for backward compatibility
 export { authAPI as weeklyGoalAPI } from './api/auth'; // updateWeeklyGoal is in authAPI

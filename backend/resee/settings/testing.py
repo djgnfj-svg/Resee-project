@@ -86,17 +86,12 @@ CSRF_COOKIE_SECURE = False
 
 # Testing feature flags
 FEATURE_FLAGS.update({
-    'ENABLE_AI_FEATURES': True,
     'ENABLE_WEEKLY_TESTS': True,
     'ENABLE_ANALYTICS': True,
     'ENABLE_PAYMENT_SYSTEM': False,  # Disable payments in tests
     'ENABLE_DEBUG_TOOLBAR': False,
     'ENABLE_DETAILED_LOGGING': False,
 })
-
-# Mock AI settings for testing
-AI_ENABLE_MOCK_RESPONSES = True
-ANTHROPIC_API_KEY = 'test-api-key'
 
 # Mock OAuth settings for testing
 GOOGLE_OAUTH2_CLIENT_ID = 'test-google-client-id'
@@ -132,7 +127,6 @@ class DisableMigrations:
 # Disable problematic migrations in tests
 MIGRATION_MODULES = {
     'content': None,
-    'ai_review': None,
     'accounts': None,
     'review': None,
     'analytics': None,
@@ -150,22 +144,18 @@ CACHE_TIMEOUT_LONG = 1
 SUBSCRIPTION_SETTINGS = {
     'FREE_TIER_LIMITS': {
         'max_content': 5,
-        'max_ai_questions': 2,
         'review_interval_days': 7,
     },
     'BASIC_TIER_LIMITS': {
         'max_content': 10,
-        'max_ai_questions': 5,
         'review_interval_days': 30,
     },
     'PREMIUM_TIER_LIMITS': {
         'max_content': 20,
-        'max_ai_questions': 10,
         'review_interval_days': 60,
     },
     'PRO_TIER_LIMITS': {
         'max_content': -1,  # Unlimited
-        'max_ai_questions': -1,  # Unlimited
         'review_interval_days': 180,
     },
 }

@@ -57,8 +57,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
       '정말 구독을 취소하시겠습니까?\n\n' +
       '구독을 취소하면:\n' +
       '• 무료 플랜으로 변경됩니다\n' +
-      '• 복습 간격이 3일로 제한됩니다\n' +
-      '• AI 기능 사용이 제한됩니다\n\n' +
+      '• 복습 간격이 3일로 제한됩니다\n\n' +
       '이 작업은 즉시 적용되며 되돌릴 수 없습니다.'
     )) {
       cancelSubscriptionMutation.mutate();

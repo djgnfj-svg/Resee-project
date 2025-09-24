@@ -58,11 +58,6 @@ def validate_environment():
         except:
             pass
     
-    try:
-        if globals().get('ANTHROPIC_API_KEY') == 'test-api-key' and environment == 'production':
-            warnings.append("CRITICAL: Using test AI API key in production!")
-    except:
-        pass
     
     return warnings
 
