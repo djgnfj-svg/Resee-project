@@ -7,10 +7,6 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <h3 className="text-white font-semibold mb-3">Resee</h3>
-            <p className="text-sm">
-              스마트한 복습으로 지식을 오래 기억하세요.
-              에빙하우스 망각곡선 이론 기반의 효과적인 학습 플랫폼
-            </p>
           </div>
           
           <div>
