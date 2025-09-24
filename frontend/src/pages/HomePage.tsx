@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [scrollY, setScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Redirect authenticated users to dashboard
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
 
@@ -15,7 +22,7 @@ const HomePage: React.FC = () => {
     setTimeout(() => setIsVisible(true), 100);
 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="text-center">

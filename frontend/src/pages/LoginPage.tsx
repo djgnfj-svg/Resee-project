@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,7 +6,7 @@ import { LoginData } from '../types';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 
 const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
@@ -17,6 +17,13 @@ const LoginPage: React.FC = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginData>();
 
   const from = location.state?.from?.pathname || '/dashboard';
+
+  useEffect(() => {
+    // Redirect authenticated users to dashboard
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const onSubmit = async (data: LoginData) => {
     setIsLoading(true);

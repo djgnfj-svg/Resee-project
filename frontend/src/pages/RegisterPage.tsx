@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,7 +6,7 @@ import { RegisterData } from '../types';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 
 const RegisterPage: React.FC = () => {
-  const { register: registerUser } = useAuth();
+  const { register: registerUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -17,6 +17,13 @@ const RegisterPage: React.FC = () => {
   const password = watch('password');
   const termsAgreed = watch('terms_agreed');
   const privacyAgreed = watch('privacy_agreed');
+
+  useEffect(() => {
+    // Redirect authenticated users to dashboard
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const onSubmit = async (data: RegisterData) => {
     setIsLoading(true);
