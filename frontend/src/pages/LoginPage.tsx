@@ -78,20 +78,16 @@ const LoginPage: React.FC = () => {
             <Link to="/" className="inline-block">
               <h1 className="text-4xl font-bold gradient-text mb-2">Resee</h1>
             </Link>
-            <p className="text-sm text-gray-600 dark:text-gray-400">과학적 복습 플랫폼</p>
           </div>
           
-          <h2 className="mt-8 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
-            다시 만나서 반가워요!
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            학습을 계속하려면 로그인하세요
-          </p>
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="auth-card">
             <div className="auth-card-body">
+              <h2 className="text-center text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+                로그인
+              </h2>
               <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
                 {error && (
                   <div className="alert alert-error animate-fadeIn">
@@ -210,20 +206,6 @@ const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              로그인하면 Resee의{' '}
-              <a href="#" className="hover:text-gray-700 dark:hover:text-gray-300">
-                이용약관
-              </a>
-              {' '}및{' '}
-              <a href="#" className="hover:text-gray-700 dark:hover:text-gray-300">
-                개인정보처리방침
-              </a>
-              에 동의하는 것으로 간주됩니다.
-            </p>
-          </div>
         </div>
       </div>
     </>

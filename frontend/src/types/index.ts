@@ -19,6 +19,8 @@ export interface RegisterData {
   email: string;
   password: string;
   password_confirm: string;
+  terms_agreed: boolean;
+  privacy_agreed: boolean;
 }
 
 export interface RegisterResponse {
