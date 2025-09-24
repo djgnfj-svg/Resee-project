@@ -72,8 +72,20 @@ class User(AbstractUser):
         default=7,
         help_text='주간 복습 목표 횟수'
     )
-    
-    
+
+    # 약관 동의 관련 필드
+    terms_agreed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='이용약관 동의 일시'
+    )
+    privacy_agreed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='개인정보처리방침 동의 일시'
+    )
+
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []  # No additional required fields for email-only auth
     

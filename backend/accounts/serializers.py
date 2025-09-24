@@ -117,10 +117,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     """User registration serializer with email-only authentication"""
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True)
-    
+    terms_agreed = serializers.BooleanField(write_only=True)
+    privacy_agreed = serializers.BooleanField(write_only=True)
+
     class Meta:
         model = User
-        fields = ('email', 'password', 'password_confirm')
+        fields = ('email', 'password', 'password_confirm', 'terms_agreed', 'privacy_agreed')
     
     def validate_email(self, value):
         """Validate email"""
@@ -150,13 +152,38 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'password_confirm': "비밀번호가 일치하지 않습니다."
             })
+
+        if not attrs.get('terms_agreed', False):
+            raise serializers.ValidationError({
+                'terms_agreed': "이용약관에 동의해주세요."
+            })
+
+        if not attrs.get('privacy_agreed', False):
+            raise serializers.ValidationError({
+                'privacy_agreed': "개인정보처리방침에 동의해주세요."
+            })
+
         return attrs
     
     def create(self, validated_data):
         """Create new user"""
+        from django.utils import timezone
+
         try:
+            # Remove terms agreement fields from user creation data
+            terms_agreed = validated_data.pop('terms_agreed', False)
+            privacy_agreed = validated_data.pop('privacy_agreed', False)
             validated_data.pop('password_confirm')
+
             user = User.objects.create_user(**validated_data)
+
+            # Record terms agreement timestamps
+            if terms_agreed:
+                user.terms_agreed_at = timezone.now()
+            if privacy_agreed:
+                user.privacy_agreed_at = timezone.now()
+
+            user.save()
             return user
         except Exception as e:
             raise serializers.ValidationError({

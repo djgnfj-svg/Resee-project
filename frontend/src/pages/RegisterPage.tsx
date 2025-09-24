@@ -13,8 +13,10 @@ const RegisterPage: React.FC = () => {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterData>();
-  
+
   const password = watch('password');
+  const termsAgreed = watch('terms_agreed');
+  const privacyAgreed = watch('privacy_agreed');
 
   const onSubmit = async (data: RegisterData) => {
     setIsLoading(true);
@@ -70,20 +72,16 @@ const RegisterPage: React.FC = () => {
             <Link to="/" className="inline-block">
               <h1 className="text-4xl font-bold gradient-text mb-2">Resee</h1>
             </Link>
-            <p className="text-sm text-gray-600 dark:text-gray-400">과학적 복습 플랫폼</p>
           </div>
           
-          <h2 className="mt-8 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
-            함께 시작해요!
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            회원가입 후 이메일 인증을 완료해주세요
-          </p>
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="auth-card">
             <div className="auth-card-body">
+              <h2 className="text-center text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+                회원가입
+              </h2>
               <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
                 {error && (
                   <div className="alert alert-error animate-fadeIn">
@@ -210,6 +208,61 @@ const RegisterPage: React.FC = () => {
                   )}
                 </div>
 
+                {/* 약관 동의 */}
+                <div className="space-y-4">
+                  <div className="flex items-start">
+                    <div className="flex items-center h-5">
+                      <input
+                        {...register('terms_agreed', {
+                          required: '이용약관에 동의해주세요.'
+                        })}
+                        id="terms_agreed"
+                        type="checkbox"
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800"
+                      />
+                    </div>
+                    <div className="ml-3 text-sm">
+                      <label htmlFor="terms_agreed" className="text-gray-700 dark:text-gray-300">
+                        <Link to="/terms" className="link" target="_blank" rel="noopener noreferrer">
+                          이용약관
+                        </Link>
+                        에 동의합니다. (필수)
+                      </label>
+                    </div>
+                  </div>
+                  {errors.terms_agreed && (
+                    <p className="text-sm text-red-600 dark:text-red-400 animate-fadeIn ml-7">
+                      {errors.terms_agreed.message}
+                    </p>
+                  )}
+
+                  <div className="flex items-start">
+                    <div className="flex items-center h-5">
+                      <input
+                        {...register('privacy_agreed', {
+                          required: '개인정보처리방침에 동의해주세요.'
+                        })}
+                        id="privacy_agreed"
+                        type="checkbox"
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800"
+                      />
+                    </div>
+                    <div className="ml-3 text-sm">
+                      <label htmlFor="privacy_agreed" className="text-gray-700 dark:text-gray-300">
+                        <Link to="/privacy" className="link" target="_blank" rel="noopener noreferrer">
+                          개인정보처리방침
+                        </Link>
+                        에 동의합니다. (필수)
+                      </label>
+                    </div>
+                  </div>
+                  {errors.privacy_agreed && (
+                    <p className="text-sm text-red-600 dark:text-red-400 animate-fadeIn ml-7">
+                      {errors.privacy_agreed.message}
+                    </p>
+                  )}
+                </div>
+
                 <div className="pt-2">
                   <button
                     type="submit"
@@ -243,6 +296,8 @@ const RegisterPage: React.FC = () => {
               <GoogleSignInButton
                 redirectTo="/dashboard"
                 onError={(error) => setError(error)}
+                buttonText="Google로 회원가입"
+                disabled={!termsAgreed || !privacyAgreed}
               />
 
               {/* Sign In Link */}
@@ -257,20 +312,6 @@ const RegisterPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              회원가입하면 Resee의{' '}
-              <a href="#" className="hover:text-gray-700 dark:hover:text-gray-300">
-                이용약관
-              </a>
-              {' '}및{' '}
-              <a href="#" className="hover:text-gray-700 dark:hover:text-gray-300">
-                개인정보처리방침
-              </a>
-              에 동의하는 것으로 간주됩니다.
-            </p>
-          </div>
         </div>
       </div>
     </>
