@@ -43,9 +43,6 @@ const SubscriptionPage: React.FC = () => {
         '최대 90일 복습 간격',
         '상세 통계 및 분석',
         '무제한 콘텐츠 생성',
-        'AI 질문 생성 (일 30개)',
-        'AI 서술형 평가',
-        'AI 채팅',
         '우선 이메일 지원',
         ...(billingCycle === 'yearly' ? ['🎉 연간 결제 시 20% 할인!'] : [])
       ],
@@ -60,10 +57,6 @@ const SubscriptionPage: React.FC = () => {
         '최대 180일 복습 간격',
         '완전한 장기 기억 시스템',
         '무제한 콘텐츠 생성',
-        'AI 질문 생성 (일 200개)',
-        '모든 AI 기능',
-        'AI 서술형 평가',
-        'AI 채팅',
         '고급 카테고리 관리',
         '데이터 내보내기',
         '전담 고객 지원',
@@ -227,15 +220,6 @@ const SubscriptionPage: React.FC = () => {
               </div>
             </div>
             <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  AI 기능은 어떻게 작동하나요?
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Claude AI를 활용해 학습 콘텐츠를 분석하고 맞춤형 질문을 생성하며, 
-                  서술형 답변을 평가하여 개인화된 학습 피드백을 제공합니다.
-                </p>
-              </div>
               <div>
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
                   언제 유료 구독이 오픈되나요?

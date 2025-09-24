@@ -16,7 +16,6 @@ import ReviewPage from './pages/ReviewPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import SubscriptionPage from './pages/SubscriptionPage';
-import WeeklyTestPage from './pages/WeeklyTestPage';
 import NotFoundPage from './pages/NotFoundPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
@@ -94,14 +93,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <SubscriptionPage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/weekly-test" 
-                element={
-                  <ProtectedRoute>
-                    <WeeklyTestPage />
                   </ProtectedRoute>
                 } 
               />

@@ -146,13 +146,7 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'login': '5/minute',
     'registration': '3/minute',
     'email': '10/hour',
-    'ai_free': '0/day',      # 무료: AI 사용 불가
-    'ai_basic': '30/day',    # 베이직: 하루 30개
-    'ai_pro': '200/day',     # 프로: 하루 200개
 }
-
-# AI settings
-AI_USE_MOCK_RESPONSES = False
 
 # Monitoring (if Sentry is configured)
 SENTRY_DSN = os.environ.get('SENTRY_DSN')

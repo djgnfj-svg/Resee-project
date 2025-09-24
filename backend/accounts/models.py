@@ -136,20 +136,6 @@ class User(AbstractUser):
         from .services import PermissionService
         return PermissionService(self).can_upgrade_subscription()
 
-    def can_use_ai_features(self):
-        """Check if user can use AI features based on subscription"""
-        from .services import PermissionService
-        return PermissionService(self).can_use_ai_features()
-    
-    def get_ai_question_limit(self):
-        """Get AI question generation limit per day based on subscription tier"""
-        from .services import PermissionService
-        return PermissionService(self).get_ai_question_limit()
-
-    def get_ai_features_list(self):
-        """Get list of AI features available for user's subscription tier"""
-        from .services import PermissionService
-        return PermissionService(self).get_ai_features_list()
 
     def get_content_limit(self):
         """Get content creation limit based on subscription tier"""
@@ -389,113 +375,6 @@ class PaymentHistory(models.Model):
         else:
             return dict(SubscriptionTier.choices).get(self.to_tier, self.to_tier)
 
-
-class AIUsageTracking(BaseModel):
-    """Track daily AI feature usage per user"""
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='ai_usage_records'
-    )
-    date = models.DateField(
-        default=timezone.now,
-        help_text='Date of usage'
-    )
-    questions_generated = models.IntegerField(
-        default=0,
-        help_text='Number of AI questions generated on this date'
-    )
-    evaluations_performed = models.IntegerField(
-        default=0,
-        help_text='Number of AI evaluations performed on this date'
-    )
-    
-    class Meta:
-        db_table = 'accounts_ai_usage_tracking'
-        unique_together = ['user', 'date']
-        verbose_name = 'AI Usage Tracking'
-        verbose_name_plural = 'AI Usage Trackings'
-        indexes = [
-            models.Index(fields=['user', 'date']),
-        ]
-    
-    def __str__(self):
-        return f"{self.user.email} - {self.date}: {self.questions_generated} questions"
-    
-    @classmethod
-    def get_or_create_for_today(cls, user):
-        """Get or create usage record for today"""
-        today = timezone.now().date()
-        usage, created = cls.objects.get_or_create(
-            user=user,
-            date=today,
-            defaults={
-                'questions_generated': 0,
-                'evaluations_performed': 0
-            }
-        )
-        return usage
-    
-    def can_generate_questions(self, count=1):
-        """Check if user can generate more questions today"""
-        daily_limit = self.user.get_ai_question_limit()
-        if daily_limit == 0:
-            return False
-        return (self.questions_generated + count) <= daily_limit
-    
-    def increment_questions(self, count=1):
-        """Increment question generation count"""
-        if self.can_generate_questions(count):
-            self.questions_generated += count
-            self.save()
-            return True
-        return False
-    
-    def increment_evaluations(self, count=1):
-        """Increment evaluation count"""
-        self.evaluations_performed += count
-        self.save()
-        return True
-    
-    def get_usage_summary(self):
-        """Get detailed usage summary for today"""
-        daily_limit = self.user.get_ai_question_limit()
-        remaining = max(0, daily_limit - self.questions_generated)
-        
-        return {
-            'date': self.date,
-            'questions_generated': self.questions_generated,
-            'evaluations_performed': self.evaluations_performed,
-            'daily_limit': daily_limit,
-            'remaining': remaining,
-            'usage_percentage': (self.questions_generated / daily_limit * 100) if daily_limit > 0 else 0,
-            'tier': self.user.subscription.tier,
-        }
-    
-    @classmethod
-    def get_user_weekly_usage(cls, user, weeks=1):
-        """Get user's usage for the past weeks"""
-        from datetime import timedelta
-        end_date = timezone.now().date()
-        start_date = end_date - timedelta(weeks=weeks * 7)
-        
-        usage_records = cls.objects.filter(
-            user=user,
-            date__gte=start_date,
-            date__lte=end_date
-        ).order_by('date')
-        
-        total_questions = sum(record.questions_generated for record in usage_records)
-        total_evaluations = sum(record.evaluations_performed for record in usage_records)
-        
-        return {
-            'start_date': start_date,
-            'end_date': end_date,
-            'total_questions': total_questions,
-            'total_evaluations': total_evaluations,
-            'daily_records': [record.get_usage_summary() for record in usage_records],
-            'average_daily_questions': total_questions / (weeks * 7) if weeks > 0 else 0,
-        }
 
 
 class BillingSchedule(BaseModel):

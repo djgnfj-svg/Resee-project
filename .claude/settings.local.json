@@ -16,9 +16,7 @@
       "mcp__playwright__browser_console_messages",
       "mcp__playwright__browser_snapshot",
       "Bash(git add:*)",
-      "Bash(git commit:*)",
       "Bash(find:*)",
-      "Bash(git push:*)",
       "mcp__github__get_file_contents",
       "mcp__github__create_or_update_file",
       "Bash(docker exec:*)",
@@ -55,7 +53,17 @@
       "Read(//etc/**)",
       "Bash(export REDIS_URL=redis://redis:6379/0)",
       "Bash(gh run list:*)",
-      "Bash(sudo rm:*)"
+      "WebSearch",
+      "WebFetch(domain:supabase.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(echo:*)",
+      "mcp__supabase__get_project_url",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__get_project",
+      "mcp__playwright__browser_resize",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

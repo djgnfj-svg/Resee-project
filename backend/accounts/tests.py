@@ -13,7 +13,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Subscription, SubscriptionTier, AIUsageTracking
+from .models import Subscription, SubscriptionTier
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, ProfileSerializer,
     PasswordChangeSerializer, EmailTokenObtainPairSerializer
@@ -50,19 +50,6 @@ class UserModelTest(TestCase):
     def test_user_str_representation(self):
         self.assertEqual(str(self.user), 'test@example.com')
     
-    def test_get_ai_question_limit(self):
-        # Test FREE tier limit
-        self.assertEqual(self.user.get_ai_question_limit(), 0)
-        
-        # Test BASIC tier limit
-        self.user.subscription.tier = SubscriptionTier.BASIC
-        self.user.subscription.save()
-        self.assertEqual(self.user.get_ai_question_limit(), 30)
-        
-        # Test PRO tier limit
-        self.user.subscription.tier = SubscriptionTier.PRO
-        self.user.subscription.save()
-        self.assertEqual(self.user.get_ai_question_limit(), 200)
     
     def test_get_max_review_interval(self):
         # Test FREE tier interval
@@ -87,38 +74,6 @@ class UserModelTest(TestCase):
         self.user.save()
         self.assertFalse(self.user.can_upgrade_subscription())
     
-    def test_can_use_ai_features(self):
-        # FREE tier cannot use AI
-        self.assertFalse(self.user.can_use_ai_features())
-        
-        # BASIC tier can use AI if email verified
-        self.user.subscription.tier = SubscriptionTier.BASIC
-        self.user.subscription.save()
-        self.user.is_email_verified = True
-        self.user.save()
-        self.assertTrue(self.user.can_use_ai_features())
-    
-    def test_get_ai_features_list(self):
-        # FREE tier has no AI features
-        self.assertEqual(self.user.get_ai_features_list(), [])
-        
-        # BASIC tier features
-        self.user.subscription.tier = SubscriptionTier.BASIC
-        self.user.subscription.save()
-        self.user.is_email_verified = True
-        self.user.save()
-        features = self.user.get_ai_features_list()
-        self.assertIn('multiple_choice', features)
-        self.assertIn('ai_chat', features)
-        self.assertIn('explanation_evaluation', features)
-        
-        # PRO tier features
-        self.user.subscription.tier = SubscriptionTier.PRO
-        self.user.subscription.save()
-        features = self.user.get_ai_features_list()
-        self.assertIn('multiple_choice', features)
-        self.assertIn('fill_blank', features)
-        self.assertIn('blur_processing', features)
 
 
 class SubscriptionModelTest(TestCase):
@@ -182,43 +137,6 @@ class SubscriptionModelTest(TestCase):
         self.assertLessEqual(remaining, 30)
 
 
-class AIUsageTrackingTest(TestCase):
-    """Test AIUsageTracking model"""
-    
-    def setUp(self):
-        self.user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass123'
-        )
-    
-    def test_get_or_create_for_today(self):
-        # First call should create new record
-        usage = AIUsageTracking.get_or_create_for_today(self.user)
-        self.assertEqual(usage.user, self.user)
-        self.assertEqual(usage.questions_generated, 0)
-        
-        # Second call should return existing record
-        usage2 = AIUsageTracking.get_or_create_for_today(self.user)
-        self.assertEqual(usage.id, usage2.id)
-    
-    def test_can_generate_questions(self):
-        usage = AIUsageTracking.get_or_create_for_today(self.user)
-        
-        # User with FREE tier cannot generate questions
-        self.assertFalse(usage.can_generate_questions(1))
-        
-        # User with BASIC tier can generate questions
-        self.user.subscription.tier = SubscriptionTier.BASIC
-        self.user.subscription.save()
-        self.assertTrue(usage.can_generate_questions(1))
-        self.assertTrue(usage.can_generate_questions(30))
-        self.assertFalse(usage.can_generate_questions(31))
-        
-        # After using some quota
-        usage.questions_generated = 25
-        usage.save()
-        self.assertTrue(usage.can_generate_questions(5))
-        self.assertFalse(usage.can_generate_questions(6))
 
 
 class AuthenticationAPITest(APITestCase):

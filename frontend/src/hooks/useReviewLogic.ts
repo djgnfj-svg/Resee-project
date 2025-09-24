@@ -1,7 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reviewAPI, contentAPI } from '../utils/api';
-import { aiReviewAPI } from '../utils/ai-review-api';
 import { ReviewSchedule, Category, TodayReviewsResponse } from '../types';
 import { extractResults } from '../utils/helpers';
 import { useReviewState } from './useReviewState';
@@ -39,11 +38,6 @@ export const useReviewLogic = () => {
     setTotalSchedules,
     setShowContent,
     setIsFlipped,
-    userExplanation,
-    setEvaluationResult,
-    setShowEvaluation,
-    setIsEvaluating,
-    setUserExplanation,
     resetReviewState,
   } = useReviewState();
 
@@ -105,44 +99,6 @@ export const useReviewLogic = () => {
     },
   });
 
-  // Explanation evaluation mutation
-  const evaluateExplanationMutation = useMutation({
-    mutationFn: aiReviewAPI.evaluateExplanation,
-    onSuccess: (result) => {
-      setEvaluationResult(result);
-      setShowEvaluation(true);
-      setIsEvaluating(false);
-    },
-    onError: (error) => {
-      setIsEvaluating(false);
-    },
-  });
-
-  const handleExplanationSubmit = useCallback(() => {
-    const currentReview = reviews[currentReviewIndex];
-    if (!userExplanation.trim() || !currentReview) return;
-
-    // AI 기능 준비중 메시지 표시
-    import('react-hot-toast').then(({ default: toast }) => {
-      toast('🚧 AI 기능은 현재 준비 중입니다');
-    });
-    return;
-
-    /* 준비중 - 아래 코드는 일시적으로 비활성화
-    setIsEvaluating(true);
-    evaluateExplanationMutation.mutate({
-      content_id: currentReview.content.id,
-      user_explanation: userExplanation.trim(),
-    });
-    */
-  }, [userExplanation, reviews, currentReviewIndex, evaluateExplanationMutation, setIsEvaluating]);
-
-  const handleExplanationReviewComplete = useCallback((result: 'remembered' | 'partial' | 'forgot') => {
-    setUserExplanation('');
-    setEvaluationResult(null);
-    setShowEvaluation(false);
-    handleReviewComplete(result);
-  }, [setUserExplanation, setEvaluationResult, setShowEvaluation]);
 
   const handleReviewComplete = useCallback((result: 'remembered' | 'partial' | 'forgot') => {
     const currentReview = reviews[currentReviewIndex];
@@ -179,9 +135,6 @@ export const useReviewLogic = () => {
     progress,
     isLoading,
     completeReviewMutation,
-    evaluateExplanationMutation,
-    handleExplanationSubmit,
-    handleExplanationReviewComplete,
     handleReviewComplete,
   };
 };
