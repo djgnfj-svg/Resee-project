@@ -1,12 +1,10 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
-import { toast } from 'react-hot-toast';
 import { contentAPI } from '../utils/api';
 import { Category, ContentUsage } from '../types';
 import { extractResults } from '../utils/helpers';
 import TipTapEditor from './TipTapEditor';
-import { useAuth } from '../contexts/AuthContext';
 import FormHeader from './contentform/FormHeader';
 import TitleField from './contentform/TitleField';
 import CategoryField from './contentform/CategoryField';
@@ -32,7 +30,6 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   isLoading = false,
   initialData
 }) => {
-  const { user } = useAuth();
   const { 
     register, 
     handleSubmit, 
@@ -61,7 +58,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   });
 
   // Fetch content usage
-  const { data: contentsData } = useQuery({
+  useQuery({
     queryKey: ['contents-usage'],
     queryFn: async () => {
       const response = await contentAPI.getContents();
@@ -84,17 +81,6 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
     });
   }, [content, onSubmit]);
 
-  // AI 콘텐츠 검사 함수
-  const handleAIContentCheck = async () => {
-    if (!content.trim() || !watchedTitle?.trim()) {
-      toast.error('제목과 내용을 입력해주세요.');
-      return;
-    }
-
-    // AI 기능 준비중 메시지 표시
-    toast('🚧 AI 기능은 현재 준비 중입니다');
-    return;
-  };
 
 
 

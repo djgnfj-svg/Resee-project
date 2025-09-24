@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Star, Crown, Zap } from 'lucide-react';
+import { Shield, Star, Zap } from 'lucide-react';
 import { useSubscription } from '../hooks/useSubscription';
 import type { SubscriptionTier } from '../types';
 

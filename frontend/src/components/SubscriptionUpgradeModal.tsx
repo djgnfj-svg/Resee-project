@@ -1,10 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { X, AlertCircle } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
 import { useSubscription } from '../hooks/useSubscription';
-import { SubscriptionTierCard } from './SubscriptionTierCard';
-import { EmailVerificationBanner } from './EmailVerificationBanner';
-import { useAuth } from '../contexts/AuthContext';
-import { SubscriptionTier, SubscriptionUpgradeError } from '../types';
 
 interface SubscriptionUpgradeModalProps {
   isOpen: boolean;
@@ -15,25 +11,15 @@ export const SubscriptionUpgradeModal: React.FC<SubscriptionUpgradeModalProps> =
   isOpen,
   onClose,
 }) => {
-  const { user } = useAuth();
   const {
-    subscription,
-    subscriptionTiers,
-    isLoadingTiers,
-    upgradeSubscription,
-    isUpgrading,
-    upgradeError,
     upgradeSuccess,
   } = useSubscription();
-
-  const [selectedTier, setSelectedTier] = useState<SubscriptionTier | null>(null);
 
   // Close modal on successful upgrade
   useEffect(() => {
     if (upgradeSuccess) {
       const timer = setTimeout(() => {
         onClose();
-        setSelectedTier(null);
       }, 2000);
       return () => clearTimeout(timer);
     }
@@ -41,32 +27,6 @@ export const SubscriptionUpgradeModal: React.FC<SubscriptionUpgradeModalProps> =
 
   if (!isOpen) return null;
 
-  const handleTierSelect = (tier: SubscriptionTier) => {
-    if (tier === subscription?.tier) return;
-
-    setSelectedTier(tier);
-    upgradeSubscription({ tier });
-  };
-
-  const getUpgradeErrorMessage = (error: any): string => {
-    if (!error) return '';
-
-    const errorData = error.response?.data as SubscriptionUpgradeError | undefined;
-    
-    if (errorData?.error) {
-      return errorData.error;
-    }
-    
-    if (errorData?.email_verified === false) {
-      return '이메일 인증이 필요합니다. 먼저 이메일을 인증해주세요.';
-    }
-    
-    if (errorData?.tier && Array.isArray(errorData.tier)) {
-      return errorData.tier[0];
-    }
-
-    return error.userMessage || '구독 업그레이드 중 오류가 발생했습니다.';
-  };
 
 
   return (

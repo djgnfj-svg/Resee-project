@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExclamationTriangleIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import { LockClosedIcon } from '@heroicons/react/24/outline';
 import { User } from '../types';
 import { getUserRole } from '../utils/permissions';
 

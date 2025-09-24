@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Star, Crown, Zap, Shield } from 'lucide-react';
+import { Check, Star, Zap, Shield } from 'lucide-react';
 import { SubscriptionTierInfo, SubscriptionTier } from '../types';
 
 const getTierIcon = (tier: SubscriptionTier) => {

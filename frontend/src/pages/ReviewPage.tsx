@@ -9,7 +9,6 @@ import UpgradeModal from '../components/review/UpgradeModal';
 const ReviewPage: React.FC = () => {
   const {
     selectedCategory,
-    currentReviewIndex,
     showContent,
     isFlipped,
     reviewsCompleted,
@@ -21,7 +20,6 @@ const ReviewPage: React.FC = () => {
   } = useReviewState();
 
   const {
-    reviews,
     categories,
     currentReview,
     progress,

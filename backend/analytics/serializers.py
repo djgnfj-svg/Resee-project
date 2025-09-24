@@ -12,7 +12,7 @@ class DailyStatsSerializer(serializers.ModelSerializer):
         model = DailyStats
         fields = [
             'id', 'date', 'contents_created', 'reviews_completed',
-            'success_rate', 'study_streak_days'
+            'success_rate'
         ]
         read_only_fields = ['id']
 
@@ -24,4 +24,3 @@ class DashboardStatsSerializer(serializers.Serializer):
     total_content = serializers.IntegerField()
     success_rate = serializers.FloatField()
     total_reviews_30_days = serializers.IntegerField()
-    streak_days = serializers.IntegerField()

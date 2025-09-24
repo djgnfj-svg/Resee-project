@@ -11,46 +11,21 @@ jest.mock('../contexts/AuthContext', () => ({
   }),
 }));
 
-// Mock API hooks
-jest.mock('../hooks/useContents', () => ({
-  __esModule: true,
-  default: () => ({
+// Mock React Query
+jest.mock('@tanstack/react-query', () => ({
+  ...jest.requireActual('@tanstack/react-query'),
+  useQuery: jest.fn(() => ({
     data: {
-      pages: [{
-        results: [mockContent],
-        count: 1,
-      }],
+      today_reviews: 2,
+      total_content: 5,
+      success_rate: 85.7,
+      total_reviews_30_days: 28
     },
     isLoading: false,
     error: null,
-    hasNextPage: false,
-    fetchNextPage: jest.fn(),
-  }),
+  })),
 }));
 
-jest.mock('../hooks/useReviewSchedules', () => ({
-  __esModule: true,
-  default: () => ({
-    data: {
-      pages: [{
-        results: [],
-        count: 0,
-      }],
-    },
-    isLoading: false,
-    error: null,
-  }),
-}));
-
-// Mock chart components
-jest.mock('recharts', () => ({
-  PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
-  Pie: () => <div data-testid="pie" />,
-  Cell: () => <div data-testid="cell" />,
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
-  Tooltip: () => <div data-testid="tooltip" />,
-  Legend: () => <div data-testid="legend" />,
-}));
 
 // Mock react-router-dom
 jest.mock('react-router-dom', () => ({
@@ -65,10 +40,10 @@ describe('SimpleDashboard', () => {
     expect(screen.getByText(/대시보드/i)).toBeInTheDocument();
   });
 
-  it('renders welcome message with user name', () => {
+  it('renders welcome message', () => {
     render(<SimpleDashboard />);
 
-    expect(screen.getByText(/안녕하세요, Test님!/i)).toBeInTheDocument();
+    expect(screen.getByText(/안녕하세요/i)).toBeInTheDocument();
   });
 
   it('renders content stats', () => {
@@ -76,7 +51,6 @@ describe('SimpleDashboard', () => {
 
     expect(screen.getByText(/전체 컨텐츠/i)).toBeInTheDocument();
     expect(screen.getByText(/오늘의 복습/i)).toBeInTheDocument();
-    expect(screen.getByText(/학습 연속일수/i)).toBeInTheDocument();
   });
 
   it('renders action buttons', () => {

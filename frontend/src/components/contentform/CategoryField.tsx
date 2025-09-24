@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { contentAPI } from '../../utils/api';
@@ -26,7 +26,7 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
   const queryClient = useQueryClient();
 
   // Fetch category usage
-  const { data: categoriesData } = useQuery({
+  useQuery({
     queryKey: ['categories-usage'],
     queryFn: async () => {
       const response = await contentAPI.getCategories();
