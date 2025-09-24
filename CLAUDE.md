@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 Resee is a focused spaced repetition learning platform implementing the Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose. Uses local PostgreSQL for development and Supabase for production with single Gunicorn worker configuration.
 
-**Key Focus**: Pure learning tool without gamification - focuses on effective knowledge retention through scientifically-proven spaced repetition intervals.
+**Key Philosophy**: Pure learning effectiveness over engagement metrics. No streaks, achievements, or gamification - just scientifically-proven spaced repetition for optimal knowledge retention.
 
 ## 접속 방법 (Access URLs)
 
@@ -92,7 +92,12 @@ The review system implements Ebbinghaus forgetting curve theory through a synchr
 - `ReviewSchedule` model tracks progress with `interval_index` (0-7 based on tier)
 - `review/utils.py:calculate_next_review_date()` implements the core Ebbinghaus algorithm
 - Frontend `ReviewPage.tsx` fetches today's reviews via `/api/review/today/`
-- Performance recorded in `ReviewHistory` for simple progress tracking
+- Performance recorded in `ReviewHistory` for analytics
+
+**Simplified Analytics**:
+- Basic dashboard metrics only: today's reviews, total content, 30-day success rate
+- No gamification metrics (streaks, achievements, complex progress tracking)
+- Focus on learning effectiveness rather than engagement statistics
 
 ### Critical Environment Variables
 
@@ -320,11 +325,12 @@ Comprehensive Playwright MCP testing performed covering user journeys, core func
 - Weekly goal setting and efficiency metrics
 
 ### 📊 Technical Metrics
-- **Frontend Bundle**: Reduced by 123.99 kB (removing recharts and complex analytics)
-- **Component Count**: Simplified to 88 TypeScript/React files
-- **Database**: Clean analytics tables (removed gamification fields)
+- **Frontend Bundle**: 283.14 kB (optimized after removing recharts and complex analytics)
+- **Code Reduction**: 3,627 lines removed, 243 lines added (massive simplification)
+- **Database**: Clean analytics tables with migration applied successfully
 - **API Endpoints**: Focused on essential `/api/analytics/dashboard/` only
-- **Test Coverage**: Backend analytics tests passing (3/3)
+- **Code Quality**: All ESLint warnings resolved (36 → 0), TypeScript compilation clean
+- **Test Coverage**: Backend analytics tests passing (3/3), MCP functionality verified
 
 ### 🎯 Architecture Philosophy
 **Focus on Learning Effectiveness**:
