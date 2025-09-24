@@ -168,14 +168,16 @@ if SENTRY_DSN:
     )
 
 # FINAL DATABASE OVERRIDE - Use Supabase DATABASE_URL
+# Supabase 데이터베이스 설정 (옵션 분리)
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL'),
         conn_max_age=300,
         conn_health_checks=True,
-        options={
-            'connect_timeout': 10,
-            'server_side_binding': True,
-        }
     )
+}
+
+# Supabase PostgreSQL 최적화 옵션
+DATABASES['default']['OPTIONS'] = {
+    'connect_timeout': 10,
 }
