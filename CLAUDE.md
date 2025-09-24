@@ -292,3 +292,4 @@ Comprehensive Playwright MCP testing performed covering user journeys, core func
 - Environment variables (`ANTHROPIC_API_KEY`, `AI_USE_MOCK_RESPONSES`) still in settings
 - Some AI-related code may remain in codebase but inactive
 - Subscription tier AI limits still defined but unused
+- ## **4-5. 스토리지 추가** 이게 이해가 안가네? 우리 supabase 쓰지 않나 저게 무슨소리임?
