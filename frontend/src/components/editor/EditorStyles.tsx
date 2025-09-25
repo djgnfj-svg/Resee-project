@@ -3,21 +3,58 @@ import React from 'react';
 const EditorStyles: React.FC = () => (
   <style>{`
     .tiptap-content {
-      min-height: 500px;
+      min-height: 200px;
+      max-height: 500px;
+      overflow-y: auto;
     }
 
     .tiptap-editor-content {
-      min-height: 500px;
+      min-height: 200px;
+      max-height: 500px;
+      overflow-y: auto;
       padding: 1.5rem;
       outline: none;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 1rem;
       line-height: 1.6;
       color: #1f2937;
+      scrollbar-width: thin;
+      scrollbar-color: #d1d5db #f9fafb;
+    }
+
+    .tiptap-editor-content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .tiptap-editor-content::-webkit-scrollbar-track {
+      background: #f9fafb;
+      border-radius: 3px;
+    }
+
+    .tiptap-editor-content::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 3px;
+    }
+
+    .tiptap-editor-content::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
     }
 
     .dark .tiptap-editor-content {
       color: #f3f4f6;
+      scrollbar-color: #6b7280 #374151;
+    }
+
+    .dark .tiptap-editor-content::-webkit-scrollbar-track {
+      background: #374151;
+    }
+
+    .dark .tiptap-editor-content::-webkit-scrollbar-thumb {
+      background: #6b7280;
+    }
+
+    .dark .tiptap-editor-content::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
     }
 
     .tiptap-editor-content p.is-editor-empty:first-child::before {
@@ -214,18 +251,25 @@ const EditorStyles: React.FC = () => (
 
     /* 반응형 디자인 */
     @media (max-width: 640px) {
+      .tiptap-content {
+        min-height: 150px;
+        max-height: 350px;
+      }
+
       .tiptap-editor-content {
+        min-height: 150px;
+        max-height: 350px;
         padding: 1rem;
       }
-      
+
       .tiptap-editor-content h1 {
         font-size: 1.875rem;
       }
-      
+
       .tiptap-editor-content h2 {
         font-size: 1.5rem;
       }
-      
+
       .tiptap-editor-content h3 {
         font-size: 1.25rem;
       }

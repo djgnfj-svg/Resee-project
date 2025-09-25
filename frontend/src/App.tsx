@@ -14,6 +14,7 @@ import DashboardPage from './pages/DashboardPage';
 import ContentPage from './pages/ContentPage';
 import CreateContentPage from './pages/CreateContentPage';
 import ReviewPage from './pages/ReviewPage';
+import WeeklyTestPage from './pages/WeeklyTestPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import SubscriptionPage from './pages/SubscriptionPage';
@@ -73,21 +74,29 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route 
-                path="/review" 
+              <Route
+                path="/review"
                 element={
                   <ProtectedRoute>
                     <ReviewPage />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/profile" 
+              <Route
+                path="/weekly-test"
+                element={
+                  <ProtectedRoute>
+                    <WeeklyTestPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
                 element={
                   <ProtectedRoute>
                     <ProfilePage />
                   </ProtectedRoute>
-                } 
+                }
               />
               <Route 
                 path="/settings" 

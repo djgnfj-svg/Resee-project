@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { reviewAPI, contentAPI } from '../utils/api';
-import { ReviewSchedule, Category, TodayReviewsResponse } from '../types';
+import { reviewAPI } from '../utils/api';
+import { ReviewSchedule, TodayReviewsResponse } from '../types';
 import { extractResults } from '../utils/helpers';
 import { useReviewState } from './useReviewState';
 
@@ -26,9 +26,8 @@ const isTodayReviewsResponse = (data: any): data is TodayReviewsResponse => {
   );
 };
 
-export const useReviewLogic = () => {
+export const useReviewLogic = (onShowToast?: (message: string, type: 'success' | 'info' | 'warning' | 'error') => void) => {
   const {
-    selectedCategory,
     currentReviewIndex,
     setCurrentReviewIndex,
     startTime,
@@ -43,12 +42,11 @@ export const useReviewLogic = () => {
 
   const queryClient = useQueryClient();
 
-  // Fetch today's reviews
+  // Fetch today's reviews (always all categories)
   const { data: reviewData, isLoading } = useQuery<ReviewSchedule[]>({
-    queryKey: ['todayReviews', selectedCategory],
+    queryKey: ['todayReviews'],
     queryFn: async () => {
-      const params = selectedCategory !== 'all' ? `?category_slug=${selectedCategory}` : '';
-      const data = await reviewAPI.getTodayReviews(params);
+      const data = await reviewAPI.getTodayReviews('');
 
       // Always try to extract total_count if it exists
       if (data && typeof data === 'object' && 'total_count' in data) {
@@ -65,60 +63,48 @@ export const useReviewLogic = () => {
 
   const reviews: ReviewSchedule[] = useMemo(() => reviewData || [], [reviewData]);
 
-  // Fetch categories
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ['categories'],
-    queryFn: () => contentAPI.getCategories().then(extractResults),
-  });
-
   // Complete review mutation
   const completeReviewMutation = useMutation({
     mutationFn: reviewAPI.completeReview,
     onSuccess: async () => {
       setReviewsCompleted(prev => prev + 1);
-      setShowContent(false);
-      setIsFlipped(false);
-      
+
+      // Only invalidate necessary queries
       queryClient.invalidateQueries({ queryKey: ['todayReviews'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['learning-calendar'] });
-      queryClient.invalidateQueries({ queryKey: ['advanced-analytics'] });
 
-      // Don't refetch immediately to avoid state reset
-      // const { data: updatedReviews } = await refetch();
-
-      // Update index based on current reviews (will be updated by invalidateQueries)
+      // Move to next review - state will be reset by useEffect
       if (reviews && reviews.length > 1) {
         const newIndex = Math.min(currentReviewIndex, reviews.length - 2); // -2 because one review was completed
         setCurrentReviewIndex(newIndex);
       } else {
         setCurrentReviewIndex(0);
       }
-      
-      setStartTime(Date.now());
     },
   });
 
 
-  const handleReviewComplete = useCallback((result: 'remembered' | 'partial' | 'forgot') => {
+  const handleReviewComplete = useCallback((result: 'remembered' | 'forgot') => {
     const currentReview = reviews[currentReviewIndex];
     if (currentReview) {
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-      
+
       const messages = {
-        'remembered': '✅ 잘 기억하고 있어요!',
-        'partial': '🤔 애매하군요, 다시 복습할게요.',
-        'forgot': '😅 괜찮아요, 다시 배워봐요!'
+        'remembered': '잘 기억하고 있어요!',
+        'forgot': '괜찮아요, 다시 배워봐요!'
       };
-      alert('Success: ' + messages[result]);
-      
+
+      if (onShowToast) {
+        onShowToast(messages[result], 'success');
+      }
+
       completeReviewMutation.mutate({
         content_id: currentReview.content.id,
         result: result,
         time_spent: timeSpent,
       });
     }
-  }, [reviews, currentReviewIndex, startTime, completeReviewMutation]);
+  }, [reviews, currentReviewIndex, startTime, completeReviewMutation, onShowToast]);
 
   // Reset flip state when review changes
   useEffect(() => {
@@ -126,11 +112,13 @@ export const useReviewLogic = () => {
   }, [currentReviewIndex, resetReviewState]);
 
   const currentReview = reviews[currentReviewIndex];
-  const progress = reviews.length > 0 ? (reviewsCompleted / (reviews.length + reviewsCompleted)) * 100 : 0;
+
+  // Calculate progress based on total reviews for today
+  const totalTodayReviews = reviews.length + reviewsCompleted;
+  const progress = totalTodayReviews > 0 ? (reviewsCompleted / totalTodayReviews) * 100 : 0;
 
   return {
     reviews,
-    categories,
     currentReview,
     progress,
     isLoading,

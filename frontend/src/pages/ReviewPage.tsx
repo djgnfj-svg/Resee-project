@@ -1,14 +1,40 @@
-import React, { useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useReviewLogic } from '../hooks/useReviewLogic';
 import { useReviewState } from '../hooks/useReviewState';
 import ReviewHeader from '../components/review/ReviewHeader';
 import ReviewCard from '../components/review/ReviewCard';
 import ReviewControls from '../components/review/ReviewControls';
 import UpgradeModal from '../components/review/UpgradeModal';
+import Toast from '../components/common/Toast';
 
 const ReviewPage: React.FC = () => {
+  // Toast state
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'info' | 'warning' | 'error';
+    isVisible: boolean;
+  }>({
+    message: '',
+    type: 'success',
+    isVisible: false,
+  });
+
+  const showToast = useCallback((message: string, type: 'success' | 'info' | 'warning' | 'error') => {
+    setToast({
+      message,
+      type,
+      isVisible: true,
+    });
+  }, []);
+
+  const hideToast = useCallback(() => {
+    setToast(prev => ({
+      ...prev,
+      isVisible: false,
+    }));
+  }, []);
+
   const {
-    selectedCategory,
     showContent,
     isFlipped,
     reviewsCompleted,
@@ -20,45 +46,13 @@ const ReviewPage: React.FC = () => {
   } = useReviewState();
 
   const {
-    categories,
     currentReview,
     progress,
     isLoading,
     completeReviewMutation,
     handleReviewComplete,
-  } = useReviewLogic();
+  } = useReviewLogic(showToast);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      switch (e.key) {
-        case ' ':
-          e.preventDefault();
-          if (!showContent) setShowContent(true);
-          else setIsFlipped(prev => !prev);
-          break;
-        case '1':
-          e.preventDefault();
-          if (showContent) handleReviewComplete('forgot');
-          break;
-        case '2':
-          e.preventDefault();
-          if (showContent) handleReviewComplete('partial');
-          break;
-        case '3':
-          e.preventDefault();
-          if (showContent) handleReviewComplete('remembered');
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyPress);
-    return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [showContent, isFlipped, handleReviewComplete, setIsFlipped, setShowContent]);
 
   if (isLoading) {
     return (
@@ -80,9 +74,7 @@ const ReviewPage: React.FC = () => {
             복습 완료!
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {selectedCategory === 'all'
-              ? '오늘 예정된 모든 복습을 완료했습니다!'
-              : '선택한 카테고리의 모든 복습을 완료했습니다!'}
+            오늘 예정된 모든 복습을 완료했습니다!
           </p>
           <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
             <p>완료된 복습: {reviewsCompleted}개</p>
@@ -99,7 +91,6 @@ const ReviewPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <ReviewHeader
-          categories={categories}
           reviewsCompleted={reviewsCompleted}
           totalSchedules={totalSchedules}
           progress={progress}
@@ -128,6 +119,13 @@ const ReviewPage: React.FC = () => {
           show={showUpgradeModal}
           onClose={() => setShowUpgradeModal(false)}
           onUpgrade={() => window.location.href = '/subscription'}
+        />
+
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          isVisible={toast.isVisible}
+          onClose={hideToast}
         />
       </div>
     </div>
