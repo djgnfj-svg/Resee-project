@@ -5,8 +5,8 @@ from django.test import TestCase, RequestFactory
 from django.contrib.auth import get_user_model
 from unittest.mock import patch, Mock
 
-from .legal_views import CreateConsentView, CookieConsentView, withdraw_consent
-from .utils import collect_client_info
+from ..legal.legal_views import CreateConsentView, CookieConsentView, withdraw_consent
+from ..utils.utils import collect_client_info
 
 
 User = get_user_model()

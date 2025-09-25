@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import Subscription, SubscriptionTier, PaymentHistory
+from ..models import Subscription, SubscriptionTier, PaymentHistory
 
 User = get_user_model()
 

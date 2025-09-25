@@ -5,7 +5,7 @@ from django.http import HttpRequest
 from django.test import TestCase, RequestFactory
 from unittest.mock import Mock
 
-from .utils import get_client_ip, get_user_agent, collect_client_info
+from ..utils.utils import get_client_ip, get_user_agent, collect_client_info
 
 
 class UtilsTestCase(TestCase):

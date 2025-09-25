@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from unittest.mock import Mock, patch
 
-from .exceptions import (
+from ..utils.exceptions import (
     AccountsException,
     ConsentException,
     LegalDocumentException,
