@@ -69,14 +69,17 @@ export const useReviewLogic = (onShowToast?: (message: string, type: 'success' |
     onSuccess: async () => {
       setReviewsCompleted(prev => prev + 1);
 
+      // Reset UI state immediately before moving to next review
+      resetReviewState();
+
       // Only invalidate necessary queries
       queryClient.invalidateQueries({ queryKey: ['todayReviews'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
-      // Move to next review - state will be reset by useEffect
+      // Move to next review - keep same index as the completed review is removed from array
       if (reviews && reviews.length > 1) {
-        const newIndex = Math.min(currentReviewIndex, reviews.length - 2); // -2 because one review was completed
-        setCurrentReviewIndex(newIndex);
+        // Don't change the index, just let the query refetch remove the completed item
+        // The same index will now point to the next review
       } else {
         setCurrentReviewIndex(0);
       }
@@ -124,5 +127,7 @@ export const useReviewLogic = (onShowToast?: (message: string, type: 'success' |
     isLoading,
     completeReviewMutation,
     handleReviewComplete,
+    reviewsCompleted,
+    totalSchedules: reviews.length + reviewsCompleted,
   };
 };

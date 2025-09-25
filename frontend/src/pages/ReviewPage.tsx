@@ -37,8 +37,6 @@ const ReviewPage: React.FC = () => {
   const {
     showContent,
     isFlipped,
-    reviewsCompleted,
-    totalSchedules,
     showUpgradeModal,
     setIsFlipped,
     setShowContent,
@@ -51,6 +49,8 @@ const ReviewPage: React.FC = () => {
     isLoading,
     completeReviewMutation,
     handleReviewComplete,
+    reviewsCompleted,
+    totalSchedules,
   } = useReviewLogic(showToast);
 
 
