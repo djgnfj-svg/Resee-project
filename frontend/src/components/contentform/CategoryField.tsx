@@ -82,17 +82,13 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
   }, [newCategoryName, createCategoryMutation]);
 
   return (
-    <div className="space-y-3">
-      <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
-        카테고리
-      </label>
-
+    <div>
       <div className="flex gap-2">
         <select
           {...register('category')}
-          className="flex-1 px-4 py-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-800 focus:outline-none transition-all duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
-          <option value="">카테고리를 선택하세요 (선택사항)</option>
+          <option value="">카테고리 선택 (선택사항)</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
@@ -104,51 +100,27 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
           type="button"
           onClick={() => setShowCreateCategory(true)}
           disabled={!canCreateCategory}
-          className={`px-4 py-4 rounded-xl font-medium transition-colors duration-200 whitespace-nowrap ${
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
             canCreateCategory
-              ? 'bg-green-600 hover:bg-green-700 text-white'
-              : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+              ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
           }`}
-          title={!canCreateCategory ? '카테고리 생성 제한에 도달했습니다' : '새 카테고리 만들기'}
+          title={!canCreateCategory ? '카테고리 생성 제한에 도달했습니다. 구독을 업그레이드하세요.' : '새 카테고리 만들기'}
         >
           + 새 카테고리
         </button>
       </div>
 
-      {/* Category Usage Info */}
-      {categoryUsage && (
-        <div className={`p-3 rounded-lg text-sm ${
-          isAtLimit ? 'bg-red-50 dark:bg-red-900/20' : 'bg-blue-50 dark:bg-blue-900/20'
-        }`}>
-          <div className="flex items-center justify-between">
-            <span className={`font-medium ${
-              isAtLimit ? 'text-red-800 dark:text-red-200' : 'text-blue-800 dark:text-blue-200'
-            }`}>
-              카테고리 사용량: {categoryUsage.current} / {categoryUsage.limit}개
-            </span>
-            {isAtLimit && (
-              <button
-                type="button"
-                onClick={() => window.location.href = '/settings#subscription'}
-                className="px-3 py-1 text-xs font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded hover:from-purple-700 hover:to-pink-700 transition-all"
-              >
-                업그레이드
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* 인라인 카테고리 생성 */}
       {showCreateCategory && (
-        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <h4 className="font-medium text-gray-900 dark:text-gray-100">새 카테고리 만들기</h4>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">새 카테고리 만들기</h4>
               <button
                 type="button"
                 onClick={() => setShowCreateCategory(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 ✕
               </button>
@@ -159,7 +131,7 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               placeholder="카테고리 이름 (예: 📚 영어학습, 💻 프로그래밍)"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
               onKeyPress={(e) => e.key === 'Enter' && handleCreateCategory()}
             />
 
@@ -168,7 +140,7 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
                 type="button"
                 onClick={handleCreateCategory}
                 disabled={!newCategoryName.trim() || isCreatingCategory}
-                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors duration-200"
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-md text-sm font-medium transition-colors"
               >
                 {isCreatingCategory ? '생성중...' : '생성'}
               </button>
@@ -178,7 +150,7 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
                   setShowCreateCategory(false);
                   setNewCategoryName('');
                 }}
-                className="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200"
+                className="px-3 py-1.5 bg-gray-400 hover:bg-gray-500 text-white rounded-md text-sm font-medium transition-colors"
               >
                 취소
               </button>

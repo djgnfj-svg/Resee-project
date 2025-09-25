@@ -7,7 +7,6 @@ interface ContentListProps {
   isLoading: boolean;
   expandedContents: Set<number>;
   onToggleExpansion: (contentId: number) => void;
-  onEdit: (content: Content) => void;
   onDelete: (id: number) => void;
   isDeleteLoading?: boolean;
 }
@@ -17,7 +16,6 @@ const ContentList: React.FC<ContentListProps> = ({
   isLoading,
   expandedContents,
   onToggleExpansion,
-  onEdit,
   onDelete,
   isDeleteLoading = false,
 }) => {
@@ -76,7 +74,6 @@ const ContentList: React.FC<ContentListProps> = ({
           content={content}
           isExpanded={expandedContents.has(content.id)}
           onToggleExpansion={onToggleExpansion}
-          onEdit={onEdit}
           onDelete={onDelete}
           isDeleteLoading={isDeleteLoading}
         />
