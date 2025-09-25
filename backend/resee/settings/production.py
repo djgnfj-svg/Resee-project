@@ -86,6 +86,7 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
+
 # Email verification settings for production
 ENFORCE_EMAIL_VERIFICATION = os.environ.get('ENFORCE_EMAIL_VERIFICATION', 'True') == 'True'
 EMAIL_VERIFICATION_TIMEOUT_DAYS = 1  # 이메일 인증 유효기간 (일)
