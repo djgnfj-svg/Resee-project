@@ -18,7 +18,7 @@ const ReviewHeader: React.FC<ReviewHeaderProps> = ({
     <div className="mb-8">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">📚 복습 타임</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">복습 타임</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
             에빙하우스 망각곡선을 활용한 스마트 복습 시스템으로 학습해보세요!
           </p>

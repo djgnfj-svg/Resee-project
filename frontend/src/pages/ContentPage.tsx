@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { contentAPI } from '../utils/api';
 import { Content, Category } from '../types';
 import { extractResults } from '../utils/helpers';
@@ -10,6 +10,7 @@ import ContentList from '../components/content/ContentList';
 
 const ContentPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('-created_at');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -56,6 +57,10 @@ const ContentPage: React.FC = () => {
     if (window.confirm('정말로 이 콘텐츠를 삭제하시겠습니까?')) {
       deleteContentMutation.mutate(id);
     }
+  };
+
+  const handleEdit = (content: Content) => {
+    navigate(`/content/${content.id}/edit`);
   };
 
 
@@ -113,6 +118,7 @@ const ContentPage: React.FC = () => {
         isLoading={contentsLoading}
         expandedContents={expandedContents}
         onToggleExpansion={toggleContentExpansion}
+        onEdit={handleEdit}
         onDelete={handleDelete}
         isDeleteLoading={deleteContentMutation.isPending}
       />

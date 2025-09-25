@@ -25,7 +25,6 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-lg">📂</span>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">필터</h2>
       </div>
 
@@ -33,7 +32,6 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
         {/* Search */}
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm">🔍</span>
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">콘텐츠 검색</span>
           </div>
           <input
@@ -50,7 +48,6 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
           <div>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm">📂</span>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">카테고리</span>
               </div>
               <button
@@ -81,7 +78,6 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
           {/* Sort Filter */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm">📊</span>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">정렬</span>
             </div>
             <select

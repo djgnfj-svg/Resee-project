@@ -62,7 +62,6 @@ const HomePage: React.FC = () => {
                 to="/register"
                 className="group relative inline-flex items-center justify-center px-10 py-5 text-xl font-bold text-white transition-all duration-300 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 button-press ripple animate-glow"
               >
-                <span className="mr-3">🚀</span>
                 무료로 시작하기
                 <svg className="ml-3 h-6 w-6 transition-transform group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
@@ -76,19 +75,19 @@ const HomePage: React.FC = () => {
                 {
                   label: '자동 주기적 복습',
                   description: '에빙하우스 망각곡선 기반으로 최적의 복습 주기를 자동으로 설정하고 알려드립니다',
-                  icon: '🔄',
+                  icon: '',
                   color: 'from-blue-500 to-indigo-600'
                 },
                 {
                   label: '자동 AI 시험',
                   description: 'AI가 학습 내용을 분석하여 자동으로 시험 문제를 생성하고 평가합니다',
-                  icon: '🤖',
+                  icon: '',
                   color: 'from-green-500 to-teal-600'
                 },
                 {
                   label: '자동 AI 내용 검증',
                   description: 'AI가 학습 자료의 정확성을 검증하고 개선 사항을 자동으로 제안합니다',
-                  icon: '✅',
+                  icon: '',
                   color: 'from-purple-500 to-pink-600'
                 }
               ].map((feature, index) => (

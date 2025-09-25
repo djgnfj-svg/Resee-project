@@ -23,49 +23,49 @@ class Command(BaseCommand):
         detailed = options['detailed']
         errors = []
 
-        self.stdout.write('🏥 Running Health Check...\n')
+        self.stdout.write('Running Health Check...\n')
 
         # Database check
         if self._check_database():
-            self.stdout.write(self.style.SUCCESS('✅ Database: Connected'))
+            self.stdout.write(self.style.SUCCESS('[OK] Database: Connected'))
         else:
             errors.append('Database connection failed')
-            self.stdout.write(self.style.ERROR('❌ Database: Failed'))
+            self.stdout.write(self.style.ERROR('[FAILED] Database: Failed'))
 
         # Cache check (Local Memory)
         if self._check_cache():
-            self.stdout.write(self.style.SUCCESS('✅ Cache: Available'))
+            self.stdout.write(self.style.SUCCESS('[OK] Cache: Available'))
         else:
             errors.append('Cache system failed')
-            self.stdout.write(self.style.ERROR('❌ Cache: Failed'))
+            self.stdout.write(self.style.ERROR('[FAILED] Cache: Failed'))
 
         # AI Service check
         ai_status = self._check_ai_service()
         if ai_status:
-            self.stdout.write(self.style.SUCCESS('✅ AI Service: Available'))
+            self.stdout.write(self.style.SUCCESS('[OK] AI Service: Available'))
         else:
-            self.stdout.write(self.style.WARNING('⚠️  AI Service: Using mock responses'))
+            self.stdout.write(self.style.WARNING('[WARNING] AI Service: Using mock responses'))
 
         # Critical Settings check
         settings_ok = self._check_critical_settings()
         if settings_ok:
-            self.stdout.write(self.style.SUCCESS('✅ Settings: OK'))
+            self.stdout.write(self.style.SUCCESS('[OK] Settings: OK'))
         else:
             errors.append('Critical settings misconfigured')
-            self.stdout.write(self.style.ERROR('❌ Settings: Issues found'))
+            self.stdout.write(self.style.ERROR('[FAILED] Settings: Issues found'))
 
         if detailed:
             self._show_detailed_info()
 
         # Summary
-        self.stdout.write(f'\n📊 Health Check Summary:')
+        self.stdout.write(f'\nHealth Check Summary:')
         if errors:
-            self.stdout.write(self.style.ERROR(f'❌ {len(errors)} issues found:'))
+            self.stdout.write(self.style.ERROR(f'[FAILED] {len(errors)} issues found:'))
             for error in errors:
                 self.stdout.write(f'   • {error}')
             sys.exit(1)
         else:
-            self.stdout.write(self.style.SUCCESS('✅ All systems operational'))
+            self.stdout.write(self.style.SUCCESS('[OK] All systems operational'))
 
     def _check_database(self):
         try:
@@ -123,7 +123,7 @@ class Command(BaseCommand):
         return len(issues) == 0
 
     def _show_detailed_info(self):
-        self.stdout.write('\n📋 Detailed Information:')
+        self.stdout.write('\nDetailed Information:')
 
         # Database info
         self.stdout.write(f'Database: {settings.DATABASES["default"]["ENGINE"]}')

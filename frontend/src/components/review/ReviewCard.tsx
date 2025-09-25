@@ -24,7 +24,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
         <div className="absolute inset-0 w-full min-h-96 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl shadow-xl dark:shadow-gray-900/40 backface-hidden border-2 border-blue-200 dark:border-blue-700">
           <div className="p-8 h-full flex flex-col justify-center items-center text-center">
             <div className="mb-6">
-              <div className="text-4xl mb-4">🧠</div>
+              <div className="text-4xl mb-4"></div>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 {review.content.title}
               </h2>

@@ -15,9 +15,9 @@ class Command(BaseCommand):
         # DRF throttling 설정 표시
         throttle_rates = getattr(settings, 'REST_FRAMEWORK', {}).get('DEFAULT_THROTTLE_RATES', {})
 
-        self.stdout.write("\n📊 DRF Throttling 설정:")
+        self.stdout.write("\nDRF Throttling 설정:")
         for key, rate in throttle_rates.items():
             self.stdout.write(f"  • {key}: {rate}")
 
-        self.stdout.write(f"\n✅ Redis 제거완료 - DRF throttling으로 전환됨")
+        self.stdout.write(f"\n[OK] Redis 제거완료 - DRF throttling으로 전환됨")
         self.stdout.write("   더 이상 Redis 기반 rate limiting이 사용되지 않습니다.")

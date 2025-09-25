@@ -7,6 +7,7 @@ interface ContentCardProps {
   content: Content;
   isExpanded: boolean;
   onToggleExpansion: (contentId: number) => void;
+  onEdit: (content: Content) => void;
   onDelete: (id: number) => void;
   isDeleteLoading?: boolean;
 }
@@ -15,6 +16,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
   content,
   isExpanded,
   onToggleExpansion,
+  onEdit,
   onDelete,
   isDeleteLoading = false,
 }) => {
@@ -54,6 +56,12 @@ const ContentCard: React.FC<ContentCardProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2 ml-4">
+          <button
+            onClick={() => onEdit(content)}
+            className="px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded transition-colors"
+          >
+            편집
+          </button>
           <button
             onClick={() => onDelete(content.id)}
             disabled={isDeleteLoading}

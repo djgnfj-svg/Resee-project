@@ -11,8 +11,8 @@ const PaymentHistory: React.FC = () => {
   });
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">결제 이력</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">결제 이력</h3>
       {paymentHistoryLoading ? (
         <div className="flex items-center justify-center h-24">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -20,7 +20,7 @@ const PaymentHistory: React.FC = () => {
       ) : paymentHistoryData?.results && paymentHistoryData.results.length > 0 ? (
         <div className="space-y-3">
           {paymentHistoryData.results.map((history: PaymentHistoryType) => (
-            <div key={history.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+            <div key={history.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
@@ -33,14 +33,14 @@ const PaymentHistory: React.FC = () => {
                     }`}>
                       {history.payment_type_display}
                     </span>
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {history.tier_display}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     {history.description}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     {new Date(history.created_at).toLocaleDateString('ko-KR', {
                       year: 'numeric',
                       month: 'long',
@@ -51,7 +51,7 @@ const PaymentHistory: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-right ml-4">
-                  <p className="text-lg font-semibold text-gray-900">
+                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     {history.amount > 0 ? `₩${history.amount.toLocaleString()}` : '무료'}
                   </p>
                 </div>
@@ -61,10 +61,10 @@ const PaymentHistory: React.FC = () => {
         </div>
       ) : (
         <div className="text-center py-8">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <p className="mt-2 text-sm text-gray-600">아직 결제 이력이 없습니다</p>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">아직 결제 이력이 없습니다</p>
         </div>
       )}
     </div>

@@ -28,7 +28,7 @@ const SubscriptionPage: React.FC = () => {
       features: [
         '최대 3일 복습 간격',
         '기본 통계',
-        '무제한 콘텐츠 생성',
+        '20개 콘텐츠 생성',
         '이메일 지원'
       ]
     },
@@ -39,10 +39,11 @@ const SubscriptionPage: React.FC = () => {
       price: getPrice(9900),
       features: [
         '최대 90일 복습 간격',
-        '상세 통계 및 분석',
+        'AI 서술형 정답 지원',
         '무제한 콘텐츠 생성',
+        '상세 통계 및 분석',
         '우선 이메일 지원',
-        ...(billingCycle === 'yearly' ? ['🎉 연간 결제 시 20% 할인!'] : [])
+        ...(billingCycle === 'yearly' ? ['연간 결제 시 20% 할인!'] : [])
       ],
       coming_soon: false
     },
@@ -53,12 +54,12 @@ const SubscriptionPage: React.FC = () => {
       price: getPrice(19900),
       features: [
         '최대 180일 복습 간격',
-        '완전한 장기 기억 시스템',
+        'AI 서술형 정답 지원',
+        'AI 주간 시험 생성',
         '무제한 콘텐츠 생성',
-        '고급 카테고리 관리',
-        '데이터 내보내기',
-        '전담 고객 지원',
-        ...(billingCycle === 'yearly' ? ['🎉 연간 결제 시 20% 할인!'] : [])
+        '상세 통계 및 분석',
+        '우선 이메일 지원',
+        ...(billingCycle === 'yearly' ? ['연간 결제 시 20% 할인!'] : [])
       ],
       coming_soon: false
     }
@@ -142,7 +143,7 @@ const SubscriptionPage: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            💎 구독 플랜
+            구독 플랜
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
             에빙하우스 망각곡선을 활용한 스마트 복습 시스템
@@ -152,13 +153,13 @@ const SubscriptionPage: React.FC = () => {
           <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border border-indigo-200 dark:border-indigo-700 rounded-xl p-8 mb-8 max-w-2xl mx-auto">
             <div className="text-center mb-6">
               <p className="text-indigo-800 dark:text-indigo-300 font-bold text-xl mb-2">
-                🚀 곧 출시됩니다!
+                곧 출시됩니다!
               </p>
               <p className="text-indigo-700 dark:text-indigo-400 text-sm mb-4">
-                더 나은 서비스를 위해 유료 구독은 사용자 200명 달성 후 오픈 예정입니다.
+                더 나은 서비스를 위해 유료 구독은 사용자 20명 달성 후 오픈 예정입니다.
               </p>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                📧 출시 알림 받기
+                출시 알림 받기
               </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                 오픈 소식을 가장 먼저 받아보세요!
@@ -171,7 +172,7 @@ const SubscriptionPage: React.FC = () => {
         {/* Subscription Tiers Preview */}
         <div className="mb-8">
           <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 text-center mb-8">
-            📋 예정된 구독 플랜
+            예정된 구독 플랜
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {subscriptionTiers.map((tier, index) => (

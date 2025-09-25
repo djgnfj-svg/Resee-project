@@ -73,7 +73,7 @@ class CustomUserAdmin(UserAdmin):
             f'Successfully verified {updated} user emails.',
             messages.SUCCESS
         )
-    bulk_verify_email.short_description = "✅ Verify selected user emails"
+    bulk_verify_email.short_description = "Verify selected user emails"
 
     def bulk_send_welcome_email(self, request, queryset):
         """Send welcome email to selected users"""
@@ -124,7 +124,7 @@ The Resee Team
                 f'Failed to send emails: {str(e)}',
                 messages.ERROR
             )
-    bulk_send_welcome_email.short_description = "📧 Send welcome email to selected users"
+    bulk_send_welcome_email.short_description = "Send welcome email to selected users"
 
 
     def export_users_csv(self, request, queryset):
@@ -161,7 +161,7 @@ The Resee Team
             ])
 
         return response
-    export_users_csv.short_description = "📊 Export selected users to CSV"
+    export_users_csv.short_description = "Export selected users to CSV"
 
 
 

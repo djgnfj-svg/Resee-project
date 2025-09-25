@@ -223,12 +223,12 @@ docker-compose exec backend python manage.py health_check
 
 Comprehensive Playwright MCP testing performed with systematic function-by-function verification.
 
-### 🎯 Test Account Created
+### Test Account Created
 - **Email**: `mcptest@example.com`
 - **Password**: `mcptest123!`
 - **Status**: New user account with full functionality testing completed
 
-### ✅ All Core Features Verified (2025-09-25)
+### All Core Features Verified (2025-09-25)
 
 **1. User Authentication System** ✅:
 - Account creation with email/password validation
@@ -254,7 +254,7 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 
 **4. Category Management System** ✅:
 - Category creation modal system
-- "🤖 MCP 자동화" test category successfully created
+- "MCP 자동화" test category successfully created
 - Category dropdown integration
 - Category management interface with edit/delete options
 - Empty state handling for new users
@@ -264,7 +264,7 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - Review interface with content display
 - "내용 확인하기" workflow activation
 - Review completion buttons (😔 모름 / 😊 기억함)
-- Review completion flow with "🎉 복습 완료!" confirmation
+- Review completion flow with "복습 완료!" confirmation
 - Proper integration with content creation pipeline
 
 **6. Responsive Design** ✅:
@@ -282,7 +282,7 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - Real-time data synchronization
 - Error handling and success notifications
 
-### 🔧 System Architecture Verified
+### System Architecture Verified
 
 **Backend (Django)** ✅:
 - Modular accounts app structure with subfolders:
@@ -309,7 +309,7 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - Environment variable management
 - Hot reload development workflow
 
-### 🚫 Previously Identified Issues - RESOLVED
+### Previously Identified Issues - RESOLVED
 
 **✅ RESOLVED - Review System**:
 - ~~ReviewControls component not rendering~~ → **FIXED**: Review buttons now properly display and function
@@ -320,14 +320,14 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - ~~404 errors on API endpoints~~ → **FIXED**: URL structure cleaned and optimized
 - ~~Authentication persistence issues~~ → **WORKING**: JWT token system operational
 
-### 📊 Performance Metrics (Current)
+### Performance Metrics (Current)
 - **Bundle Size**: Optimized (123.99 kB reduction from analytics cleanup)
 - **API Response Time**: Fast (<200ms for typical operations)
 - **Database Queries**: Efficient with proper relationships
 - **Memory Usage**: Stable with local cache implementation
 - **Mobile Performance**: Smooth interactions across all tested devices
 
-### 🎯 Testing Methodology
+### Testing Methodology
 - **Systematic MCP Testing**: Function-by-function verification
 - **Cross-Device Compatibility**: Mobile-first responsive testing
 - **User Journey Validation**: Complete new user onboarding flow
@@ -361,7 +361,7 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 
 **Current Focus**: Pure spaced repetition learning tool without distractions
 
-### 🔧 Accounts App Restructuring (2025-09-25)
+### Accounts App Restructuring (2025-09-25)
 
 **✅ Modular Architecture Implementation**:
 - Reorganized 28+ Python files from flat structure into logical subfolders:
@@ -389,7 +389,7 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 
 ## Current System State (2025-09-25)
 
-### ✅ Core Features (Maintained)
+### Core Features (Maintained)
 - **Ebbinghaus Spaced Repetition**: Scientific review intervals based on subscription tier
 - **Content Management**: Create, edit, and organize learning materials
 - **Review System**: Structured review workflow with performance tracking
@@ -397,7 +397,7 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - **User Authentication**: Email-based auth with JWT token management
 - **Responsive Design**: Mobile-first design with dark/light theme support
 
-### 🚫 Removed Features (Simplified)
+### Removed Features (Simplified)
 - Streak tracking and gamification elements
 - Complex analytics and performance charts
 - AI-powered question generation
@@ -405,7 +405,7 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - Achievement systems and badges
 - Weekly goal setting and efficiency metrics
 
-### 📊 Technical Metrics (Updated 2025-09-25)
+### Technical Metrics (Updated 2025-09-25)
 - **Frontend Bundle**: 283.14 kB (optimized after removing recharts and complex analytics)
 - **Code Reduction**: 3,627 lines removed, 243 lines added (massive simplification)
 - **Backend Structure**: Modular accounts app with 7 organized subfolders
@@ -417,10 +417,38 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - **Responsive Design**: ✅ **Mobile-first** - Tested across 3 breakpoints (375px, 768px, 1920px)
 - **User Experience**: ✅ **Complete user journey** - Registration → Content Creation → Review → Completion
 
-### 🎯 Architecture Philosophy
+### Architecture Philosophy
 **Focus on Learning Effectiveness**:
 - Minimize cognitive load and distractions
 - Prioritize scientifically-proven spaced repetition
 - Simple, intuitive user interface
 - Essential metrics only (reviews completed, success rate, content count)
 - Fast performance with optimized bundle size
+
+## 이모지 사용 가이드라인
+
+코드베이스에서 이모지 사용을 최소화하고 전문적인 인터페이스를 유지하기 위한 규칙입니다.
+
+### 기본 원칙
+- **기본적으로 이모지 사용을 자제**하고 명확한 텍스트 사용
+- **사용자 인터페이스에서 직관적 표현이 꼭 필요한 경우**만 제한적 사용
+- **장식적 목적의 이모지는 사용하지 않음**
+- **로그, 에러 메시지, 문서에서는 이모지 사용 금지**
+
+### 예외적 허용 사례
+- 리뷰 시스템의 감정 표현 버튼 (😔 모름 / 😊 기억함)
+- 중요한 성취/완료 메시지의 이모지 (매우 제한적)
+- 사용자 경험상 직관적 이해를 돕는 핵심 UI 요소
+
+### 제거 대상
+- 섹션 제목의 장식용 이모지 (제거됨)
+- 버튼, 카드, 헤더의 시각적 장식 이모지
+- 관리자 도구, 로그 메시지의 모든 이모지
+- 이메일 템플릿의 과도한 이모지
+- 문서 및 주석의 장식용 이모지
+
+### 이점
+- 전문적이고 깔끔한 인터페이스
+- 다국가/다문화 사용자 환경 고려
+- 스크린 리더 및 접근성 도구와의 호환성 향상
+- 코드 가독성 및 유지보수성 개선

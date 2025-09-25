@@ -95,14 +95,14 @@ class Command(BaseCommand):
         if results['errors']:
             self.stdout.write(self.style.ERROR('ERRORS:'))
             for error in results['errors']:
-                self.stdout.write(f'  ❌ {error}')
+                self.stdout.write(f'  ERROR: {error}')
             self.stdout.write('')
 
         # Display warnings
         if results['warnings']:
             self.stdout.write(self.style.WARNING('WARNINGS:'))
             for warning in results['warnings']:
-                self.stdout.write(f'  ⚠️  {warning}')
+                self.stdout.write(f'  WARNING: {warning}')
             
             if options['fix_warnings']:
                 self.stdout.write('')
@@ -151,7 +151,7 @@ class Command(BaseCommand):
         for warning in warnings:
             for pattern, fix in fixes.items():
                 if pattern in warning:
-                    self.stdout.write(f'  💡 {fix}')
+                    self.stdout.write(f'  SUGGESTION: {fix}')
                     break
 
     def _display_environment_info(self):
@@ -167,22 +167,22 @@ class Command(BaseCommand):
         
         # Service configurations
         self.stdout.write('')
-        self.stdout.write('  📊 Service Configuration:')
-        self.stdout.write(f'    Database: {"✅ Configured" if info["database_configured"] else "❌ Not configured"}')
-        self.stdout.write(f'    Cache (Redis): {"✅ Configured" if info["cache_configured"] else "❌ Not configured"}')
+        self.stdout.write('  Service Configuration:')
+        self.stdout.write(f'    Database: {"Configured" if info["database_configured"] else "Not configured"}')
+        self.stdout.write(f'    Cache (Redis): {"Configured" if info["cache_configured"] else "Not configured"}')
         self.stdout.write(f'    Email backend: {info["email_backend"]}')
-        self.stdout.write(f'    OAuth (Google): {"✅ Configured" if info["oauth_configured"] else "❌ Not configured"}')
-        self.stdout.write(f'    Monitoring: {"✅ Enabled" if info["monitoring_enabled"] else "❌ Disabled"}')
+        self.stdout.write(f'    OAuth (Google): {"Configured" if info["oauth_configured"] else "Not configured"}')
+        self.stdout.write(f'    Monitoring: {"Enabled" if info["monitoring_enabled"] else "Disabled"}')
         
         # AI services
         self.stdout.write('')
-        self.stdout.write('  🤖 AI Services:')
-        self.stdout.write(f'    OpenAI: {"✅ Configured" if info["ai_services"]["openai"] else "❌ Not configured"}')
-        self.stdout.write(f'    Anthropic: {"✅ Configured" if info["ai_services"]["anthropic"] else "❌ Not configured"}')
+        self.stdout.write('  AI Services:')
+        self.stdout.write(f'    OpenAI: {"Configured" if info["ai_services"]["openai"] else "Not configured"}')
+        self.stdout.write(f'    Anthropic: {"Configured" if info["ai_services"]["anthropic"] else "Not configured"}')
         
         # Environment variables summary
         self.stdout.write('')
-        self.stdout.write('  🔧 Key Environment Variables:')
+        self.stdout.write('  Key Environment Variables:')
         
         env_vars = [
             'SECRET_KEY', 'DEBUG', 'ALLOWED_HOSTS', 'DATABASE_URL',
@@ -196,7 +196,7 @@ class Command(BaseCommand):
                 if value != 'Not set':
                     value = f"{value[:10]}...{value[-5:]}" if len(value) > 15 else "***"
             
-            status = "✅" if os.environ.get(var) else "❌"
+            status = "SET" if os.environ.get(var) else "NOT_SET"
             self.stdout.write(f'    {status} {var}: {value}')
 
     def _get_style_for_level(self, level):
