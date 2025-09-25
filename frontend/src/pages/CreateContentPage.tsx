@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
 import { CreateContentData } from '../types';
-import ContentFormV2 from '../components/ContentFormV2';
+import CreateContentForm from '../components/CreateContentForm';
 
 const CreateContentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ const CreateContentPage: React.FC = () => {
   };
 
   return (
-    <ContentFormV2
+    <CreateContentForm
       onSubmit={handleSubmit}
       onCancel={handleCancel}
       isLoading={createContentMutation.isPending}

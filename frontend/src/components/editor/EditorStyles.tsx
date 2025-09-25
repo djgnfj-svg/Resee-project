@@ -3,11 +3,11 @@ import React from 'react';
 const EditorStyles: React.FC = () => (
   <style>{`
     .tiptap-content {
-      min-height: 350px;
+      min-height: 500px;
     }
 
     .tiptap-editor-content {
-      min-height: 350px;
+      min-height: 500px;
       padding: 1.5rem;
       outline: none;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;

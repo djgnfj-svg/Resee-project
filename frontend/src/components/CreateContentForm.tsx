@@ -13,14 +13,14 @@ interface ContentFormData {
   category?: number;
 }
 
-interface ContentFormV2Props {
+interface CreateContentFormProps {
   onSubmit: (data: ContentFormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
   initialData?: Partial<ContentFormData>;
 }
 
-const ContentFormV2: React.FC<ContentFormV2Props> = ({
+const CreateContentForm: React.FC<CreateContentFormProps> = ({
   onSubmit,
   onCancel,
   isLoading = false,
@@ -80,9 +80,9 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <form onSubmit={handleSubmit(onFormSubmit)}>
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12">
             {/* Title */}
             <div className="mb-6">
               <label className="block text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -91,14 +91,14 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
               <input
                 {...register('title', {
                   required: '제목을 입력해주세요.',
-                  minLength: { value: 3, message: '제목은 최소 3글자 이상이어야 합니다.' }
+                  minLength: { value: 1, message: '제목을 입력해주세요.' }
                 })}
                 type="text"
-                className={`w-full px-4 py-3 text-lg border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                className={`w-full px-4 py-3 text-2xl font-bold border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
                   errors.title
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500'
-                    : watchedTitle && watchedTitle.trim().length >= 3
-                    ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500 dark:border-emerald-500'
+                    : watchedTitle && watchedTitle.trim().length >= 1
+                    ? 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:focus:border-blue-400'
                     : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:focus:border-blue-400'
                 }`}
                 placeholder="예: React Hook 완벽 가이드"
@@ -106,11 +106,6 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
               {errors.title && (
                 <p className="text-sm text-red-600 dark:text-red-400 mt-2">
                   {errors.title.message}
-                </p>
-              )}
-              {watchedTitle && watchedTitle.trim().length >= 3 && !errors.title && (
-                <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2">
-                  ✓ 좋은 제목입니다
                 </p>
               )}
             </div>
@@ -185,4 +180,4 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   );
 };
 
-export default ContentFormV2;
+export default CreateContentForm;

@@ -10,7 +10,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
 import VerificationPendingPage from './pages/VerificationPendingPage';
-import SimpleDashboard from './pages/SimpleDashboard';
+import DashboardPage from './pages/DashboardPage';
 import ContentPage from './pages/ContentPage';
 import CreateContentPage from './pages/CreateContentPage';
 import ReviewPage from './pages/ReviewPage';
@@ -50,10 +50,10 @@ function App() {
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route 
-                path="/dashboard" 
+                path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <SimpleDashboard />
+                    <DashboardPage />
                   </ProtectedRoute>
                 } 
               />

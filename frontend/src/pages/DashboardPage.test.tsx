@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen } from '@testing-library/react';
 import { render, mockUser } from '../test-utils/test-utils';
-import SimpleDashboard from './SimpleDashboard';
+import DashboardPage from './DashboardPage';
 
 // Mock the useAuth hook
 jest.mock('../contexts/AuthContext', () => ({
@@ -33,35 +33,35 @@ jest.mock('react-router-dom', () => ({
   Link: ({ children, to }: any) => <a href={to}>{children}</a>,
 }));
 
-describe('SimpleDashboard', () => {
+describe('DashboardPage', () => {
   it('renders dashboard title', () => {
-    render(<SimpleDashboard />);
+    render(<DashboardPage />);
 
     expect(screen.getByText(/대시보드/i)).toBeInTheDocument();
   });
 
   it('renders welcome message', () => {
-    render(<SimpleDashboard />);
+    render(<DashboardPage />);
 
     expect(screen.getByText(/안녕하세요/i)).toBeInTheDocument();
   });
 
   it('renders content stats', () => {
-    render(<SimpleDashboard />);
+    render(<DashboardPage />);
 
     expect(screen.getByText(/전체 컨텐츠/i)).toBeInTheDocument();
     expect(screen.getByText(/오늘의 복습/i)).toBeInTheDocument();
   });
 
   it('renders action buttons', () => {
-    render(<SimpleDashboard />);
+    render(<DashboardPage />);
 
     expect(screen.getByText(/새 컨텐츠 작성/i)).toBeInTheDocument();
     expect(screen.getByText(/복습 시작/i)).toBeInTheDocument();
   });
 
   it('renders recent activity section', () => {
-    render(<SimpleDashboard />);
+    render(<DashboardPage />);
 
     expect(screen.getByText(/최근 활동/i)).toBeInTheDocument();
   });
