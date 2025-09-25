@@ -43,24 +43,24 @@ class PermissionService:
         tier = self._get_user_tier()
 
         tier_limits = {
-            'free': 3,       # 3 contents for free users
-            'basic': 10,     # 10 contents for basic users
-            'pro': 50,       # 50 contents for pro users
+            'free': 20,        # 20 contents for free users
+            'basic': 999999,   # Unlimited contents for basic users
+            'pro': 999999,     # Unlimited contents for pro users
         }
 
-        return tier_limits.get(tier, 3)
+        return tier_limits.get(tier, 20)
 
     def get_category_limit(self):
         """Get category creation limit based on subscription tier"""
         tier = self._get_user_tier()
 
         tier_limits = {
-            'free': 3,       # 3 categories for free users
-            'basic': 15,     # 15 categories for basic users
-            'pro': 50,       # 50 categories for pro users
+            'free': 1,       # 1 category for free users
+            'basic': 3,      # 3 categories for basic users
+            'pro': 999999,   # Unlimited categories for pro users
         }
 
-        return tier_limits.get(tier, 3)
+        return tier_limits.get(tier, 1)
 
 
 

@@ -4,11 +4,9 @@ import { Category } from '../../types';
 interface ContentFiltersProps {
   categories: Category[];
   selectedCategory: string;
-  selectedPriority: string;
   sortBy: string;
   searchQuery: string;
   onCategoryChange: (category: string) => void;
-  onPriorityChange: (priority: string) => void;
   onSortChange: (sort: string) => void;
   onSearchChange: (query: string) => void;
   onCategoryManagerOpen: () => void;
@@ -17,11 +15,9 @@ interface ContentFiltersProps {
 const ContentFilters: React.FC<ContentFiltersProps> = ({
   categories,
   selectedCategory,
-  selectedPriority,
   sortBy,
   searchQuery,
   onCategoryChange,
-  onPriorityChange,
   onSortChange,
   onSearchChange,
   onCategoryManagerOpen,
@@ -49,7 +45,7 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Category Filter */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -81,23 +77,6 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
             </select>
           </div>
 
-          {/* Priority Filter */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm">⚡</span>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">우선순위</span>
-            </div>
-            <select
-              value={selectedPriority}
-              onChange={(e) => onPriorityChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="all">전체 우선순위</option>
-              <option value="high">높음</option>
-              <option value="medium">보통</option>
-              <option value="low">낮음</option>
-            </select>
-          </div>
 
           {/* Sort Filter */}
           <div>
@@ -113,8 +92,6 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
               <option value="-created_at">최신순</option>
               <option value="created_at">오래된순</option>
               <option value="title">제목순</option>
-              <option value="-priority">우선순위 높은순</option>
-              <option value="priority">우선순위 낮은순</option>
             </select>
           </div>
         </div>

@@ -48,17 +48,11 @@ class Category(BaseModel):
 
 class Content(BaseModel):
     """Learning content"""
-    PRIORITY_CHOICES = [
-        ('low', '낮음'),
-        ('medium', '보통'),
-        ('high', '높음'),
-    ]
 
     title = models.CharField(max_length=200)
     content = models.TextField(help_text='Markdown content')
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='contents')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
-    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     
     class Meta:
         ordering = ['-created_at']
@@ -66,7 +60,6 @@ class Content(BaseModel):
             models.Index(fields=['author', '-created_at'], name='content_author_created'),
             models.Index(fields=['author', 'category', '-created_at'], name='content_auth_cat_created'),
             models.Index(fields=['category', '-created_at'], name='content_category_created'),
-            models.Index(fields=['priority', '-created_at'], name='content_priority_created'),
         ]
         constraints = [
             models.CheckConstraint(

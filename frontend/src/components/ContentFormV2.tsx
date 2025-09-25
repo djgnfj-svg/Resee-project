@@ -8,13 +8,11 @@ import TipTapEditor from './TipTapEditor';
 import FormHeader from './contentform/FormHeader';
 import TitleField from './contentform/TitleField';
 import CategoryField from './contentform/CategoryField';
-import PriorityField from './contentform/PriorityField';
 
 interface ContentFormData {
   title: string;
   content: string;
   category?: number;
-  priority: 'low' | 'medium' | 'high';
 }
 
 interface ContentFormV2Props {
@@ -39,7 +37,6 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
   } = useForm<ContentFormData>({
     mode: 'onChange',
     defaultValues: {
-      priority: 'medium',
       ...initialData
     }
   });
@@ -49,7 +46,6 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
 
   // Watch form values for real-time validation
   const watchedTitle = watch('title');
-  const watchedPriority = watch('priority');
 
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
@@ -86,7 +82,7 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-lg">
           {/* Header */}
           <FormHeader isEdit={!!initialData} />
@@ -140,11 +136,6 @@ const ContentFormV2: React.FC<ContentFormV2Props> = ({
               categories={categories}
             />
 
-            {/* Priority */}
-            <PriorityField
-              register={register}
-              watchedPriority={watchedPriority}
-            />
 
             {/* Content */}
             <div className="space-y-3">

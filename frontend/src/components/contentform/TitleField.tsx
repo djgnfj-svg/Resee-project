@@ -1,12 +1,8 @@
 import React from 'react';
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
+import { CreateContentData } from '../../types';
 
-interface ContentFormData {
-  title: string;
-  content: string;
-  category?: number;
-  priority: 'low' | 'medium' | 'high';
-}
+type ContentFormData = CreateContentData;
 
 interface TitleFieldProps {
   register: UseFormRegister<ContentFormData>;

@@ -12,6 +12,7 @@ import EmailVerificationPage from './pages/EmailVerificationPage';
 import VerificationPendingPage from './pages/VerificationPendingPage';
 import SimpleDashboard from './pages/SimpleDashboard';
 import ContentPage from './pages/ContentPage';
+import CreateContentPage from './pages/CreateContentPage';
 import ReviewPage from './pages/ReviewPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
@@ -56,13 +57,21 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              <Route 
-                path="/content" 
+              <Route
+                path="/content"
                 element={
                   <ProtectedRoute>
                     <ContentPage />
                   </ProtectedRoute>
-                } 
+                }
+              />
+              <Route
+                path="/content/new"
+                element={
+                  <ProtectedRoute>
+                    <CreateContentPage />
+                  </ProtectedRoute>
+                }
               />
               <Route 
                 path="/review" 
