@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 
 export interface ReviewState {
-  selectedCategory: string;
   currentReviewIndex: number;
   showContent: boolean;
   isFlipped: boolean;
@@ -12,7 +11,6 @@ export interface ReviewState {
 }
 
 export const useReviewState = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [showContent, setShowContent] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -27,15 +25,7 @@ export const useReviewState = () => {
     setStartTime(Date.now());
   }, []);
 
-  const resetCategoryState = useCallback(() => {
-    setCurrentReviewIndex(0);
-    setShowContent(false);
-    setIsFlipped(false);
-  }, []);
-
   return {
-    selectedCategory,
-    setSelectedCategory,
     currentReviewIndex,
     setCurrentReviewIndex,
     showContent,
@@ -51,6 +41,5 @@ export const useReviewState = () => {
     showUpgradeModal,
     setShowUpgradeModal,
     resetReviewState,
-    resetCategoryState,
   };
 };

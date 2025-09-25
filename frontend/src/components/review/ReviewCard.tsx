@@ -18,10 +18,10 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   onBack,
 }) => {
   return (
-    <div className="relative h-96 mb-8">
-      <div className={`absolute inset-0 w-full h-full transition-transform duration-700 transform-style-preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+    <div className="relative min-h-96 mb-8" style={{ height: 'auto' }}>
+      <div className={`w-full min-h-96 transition-transform duration-700 transform-style-preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
         {/* Front of Card */}
-        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl shadow-xl dark:shadow-gray-900/40 backface-hidden border-2 border-blue-200 dark:border-blue-700">
+        <div className="absolute inset-0 w-full min-h-96 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl shadow-xl dark:shadow-gray-900/40 backface-hidden border-2 border-blue-200 dark:border-blue-700">
           <div className="p-8 h-full flex flex-col justify-center items-center text-center">
             <div className="mb-6">
               <div className="text-4xl mb-4">🧠</div>
@@ -50,26 +50,26 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
               onClick={onFlip}
               className="bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 dark:hover:from-blue-500 dark:hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow-lg dark:shadow-gray-900/40"
             >
-              내용 확인하기 (Space)
+              내용 확인하기
             </button>
           </div>
         </div>
         
         {/* Back of Card */}
-        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-2xl shadow-xl dark:shadow-gray-900/40 backface-hidden rotate-y-180 border-2 border-green-200 dark:border-green-700">
+        <div className="absolute inset-0 w-full min-h-96 bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-2xl shadow-xl dark:shadow-gray-900/40 backface-hidden rotate-y-180 border-2 border-green-200 dark:border-green-700">
           <div className="p-8 h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto">
-              <div className="prose prose-lg dark:prose-invert max-w-none">
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+              <div className="prose prose-base dark:prose-invert max-w-none">
                 <ReactMarkdown>
                   {review.content.content}
                 </ReactMarkdown>
               </div>
             </div>
-            
-            <div className="mt-6 text-center">
+
+            <div className="mt-4 text-center flex-shrink-0">
               <button
                 onClick={onBack}
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm mb-4 transition-colors"
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm transition-colors inline-flex items-center"
               >
                 ← 뒤로가기
               </button>
