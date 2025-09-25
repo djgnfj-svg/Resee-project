@@ -78,7 +78,6 @@ const SimpleDashboard: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl mb-2">🎯</div>
               <h3 className="text-gray-700 dark:text-gray-300 font-semibold text-lg">오늘의 복습</h3>
             </div>
             <div className="text-right">
@@ -93,7 +92,6 @@ const SimpleDashboard: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-2xl mb-2">📖</div>
               <h3 className="text-gray-700 dark:text-gray-300 font-semibold text-lg">전체 콘텐츠</h3>
             </div>
             <div className="text-right">
@@ -107,7 +105,6 @@ const SimpleDashboard: React.FC = () => {
         {/* Usage & Subscription Card - 사용량과 구독 정보 */}
         {(contentUsage || categoryUsage || user) && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div className="text-2xl mb-2">💎</div>
             <h3 className="text-gray-700 dark:text-gray-300 font-semibold text-lg mb-3">구독 & 사용량</h3>
 
             {/* 구독 정보 */}

@@ -15,9 +15,9 @@ interface PriorityFieldProps {
 
 const PriorityField: React.FC<PriorityFieldProps> = ({ register, watchedPriority }) => {
   const priorityOptions = [
-    { value: 'high', label: '높음', color: 'red', emoji: '🔴', description: '매우 중요한 내용' },
-    { value: 'medium', label: '보통', color: 'yellow', emoji: '🟡', description: '일반적인 내용' },
-    { value: 'low', label: '낮음', color: 'green', emoji: '🟢', description: '참고용 내용' }
+    { value: 'high', label: '높음', color: 'red', emoji: '', description: '매우 중요한 내용' },
+    { value: 'medium', label: '보통', color: 'yellow', emoji: '', description: '일반적인 내용' },
+    { value: 'low', label: '낮음', color: 'green', emoji: '', description: '참고용 내용' }
   ];
 
   return (

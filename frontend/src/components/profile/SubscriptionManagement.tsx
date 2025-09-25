@@ -65,18 +65,18 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">구독 정보</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">구독 정보</h3>
       {user.subscription ? (
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">현재 플랜</span>
-            <span className="font-medium text-gray-900">
+            <span className="text-sm text-gray-600 dark:text-gray-400">현재 플랜</span>
+            <span className="font-medium text-gray-900 dark:text-gray-100">
               {user.subscription.tier_display}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">상태</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">상태</span>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
               user.subscription.is_active
                 ? 'bg-green-100 text-green-800'
@@ -86,15 +86,15 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">최대 복습 간격</span>
-            <span className="font-medium text-gray-900">
+            <span className="text-sm text-gray-600 dark:text-gray-400">최대 복습 간격</span>
+            <span className="font-medium text-gray-900 dark:text-gray-100">
               {user.subscription.max_interval_days}일
             </span>
           </div>
           {user.subscription.days_remaining && (
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">남은 기간</span>
-              <span className="font-medium text-gray-900">
+              <span className="text-sm text-gray-600 dark:text-gray-400">남은 기간</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">
                 {user.subscription.days_remaining}일
               </span>
             </div>
@@ -102,7 +102,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
           {user.subscription.tier !== 'free' && (
             <>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">자동갱신</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">자동갱신</span>
                 <button
                   onClick={() => toggleAutoRenewalMutation.mutate()}
                   disabled={toggleAutoRenewalMutation.isPending}
@@ -121,8 +121,8 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
               </div>
               {user.subscription.auto_renewal && user.subscription.next_billing_date && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">다음 결제일</span>
-                  <span className="font-medium text-gray-900">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">다음 결제일</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
                     {new Date(user.subscription.next_billing_date).toLocaleDateString('ko-KR')}
                   </span>
                 </div>
@@ -162,7 +162,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
         </div>
       ) : (
         <div className="text-center py-4">
-          <p className="text-gray-500 mb-4">구독 정보가 없습니다</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">구독 정보가 없습니다</p>
           <Link
             to="/subscription"
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"

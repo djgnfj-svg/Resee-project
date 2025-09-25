@@ -18,9 +18,9 @@ const SettingsPage: React.FC = () => {
 
 
   const tabs = [
-    { id: 'notifications', name: '알림 설정', icon: '🔔' },
-    { id: 'security', name: '보안', icon: '🔒' },
-    { id: 'data', name: '데이터 관리', icon: '📊' },
+    { id: 'notifications', name: '알림 설정', icon: '' },
+    { id: 'security', name: '보안', icon: '' },
+    { id: 'data', name: '데이터 관리', icon: '' },
   ];
 
   if (isLoading) {

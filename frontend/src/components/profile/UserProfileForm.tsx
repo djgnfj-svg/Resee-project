@@ -59,9 +59,9 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">개인 정보</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">개인 정보</h3>
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
@@ -92,7 +92,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             이메일
           </label>
           <input
@@ -106,16 +106,16 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
               }
             })}
             disabled={!isEditing}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
           {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
           )}
         </div>
 
         {/* Username */}
         <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             사용자명 (선택사항)
           </label>
           <input
@@ -133,12 +133,12 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
             })}
             disabled={!isEditing}
             placeholder="사용자명을 입력하세요"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
           {errors.username && (
-            <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.username.message}</p>
           )}
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             사용자명은 프로필에 표시되며, 언제든지 변경할 수 있습니다.
           </p>
         </div>

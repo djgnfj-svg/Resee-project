@@ -48,7 +48,6 @@ export const SubscriptionUpgradeModal: React.FC<SubscriptionUpgradeModalProps> =
           <div className="p-6">
             {/* Coming Soon Message */}
             <div className="text-center py-12">
-              <div className="text-6xl mb-6">🚀</div>
               <h3 className="text-3xl font-bold text-gray-900 mb-4">
                 곧 출시됩니다!
               </h3>
@@ -59,7 +58,7 @@ export const SubscriptionUpgradeModal: React.FC<SubscriptionUpgradeModalProps> =
               
               <div className="max-w-md mx-auto mb-8">
                 <div className="bg-indigo-50 rounded-lg p-6 border-2 border-indigo-200">
-                  <h4 className="font-bold text-indigo-900 mb-3">📧 오픈 알림 신청</h4>
+                  <h4 className="font-bold text-indigo-900 mb-3">오픈 알림 신청</h4>
                   <p className="text-sm text-indigo-700 mb-4">
                     유료 구독 오픈 시 가장 먼저 알려드립니다
                   </p>

@@ -6,7 +6,7 @@ const WeeklyTestPage: React.FC = () => {
       <div className="max-w-md w-full text-center">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/25 border border-gray-200 dark:border-gray-700 p-12">
           {/* Icon */}
-          <div className="text-6xl mb-6">📝</div>
+          <div className="text-6xl mb-6"></div>
 
           {/* Title */}
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
@@ -34,15 +34,15 @@ const WeeklyTestPage: React.FC = () => {
             </h3>
             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
               <li className="flex items-center">
-                <span className="text-green-500 mr-2">✓</span>
+                <span className="text-green-500 mr-2">•</span>
                 주간 학습 내용 종합 테스트
               </li>
               <li className="flex items-center">
-                <span className="text-green-500 mr-2">✓</span>
+                <span className="text-green-500 mr-2">•</span>
                 객관식 및 주관식 문제
               </li>
               <li className="flex items-center">
-                <span className="text-green-500 mr-2">✓</span>
+                <span className="text-green-500 mr-2">•</span>
                 성취도 분석 리포트
               </li>
             </ul>

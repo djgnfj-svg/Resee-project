@@ -56,13 +56,13 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
       setNewCategoryName('');
       setIsCreatingCategory(false);
 
-      alert(`카테고리 "${newCategory.name}"가 생성되어 선택되었습니다! 🎉`);
+      alert(`카테고리 "${newCategory.name}"가 생성되어 선택되었습니다!`);
     },
     onError: (error: any) => {
       setIsCreatingCategory(false);
       if (error.response?.status === 402) {
         const errorData = error.response.data;
-        alert(`⚠️ ${errorData.error}\n\n${errorData.message}`);
+        alert(`${errorData.error}\n\n${errorData.message}`);
       } else {
         const errorMessage = error.response?.data?.name?.[0] || '카테고리 생성에 실패했습니다.';
         alert(`오류: ${errorMessage}`);
@@ -130,7 +130,7 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
               type="text"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="카테고리 이름 (예: 📚 영어학습, 💻 프로그래밍)"
+              placeholder="카테고리 이름 (예: 영어학습, 프로그래밍)"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
               onKeyPress={(e) => e.key === 'Enter' && handleCreateCategory()}
             />

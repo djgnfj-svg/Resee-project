@@ -36,8 +36,8 @@ const ProfilePage: React.FC = () => {
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">프로필 관리</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">프로필 관리</h1>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">
           계정 정보를 관리하고 알림 설정을 변경할 수 있습니다.
         </p>
       </div>
@@ -45,16 +45,16 @@ const ProfilePage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Info Card */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <div className="text-center">
               <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold mb-4">
                 {user.username ? user.username[0].toUpperCase() : user.email[0].toUpperCase()}
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 {user.username || user.email.split('@')[0]}
               </h2>
-              <p className="text-gray-600">{user.email}</p>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                 가입일: {new Date(user.created_at).toLocaleDateString('ko-KR')}
               </p>
             </div>

@@ -13,6 +13,7 @@ import VerificationPendingPage from './pages/VerificationPendingPage';
 import DashboardPage from './pages/DashboardPage';
 import ContentPage from './pages/ContentPage';
 import CreateContentPage from './pages/CreateContentPage';
+import EditContentPage from './pages/EditContentPage';
 import ReviewPage from './pages/ReviewPage';
 import WeeklyTestPage from './pages/WeeklyTestPage';
 import ProfilePage from './pages/ProfilePage';
@@ -71,6 +72,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <CreateContentPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/content/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <EditContentPage />
                   </ProtectedRoute>
                 }
               />

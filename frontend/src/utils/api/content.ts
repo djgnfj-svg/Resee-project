@@ -16,6 +16,11 @@ export const contentAPI = {
     return response.data;
   },
 
+  getContent: async (id: number): Promise<Content> => {
+    const response = await api.get(`/contents/${id}/`);
+    return response.data;
+  },
+
   createContent: async (data: CreateContentData): Promise<Content> => {
     const response = await api.post('/contents/', data);
     return response.data;

@@ -28,7 +28,7 @@ const TierCard: React.FC<TierCardProps> = ({
       {isPopular && (
         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
           <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-medium">
-            🔥 인기
+            인기
           </span>
         </div>
       )}
@@ -57,7 +57,7 @@ const TierCard: React.FC<TierCardProps> = ({
 
         {tier.coming_soon && (
           <div className="inline-block bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-3 py-1 rounded-full text-sm font-medium mb-4">
-            🚧 출시 예정
+            출시 예정
           </div>
         )}
       </div>
@@ -78,7 +78,7 @@ const TierCard: React.FC<TierCardProps> = ({
           </div>
         ) : (
           <div className="w-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 py-3 px-6 rounded-lg font-medium text-center border-2 border-indigo-200 dark:border-indigo-700">
-            🚀 사용자 200명 후 오픈
+            사용자 20명 후 오픈
           </div>
         )}
       </div>
