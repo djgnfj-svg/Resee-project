@@ -9,7 +9,7 @@ const QuickActions: React.FC = () => {
       </div>
       <div className="space-y-3">
         <a
-          href="/content"
+          href="/content/new"
           className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4 text-white font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 block text-center"
         >
           <span className="mr-2">📝</span>
@@ -21,13 +21,6 @@ const QuickActions: React.FC = () => {
         >
           <span className="mr-2">🎯</span>
           오늘의 복습 시작
-        </a>
-        <a
-          href="/weekly-test"
-          className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-orange-500 to-red-600 px-6 py-4 text-white font-semibold hover:from-orange-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 block text-center"
-        >
-          <span className="mr-2">📝</span>
-          주간 시험
         </a>
       </div>
     </div>

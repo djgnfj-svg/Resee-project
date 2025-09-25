@@ -2,14 +2,9 @@ import React, { useState, useCallback } from 'react';
 import { UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { contentAPI } from '../../utils/api';
-import { Category, CategoryUsage } from '../../types';
+import { Category, CategoryUsage, CreateContentData } from '../../types';
 
-interface ContentFormData {
-  title: string;
-  content: string;
-  category?: number;
-  priority: 'low' | 'medium' | 'high';
-}
+type ContentFormData = CreateContentData;
 
 interface CategoryFieldProps {
   register: UseFormRegister<ContentFormData>;

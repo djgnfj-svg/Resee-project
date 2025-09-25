@@ -188,45 +188,6 @@ const SubscriptionPage: React.FC = () => {
           </div>
         </div>
 
-        {/* FAQ Section */}
-        <div className="mt-16 max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 text-center mb-8">
-            자주 묻는 질문
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  에빙하우스 망각곡선이 무엇인가요?
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  독일의 심리학자 에빙하우스가 발견한 기억 감쇠 패턴으로, 
-                  최적의 복습 타이밍을 과학적으로 계산해 장기 기억을 효과적으로 형성합니다.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  복습 간격이 중요한 이유는?
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  너무 자주 복습하면 시간 낭비, 너무 늦으면 이미 잊어버립니다. 
-                  과학적으로 계산된 간격으로 복습하면 최소한의 노력으로 최대 효과를 얻습니다.
-                </p>
-              </div>
-            </div>
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  언제 유료 구독이 오픈되나요?
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  더 안정적인 서비스 제공을 위해 사용자 200명 달성 후 오픈 예정입니다. 
-                  이메일을 등록하시면 오픈 소식을 가장 먼저 받아보실 수 있습니다.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

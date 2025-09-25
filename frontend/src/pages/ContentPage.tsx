@@ -13,7 +13,6 @@ const ContentPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedPriority, setSelectedPriority] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('-created_at');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedContents, setExpandedContents] = useState<Set<number>>(new Set());
@@ -22,14 +21,11 @@ const ContentPage: React.FC = () => {
 
   // Fetch contents
   const { data: contents = [], isLoading: contentsLoading } = useQuery<Content[]>({
-    queryKey: ['contents', selectedCategory, selectedPriority, sortBy, searchQuery],
+    queryKey: ['contents', selectedCategory, sortBy, searchQuery],
     queryFn: () => {
       const params = new URLSearchParams();
       if (selectedCategory !== 'all') {
         params.append('category_slug', selectedCategory);
-      }
-      if (selectedPriority !== 'all') {
-        params.append('priority', selectedPriority);
       }
       if (searchQuery.trim()) {
         params.append('search', searchQuery.trim());
@@ -131,7 +127,6 @@ const ContentPage: React.FC = () => {
           title: editingContent.title,
           content: editingContent.content,
           category: editingContent.category?.id,
-          priority: editingContent.priority,
         } : undefined}
       />
     );
@@ -165,11 +160,9 @@ const ContentPage: React.FC = () => {
       <ContentFilters
         categories={categories}
         selectedCategory={selectedCategory}
-        selectedPriority={selectedPriority}
         sortBy={sortBy}
         searchQuery={searchQuery}
         onCategoryChange={setSelectedCategory}
-        onPriorityChange={setSelectedPriority}
         onSortChange={setSortBy}
         onSearchChange={setSearchQuery}
         onCategoryManagerOpen={() => setShowCategoryManager(true)}

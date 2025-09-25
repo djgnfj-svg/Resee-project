@@ -34,14 +34,6 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                     {review.content.category.name}
                   </span>
                 )}
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                  review.content.priority === 'high' ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/20' :
-                  review.content.priority === 'medium' ? 'text-yellow-600 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-900/20' :
-                  'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/20'
-                }`}>
-                  {review.content.priority === 'high' ? '높음' :
-                   review.content.priority === 'medium' ? '보통' : '낮음'}
-                </span>
                 <span className="text-gray-500 dark:text-gray-400 text-xs">
                   {review.initial_review_completed ? 
                     `${review.interval_index + 1}번째 복습` : 

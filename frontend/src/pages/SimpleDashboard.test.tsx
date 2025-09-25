@@ -1,6 +1,6 @@
 import React from 'react';
 import { screen } from '@testing-library/react';
-import { render, mockUser, mockContent } from '../test-utils/test-utils';
+import { render, mockUser } from '../test-utils/test-utils';
 import SimpleDashboard from './SimpleDashboard';
 
 // Mock the useAuth hook

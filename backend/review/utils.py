@@ -91,26 +91,43 @@ def calculate_success_rate(user, category=None, days=30):
 def get_today_reviews_count(user, category=None):
     """
     Get count of today's reviews for a user
-    
+
+    This function should match the logic used in TodayReviewView to ensure consistency
+    between dashboard and review page counts.
+
     Args:
         user: User instance
         category: Category instance (optional)
-    
+
     Returns:
-        int: Number of reviews due today
+        int: Number of reviews due today (including initial reviews not yet completed)
     """
+    from django.db.models import Q
+    from datetime import timedelta
     from .models import ReviewSchedule
-    
+
     today = timezone.now().date()
+
+    # Get user's subscription tier and determine overdue limit (same as TodayReviewView)
+    max_overdue_days = user.get_max_review_interval()
+    if not max_overdue_days:
+        max_overdue_days = 7  # Default to FREE tier
+
+    # Calculate cutoff date for overdue reviews based on subscription
+    cutoff_date = timezone.now() - timedelta(days=max_overdue_days)
+
     schedules = ReviewSchedule.objects.filter(
         user=user,
-        is_active=True,
-        next_review_date__date__lte=today
+        is_active=True
+    ).filter(
+        # Same logic as TodayReviewView: due today/overdue OR initial review not completed
+        Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date) |
+        Q(initial_review_completed=False)
     )
-    
+
     if category:
         schedules = schedules.filter(content__category=category)
-    
+
     return schedules.count()
 
 

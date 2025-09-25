@@ -51,7 +51,6 @@ export interface Content {
   content: string;
   author: string;
   category?: Category;
-  priority: 'low' | 'medium' | 'high';
   created_at: string;
   updated_at: string;
   review_count: number;
@@ -185,7 +184,6 @@ export interface CreateContentData {
   title: string;
   content: string;
   category?: number;
-  priority: 'low' | 'medium' | 'high';
 }
 
 export interface UpdateContentData extends Partial<CreateContentData> {}
