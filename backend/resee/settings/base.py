@@ -190,7 +190,11 @@ SIMPLE_JWT = {
 
 # Email Configuration (base settings)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@resee.com'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@localhost')
+
+# Email content settings (used by EmailService)
+COMPANY_NAME = os.environ.get('COMPANY_NAME', 'Resee')
+SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@localhost')
 
 
 # Alert System Configuration
