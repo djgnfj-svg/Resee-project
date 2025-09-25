@@ -12,8 +12,8 @@ interface TitleFieldProps {
 
 const TitleField: React.FC<TitleFieldProps> = ({ register, errors, watchedTitle }) => {
   return (
-    <div className="space-y-3">
-      <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
         제목 <span className="text-red-500">*</span>
       </label>
       <input
@@ -22,25 +22,23 @@ const TitleField: React.FC<TitleFieldProps> = ({ register, errors, watchedTitle 
           minLength: { value: 3, message: '제목은 최소 3글자 이상이어야 합니다.' }
         })}
         type="text"
-        className={`w-full px-4 py-4 text-lg border-2 rounded-xl transition-all duration-200 focus:outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+        className={`w-full px-3 py-2 text-base border rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
           errors.title
-            ? 'border-red-300 focus:border-red-500 focus:ring-red-200 dark:border-red-500 dark:focus:border-red-400 dark:focus:ring-red-800'
+            ? 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500'
             : watchedTitle && watchedTitle.trim().length >= 3
-            ? 'border-green-300 focus:border-green-500 focus:ring-green-200 dark:border-green-500 dark:focus:border-green-400 dark:focus:ring-green-800'
-            : 'border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 dark:border-gray-600 dark:focus:border-indigo-400 dark:focus:ring-indigo-800'
-        } focus:ring-4`}
+            ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500 dark:border-emerald-500'
+            : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:focus:border-blue-400'
+        }`}
         placeholder="예: React Hook 완벽 가이드"
       />
       {errors.title && (
-        <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
-          <span className="mr-1">❌</span>
+        <p className="text-sm text-red-600 dark:text-red-400 mt-1">
           {errors.title.message}
         </p>
       )}
       {watchedTitle && watchedTitle.trim().length >= 3 && !errors.title && (
-        <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
-          <span className="mr-1">✅</span>
-          좋은 제목이에요!
+        <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
+          ✓ 좋은 제목입니다
         </p>
       )}
     </div>

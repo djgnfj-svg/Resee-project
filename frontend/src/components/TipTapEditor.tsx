@@ -51,10 +51,8 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
   }
 
   return (
-    <div className={`border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden bg-white dark:bg-gray-700 ${className}`}>
-      <EditorToolbar editor={editor} addLink={addLink} />
+    <div className={`border border-gray-300 dark:border-gray-600 rounded-md overflow-hidden bg-white dark:bg-gray-700 ${className}`}>
       <EditorContent editor={editor} className="tiptap-content" />
-      <EditorHelp />
       <EditorStyles />
     </div>
   );

@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { contentAPI } from '../utils/api';
-import { Content, Category, CreateContentData, UpdateContentData } from '../types';
+import { Content, Category } from '../types';
 import { extractResults } from '../utils/helpers';
-import ContentFormV2 from '../components/ContentFormV2';
 import CategoryManager from '../components/CategoryManager';
 import ContentFilters from '../components/content/ContentFilters';
 import ContentList from '../components/content/ContentList';
 
 const ContentPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const [showForm, setShowForm] = useState(false);
-  const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('-created_at');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -41,33 +39,6 @@ const ContentPage: React.FC = () => {
     queryFn: () => contentAPI.getCategories().then(extractResults),
   });
 
-  // Create content mutation
-  const createContentMutation = useMutation({
-    mutationFn: contentAPI.createContent,
-    onSuccess: () => {
-      alert('Success: 콘텐츠가 성공적으로 생성되었습니다!');
-      queryClient.invalidateQueries({ queryKey: ['contents'] });
-      setShowForm(false);
-    },
-    onError: () => {
-      alert('Error: 콘텐츠 생성에 실패했습니다.');
-    },
-  });
-
-  // Update content mutation
-  const updateContentMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateContentData }) => 
-      contentAPI.updateContent(id, data),
-    onSuccess: () => {
-      alert('Success: 콘텐츠가 성공적으로 수정되었습니다!');
-      queryClient.invalidateQueries({ queryKey: ['contents'] });
-      setEditingContent(null);
-      setShowForm(false);
-    },
-    onError: () => {
-      alert('Error: 콘텐츠 수정에 실패했습니다.');
-    },
-  });
 
   // Delete content mutation
   const deleteContentMutation = useMutation({
@@ -81,28 +52,10 @@ const ContentPage: React.FC = () => {
     },
   });
 
-  const handleSubmit = (data: CreateContentData | UpdateContentData) => {
-    if (editingContent) {
-      updateContentMutation.mutate({ id: editingContent.id, data });
-    } else {
-      createContentMutation.mutate(data as CreateContentData);
-    }
-  };
-
-  const handleEdit = (content: Content) => {
-    setEditingContent(content);
-    setShowForm(true);
-  };
-
   const handleDelete = (id: number) => {
     if (window.confirm('정말로 이 콘텐츠를 삭제하시겠습니까?')) {
       deleteContentMutation.mutate(id);
     }
-  };
-
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingContent(null);
   };
 
 
@@ -117,20 +70,6 @@ const ContentPage: React.FC = () => {
   };
 
 
-  if (showForm) {
-    return (
-      <ContentFormV2
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
-        isLoading={createContentMutation.isPending || updateContentMutation.isPending}
-        initialData={editingContent ? {
-          title: editingContent.title,
-          content: editingContent.content,
-          category: editingContent.category?.id,
-        } : undefined}
-      />
-    );
-  }
 
 
   return (
@@ -144,15 +83,15 @@ const ContentPage: React.FC = () => {
           </p>
         </div>
         <div className="flex space-x-2">
-          <button
-            onClick={() => setShowForm(true)}
+          <Link
+            to="/content/new"
             className="inline-flex items-center justify-center rounded-md bg-blue-600 dark:bg-blue-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-500 dark:hover:bg-blue-400 w-full sm:w-auto transition-colors"
           >
             <svg className="-ml-0.5 mr-1.5 h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
             </svg>
             새 콘텐츠
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -174,7 +113,6 @@ const ContentPage: React.FC = () => {
         isLoading={contentsLoading}
         expandedContents={expandedContents}
         onToggleExpansion={toggleContentExpansion}
-        onEdit={handleEdit}
         onDelete={handleDelete}
         isDeleteLoading={deleteContentMutation.isPending}
       />
