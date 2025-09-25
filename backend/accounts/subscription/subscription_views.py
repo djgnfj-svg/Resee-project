@@ -8,9 +8,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Subscription, SubscriptionTier, PaymentHistory, BillingSchedule
-from .serializers import (SubscriptionSerializer, SubscriptionTierSerializer,
-                          SubscriptionUpgradeSerializer, PaymentHistorySerializer)
+from ..models import Subscription, SubscriptionTier, PaymentHistory, BillingSchedule
+from ..utils.serializers import (SubscriptionSerializer, SubscriptionTierSerializer,
+                                SubscriptionUpgradeSerializer, PaymentHistorySerializer)
 from .billing_service import BillingScheduleService
 
 

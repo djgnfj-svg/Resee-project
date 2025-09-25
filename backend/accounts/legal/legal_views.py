@@ -19,7 +19,7 @@ from .legal_serializers import (CookieConsentSerializer, CreateConsentSerializer
                                 DataExportRequestSerializer,
                                 GDPRDataExportSerializer, LegalDocumentSerializer,
                                 UpdateCookieConsentSerializer, UserConsentSerializer)
-from .utils import collect_client_info
+from ..utils.utils import collect_client_info
 
 
 class LegalDocumentDetailView(generics.RetrieveAPIView):

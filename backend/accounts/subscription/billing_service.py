@@ -8,7 +8,7 @@ from typing import List, Optional
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Subscription, BillingSchedule, PaymentHistory, SubscriptionTier, BillingCycle
+from ..models import Subscription, BillingSchedule, PaymentHistory, SubscriptionTier, BillingCycle
 
 
 class BillingScheduleService:

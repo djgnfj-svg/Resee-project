@@ -1,13 +1,22 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .subscription_views import (subscription_cancel, subscription_detail,
-                                 subscription_tiers, subscription_upgrade, subscription_downgrade,
-                                 payment_history, toggle_auto_renewal, billing_schedule)
-from .views import (AccountDeleteView, GoogleOAuthView, PasswordChangeView, ProfileView,
-                    UserViewSet, WeeklyGoalUpdateView)
-from .email_views import EmailVerificationView, ResendVerificationView, EmailSubscriptionView
-from .health_views import health_check, health_detailed, readiness_check, liveness_check
+# Subscription views
+from .subscription.subscription_views import (subscription_cancel, subscription_detail,
+                                             subscription_tiers, subscription_upgrade, subscription_downgrade,
+                                             payment_history, toggle_auto_renewal, billing_schedule)
+
+# Account management views (non-auth)
+from .views import (AccountDeleteView, ProfileView, WeeklyGoalUpdateView)
+
+# Authentication views
+from .auth.views import (GoogleOAuthView, PasswordChangeView, UserViewSet)
+
+# Email views
+from .email.email_views import EmailVerificationView, ResendVerificationView, EmailSubscriptionView
+
+# Health check views
+from .health.health_views import health_check, health_detailed, readiness_check, liveness_check
 
 app_name = 'accounts'
 

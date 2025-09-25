@@ -78,6 +78,12 @@ WSGI_APPLICATION = 'resee.wsgi.application'
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
 
+# Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    'accounts.auth.authentication.EmailOrUsernameModelBackend',  # Custom email/username backend
+    'django.contrib.auth.backends.ModelBackend',  # Default backend
+]
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

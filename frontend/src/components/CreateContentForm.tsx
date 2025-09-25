@@ -85,15 +85,22 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12">
             {/* Title */}
             <div className="mb-6">
-              <label className="block text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                제목 <span className="text-red-500">*</span>
-              </label>
+              <div className="flex justify-between items-center mb-4">
+                <label className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  제목 <span className="text-red-500">*</span>
+                </label>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {watchedTitle?.length || 0}/30
+                </span>
+              </div>
               <input
                 {...register('title', {
                   required: '제목을 입력해주세요.',
-                  minLength: { value: 1, message: '제목을 입력해주세요.' }
+                  minLength: { value: 1, message: '제목을 입력해주세요.' },
+                  maxLength: { value: 30, message: '제목은 30자 이내로 입력해주세요.' }
                 })}
                 type="text"
+                maxLength={30}
                 className={`w-full px-4 py-3 text-2xl font-bold border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
                   errors.title
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500'

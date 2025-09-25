@@ -12,8 +12,9 @@ from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
-from accounts.views import (EmailTokenObtainPairView, health_detailed,
-                            health_check, liveness_check, readiness_check)
+from accounts.auth.views import EmailTokenObtainPairView
+from accounts.health.health_views import (health_detailed, health_check,
+                                         liveness_check, readiness_check)
 
 # API documentation schema
 schema_view = get_schema_view(
@@ -56,7 +57,7 @@ urlpatterns = [
     
     # API endpoints
     path('api/accounts/', include('accounts.urls')),  # includes legal endpoints
-    path('api/content/', include('content.urls')),
+    path('api/', include('content.urls')),  # contents/, categories/ at root level
     path('api/review/', include('review.urls')),
     path('api/analytics/', include('analytics.urls')),  # includes BI endpoints
 ]
