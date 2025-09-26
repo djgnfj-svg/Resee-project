@@ -13,12 +13,12 @@ from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Subscription, SubscriptionTier
-from .serializers import (
+from accounts.models import Subscription, SubscriptionTier
+from accounts.utils.serializers import (
     UserSerializer, UserRegistrationSerializer, ProfileSerializer,
     PasswordChangeSerializer, EmailTokenObtainPairSerializer
 )
-from .google_auth import GoogleAuthService, GoogleOAuthError
+from accounts.auth.google_auth import GoogleAuthService, GoogleOAuthError
 
 User = get_user_model()
 
