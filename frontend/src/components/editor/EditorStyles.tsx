@@ -3,14 +3,14 @@ import React from 'react';
 const EditorStyles: React.FC = () => (
   <style>{`
     .tiptap-content {
-      min-height: 200px;
-      max-height: 500px;
+      min-height: 400px;
+      max-height: 800px;
       overflow-y: auto;
     }
 
     .tiptap-editor-content {
-      min-height: 200px;
-      max-height: 500px;
+      min-height: 400px;
+      max-height: 800px;
       overflow-y: auto;
       padding: 1.5rem;
       outline: none;
@@ -252,13 +252,13 @@ const EditorStyles: React.FC = () => (
     /* 반응형 디자인 */
     @media (max-width: 640px) {
       .tiptap-content {
-        min-height: 150px;
-        max-height: 350px;
+        min-height: 300px;
+        max-height: 500px;
       }
 
       .tiptap-editor-content {
-        min-height: 150px;
-        max-height: 350px;
+        min-height: 300px;
+        max-height: 500px;
         padding: 1rem;
       }
 

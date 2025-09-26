@@ -150,22 +150,6 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
               </button>
 
               <div className="flex items-center space-x-4">
-                {/* Compact Content Usage Info */}
-                {contentUsage && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {contentUsage.current}/{contentUsage.limit}
-                    {isAtLimit && (
-                      <button
-                        type="button"
-                        onClick={() => window.location.href = '/settings#subscription'}
-                        className="ml-2 text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        업그레이드
-                      </button>
-                    )}
-                  </div>
-                )}
-
                 <button
                   type="submit"
                   disabled={isLoading || !content || !canCreateContent}
