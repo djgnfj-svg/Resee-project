@@ -64,7 +64,7 @@ class EmailVerificationView(APIView):
     )
     def post(self, request):
         """Verify email with token"""
-        from .serializers import UserSerializer
+        from ..utils.serializers import UserSerializer
 
         token = request.data.get('token')
         email = request.data.get('email')

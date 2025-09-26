@@ -137,7 +137,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 # 이메일 인증 강제 설정 확인
                 enforce_email_verification = getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', False)
 
-                # 개발환경이거나 ENFORCE_EMAIL_VERIFICATION이 False일 때 자동 인증
+                # ENFORCE_EMAIL_VERIFICATION이 False일 때만 자동 인증
                 if not enforce_email_verification:
                     user.is_email_verified = True
                     user.save()
