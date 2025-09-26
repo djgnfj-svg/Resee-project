@@ -406,7 +406,14 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - Frontend API client updated to match new structure
 - Eliminated redundant URL patterns
 
-## Current System State (2025-09-25)
+## Current System State (2025-09-26)
+
+### Recent Updates (2025-09-26)
+- **AWS EC2 + Supabase IPv6 Deployment**: Fixed IPv6 connectivity issues, updated deploy script for reliability
+- **Deployment Script Improvements**: Sequential service startup, BuildKit disabled, PostgreSQL removed
+- **Documentation Updates**: Simplified AWS deployment guide to 4 essential steps with IPv6 configuration
+
+## Previous System State (2025-09-25)
 
 ### Core Features (Maintained)
 - **Ebbinghaus Spaced Repetition**: Scientific review intervals based on subscription tier

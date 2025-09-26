@@ -168,30 +168,62 @@ docker volume rm resee-project_frontend_build 2>/dev/null || true
 log_info "nginx 이미지 캐시 제거 중..."
 docker rmi nginx:alpine 2>/dev/null || true
 
-# 이미지 빌드 및 컨테이너 시작
-log_info "Docker 이미지 빌드 및 컨테이너 시작... (5-10분 소요)"
-if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d --build; then
-    log_error "Docker Compose 빌드/시작 명령 실패"
-    $COMPOSE_CMD -f docker-compose.prod.yml logs --tail=20
+# BuildKit 비활성화 (file already closed 에러 방지)
+export DOCKER_BUILDKIT=0
+export COMPOSE_DOCKER_CLI_BUILD=0
+
+# 이미지 빌드 및 컨테이너 시작 (순차 빌드로 메모리 절약)
+log_info "서비스를 순차적으로 빌드 및 시작합니다... (5-10분 소요)"
+log_info "Supabase를 데이터베이스로 사용합니다..."
+
+# 1. Backend 빌드 및 시작
+log_info "Backend 빌드 및 시작 중..."
+if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d --build backend; then
+    log_error "Backend 빌드/시작 실패"
+    $COMPOSE_CMD -f docker-compose.prod.yml logs backend --tail=20
+    exit 1
+fi
+sleep 5
+
+# 2. Frontend 빌드 및 시작
+log_info "Frontend 빌드 및 시작 중..."
+if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d --build frontend; then
+    log_error "Frontend 빌드/시작 실패"
+    $COMPOSE_CMD -f docker-compose.prod.yml logs frontend --tail=20
+    exit 1
+fi
+sleep 5
+
+# 3. Nginx 마지막으로 시작 (빌드 불필요)
+log_info "Nginx 시작 중..."
+if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d nginx; then
+    log_error "Nginx 시작 실패"
+    $COMPOSE_CMD -f docker-compose.prod.yml logs nginx --tail=20
     exit 1
 fi
 
 # 컨테이너 상태 확인
-log_info "컨테이너 상태를 확인합니다..."
+log_info "모든 컨테이너 상태를 확인합니다..."
 sleep 10
 
-# 각 서비스별 상태 체크
-services=("postgres" "backend" "frontend" "nginx")
+# 각 서비스별 상태 체크 (PostgreSQL 제외 - Supabase 사용)
+services=("backend" "frontend" "nginx")
+all_running=true
 for service in "${services[@]}"; do
     if ! $COMPOSE_CMD -f docker-compose.prod.yml ps $service | grep -q "Up"; then
         log_error "$service 컨테이너가 실행되지 않았습니다."
         log_info "$service 로그:"
         $COMPOSE_CMD -f docker-compose.prod.yml logs $service --tail=10
-        exit 1
+        all_running=false
     else
         log_success "$service 컨테이너 정상 실행"
     fi
 done
+
+if [ "$all_running" = false ]; then
+    log_error "일부 서비스가 시작되지 않았습니다."
+    exit 1
+fi
 
 # 백엔드 서비스 대기
 log_info "백엔드 서비스 시작 대기 중..."
