@@ -18,6 +18,8 @@ export const useReviewState = () => {
   const [reviewsCompleted, setReviewsCompleted] = useState(0);
   const [totalSchedules, setTotalSchedules] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [forgotCount, setForgotCount] = useState(0);
+  const [currentCardId, setCurrentCardId] = useState<number | null>(null);
 
   const resetReviewState = useCallback(() => {
     setIsFlipped(false);

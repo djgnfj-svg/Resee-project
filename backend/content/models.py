@@ -49,7 +49,7 @@ class Category(BaseModel):
 class Content(BaseModel):
     """Learning content"""
 
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=30)  # 프론트엔드와 동기화
     content = models.TextField(help_text='Markdown content')
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='contents')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
