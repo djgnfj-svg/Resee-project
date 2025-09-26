@@ -170,12 +170,28 @@ docker rmi nginx:alpine 2>/dev/null || true
 
 # 이미지 빌드 및 컨테이너 시작
 log_info "Docker 이미지 빌드 및 컨테이너 시작... (5-10분 소요)"
-if $COMPOSE_CMD -f docker-compose.prod.yml up -d --build; then
-    log_success "컨테이너 시작 완료"
-else
-    log_error "컨테이너 시작 실패"
+if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d --build; then
+    log_error "Docker Compose 빌드/시작 명령 실패"
+    $COMPOSE_CMD -f docker-compose.prod.yml logs --tail=20
     exit 1
 fi
+
+# 컨테이너 상태 확인
+log_info "컨테이너 상태를 확인합니다..."
+sleep 10
+
+# 각 서비스별 상태 체크
+services=("postgres" "backend" "frontend" "nginx")
+for service in "${services[@]}"; do
+    if ! $COMPOSE_CMD -f docker-compose.prod.yml ps $service | grep -q "Up"; then
+        log_error "$service 컨테이너가 실행되지 않았습니다."
+        log_info "$service 로그:"
+        $COMPOSE_CMD -f docker-compose.prod.yml logs $service --tail=10
+        exit 1
+    else
+        log_success "$service 컨테이너 정상 실행"
+    fi
+done
 
 # 백엔드 서비스 대기
 log_info "백엔드 서비스 시작 대기 중..."
