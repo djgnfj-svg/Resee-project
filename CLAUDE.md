@@ -191,20 +191,31 @@ docker-compose exec backend python manage.py health_check
 - Frontend: 70% coverage minimum (`npm run test:coverage`)
 - Run linting before commits: `npm run lint` and `black .`
 
-## Test Accounts (Supabase Production)
+## Test Accounts
 
-### Admin Account
+### Production (Supabase)
+
+#### Admin Account
 - **Email**: `superadmin@reseeall.com`
 - **Password**: `Admin@123456`
 - **Role**: Superuser with full admin access
 - **Subscription**: PRO tier
 
-### Portfolio Demo Account
+#### Portfolio Demo Account
 - **Email**: `portfolio@reseeall.com`
 - **Password**: `Portfolio@123`
 - **Role**: Regular user with 6 months of learning history
 - **Subscription**: PRO tier
 - **Content**: 3 categories, 4 contents with review history
+
+### Development (Local Docker)
+
+#### Email Verification Test Account
+- **Email**: `djgnfj8923@naver.com`
+- **Password**: `testpassword123`
+- **Role**: Test account for email verification system
+- **Status**: Email verified, ready for testing
+- **Purpose**: Testing complete email verification flow (creation → email → verification → login)
 
 ## Architecture Notes
 
@@ -319,6 +330,14 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 **✅ RESOLVED - API Structure**:
 - ~~404 errors on API endpoints~~ → **FIXED**: URL structure cleaned and optimized
 - ~~Authentication persistence issues~~ → **WORKING**: JWT token system operational
+
+**✅ RESOLVED - Email Verification System (2025-09-26)**:
+- ~~Email verification links using incorrect port (3000 instead of 80)~~ → **FIXED**: Updated FRONTEND_URL to use port 80
+- ~~UserSerializer import path error in email_views.py~~ → **FIXED**: Corrected import path to `..utils.serializers`
+- ~~Email authentication flow failures~~ → **WORKING**: Complete email verification cycle operational
+- **Environment Configuration**: FRONTEND_URL properly set to `http://localhost` (port 80)
+- **Email Generation**: Verification links now use correct `http://localhost/verify-email?token=...` format
+- **Testing Verified**: New account creation → email sending → link verification → authentication completion
 
 ### Performance Metrics (Current)
 - **Bundle Size**: Optimized (123.99 kB reduction from analytics cleanup)

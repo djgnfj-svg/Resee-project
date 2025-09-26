@@ -1,13 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
-import { CreateContentData } from '../types';
+import { CreateContentData, ContentUsage } from '../types';
 import CreateContentForm from '../components/CreateContentForm';
 
 const CreateContentPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [contentUsage, setContentUsage] = useState<ContentUsage | null>(null);
+
+  // Check content usage and redirect if at limit
+  useQuery({
+    queryKey: ['contents-usage-check'],
+    queryFn: async () => {
+      const response = await contentAPI.getContents();
+      if (response.usage) {
+        setContentUsage(response.usage);
+        // If user cannot create content, redirect to content list
+        if (!response.usage.can_create) {
+          navigate('/content', { replace: true });
+          return null;
+        }
+      }
+      return response;
+    },
+  });
 
   // Create content mutation
   const createContentMutation = useMutation({
@@ -31,6 +49,11 @@ const CreateContentPage: React.FC = () => {
   const handleCancel = () => {
     navigate('/content');
   };
+
+  // Don't render form if user can't create content
+  if (contentUsage && !contentUsage.can_create) {
+    return null; // Will redirect via useQuery above
+  }
 
   return (
     <CreateContentForm

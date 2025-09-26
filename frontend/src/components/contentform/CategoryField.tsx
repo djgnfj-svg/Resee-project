@@ -83,10 +83,10 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
 
   return (
     <div>
-      <div className="flex gap-2">
+      <div className="space-y-2 sm:space-y-0 sm:flex sm:gap-2">
         <select
           {...register('category')}
-          className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          className="w-full sm:flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
           <option value="">카테고리 선택 (선택사항)</option>
           {categories.map((category) => (
@@ -100,7 +100,7 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
           type="button"
           onClick={() => setShowCreateCategory(true)}
           disabled={!canCreateCategory}
-          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+          className={`w-full sm:w-auto px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
             canCreateCategory
               ? 'bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
