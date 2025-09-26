@@ -1,6 +1,15 @@
 services:
-  # PostgreSQL removed - Using Supabase instead
-  # Redis removed - Using local memory cache instead
+  postgres:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=resee_prod
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
 
   backend:
     build:
@@ -14,8 +23,8 @@ services:
       - .env.prod
     environment:
       - DJANGO_SETTINGS_MODULE=resee.settings.production
-      # DATABASE_URL and other settings from .env.prod file
-    # No dependencies - Using external Supabase
+    depends_on:
+      - postgres
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
@@ -52,8 +61,7 @@ services:
     restart: unless-stopped
 
 volumes:
-  # postgres_data removed - Using Supabase
-  # redis_data removed - Using local memory cache
+  postgres_data:
   static_volume:
   media_volume:
   frontend_build:
