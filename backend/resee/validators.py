@@ -212,9 +212,9 @@ def validate_content_length(content):
             code='empty_content'
         )
 
-    if len(content) < 10:
+    if len(content) < 1:  # 최소 1글자 이상
         raise ValidationError(
-            _('Content must be at least 10 characters long.'),
+            _('Content must be at least 1 character long.'),
             code='content_too_short'
         )
 

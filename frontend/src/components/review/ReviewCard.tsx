@@ -7,7 +7,6 @@ interface ReviewCardProps {
   isFlipped: boolean;
   showContent: boolean;
   onFlip: () => void;
-  onBack: () => void;
 }
 
 const ReviewCard: React.FC<ReviewCardProps> = ({
@@ -15,7 +14,6 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   isFlipped,
   showContent,
   onFlip,
-  onBack,
 }) => {
   return (
     <div className="relative min-h-96 mb-8" style={{ height: 'auto' }}>
@@ -64,15 +62,6 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                   {review.content.content}
                 </ReactMarkdown>
               </div>
-            </div>
-
-            <div className="mt-4 text-center flex-shrink-0">
-              <button
-                onClick={onBack}
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm transition-colors inline-flex items-center"
-              >
-                ← 뒤로가기
-              </button>
             </div>
           </div>
         </div>

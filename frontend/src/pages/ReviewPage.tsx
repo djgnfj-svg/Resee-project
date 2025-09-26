@@ -41,6 +41,7 @@ const ReviewPage: React.FC = () => {
     setIsFlipped,
     setShowContent,
     setShowUpgradeModal,
+    resetReviewState,
   } = useReviewState();
 
   const {
@@ -51,7 +52,7 @@ const ReviewPage: React.FC = () => {
     handleReviewComplete,
     reviewsCompleted,
     totalSchedules,
-  } = useReviewLogic(showToast);
+  } = useReviewLogic(showToast, resetReviewState);
 
 
   if (isLoading) {
@@ -101,7 +102,6 @@ const ReviewPage: React.FC = () => {
             review={currentReview}
             showContent={showContent}
             isFlipped={isFlipped}
-            onBack={() => setShowContent(false)}
             onFlip={() => {
               setIsFlipped(prev => !prev);
               setShowContent(true);

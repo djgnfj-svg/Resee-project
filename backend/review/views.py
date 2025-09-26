@@ -288,9 +288,11 @@ class CompleteReviewView(APIView):
                     # Mark initial review as completed if it's the first review
                     if not schedule.initial_review_completed:
                         schedule.initial_review_completed = True
-                        schedule.save()
-                    # Reset to first interval (reset_schedule uses get_review_intervals which respects subscription)
-                    schedule.reset_schedule()
+                    # For 'forgot': Reset interval index to 0 (restart from beginning)
+                    # but keep next_review_date unchanged so it remains in today's review list
+                    schedule.interval_index = 0
+                    # Don't change next_review_date - keep it available for immediate retry in same session
+                    schedule.save()
                 
                 return Response({
                     'message': 'Review completed successfully',
