@@ -91,7 +91,7 @@ cd Resee-project
 cp .env.example .env.prod
 
 # 환경 변수 편집
-nano .env.prod
+vim .env.prod
 ```
 
 ---

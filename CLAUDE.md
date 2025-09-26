@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-Resee is a focused spaced repetition learning platform implementing the Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose. Uses local PostgreSQL for development and Supabase for production with single Gunicorn worker configuration.
+Resee is a focused spaced repetition learning platform implementing the Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose. Uses local PostgreSQL for both development and production with single Gunicorn worker configuration.
 
 **Key Philosophy**: Pure learning effectiveness over engagement metrics. No streaks, achievements, or gamification - just scientifically-proven spaced repetition for optimal knowledge retention.
 
@@ -108,9 +108,7 @@ The review system implements Ebbinghaus forgetting curve theory through a synchr
 
 **Production** (`.env.prod`):
 - `DJANGO_SETTINGS_MODULE`: `resee.settings.production`
-- `DATABASE_URL`: Supabase PostgreSQL connection string
-- `SUPABASE_URL`: Supabase project API URL
-- `SUPABASE_ANON_KEY`: Supabase anonymous key for API access
+- `DATABASE_URL`: `postgresql://postgres:postgres123@postgres:5432/resee_prod` (Local Docker PostgreSQL)
 - `ENFORCE_EMAIL_VERIFICATION`: `True` for production
 
 **Frontend**:
@@ -138,17 +136,17 @@ docker-compose exec backend python manage.py createsuperuser
 ```bash
 # Prepare production environment
 cp .env.prod.example .env.prod
-# Edit .env.prod with production values (Supabase credentials)
+# Edit .env.prod with production values
 
 # Deploy with production compose file (optimized for single worker)
 docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 
 # Initial setup
-docker-compose exec backend python manage.py migrate
-docker-compose exec backend python manage.py collectstatic --noinput
+docker-compose -f docker-compose.prod.yml exec backend python manage.py migrate
+docker-compose -f docker-compose.prod.yml exec backend python manage.py collectstatic --noinput
 
 # Health check
-docker-compose exec backend python manage.py health_check
+docker-compose -f docker-compose.prod.yml exec backend python manage.py health_check
 ```
 
 ## Key File Locations
@@ -193,7 +191,7 @@ docker-compose exec backend python manage.py health_check
 
 ## Test Accounts
 
-### Production (Supabase)
+### Production (Local PostgreSQL)
 
 #### Admin Account
 - **Email**: `superadmin@reseeall.com`
@@ -204,9 +202,9 @@ docker-compose exec backend python manage.py health_check
 #### Portfolio Demo Account
 - **Email**: `portfolio@reseeall.com`
 - **Password**: `Portfolio@123`
-- **Role**: Regular user with 6 months of learning history
+- **Role**: Regular user with learning history
 - **Subscription**: PRO tier
-- **Content**: 3 categories, 4 contents with review history
+- **Content**: Categories and contents for demonstration
 
 ### Development (Local Docker)
 
@@ -220,13 +218,14 @@ docker-compose exec backend python manage.py health_check
 ## Architecture Notes
 
 ### Production Optimizations (2025-09)
-- **Database**: Migrated from local PostgreSQL to Supabase for production
+- **Database**: Using local PostgreSQL for both development and production (simplified from Supabase)
 - **Cache**: Removed Redis dependency, using Django local memory cache
-- **Worker Configuration**: Single Gunicorn worker with 2 threads optimized for Supabase
-- **Backup System**: Removed local backup scripts (Supabase handles backups)
+- **Worker Configuration**: Single Gunicorn worker with 2 threads for optimal performance
+- **Backup System**: Standard PostgreSQL backup procedures
 - **Health Checks**: Updated to check local cache instead of Redis
 - **Gamification Removal**: Removed all streak tracking, achievement systems, and complex analytics (2025-09-25)
 - **Bundle Size**: Reduced frontend bundle by 123.99 kB through analytics component cleanup
+- **Network Architecture**: Simplified Docker networking (no host mode required)
 
 ## End-to-End Testing Results (2025-09-25)
 
@@ -409,9 +408,11 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 ## Current System State (2025-09-26)
 
 ### Recent Updates (2025-09-26)
-- **AWS EC2 + Supabase IPv6 Deployment**: Fixed IPv6 connectivity issues, updated deploy script for reliability
-- **Deployment Script Improvements**: Sequential service startup, BuildKit disabled, PostgreSQL removed
-- **Documentation Updates**: Simplified AWS deployment guide to 4 essential steps with IPv6 configuration
+- **PostgreSQL Simplification**: Migrated from Supabase back to local PostgreSQL for both development and production
+- **Network Architecture Cleanup**: Removed complex host networking mode, restored standard Docker Compose networking
+- **Docker Compose Normalization**: Simplified configuration with postgres, backend, frontend, nginx services
+- **Database Configuration**: Standardized on `postgresql://postgres:postgres123@postgres:5432/resee_prod`
+- **Deployment Reliability**: Eliminated IPv6 connectivity issues and Docker networking complexities
 
 ## Previous System State (2025-09-25)
 
