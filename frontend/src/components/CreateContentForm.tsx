@@ -65,7 +65,6 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
 
   // Check if user can create content
   const canCreateContent = contentUsage ? contentUsage.can_create : true;
-  const isAtLimit = contentUsage ? contentUsage.current >= contentUsage.limit : false;
 
 
   const onFormSubmit = useCallback((data: ContentFormData) => {

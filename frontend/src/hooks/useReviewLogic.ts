@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reviewAPI } from '../utils/api';
 import { ReviewSchedule, TodayReviewsResponse } from '../types';
@@ -34,12 +34,9 @@ export const useReviewLogic = (
     currentReviewIndex,
     setCurrentReviewIndex,
     startTime,
-    setStartTime,
     reviewsCompleted,
     setReviewsCompleted,
     setTotalSchedules,
-    setShowContent,
-    setIsFlipped,
   } = useReviewState();
 
   const queryClient = useQueryClient();
