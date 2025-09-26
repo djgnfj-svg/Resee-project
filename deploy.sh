@@ -82,12 +82,11 @@ log_success ".env.prod 파일을 찾았습니다."
 log_info "필수 환경변수를 검증합니다..."
 source .env.prod
 
-# 필수 환경변수 배열 (AI 제거, Supabase 사용)
+# 필수 환경변수 배열 (Local PostgreSQL 사용)
 required_vars=(
     "SECRET_KEY"
     "DATABASE_URL"
-    "SUPABASE_URL"
-    "SUPABASE_ANON_KEY"
+    "POSTGRES_PASSWORD"
     "ALLOWED_HOSTS"
     "CSRF_TRUSTED_ORIGINS"
     "FRONTEND_URL"
@@ -174,7 +173,7 @@ export COMPOSE_DOCKER_CLI_BUILD=0
 
 # 이미지 빌드 및 컨테이너 시작 (순차 빌드로 메모리 절약)
 log_info "서비스를 순차적으로 빌드 및 시작합니다... (5-10분 소요)"
-log_info "Supabase를 데이터베이스로 사용합니다..."
+log_info "로컬 PostgreSQL을 데이터베이스로 사용합니다..."
 
 # 1. Backend 빌드 및 시작
 log_info "Backend 빌드 및 시작 중..."
@@ -206,8 +205,8 @@ fi
 log_info "모든 컨테이너 상태를 확인합니다..."
 sleep 10
 
-# 각 서비스별 상태 체크 (PostgreSQL 제외 - Supabase 사용)
-services=("backend" "frontend" "nginx")
+# 각 서비스별 상태 체크 (PostgreSQL 포함)
+services=("postgres" "backend" "frontend" "nginx")
 all_running=true
 for service in "${services[@]}"; do
     if ! $COMPOSE_CMD -f docker-compose.prod.yml ps $service | grep -q "Up"; then
