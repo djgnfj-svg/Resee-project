@@ -1,5 +1,5 @@
-const CACHE_NAME = 'resee-v1';
-const API_CACHE_NAME = 'resee-api-v1';
+const CACHE_NAME = 'resee-v2';
+const API_CACHE_NAME = 'resee-api-v2';
 
 // 캐시할 정적 자원들
 const STATIC_ASSETS = [
