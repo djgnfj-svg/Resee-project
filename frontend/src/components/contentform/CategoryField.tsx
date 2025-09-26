@@ -34,7 +34,6 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
 
   // Check if user can create categories
   const canCreateCategory = categoryUsage ? categoryUsage.can_create : true;
-  const isAtLimit = categoryUsage ? categoryUsage.current >= categoryUsage.limit : false;
 
   // 카테고리 생성 mutation
   const createCategoryMutation = useMutation({
