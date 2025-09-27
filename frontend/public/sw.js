@@ -1,5 +1,5 @@
-const CACHE_NAME = 'resee-v2';
-const API_CACHE_NAME = 'resee-api-v2';
+const CACHE_NAME = 'resee-v3';
+const API_CACHE_NAME = 'resee-api-v3';
 
 // 캐시할 정적 자원들
 const STATIC_ASSETS = [
@@ -110,47 +110,71 @@ function isApiRequest(url) {
   return API_PATTERNS.some(pattern => pattern.test(url));
 }
 
-// API 요청 처리 (Cache First 전략)
+// 인증이 필요한 API 패턴 확인
+function requiresAuth(url) {
+  const authRequiredPatterns = [
+    /\/api\/contents\//,
+    /\/api\/categories\//,
+    /\/api\/review\//,
+    /\/api\/analytics\//,
+    /\/api\/accounts\/profile\//
+  ];
+  return authRequiredPatterns.some(pattern => pattern.test(url));
+}
+
+// API 요청 처리 (인증 API는 Network First, 기타는 Cache First)
 async function handleApiRequest(request) {
+  const cache = await caches.open(API_CACHE_NAME);
+  const needsAuth = requiresAuth(request.url);
+
   try {
-    // 먼저 캐시에서 찾기
-    const cache = await caches.open(API_CACHE_NAME);
-    const cachedResponse = await cache.match(request);
-    
-    // GET 요청이고 캐시에 있으면 반환
-    if (request.method === 'GET' && cachedResponse) {
-      // 백그라운드에서 업데이트
-      fetch(request)
-        .then(response => {
-          if (response.status === 200) {
-            cache.put(request, response.clone());
-          }
-        })
-        .catch(() => {/* 백그라운드 업데이트 실패 무시 */});
-      
-      return cachedResponse;
+    if (needsAuth) {
+      // 인증이 필요한 API: Network First 전략
+      const response = await fetch(request);
+
+      // 성공적인 GET 요청만 캐시에 저장
+      if (request.method === 'GET' && response.status === 200) {
+        cache.put(request, response.clone());
+      }
+
+      return response;
+
+    } else {
+      // 기타 API: Cache First 전략
+      const cachedResponse = await cache.match(request);
+
+      if (request.method === 'GET' && cachedResponse) {
+        // 백그라운드에서 업데이트
+        fetch(request)
+          .then(response => {
+            if (response.status === 200) {
+              cache.put(request, response.clone());
+            }
+          })
+          .catch(() => {/* 백그라운드 업데이트 실패 무시 */});
+
+        return cachedResponse;
+      }
+
+      // 네트워크에서 가져오기
+      const response = await fetch(request);
+
+      if (request.method === 'GET' && response.status === 200) {
+        cache.put(request, response.clone());
+      }
+
+      return response;
     }
-    
-    // 네트워크에서 가져오기
-    const response = await fetch(request);
-    
-    // GET 요청의 성공 응답은 캐시에 저장
-    if (request.method === 'GET' && response.status === 200) {
-      cache.put(request, response.clone());
-    }
-    
-    return response;
-    
+
   } catch (error) {
-    // 네트워크 오류 시 캐시에서 반환
+    // 네트워크 오류 시 캐시에서 반환 (GET 요청만)
     if (request.method === 'GET') {
-      const cache = await caches.open(API_CACHE_NAME);
       const cachedResponse = await cache.match(request);
       if (cachedResponse) {
         return cachedResponse;
       }
     }
-    
+
     // 오프라인 에러 응답
     return new Response(
       JSON.stringify({
@@ -222,3 +246,29 @@ async function syncPendingData() {
   // 오프라인 상태에서 생성된 데이터를 서버와 동기화
   console.log('[SW] Background sync triggered');
 }
+
+// 캐시 무효화 함수
+async function invalidateContentCache() {
+  try {
+    const cache = await caches.open(API_CACHE_NAME);
+    const cacheKeys = await cache.keys();
+
+    // 콘텐츠 관련 캐시 삭제
+    const contentCacheKeys = cacheKeys.filter(request =>
+      request.url.includes('/api/contents/') ||
+      request.url.includes('/api/categories/')
+    );
+
+    await Promise.all(contentCacheKeys.map(request => cache.delete(request)));
+    console.log('[SW] Content cache invalidated');
+  } catch (error) {
+    console.error('[SW] Failed to invalidate cache:', error);
+  }
+}
+
+// 메시지 리스너 (콘텐츠 생성 시 캐시 무효화)
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'INVALIDATE_CONTENT_CACHE') {
+    invalidateContentCache();
+  }
+});
