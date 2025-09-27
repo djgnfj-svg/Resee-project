@@ -60,6 +60,7 @@ urlpatterns = [
     path('api/', include('content.urls')),  # contents/, categories/ at root level
     path('api/review/', include('review.urls')),
     path('api/analytics/', include('analytics.urls')),  # includes BI endpoints
+    path('api/weekly-test/', include('weekly_test.urls')),  # weekly test functionality
 ]
 
 if settings.DEBUG:
