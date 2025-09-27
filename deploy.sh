@@ -163,6 +163,10 @@ docker system prune -f 2>/dev/null || true
 log_info "frontend 빌드 볼륨 초기화 중..."
 docker volume rm resee-project_frontend_build 2>/dev/null || true
 
+# Service Worker 캐시 문제 방지를 위한 추가 볼륨 정리
+log_info "Service Worker 캐시 이슈 방지를 위한 nginx 관련 볼륨 정리 중..."
+docker volume rm resee-project_nginx_cache 2>/dev/null || true
+
 # nginx 이미지 캐시도 제거 (설정 파일 변경 반영을 위해)
 log_info "nginx 이미지 캐시 제거 중..."
 docker rmi nginx:alpine 2>/dev/null || true
