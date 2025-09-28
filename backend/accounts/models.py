@@ -12,6 +12,15 @@ from django.utils.crypto import get_random_string
 
 from resee.models import BaseModel, TimestampMixin
 
+# Import legal models to make them discoverable by Django migrations
+from .legal.legal_models import (
+    LegalDocument,
+    UserConsent,
+    DataDeletionRequest,
+    DataExportRequest,
+    CookieConsent,
+)
+
 
 class UserManager(BaseUserManager):
     """Custom user manager for email-only authentication."""
