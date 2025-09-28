@@ -29,13 +29,15 @@ http://localhost:8000/admin  # Django Admin
 
 ### Development Environment
 ```bash
-# Start all services
+# Start all services (includes Celery for email notifications)
 docker-compose up -d
 
 # View logs
 docker-compose logs -f backend
 docker-compose logs -f frontend
 docker-compose logs -f nginx
+docker-compose logs -f celery
+docker-compose logs -f celery-beat
 ```
 
 ### Backend Commands
@@ -94,6 +96,13 @@ The review system implements Ebbinghaus forgetting curve theory through a synchr
 - Frontend `ReviewPage.tsx` fetches today's reviews via `/api/review/today/`
 - Performance recorded in `ReviewHistory` for analytics
 
+**Email Notification System (V0.2)**:
+- `NotificationPreference` model for user-specific email settings
+- Celery + Redis background task processing for email delivery
+- `/api/accounts/notification-preferences/` API endpoints (GET/PUT)
+- Daily review reminder emails via `review/tasks.py:send_individual_review_reminder`
+- Customizable notification times and preferences per user
+
 **Simplified Analytics**:
 - Basic dashboard metrics only: today's reviews, total content, 30-day success rate
 - No gamification metrics (streaks, achievements, complex progress tracking)
@@ -104,11 +113,13 @@ The review system implements Ebbinghaus forgetting curve theory through a synchr
 **Development** (`.env`):
 - `DJANGO_SETTINGS_MODULE`: `resee.settings.development`
 - `DATABASE_URL`: `postgresql://postgres:postgres123@postgres:5432/resee_dev` (Local Docker PostgreSQL)
+- `REDIS_URL`: `redis://redis:6379/0` (Celery broker and result backend)
 - `ENFORCE_EMAIL_VERIFICATION`: `False` to skip email verification
 
 **Production** (`.env.prod`):
 - `DJANGO_SETTINGS_MODULE`: `resee.settings.production`
 - `DATABASE_URL`: `postgresql://postgres:postgres123@postgres:5432/resee_prod` (Local Docker PostgreSQL)
+- `REDIS_URL`: `redis://redis:6379/0` (Celery broker and result backend)
 - `ENFORCE_EMAIL_VERIFICATION`: `True` for production
 
 **Frontend**:
@@ -122,7 +133,7 @@ The review system implements Ebbinghaus forgetting curve theory through a synchr
 # Copy environment template
 cp .env.example .env
 
-# Start services (PostgreSQL, Backend, Frontend, Nginx)
+# Start services (PostgreSQL, Redis, Backend, Frontend, Nginx, Celery)
 docker-compose up -d
 
 # Apply migrations
@@ -155,19 +166,23 @@ docker-compose -f docker-compose.prod.yml exec backend python manage.py health_c
 - **Ebbinghaus Algorithm**: `backend/review/utils.py`
 - **Review Schedule Signal**: `backend/content/signals.py`
 - **Subscription Logic**: `backend/accounts/models.py:Subscription`
+- **Notification System**: `backend/accounts/models.py:NotificationPreference`
+- **Email Tasks**: `backend/review/tasks.py` (Celery background tasks)
 - **Simple Analytics**: `backend/analytics/views.py` (basic dashboard statistics only)
 
 ### Frontend Architecture
 - **API Client with JWT**: `frontend/src/utils/api.ts`
 - **Simple Dashboard**: `frontend/src/pages/SimpleDashboard.tsx` (focus on core metrics)
 - **Review System UI**: `frontend/src/pages/ReviewPage.tsx`
+- **Settings System**: `frontend/src/pages/SettingsPage.tsx` and `frontend/src/components/settings/NotificationTab.tsx`
 - **Type Definitions**: `frontend/src/types/`
 - **Auth Context**: `frontend/src/contexts/AuthContext.tsx`
 
 ### Configuration
 - **Django Settings**: `backend/resee/settings/{base,development,production}.py`
 - **Docker Compose**: `docker-compose.yml` (dev), `docker-compose.prod.yml` (prod, single worker)
-- **Cache System**: Local memory cache (no Redis dependency)
+- **Celery Configuration**: `backend/resee/celery.py` and settings in `base.py`
+- **Cache System**: Local memory cache (Redis used for Celery only)
 
 ## Development Guidelines
 
@@ -338,6 +353,16 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - **Email Generation**: Verification links now use correct `http://localhost/verify-email?token=...` format
 - **Testing Verified**: New account creation → email sending → link verification → authentication completion
 
+**✅ RESOLVED - Notification Settings System (2025-09-28) - V0.2**:
+- ~~Settings save showing "알림 설정은 현재 지원되지 않습니다" error~~ → **FIXED**: Implemented complete notification API
+- ~~Settings not persisting after page refresh~~ → **FIXED**: Added useQuery to load saved preferences on mount
+- ~~Time picker using problematic native input~~ → **FIXED**: Custom hour/minute dropdown selectors
+- **NotificationPreference Model**: Complete user notification settings with time configuration
+- **API Endpoints**: `/api/accounts/notification-preferences/` (GET/PUT) fully operational
+- **Frontend Integration**: Settings load on mount, save properly, persist across sessions
+- **Celery Email System**: Background task processing with Redis broker for email delivery
+- **Testing Verified**: Settings save → page refresh → settings persist (08:00 → DB: 08:00:00 → UI: 08:00)
+
 ### Performance Metrics (Current)
 - **Bundle Size**: Optimized (123.99 kB reduction from analytics cleanup)
 - **API Response Time**: Fast (<200ms for typical operations)
@@ -405,9 +430,17 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - Frontend API client updated to match new structure
 - Eliminated redundant URL patterns
 
-## Current System State (2025-09-26)
+## Current System State (2025-09-28) - V0.2
 
-### Recent Updates (2025-09-26)
+### Major Updates (V0.2 - 2025-09-28)
+- **Complete Notification Settings System**: Full-featured notification preferences with time configuration
+- **Celery Email Processing**: Background task queue with Redis for reliable email delivery
+- **Settings Persistence**: Proper data loading and saving across page refreshes
+- **Enhanced User Experience**: Custom time pickers, real-time validation, loading states
+- **Email Template System**: Professional daily review reminder emails
+- **API Expansion**: New notification preferences endpoints with comprehensive settings
+
+### Previous Updates (2025-09-26)
 - **PostgreSQL Simplification**: Migrated from Supabase back to local PostgreSQL for both development and production
 - **Network Architecture Cleanup**: Removed complex host networking mode, restored standard Docker Compose networking
 - **Docker Compose Normalization**: Simplified configuration with postgres, backend, frontend, nginx services
@@ -416,13 +449,16 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 
 ## Previous System State (2025-09-25)
 
-### Core Features (Maintained)
+### Core Features (V0.2 Enhanced)
 - **Ebbinghaus Spaced Repetition**: Scientific review intervals based on subscription tier
 - **Content Management**: Create, edit, and organize learning materials
 - **Review System**: Structured review workflow with performance tracking
 - **Subscription Tiers**: FREE (3-day max), BASIC (90-day), PRO (180-day) intervals
 - **User Authentication**: Email-based auth with JWT token management
 - **Responsive Design**: Mobile-first design with dark/light theme support
+- **✨ NEW: Complete Notification System**: Configurable email preferences with time settings
+- **✨ NEW: Background Email Processing**: Celery task queue for reliable email delivery
+- **✨ NEW: Persistent Settings**: Settings saved and loaded properly across sessions
 
 ### Removed Features (Simplified)
 - Streak tracking and gamification elements
@@ -432,17 +468,18 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - Achievement systems and badges
 - Weekly goal setting and efficiency metrics
 
-### Technical Metrics (Updated 2025-09-25)
-- **Frontend Bundle**: 283.14 kB (optimized after removing recharts and complex analytics)
-- **Code Reduction**: 3,627 lines removed, 243 lines added (massive simplification)
-- **Backend Structure**: Modular accounts app with 7 organized subfolders
-- **API Endpoints**: Clean RESTful structure (`/api/categories/`, `/api/contents/`)
-- **Database**: Clean analytics tables with migration applied successfully
-- **Code Quality**: All ESLint warnings resolved (36 → 0), TypeScript compilation clean
-- **Test Coverage**: Backend analytics tests passing (3/3)
-- **E2E Testing**: ✅ **100% MCP functionality verified** - All core features operational
-- **Responsive Design**: ✅ **Mobile-first** - Tested across 3 breakpoints (375px, 768px, 1920px)
-- **User Experience**: ✅ **Complete user journey** - Registration → Content Creation → Review → Completion
+### Technical Metrics (Updated V0.2 - 2025-09-28)
+- **Frontend Bundle**: 283.14 kB (maintained optimization after analytics cleanup)
+- **V0.2 Feature Addition**: 1,668 lines added, 717 lines removed (notification system implementation)
+- **Backend Structure**: Enhanced modular accounts app + Celery task system
+- **API Endpoints**: Expanded RESTful structure with `/api/accounts/notification-preferences/`
+- **Database**: New NotificationPreference model with comprehensive settings
+- **Infrastructure**: Added Redis + Celery services for background processing
+- **Code Quality**: TypeScript compilation clean, proper error handling implemented
+- **E2E Testing**: ✅ **100% V0.2 functionality verified** - Notification settings fully operational
+- **Settings Persistence**: ✅ **Confirmed** - Settings save → page refresh → settings persist
+- **Email System**: ✅ **Background Processing** - Celery tasks + Redis broker operational
+- **User Experience**: ✅ **Enhanced Settings** - Custom time pickers, real-time validation, loading states
 
 ### Architecture Philosophy
 **Focus on Learning Effectiveness**:
