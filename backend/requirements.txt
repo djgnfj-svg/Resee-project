@@ -38,6 +38,11 @@ anthropic==0.25.9
 # Email Services
 django-ses==3.5.2
 
+# Task Queue & Scheduling
+celery[redis]==5.3.4
+redis>=4.5.2,<5.0.0
+django-celery-beat==2.5.0
+
 # AWS & Cloud Storage
 boto3==1.35.93
 botocore==1.35.93

@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from ..models import Subscription, SubscriptionTier, PaymentHistory
+from ..models import Subscription, SubscriptionTier, PaymentHistory, NotificationPreference
 
 User = get_user_model()
 
@@ -322,3 +322,32 @@ class PaymentHistorySerializer(serializers.ModelSerializer):
     def get_to_tier_display(self, obj):
         """Get display text for to_tier"""
         return dict(SubscriptionTier.choices).get(obj.to_tier, obj.to_tier)
+
+
+class NotificationPreferenceSerializer(serializers.ModelSerializer):
+    """Serializer for notification preferences"""
+
+    class Meta:
+        model = NotificationPreference
+        fields = [
+            'email_notifications_enabled',
+            'daily_reminder_enabled',
+            'daily_reminder_time',
+            'evening_reminder_enabled',
+            'evening_reminder_time',
+            'weekly_summary_enabled',
+            'weekly_summary_day',
+            'weekly_summary_time',
+        ]
+
+    def validate_daily_reminder_time(self, value):
+        """Validate daily reminder time format"""
+        return value
+
+    def validate_evening_reminder_time(self, value):
+        """Validate evening reminder time format"""
+        return value
+
+    def validate_weekly_summary_time(self, value):
+        """Validate weekly summary time format"""
+        return value

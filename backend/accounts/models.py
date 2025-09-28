@@ -469,94 +469,6 @@ class BillingSchedule(BaseModel):
         )
 
 
-class EmailSubscription(models.Model):
-    """Email subscription for launch notifications and marketing"""
-    email = models.EmailField(
-        unique=True,
-        help_text='Email address for subscription notifications'
-    )
-    subscribed_at = models.DateTimeField(
-        auto_now_add=True,
-        help_text='When the email was subscribed'
-    )
-    is_active = models.BooleanField(
-        default=True,
-        help_text='Whether the subscription is active'
-    )
-    unsubscribed_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text='When the user unsubscribed'
-    )
-    source = models.CharField(
-        max_length=100,
-        default='subscription_page',
-        help_text='Source of the email subscription'
-    )
-    ip_address = models.GenericIPAddressField(
-        null=True,
-        blank=True,
-        help_text='IP address when subscribed'
-    )
-    user_agent = models.TextField(
-        blank=True,
-        help_text='User agent when subscribed'
-    )
-    
-    class Meta:
-        db_table = 'accounts_email_subscription'
-        verbose_name = 'Email Subscription'
-        verbose_name_plural = 'Email Subscriptions'
-        ordering = ['-subscribed_at']
-        indexes = [
-            models.Index(fields=['email']),
-            models.Index(fields=['is_active', '-subscribed_at']),
-        ]
-    
-    def __str__(self):
-        status = "Active" if self.is_active else "Unsubscribed"
-        return f"{self.email} - {status}"
-    
-    def unsubscribe(self):
-        """Unsubscribe this email"""
-        self.is_active = False
-        self.unsubscribed_at = timezone.now()
-        self.save()
-
-    
-    @classmethod
-    def get_active_count(cls):
-        """Get total count of active subscriptions"""
-        return cls.objects.filter(is_active=True).count()
-    
-    @classmethod
-    def subscribe_email(cls, email, source='subscription_page', ip_address=None, user_agent=''):
-        """Subscribe an email with duplicate handling"""
-        # Check if email already exists
-        existing = cls.objects.filter(email=email).first()
-        
-        if existing:
-            if existing.is_active:
-                return existing, False  # Already subscribed
-            else:
-                # Reactivate existing subscription
-                existing.is_active = True
-                existing.unsubscribed_at = None
-                existing.subscribed_at = timezone.now()
-                existing.source = source
-                existing.ip_address = ip_address
-                existing.user_agent = user_agent
-                existing.save()
-                return existing, True  # Resubscribed
-        else:
-            # Create new subscription
-            subscription = cls.objects.create(
-                email=email,
-                source=source,
-                ip_address=ip_address,
-                user_agent=user_agent
-            )
-            return subscription, True  # Newly subscribed
 
 
 
@@ -646,3 +558,96 @@ def adjust_review_schedules_on_subscription_change(sender, instance, created, **
         logger = logging.getLogger(__name__)
         logger.info(f"Adjusted {schedules.count()} review schedules for user {instance.user.email} "
                    f"due to subscription change to {instance.tier} (max: {new_max_interval} days)")
+
+
+class NotificationPreference(TimestampMixin):
+    """사용자별 이메일 알림 설정"""
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='notification_preference'
+    )
+
+    # 기본 알림 설정
+    email_notifications_enabled = models.BooleanField(
+        default=True,
+        help_text='이메일 알림 전체 활성화/비활성화'
+    )
+
+    # 복습 알림 설정
+    daily_reminder_enabled = models.BooleanField(
+        default=True,
+        help_text='일일 복습 알림 활성화'
+    )
+    daily_reminder_time = models.TimeField(
+        default='09:00',
+        help_text='일일 복습 알림 시간'
+    )
+
+    # 저녁 리마인더 설정
+    evening_reminder_enabled = models.BooleanField(
+        default=True,
+        help_text='저녁 복습 리마인더 활성화'
+    )
+    evening_reminder_time = models.TimeField(
+        default='20:00',
+        help_text='저녁 복습 리마인더 시간'
+    )
+
+    # 주간 요약 설정
+    weekly_summary_enabled = models.BooleanField(
+        default=True,
+        help_text='주간 요약 이메일 활성화'
+    )
+    weekly_summary_day = models.IntegerField(
+        default=1,  # 월요일
+        choices=[
+            (1, '월요일'),
+            (2, '화요일'),
+            (3, '수요일'),
+            (4, '목요일'),
+            (5, '금요일'),
+            (6, '토요일'),
+            (0, '일요일'),
+        ],
+        help_text='주간 요약 발송 요일'
+    )
+    weekly_summary_time = models.TimeField(
+        default='09:00',
+        help_text='주간 요약 발송 시간'
+    )
+
+    # 구독 해지 토큰
+    unsubscribe_token = models.CharField(
+        max_length=64,
+        unique=True,
+        blank=True,
+        help_text='이메일 구독 해지용 토큰'
+    )
+
+    class Meta:
+        db_table = 'accounts_notification_preference'
+        verbose_name = 'Notification Preference'
+        verbose_name_plural = 'Notification Preferences'
+
+    def __str__(self):
+        return f"{self.user.email} - Notifications"
+
+    def save(self, *args, **kwargs):
+        # 구독 해지 토큰 자동 생성
+        if not self.unsubscribe_token:
+            self.unsubscribe_token = get_random_string(64)
+        super().save(*args, **kwargs)
+
+    def generate_unsubscribe_url(self):
+        """구독 해지 URL 생성"""
+        from django.conf import settings
+        return f"{settings.FRONTEND_URL}/unsubscribe?token={self.unsubscribe_token}"
+
+
+@receiver(post_save, sender=User)
+def create_notification_preference(sender, instance, created, **kwargs):
+    """사용자 생성시 알림 설정 자동 생성"""
+    if created:
+        NotificationPreference.objects.create(user=instance)

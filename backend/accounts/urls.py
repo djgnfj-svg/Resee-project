@@ -7,13 +7,13 @@ from .subscription.subscription_views import (subscription_cancel, subscription_
                                              payment_history, toggle_auto_renewal, billing_schedule)
 
 # Account management views (non-auth)
-from .views import (AccountDeleteView, ProfileView, WeeklyGoalUpdateView)
+from .views import (AccountDeleteView, ProfileView, WeeklyGoalUpdateView, NotificationPreferenceView)
 
 # Authentication views
 from .auth.views import (GoogleOAuthView, PasswordChangeView, UserViewSet)
 
 # Email views
-from .email.email_views import EmailVerificationView, ResendVerificationView, EmailSubscriptionView
+from .email.email_views import EmailVerificationView, ResendVerificationView
 
 # Health check views
 from .health.health_views import health_check, health_detailed, readiness_check, liveness_check
@@ -30,10 +30,11 @@ urlpatterns = [
     path('password/change/', PasswordChangeView.as_view(), name='password-change'),
     path('account/delete/', AccountDeleteView.as_view(), name='account-delete'),
     path('weekly-goal/', WeeklyGoalUpdateView.as_view(), name='weekly-goal-update'),
-    # Email verification and subscription
+    # Notification preferences
+    path('notification-preferences/', NotificationPreferenceView.as_view(), name='notification-preferences'),
+    # Email verification
     path('verify-email/', EmailVerificationView.as_view(), name='verify-email'),
     path('resend-verification/', ResendVerificationView.as_view(), name='resend-verification'),
-    path('email-signup/', EmailSubscriptionView.as_view(), name='email-signup'),
     # Authentication
     path('google-oauth/', GoogleOAuthView.as_view(), name='google-oauth'),
     # Subscription management

@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from resee.error_handlers import APIErrorHandler, StandardAPIResponse
 
 from .utils.serializers import (AccountDeleteSerializer, ProfileSerializer,
-                                SubscriptionUpgradeSerializer, UserSerializer)
+                                SubscriptionUpgradeSerializer, UserSerializer, NotificationPreferenceSerializer)
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -324,6 +324,89 @@ class SubscriptionUpgradeView(APIView):
             logger.error(f"Subscription upgrade failed for {user.email}: {str(e)}")
             return Response(
                 {'error': '구독 업그레이드 중 오류가 발생했습니다.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class NotificationPreferenceView(APIView):
+    """Notification preference management view"""
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="알림 설정 조회",
+        operation_description="현재 로그인된 사용자의 알림 설정을 조회합니다.",
+        tags=['Notification'],
+        responses={
+            200: NotificationPreferenceSerializer,
+            401: "인증 필요",
+        }
+    )
+    def get(self, request):
+        """Get user notification preferences"""
+        try:
+            # Get or create notification preference for user
+            from .models import NotificationPreference
+            preference, created = NotificationPreference.objects.get_or_create(
+                user=request.user
+            )
+
+            serializer = NotificationPreferenceSerializer(preference)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Failed to get notification preferences for {request.user.email}: {str(e)}")
+            return Response(
+                {'error': '알림 설정을 가져오는데 실패했습니다.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @swagger_auto_schema(
+        operation_summary="알림 설정 수정",
+        operation_description="""현재 로그인된 사용자의 알림 설정을 수정합니다.
+
+        **요청 예시:**
+        ```json
+        {
+          "email_notifications_enabled": true,
+          "daily_reminder_enabled": true,
+          "daily_reminder_time": "09:00",
+          "evening_reminder_enabled": false,
+          "evening_reminder_time": "20:00",
+          "weekly_summary_enabled": true,
+          "weekly_summary_day": 1,
+          "weekly_summary_time": "09:00"
+        }
+        ```
+        """,
+        tags=['Notification'],
+        request_body=NotificationPreferenceSerializer,
+        responses={
+            200: NotificationPreferenceSerializer,
+            400: "잘못된 요청 - 유효성 검사 실패",
+            401: "인증 필요",
+        }
+    )
+    def put(self, request):
+        """Update user notification preferences"""
+        try:
+            from .models import NotificationPreference
+
+            # Get or create notification preference for user
+            preference, created = NotificationPreference.objects.get_or_create(
+                user=request.user
+            )
+
+            serializer = NotificationPreferenceSerializer(preference, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                logger.info(f"Notification preferences updated for user {request.user.email}")
+                return Response(serializer.data)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f"Failed to update notification preferences for {request.user.email}: {str(e)}")
+            return Response(
+                {'error': '알림 설정 저장에 실패했습니다.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

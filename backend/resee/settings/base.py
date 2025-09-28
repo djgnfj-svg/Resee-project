@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     'drf_yasg',
-    # Celery apps removed - using synchronous processing
+    'django_celery_beat',
     
     # Local apps
     'accounts',  # includes legal functionality
@@ -363,3 +363,31 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 CSRF_COOKIE_SECURE = True  # HTTPS only
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
+
+
+# Celery Configuration
+CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Seoul'
+CELERY_ENABLE_UTC = True
+
+# Celery Beat Configuration
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Task retry configuration
+CELERY_TASK_ALWAYS_EAGER = False  # Set to True for testing
+CELERY_TASK_EAGER_PROPAGATES = False
+CELERY_TASK_ROUTES = {
+    'review.tasks.*': {'queue': 'review_queue'},
+    'accounts.tasks.*': {'queue': 'email_queue'},
+}
+
+# Email task configuration
+CELERY_EMAIL_TASK_CONFIG = {
+    'rate_limit': '100/m',  # 100 emails per minute
+    'max_retries': 3,
+    'default_retry_delay': 60,  # 1 minute
+}
