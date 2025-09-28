@@ -77,7 +77,7 @@ class CustomExceptionsTestCase(TestCase):
 class ExceptionHandlerTestCase(TestCase):
     """Test cases for exception handler functions"""
     
-    @patch('accounts.exceptions.logger')
+    @patch('accounts.utils.exceptions.logger')
     def test_handle_accounts_exception(self, mock_logger):
         """Test handle_accounts_exception function"""
         exc = ConsentException("테스트 동의 오류", status.HTTP_422_UNPROCESSABLE_ENTITY)
@@ -95,7 +95,7 @@ class ExceptionHandlerTestCase(TestCase):
         # Verify logging was called
         mock_logger.warning.assert_called_once()
     
-    @patch('accounts.exceptions.exception_handler')
+    @patch('accounts.utils.exceptions.exception_handler')
     def test_handle_non_accounts_exception(self, mock_exception_handler):
         """Test that non-accounts exceptions are passed to DRF handler"""
         exc = ValueError("Standard Python exception")
@@ -109,7 +109,7 @@ class ExceptionHandlerTestCase(TestCase):
         mock_exception_handler.assert_called_once_with(exc, context)
         self.assertEqual(result, mock_exception_handler.return_value)
     
-    @patch('accounts.exceptions.logger')
+    @patch('accounts.utils.exceptions.logger')
     def test_safe_api_call_decorator_success(self, mock_logger):
         """Test safe_api_call decorator with successful function"""
         @safe_api_call
@@ -126,7 +126,7 @@ class ExceptionHandlerTestCase(TestCase):
         mock_logger.warning.assert_not_called()
         mock_logger.error.assert_not_called()
     
-    @patch('accounts.exceptions.logger')
+    @patch('accounts.utils.exceptions.logger')
     def test_safe_api_call_decorator_accounts_exception(self, mock_logger):
         """Test safe_api_call decorator with AccountsException"""
         @safe_api_call
@@ -144,7 +144,7 @@ class ExceptionHandlerTestCase(TestCase):
         mock_logger.warning.assert_called_once()
         mock_logger.error.assert_not_called()
     
-    @patch('accounts.exceptions.logger')
+    @patch('accounts.utils.exceptions.logger')
     def test_safe_api_call_decorator_unexpected_exception(self, mock_logger):
         """Test safe_api_call decorator with unexpected exception"""
         @safe_api_call

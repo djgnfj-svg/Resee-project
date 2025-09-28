@@ -63,30 +63,30 @@ class ReviewUtilsTest(TestCase):
     
     def test_calculate_next_review_date(self):
         """Test next review date calculation"""
-        now = timezone.now()
-        
-        # Test different intervals
-        next_date_1 = calculate_next_review_date(1)
-        expected_1 = now + timedelta(days=1)
-        self.assertAlmostEqual(
-            next_date_1.timestamp(),
-            expected_1.timestamp(),
-            delta=60  # 1 minute tolerance
-        )
-        
-        next_date_7 = calculate_next_review_date(7)
-        expected_7 = now + timedelta(days=7)
-        self.assertAlmostEqual(
-            next_date_7.timestamp(),
-            expected_7.timestamp(),
-            delta=60
-        )
+        # Test with user and interval index
+        next_date, new_index = calculate_next_review_date(self.user, 0, 'remembered')
+
+        # Should advance to next interval
+        self.assertEqual(new_index, 1)
+
+        # Should be scheduled for tomorrow (first interval)
+        intervals = get_review_intervals(self.user)
+        expected_days = intervals[1]  # Second interval after advancing
+        expected_date = timezone.now() + timedelta(days=expected_days)
+
+        # Check if dates are within reasonable range (1 minute tolerance)
+        time_diff = abs((next_date - expected_date).total_seconds())
+        self.assertLess(time_diff, 60)
+
+        # Test reset on forgotten
+        reset_date, reset_index = calculate_next_review_date(self.user, 2, 'forgotten')
+        self.assertEqual(reset_index, 0)  # Should reset to first interval
     
     def test_calculate_success_rate(self):
         """Test success rate calculation"""
-        category = Category.objects.create(name='Test Category', user=self.user)
+        category = Category.objects.create(name='Success Rate Category', user=self.user)
         content = Content.objects.create(
-            title='Test Content',
+            title='Success Rate Content',
             content='Test content',
             author=self.user,
             category=category
@@ -121,43 +121,50 @@ class ReviewUtilsTest(TestCase):
     
     def test_get_today_reviews_count(self):
         """Test today's review count"""
-        category = Category.objects.create(name='Test Category', user=self.user)
+        category = Category.objects.create(name='Today Category', user=self.user)
         content = Content.objects.create(
-            title='Test Content',
+            title='Today Content',
             content='Test content',
             author=self.user,
             category=category
         )
-        
-        # Create review schedule due today
-        ReviewSchedule.objects.create(
-            content=content,
-            user=self.user,
-            next_review_date=timezone.now(),
-            is_active=True
-        )
-        
+
+        # Update the automatically created review schedule to be due today
+        schedule = ReviewSchedule.objects.get(content=content, user=self.user)
+        schedule.next_review_date = timezone.now()
+        schedule.is_active = True
+        schedule.save()
+
         count = get_today_reviews_count(self.user)
         self.assertEqual(count, 1)
     
     def test_get_pending_reviews_count(self):
         """Test pending reviews count"""
-        category = Category.objects.create(name='Test Category', user=self.user)
+        # Create content with past date using raw SQL to bypass constraints
+        from django.db import connection
+
+        category = Category.objects.create(name='Pending Category', user=self.user)
         content = Content.objects.create(
-            title='Test Content',
+            title='Pending Content',
             content='Test content',
             author=self.user,
             category=category
         )
-        
-        # Create overdue review schedule
-        ReviewSchedule.objects.create(
-            content=content,
-            user=self.user,
-            next_review_date=timezone.now() - timedelta(days=1),
-            is_active=True
-        )
-        
+
+        # Delete auto-created schedule and create one with past dates
+        ReviewSchedule.objects.filter(content=content, user=self.user).delete()
+
+        # Create schedule with past dates using raw SQL
+        with connection.cursor() as cursor:
+            past_date = timezone.now() - timedelta(days=2)
+            cursor.execute(
+                """INSERT INTO review_reviewschedule
+                   (content_id, user_id, next_review_date, interval_index, is_active,
+                    initial_review_completed, created_at, updated_at)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                [content.id, self.user.id, past_date, 0, True, False, past_date, past_date]
+            )
+
         count = get_pending_reviews_count(self.user)
         self.assertEqual(count, 1)
 
@@ -180,13 +187,9 @@ class ReviewScheduleModelTest(TestCase):
     
     def test_create_review_schedule(self):
         """Test creating a review schedule"""
-        schedule = ReviewSchedule.objects.create(
-            content=self.content,
-            user=self.user,
-            interval_index=0,
-            next_review_date=timezone.now()
-        )
-        
+        # Use the automatically created schedule from signal
+        schedule = ReviewSchedule.objects.get(content=self.content, user=self.user)
+
         self.assertEqual(schedule.content, self.content)
         self.assertEqual(schedule.user, self.user)
         self.assertEqual(schedule.interval_index, 0)
@@ -197,13 +200,9 @@ class ReviewScheduleModelTest(TestCase):
         """Test advancing schedule for FREE tier"""
         self.user.subscription.tier = SubscriptionTier.FREE
         self.user.subscription.save()
-        
-        schedule = ReviewSchedule.objects.create(
-            content=self.content,
-            user=self.user,
-            interval_index=0,
-            next_review_date=timezone.now()
-        )
+
+        # Use the automatically created schedule from signal
+        schedule = ReviewSchedule.objects.get(content=self.content, user=self.user)
         
         original_date = schedule.next_review_date
         schedule.advance_schedule()
@@ -220,13 +219,9 @@ class ReviewScheduleModelTest(TestCase):
         """Test advancing schedule for BASIC tier"""
         self.user.subscription.tier = SubscriptionTier.BASIC
         self.user.subscription.save()
-        
-        schedule = ReviewSchedule.objects.create(
-            content=self.content,
-            user=self.user,
-            interval_index=0,
-            next_review_date=timezone.now()
-        )
+
+        # Use the automatically created schedule from signal
+        schedule = ReviewSchedule.objects.get(content=self.content, user=self.user)
         
         # Advance multiple times to test full progression
         original_index = schedule.interval_index
@@ -242,12 +237,14 @@ class ReviewScheduleModelTest(TestCase):
     
     def test_reset_schedule(self):
         """Test resetting schedule (forgot case)"""
-        schedule = ReviewSchedule.objects.create(
-            content=self.content,
-            user=self.user,
-            interval_index=3,
-            next_review_date=timezone.now()
-        )
+        # Set BASIC tier to allow higher interval index
+        self.user.subscription.tier = SubscriptionTier.BASIC
+        self.user.subscription.save()
+
+        # Use the automatically created schedule from signal
+        schedule = ReviewSchedule.objects.get(content=self.content, user=self.user)
+        schedule.interval_index = 3
+        schedule.save()
         
         old_date = schedule.next_review_date
         schedule.reset_schedule()
@@ -257,12 +254,8 @@ class ReviewScheduleModelTest(TestCase):
     
     def test_schedule_str_representation(self):
         """Test schedule string representation"""
-        schedule = ReviewSchedule.objects.create(
-            content=self.content,
-            user=self.user,
-            interval_index=0,
-            next_review_date=timezone.now()
-        )
+        # Use the automatically created schedule from signal
+        schedule = ReviewSchedule.objects.get(content=self.content, user=self.user)
         
         expected_str = f"Test Content - {self.user.email} (interval: 0)"
         self.assertEqual(str(schedule), expected_str)
@@ -272,13 +265,12 @@ class ReviewScheduleModelTest(TestCase):
         # Start with PRO tier
         self.user.subscription.tier = SubscriptionTier.PRO
         self.user.subscription.save()
-        
-        schedule = ReviewSchedule.objects.create(
-            content=self.content,
-            user=self.user,
-            interval_index=7,  # Max PRO interval
-            next_review_date=timezone.now() + timedelta(days=180)
-        )
+
+        # Use the automatically created schedule from signal
+        schedule = ReviewSchedule.objects.get(content=self.content, user=self.user)
+        schedule.interval_index = 7  # Max PRO interval
+        schedule.next_review_date = timezone.now() + timedelta(days=180)
+        schedule.save()
         
         # Downgrade to BASIC tier
         self.user.subscription.tier = SubscriptionTier.BASIC
@@ -319,7 +311,7 @@ class ReviewHistoryModelTest(TestCase):
         self.assertEqual(history.result, 'remembered')
         self.assertEqual(history.time_spent, 30)
         self.assertEqual(history.notes, 'Good recall')
-        self.assertIsNotNone(history.reviewed_at)
+        self.assertIsNotNone(history.review_date)
     
     def test_history_result_choices(self):
         """Test valid result choices"""
@@ -370,12 +362,8 @@ class ReviewAPITest(APITestCase):
             category=self.category
         )
         
-        self.schedule = ReviewSchedule.objects.create(
-            content=self.content,
-            user=self.user,
-            next_review_date=timezone.now(),
-            is_active=True
-        )
+        # Use the automatically created schedule from signal
+        self.schedule = ReviewSchedule.objects.get(content=self.content, user=self.user)
     
     def test_today_review_view(self):
         """Test today's review endpoint"""
@@ -407,13 +395,18 @@ class ReviewAPITest(APITestCase):
             category=self.category
         )
         
-        # Create schedule overdue by 5 days (beyond FREE tier limit of 3 days)
-        old_schedule = ReviewSchedule.objects.create(
-            content=old_content,
-            user=self.user,
-            next_review_date=timezone.now() - timedelta(days=5),
-            is_active=True
-        )
+        # Update the auto-created schedule to be overdue by 5 days (beyond FREE tier limit)
+        old_schedule = ReviewSchedule.objects.get(content=old_content, user=self.user)
+        # Use raw SQL to bypass constraint validation for testing
+        from django.db import connection
+        with connection.cursor() as cursor:
+            past_date = timezone.now() - timedelta(days=6)  # Both creation and review dates in the past
+            cursor.execute(
+                """UPDATE review_reviewschedule
+                   SET next_review_date = %s, is_active = %s, created_at = %s
+                   WHERE id = %s""",
+                [timezone.now() - timedelta(days=5), True, past_date, old_schedule.id]
+            )
         
         url = reverse('review:today')
         response = self.client.get(url)
@@ -478,6 +471,10 @@ class ReviewAPITest(APITestCase):
     
     def test_complete_review_forgot(self):
         """Test completing review with 'forgot' result"""
+        # Set BASIC tier to allow higher interval index
+        self.user.subscription.tier = SubscriptionTier.BASIC
+        self.user.subscription.save()
+
         # Advance schedule first
         self.schedule.interval_index = 2
         self.schedule.save()
@@ -573,12 +570,14 @@ class ReviewAPITest(APITestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsInstance(response.data, list)
-        
+        self.assertIsInstance(response.data, dict)
+
         if response.data:  # If there are stats
-            stats = response.data[0]
+            # The response is a dict keyed by category slug
+            category_slug = list(response.data.keys())[0]
+            stats = response.data[category_slug]
             self.assertIn('category', stats)
-            self.assertIn('total_reviews', stats)
+            self.assertIn('total_reviews_30_days', stats)  # Updated field name
             self.assertIn('success_rate', stats)
 
 
@@ -603,40 +602,34 @@ class EbbinghausAlgorithmTest(TestCase):
         self.user.subscription.tier = SubscriptionTier.BASIC
         self.user.subscription.save()
         
-        schedule = ReviewSchedule.objects.create(
-            content=self.content,
-            user=self.user,
-            interval_index=0,
-            next_review_date=timezone.now()
-        )
+        # Use the automatically created schedule from signal
+        schedule = ReviewSchedule.objects.get(content=self.content, user=self.user)
         
         expected_intervals = [1, 3, 7, 14, 30, 60, 90]
         
         # Test progression through all intervals
         for i, expected_days in enumerate(expected_intervals[1:], 1):
-            old_date = schedule.next_review_date
+            before_advance = timezone.now()
             schedule.advance_schedule()
-            
+
             self.assertEqual(schedule.interval_index, i)
-            
-            # Calculate expected new date
-            new_date = old_date + timedelta(days=expected_days)
-            
-            # Allow small time difference due to processing time
-            time_diff = abs((schedule.next_review_date - new_date).total_seconds())
-            self.assertLess(time_diff, 60)  # Less than 1 minute difference
+
+            # Calculate expected new date from when advance_schedule was called
+            expected_new_date = before_advance + timedelta(days=expected_days)
+
+            # Allow reasonable time difference due to processing time
+            time_diff = abs((schedule.next_review_date - expected_new_date).total_seconds())
+            self.assertLess(time_diff, 5)  # Less than 5 seconds difference
     
     def test_ebbinghaus_forgetting_reset(self):
         """Test forgetting resets to first interval"""
         self.user.subscription.tier = SubscriptionTier.BASIC
         self.user.subscription.save()
         
-        schedule = ReviewSchedule.objects.create(
-            content=self.content,
-            user=self.user,
-            interval_index=5,  # Advanced interval
-            next_review_date=timezone.now()
-        )
+        # Use the automatically created schedule from signal
+        schedule = ReviewSchedule.objects.get(content=self.content, user=self.user)
+        schedule.interval_index = 5  # Advanced interval
+        schedule.save()
         
         # Simulate forgetting
         schedule.reset_schedule()
@@ -688,11 +681,8 @@ class SerializerTest(TestCase):
             category=self.category
         )
         
-        self.schedule = ReviewSchedule.objects.create(
-            content=self.content,
-            user=self.user,
-            next_review_date=timezone.now()
-        )
+        # Use the automatically created schedule from signal
+        self.schedule = ReviewSchedule.objects.get(content=self.content, user=self.user)
         
         self.history = ReviewHistory.objects.create(
             content=self.content,
@@ -720,6 +710,6 @@ class SerializerTest(TestCase):
         self.assertIn('content', data)
         self.assertIn('result', data)
         self.assertIn('time_spent', data)
-        self.assertIn('reviewed_at', data)
+        self.assertIn('review_date', data)
         self.assertEqual(data['result'], 'remembered')
         self.assertEqual(data['time_spent'], 30)
