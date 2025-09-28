@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { authAPI } from '../../utils/api';
 
 interface NotificationSettings {
   email_notifications_enabled: boolean;

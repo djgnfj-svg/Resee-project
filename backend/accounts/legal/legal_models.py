@@ -1,7 +1,4 @@
-from django.contrib.auth import get_user_model
 from django.db import models
-
-User = get_user_model()
 
 
 class LegalDocument(models.Model):
@@ -45,7 +42,7 @@ class UserConsent(models.Model):
         MARKETING = 'marketing', '마케팅 정보 수신'
         COOKIES = 'cookies', '쿠키 사용'
     
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='consents')
+    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='consents')
     consent_type = models.CharField(max_length=50, choices=ConsentType.choices)
     document_version = models.CharField(max_length=20, help_text="동의한 문서 버전")
     
@@ -75,15 +72,15 @@ class DataDeletionRequest(models.Model):
         COMPLETED = 'completed', '완료'
         REJECTED = 'rejected', '거부'
     
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='deletion_requests')
+    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='deletion_requests')
     reason = models.TextField(blank=True, help_text="삭제 요청 사유")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     
     # 처리 정보
     processed_by = models.ForeignKey(
-        User, 
-        on_delete=models.SET_NULL, 
-        null=True, 
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
         related_name='processed_deletion_requests'
     )
@@ -111,7 +108,7 @@ class DataExportRequest(models.Model):
         DOWNLOADED = 'downloaded', '다운로드 완료'
         EXPIRED = 'expired', '만료됨'
     
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='export_requests')
+    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='export_requests')
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     
     # 파일 정보
@@ -141,8 +138,8 @@ class CookieConsent(models.Model):
         FUNCTIONAL = 'functional', '기능 쿠키'
     
     user = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE, 
+        'accounts.User',
+        on_delete=models.CASCADE,
         related_name='cookie_consents',
         blank=True,
         null=True

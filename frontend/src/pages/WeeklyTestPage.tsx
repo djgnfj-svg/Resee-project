@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { weeklyTestAPI, WeeklyTest, WeeklyTestQuestion } from '../utils/api/weeklyTest';
+import { weeklyTestAPI, WeeklyTest } from '../utils/api/weeklyTest';
 import { contentAPI } from '../utils/api/content';
 import { Category } from '../types';
 
@@ -63,7 +63,7 @@ const WeeklyTestPage: React.FC = () => {
       setIsLoading(true);
       const testData = { category_ids: selectedCategoryIds };
 
-      const newTest = await weeklyTestAPI.createWeeklyTest(testData);
+      await weeklyTestAPI.createWeeklyTest(testData);
       await loadTests();
       setShowCategorySelector(false);
       setSelectedCategoryIds([]);
@@ -129,7 +129,7 @@ const WeeklyTestPage: React.FC = () => {
 
     try {
       setIsLoading(true);
-      const results = await weeklyTestAPI.completeTest(currentTest.id);
+      await weeklyTestAPI.completeTest(currentTest.id);
       const detailedResults = await weeklyTestAPI.getTestResults(currentTest.id);
       setTestResults(detailedResults);
       await loadTests();
