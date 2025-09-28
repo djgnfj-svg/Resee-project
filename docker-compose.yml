@@ -17,6 +17,14 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
   backend:
     build: ./backend
     command: python manage.py runserver 0.0.0.0:8000
@@ -28,9 +36,40 @@ services:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=resee.settings.development
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
+
+  celery:
+    build: ./backend
+    command: celery -A resee worker -l info
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=resee.settings.development
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - postgres
+
+  celery-beat:
+    build: ./backend
+    command: celery -A resee beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=resee.settings.development
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - postgres
 
 
   frontend:
@@ -68,5 +107,6 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   static_volume:
   media_volume:

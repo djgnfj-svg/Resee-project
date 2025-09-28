@@ -87,3 +87,8 @@ RESUME-*.md
 README-DEPLOYMENT.md
 .env.prod
 .env
+.claude
+.claude/*
+
+# Images
+image.png

@@ -616,7 +616,7 @@ class SubscriptionUpgradeView(APIView):
 
 
 # Email views moved to email_views.py
-from .email_views import EmailVerificationView, ResendVerificationView, EmailSubscriptionView
+from .email_views import EmailVerificationView, ResendVerificationView
 
 # Health check views moved to health_views.py
 from .health_views import health_check, health_detailed, readiness_check, liveness_check

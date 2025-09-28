@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SubscriptionTierInfo, SubscriptionUpgradeData, SubscriptionTier } from '../types';
 import { toast } from 'react-hot-toast';
 import TierCard from '../components/subscription/TierCard';
-import EmailSignup from '../components/subscription/EmailSignup';
 
 const SubscriptionPage: React.FC = () => {
   const { user, refreshUser } = useAuth();
@@ -149,31 +148,10 @@ const SubscriptionPage: React.FC = () => {
             에빙하우스 망각곡선을 활용한 스마트 복습 시스템
           </p>
 
-          {/* Coming Soon Notice with Email Signup */}
-          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border border-indigo-200 dark:border-indigo-700 rounded-xl p-8 mb-8 max-w-2xl mx-auto">
-            <div className="text-center mb-6">
-              <p className="text-indigo-800 dark:text-indigo-300 font-bold text-xl mb-2">
-                곧 출시됩니다!
-              </p>
-              <p className="text-indigo-700 dark:text-indigo-400 text-sm mb-4">
-                더 나은 서비스를 위해 유료 구독은 사용자 20명 달성 후 오픈 예정입니다.
-              </p>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                출시 알림 받기
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                오픈 소식을 가장 먼저 받아보세요!
-              </p>
-            </div>
-            <EmailSignup />
-          </div>
         </div>
 
         {/* Subscription Tiers Preview */}
         <div className="mb-8">
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 text-center mb-8">
-            예정된 구독 플랜
-          </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {subscriptionTiers.map((tier, index) => (
               <TierCard
