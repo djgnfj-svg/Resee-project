@@ -34,7 +34,10 @@ class UtilsTestCase(TestCase):
     def test_get_client_ip_empty_fallback(self):
         """Test IP extraction with no headers"""
         request = self.factory.get('/')
-        
+        # Clear REMOTE_ADDR to test empty fallback
+        if 'REMOTE_ADDR' in request.META:
+            del request.META['REMOTE_ADDR']
+
         ip = get_client_ip(request)
         self.assertEqual(ip, '')
     
@@ -76,9 +79,14 @@ class UtilsTestCase(TestCase):
     def test_collect_client_info_empty(self):
         """Test client info collection with empty headers"""
         request = self.factory.get('/')
-        
+        # Clear headers to test empty case
+        if 'REMOTE_ADDR' in request.META:
+            del request.META['REMOTE_ADDR']
+        if 'HTTP_USER_AGENT' in request.META:
+            del request.META['HTTP_USER_AGENT']
+
         info = collect_client_info(request)
-        
+
         self.assertIsInstance(info, dict)
         self.assertEqual(info['ip_address'], '')
         self.assertEqual(info['user_agent'], '')

@@ -59,7 +59,7 @@ class ReviewHistoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     select_related_fields = ['content', 'content__category', 'user']
     
     def get_queryset(self):
-        return super().get_queryset().order_by('-reviewed_at')
+        return super().get_queryset().order_by('-review_date')
     
     @swagger_auto_schema(
         operation_summary="복습 기록 목록 조회",

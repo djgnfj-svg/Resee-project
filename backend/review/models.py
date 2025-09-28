@@ -68,7 +68,7 @@ class ReviewSchedule(BaseUserModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.user.username} - {self.content.title} - {self.next_review_date}"
+        return f"{self.content.title} - {self.user.email} (interval: {self.interval_index})"
     
     def get_next_interval(self):
         """Get next review interval in days"""
@@ -187,4 +187,4 @@ class ReviewHistory(BaseUserModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.user.username} - {self.content.title} - {self.result}"
+        return f"{self.content.title} - {self.result}"
