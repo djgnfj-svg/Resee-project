@@ -46,7 +46,7 @@ django-celery-beat==2.5.0
 # AWS & Cloud Storage
 boto3==1.35.93
 botocore==1.35.93
-django-storages==1.14.4
+django-storages==1.14.6
 
 # Note: psutil removed with monitoring app deletion
 
