@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resee 개발용 모니터링 대시보드</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .dev-banner {
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            color: #333;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status.healthy {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status.critical {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .metric {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .metric-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .metric-value {
+            font-size: 18px;
+            color: #333;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .refresh-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .refresh-btn:hover {
+            background-color: #0056b3;
+        }
+        .log-entry {
+            background-color: #f8f9fa;
+            border-left: 4px solid #dee2e6;
+            padding: 8px 12px;
+            margin: 5px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry.error {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        .dev-note {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="dev-banner">
+        🚧 개발 환경 전용 모니터링 대시보드 - 인증 없이 접근 가능 🚧
+    </div>
+
+    <div class="header">
+        <h1>🔧 Resee 개발용 모니터링 대시보드</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <span id="last-updated">마지막 업데이트: 로딩 중...</span>
+            <div>
+                <a href="/dev/logs/" style="background-color: #28a745; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-right: 10px;">📋 로그 뷰어</a>
+                <button class="refresh-btn" onclick="loadDashboardData()">새로고침</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="dev-note">
+        <strong>개발 환경 전용:</strong> 이 대시보드는 DEBUG=True일 때만 접근 가능하며, 프로덕션에서는 자동으로 비활성화됩니다.
+        로그 접근이 제한될 수 있으며, 이는 정상적인 동작입니다.
+    </div>
+
+    <div class="grid">
+        <!-- 시스템 상태 -->
+        <div class="card">
+            <h3>🚀 시스템 상태</h3>
+            <div id="system-status" class="loading">
+                로딩 중...
+            </div>
+        </div>
+
+        <!-- 서비스 상태 -->
+        <div class="card">
+            <h3>⚙️ 서비스 상태</h3>
+            <div id="services-status" class="loading">
+                로딩 중...
+            </div>
+        </div>
+
+        <!-- 로그 현황 -->
+        <div class="card">
+            <h3>📋 로그 현황</h3>
+            <div id="log-status" class="loading">
+                로딩 중...
+            </div>
+        </div>
+
+        <!-- 최근 에러 -->
+        <div class="card">
+            <h3>⚠️ 최근 에러</h3>
+            <div id="recent-errors" class="loading">
+                로딩 중...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function formatTimestamp(timestamp) {
+            return new Date(timestamp * 1000).toLocaleString('ko-KR');
+        }
+
+        function getStatusClass(status) {
+            if (status === 'healthy') return 'healthy';
+            if (status === 'warning') return 'warning';
+            if (status === 'critical' || status === 'unhealthy' || status === 'degraded') return 'critical';
+            return 'warning';
+        }
+
+        function loadDashboardData() {
+            fetch('/dev/dashboard-data/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // 마지막 업데이트 시간
+                document.getElementById('last-updated').textContent =
+                    '마지막 업데이트: ' + formatTimestamp(data.timestamp) + ' (개발 환경)';
+
+                // 시스템 전체 상태
+                const systemStatus = document.getElementById('system-status');
+                const overallStatus = data.health.status || 'unknown';
+                systemStatus.innerHTML = `
+                    <div class="metric">
+                        <div class="metric-label">전체 상태</div>
+                        <div class="metric-value">
+                            <span class="status ${getStatusClass(overallStatus)}">${overallStatus}</span>
+                        </div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">응답 시간</div>
+                        <div class="metric-value">${data.health.total_response_time_ms || 0}ms</div>
+                    </div>
+                    <div class="dev-note">
+                        <small>환경: ${data.environment || 'unknown'}</small>
+                    </div>
+                `;
+
+                // 개별 서비스 상태
+                const servicesStatus = document.getElementById('services-status');
+                let servicesHtml = '';
+
+                if (data.health.services) {
+                    Object.entries(data.health.services).forEach(([service, info]) => {
+                        servicesHtml += `
+                            <div class="metric">
+                                <div class="metric-label">${service.toUpperCase()}</div>
+                                <div class="metric-value">
+                                    <span class="status ${getStatusClass(info.status)}">${info.status}</span>
+                                    ${info.response_time_ms ? `<small>(${info.response_time_ms}ms)</small>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                servicesStatus.innerHTML = servicesHtml || '서비스 정보 없음';
+
+                // 로그 현황
+                const logStatus = document.getElementById('log-status');
+                if (data.logs.status === 'success') {
+                    logStatus.innerHTML = `
+                        <div class="metric">
+                            <div class="metric-label">로그 파일 수</div>
+                            <div class="metric-value">${data.logs.total_files || 0}개</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">총 크기</div>
+                            <div class="metric-value">${data.logs.total_size_mb || 0}MB</div>
+                        </div>
+                    `;
+                } else {
+                    logStatus.innerHTML = `
+                        <div class="dev-note">
+                            로그 접근 제한: ${data.logs.message || '로그 정보를 불러올 수 없습니다'}
+                        </div>
+                    `;
+                }
+
+                // 최근 에러
+                const recentErrors = document.getElementById('recent-errors');
+                if (data.recent_errors.status === 'success' && data.recent_errors.errors) {
+                    const errors = data.recent_errors.errors.slice(0, 5);
+                    let errorsHtml = `<div class="metric-label">최근 ${data.recent_errors.hours_searched}시간 내 에러: ${data.recent_errors.error_count}개</div>`;
+
+                    if (errors.length > 0) {
+                        errors.forEach(error => {
+                            errorsHtml += `
+                                <div class="log-entry error">
+                                    <strong>${error.level}</strong> ${formatTimestamp(new Date(error.timestamp).getTime() / 1000)}<br>
+                                    ${error.message.substring(0, 100)}${error.message.length > 100 ? '...' : ''}
+                                </div>
+                            `;
+                        });
+                    } else {
+                        errorsHtml += '<div style="color: #28a745; font-weight: bold;">✅ 최근 에러 없음</div>';
+                    }
+                    recentErrors.innerHTML = errorsHtml;
+                } else {
+                    recentErrors.innerHTML = `
+                        <div class="dev-note">
+                            에러 로그 접근 제한: ${data.recent_errors.message || '에러 정보를 불러올 수 없습니다'}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading dashboard data:', error);
+                document.getElementById('system-status').innerHTML =
+                    '<div class="error">데이터를 불러올 수 없습니다: ' + error.message + '</div>';
+            });
+        }
+
+        // 페이지 로드 시 데이터 로드
+        document.addEventListener('DOMContentLoaded', loadDashboardData);
+
+        // 30초마다 자동 새로고침
+        setInterval(loadDashboardData, 30000);
+    </script>
+</body>
+</html>
