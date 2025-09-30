@@ -1,7 +1,11 @@
 """
 Health check views for monitoring system status.
 """
+import os
+import shutil
 import time
+import redis
+from celery import current_app
 from django.db import connection
 from django.core.cache import cache
 from django.conf import settings
@@ -62,6 +66,90 @@ def health_detailed(request):
             raise Exception("Cache test failed")
     except Exception as e:
         health_data['services']['cache'] = {
+            'status': 'unhealthy',
+            'error': str(e)
+        }
+        health_data['status'] = 'degraded'
+
+    # Redis check (Celery Broker)
+    redis_start = time.time()
+    try:
+        redis_url = getattr(settings, 'CELERY_BROKER_URL', 'redis://localhost:6379/0')
+        redis_client = redis.from_url(redis_url)
+        redis_client.ping()
+        redis_client.set('health_check_redis', 'test', ex=30)
+        redis_result = redis_client.get('health_check_redis')
+        if redis_result and redis_result.decode('utf-8') == 'test':
+            health_data['services']['redis'] = {
+                'status': 'healthy',
+                'response_time_ms': round((time.time() - redis_start) * 1000, 2),
+                'url': redis_url.replace(redis_url.split('@')[0] + '@' if '@' in redis_url else '', '***@') if '@' in redis_url else redis_url
+            }
+        else:
+            raise Exception("Redis test failed")
+    except Exception as e:
+        health_data['services']['redis'] = {
+            'status': 'unhealthy',
+            'error': str(e)
+        }
+        health_data['status'] = 'degraded'
+
+    # Disk space check
+    disk_start = time.time()
+    try:
+        disk_usage = shutil.disk_usage('/')
+        total_gb = disk_usage.total / (1024**3)
+        free_gb = disk_usage.free / (1024**3)
+        used_gb = (disk_usage.total - disk_usage.free) / (1024**3)
+        usage_percent = (used_gb / total_gb) * 100
+
+        disk_status = 'healthy'
+        if usage_percent > 90:
+            disk_status = 'critical'
+            health_data['status'] = 'degraded'
+        elif usage_percent > 80:
+            disk_status = 'warning'
+
+        health_data['services']['disk'] = {
+            'status': disk_status,
+            'usage_percent': round(usage_percent, 2),
+            'total_gb': round(total_gb, 2),
+            'free_gb': round(free_gb, 2),
+            'used_gb': round(used_gb, 2),
+            'response_time_ms': round((time.time() - disk_start) * 1000, 2)
+        }
+    except Exception as e:
+        health_data['services']['disk'] = {
+            'status': 'unhealthy',
+            'error': str(e)
+        }
+        health_data['status'] = 'degraded'
+
+    # Celery check
+    celery_start = time.time()
+    try:
+        # Check active workers
+        inspect = current_app.control.inspect()
+        active_workers = inspect.active()
+        stats = inspect.stats()
+
+        worker_count = len(active_workers) if active_workers else 0
+        worker_status = 'healthy' if worker_count > 0 else 'degraded'
+
+        if worker_count == 0:
+            health_data['status'] = 'degraded'
+
+        health_data['services']['celery'] = {
+            'status': worker_status,
+            'active_workers': worker_count,
+            'worker_details': active_workers or {},
+            'response_time_ms': round((time.time() - celery_start) * 1000, 2)
+        }
+
+        if stats:
+            health_data['services']['celery']['stats'] = stats
+    except Exception as e:
+        health_data['services']['celery'] = {
             'status': 'unhealthy',
             'error': str(e)
         }
