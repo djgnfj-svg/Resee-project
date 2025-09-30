@@ -71,7 +71,8 @@
       "Bash(then echo \"❌ 누락\")",
       "Bash(else echo \"✅ 설정됨\")",
       "Bash(fi)",
-      "Bash(done)"
+      "Bash(done)",
+      "mcp__playwright__browser_tabs"
     ],
     "deny": [],
     "ask": []

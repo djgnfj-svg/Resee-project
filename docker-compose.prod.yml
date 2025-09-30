@@ -41,7 +41,7 @@ services:
       dockerfile: Dockerfile.prod
       args:
         REACT_APP_API_URL: ${REACT_APP_API_URL}
-        REACT_APP_GOOGLE_CLIENT_ID: ${REACT_APP_GOOGLE_CLIENT_ID:-}
+        REACT_APP_GOOGLE_CLIENT_ID: ${REACT_APP_GOOGLE_CLIENT_ID}
     env_file:
       - .env.prod
     volumes:
