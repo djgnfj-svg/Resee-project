@@ -84,7 +84,6 @@ services:
       - .env
     environment:
       - REACT_APP_API_URL=/api
-      - REACT_APP_GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID}
       - HOST=0.0.0.0
       - PORT=3000
       - DANGEROUSLY_DISABLE_HOST_CHECK=true
