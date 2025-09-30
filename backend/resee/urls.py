@@ -31,12 +31,15 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin_site.urls),
-    
+
     # Health checks (for monitoring and load balancers)
     path('api/health/', health_check, name='health'),
     path('api/health/detailed/', health_detailed, name='detailed_health'),
     path('api/health/ready/', readiness_check, name='readiness'),
     path('api/health/live/', liveness_check, name='liveness'),
+
+    # Development-only monitoring (no auth required)
+    path('dev/', include('accounts.health.dev_urls')),
     
     # API Documentation
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

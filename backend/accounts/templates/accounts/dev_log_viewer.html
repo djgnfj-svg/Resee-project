@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resee 개발용 로그 뷰어</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .dev-banner {
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            color: #333;
+        }
+        .nav-links {
+            margin-top: 10px;
+        }
+        .nav-links a {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            margin-right: 10px;
+            display: inline-block;
+        }
+        .nav-links a:hover {
+            background-color: #0056b3;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            max-width: 1400px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .log-file-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-file-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .log-file-item:hover {
+            background-color: #f8f9fa;
+        }
+        .log-file-item.selected {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .log-file-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .log-file-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .log-content {
+            min-height: 500px;
+            max-height: 600px;
+            overflow-y: auto;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .log-line {
+            margin-bottom: 2px;
+        }
+        .log-line.error {
+            color: #ff6b6b;
+        }
+        .log-line.warning {
+            color: #feca57;
+        }
+        .log-line.info {
+            color: #4fc3f7;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .dev-note {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .refresh-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .refresh-btn:hover {
+            background-color: #218838;
+        }
+        .log-controls {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .log-filter {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dev-banner">
+        🚧 개발 환경 전용 로그 뷰어 - 인증 없이 접근 가능 🚧
+    </div>
+
+    <div class="header">
+        <h1>📋 Resee 개발용 로그 뷰어</h1>
+        <div class="nav-links">
+            <a href="/dev/">🔧 모니터링 대시보드</a>
+            <button class="refresh-btn" onclick="loadLogSummary()">로그 목록 새로고침</button>
+        </div>
+    </div>
+
+    <div class="dev-note">
+        <strong>개발 환경 전용:</strong> 이 로그 뷰어는 DEBUG=True일 때만 접근 가능하며, 프로덕션에서는 자동으로 비활성화됩니다.
+        파일 시스템 권한에 따라 로그 접근이 제한될 수 있습니다.
+    </div>
+
+    <div class="grid">
+        <!-- 로그 파일 목록 -->
+        <div class="card">
+            <h3>📂 로그 파일 목록</h3>
+            <div id="log-file-list" class="log-file-list loading">
+                로딩 중...
+            </div>
+        </div>
+
+        <!-- 로그 내용 -->
+        <div class="card">
+            <h3>📄 로그 내용</h3>
+            <div class="log-controls">
+                <span id="selected-file-name">파일을 선택하세요</span>
+                <div>
+                    <input type="text" class="log-filter" id="log-filter" placeholder="필터링...">
+                    <button class="refresh-btn" onclick="refreshLogContent()">새로고침</button>
+                </div>
+            </div>
+            <div id="log-content" class="log-content">
+                <div style="text-align: center; color: #666; padding: 40px;">
+                    왼쪽에서 로그 파일을 선택하세요
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleString('ko-KR');
+        }
+
+        function loadLogSummary() {
+            fetch('/dev/logs/summary/')
+            .then(response => response.json())
+            .then(data => {
+                const logFileList = document.getElementById('log-file-list');
+
+                if (data.status === 'success' && data.files && data.files.length > 0) {
+                    let html = '';
+                    data.files.forEach(file => {
+                        html += `
+                            <div class="log-file-item" onclick="selectLogFile('${file.name}')">
+                                <div class="log-file-name">${file.name}</div>
+                                <div class="log-file-info">
+                                    크기: ${formatFileSize(file.size_bytes)} |
+                                    수정: ${formatDate(file.modified)}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    logFileList.innerHTML = html;
+                } else {
+                    logFileList.innerHTML = `
+                        <div class="dev-note">
+                            로그 파일 없음: ${data.message || '로그 파일을 찾을 수 없습니다'}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading log summary:', error);
+                document.getElementById('log-file-list').innerHTML =
+                    '<div class="error">로그 목록을 불러올 수 없습니다: ' + error.message + '</div>';
+            });
+        }
+
+        function selectLogFile(filename) {
+            // 이전 선택 해제
+            document.querySelectorAll('.log-file-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+
+            // 새 선택 표시
+            event.target.closest('.log-file-item').classList.add('selected');
+
+            selectedFile = filename;
+            document.getElementById('selected-file-name').textContent = filename;
+
+            loadLogContent(filename);
+        }
+
+        function loadLogContent(filename) {
+            const logContent = document.getElementById('log-content');
+            logContent.innerHTML = '<div style="text-align: center; color: #666; padding: 40px;">로딩 중...</div>';
+
+            fetch(`/dev/logs/file/${filename}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success' && data.content) {
+                    displayLogContent(data.content);
+                } else {
+                    logContent.innerHTML = `
+                        <div class="dev-note">
+                            로그 파일 읽기 오류: ${data.message || data.error || '파일을 읽을 수 없습니다'}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading log content:', error);
+                logContent.innerHTML =
+                    '<div style="color: #ff6b6b;">로그 내용을 불러올 수 없습니다: ' + error.message + '</div>';
+            });
+        }
+
+        function displayLogContent(content) {
+            const logContent = document.getElementById('log-content');
+            const filter = document.getElementById('log-filter').value.toLowerCase();
+
+            const lines = content.split('\n').slice(-200); // 최근 200줄만 표시
+            let html = '';
+
+            lines.forEach(line => {
+                if (filter && !line.toLowerCase().includes(filter)) {
+                    return;
+                }
+
+                let lineClass = 'log-line';
+                if (line.includes('ERROR') || line.includes('CRITICAL')) {
+                    lineClass += ' error';
+                } else if (line.includes('WARNING')) {
+                    lineClass += ' warning';
+                } else if (line.includes('INFO')) {
+                    lineClass += ' info';
+                }
+
+                html += `<div class="${lineClass}">${line}</div>`;
+            });
+
+            if (html === '') {
+                html = '<div style="color: #666;">필터 조건에 맞는 로그가 없습니다.</div>';
+            }
+
+            logContent.innerHTML = html;
+            logContent.scrollTop = logContent.scrollHeight; // 맨 아래로 스크롤
+        }
+
+        function refreshLogContent() {
+            if (selectedFile) {
+                loadLogContent(selectedFile);
+            }
+        }
+
+        // 필터링 이벤트
+        document.getElementById('log-filter').addEventListener('input', function() {
+            if (selectedFile) {
+                refreshLogContent();
+            }
+        });
+
+        // 페이지 로드 시 로그 목록 로드
+        document.addEventListener('DOMContentLoaded', loadLogSummary);
+    </script>
+</body>
+</html>
