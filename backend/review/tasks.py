@@ -20,20 +20,50 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def send_daily_review_reminders(self):
+def send_hourly_notifications(self):
     """
-    매일 오전 9시에 실행되는 복습 알림 태스크
-    오늘 복습 예정인 사용자들에게 이메일 발송
+    매시간 0분에 실행되는 통합 알림 태스크
+    현재 시간에 맞춰 사용자별 설정된 시간에 알림 발송
     """
+    try:
+        current_time = timezone.now()
+        current_hour = current_time.hour
+        current_weekday = current_time.weekday()  # 0=월요일, 6=일요일
+
+        logger.info(f"시간별 알림 처리 시작 - 현재 시간: {current_hour}시")
+
+        # 1. 일일 복습 알림 처리
+        daily_count = send_daily_reminders_for_hour(current_hour)
+
+        # 2. 저녁 알림 처리
+        evening_count = send_evening_reminders_for_hour(current_hour)
+
+        # 3. 주간 요약 처리 (월요일에만)
+        weekly_count = 0
+        if current_weekday == 0:  # 월요일
+            weekly_count = send_weekly_summaries_for_hour(current_hour)
+
+        result_message = f"시간별 알림 완료 - 일일: {daily_count}, 저녁: {evening_count}, 주간: {weekly_count}"
+        logger.info(result_message)
+        return result_message
+
+    except Exception as exc:
+        logger.error(f"Error in send_hourly_notifications: {str(exc)}")
+        raise self.retry(exc=exc)
+
+
+def send_daily_reminders_for_hour(hour: int):
+    """지정된 시간에 일일 복습 알림을 받을 사용자들에게 발송"""
     try:
         today = timezone.now().date()
 
-        # 오늘 복습 예정이고 알림을 활성화한 사용자들 조회
+        # 해당 시간에 일일 알림을 받을 사용자들 조회
         schedules_today = ReviewSchedule.objects.filter(
             next_review_date__date=today,
             is_active=True,
             user__notification_preference__email_notifications_enabled=True,
-            user__notification_preference__daily_reminder_enabled=True
+            user__notification_preference__daily_reminder_enabled=True,
+            user__notification_preference__daily_reminder_time__hour=hour
         ).select_related(
             'user', 'content', 'user__notification_preference'
         ).prefetch_related('content__category')
@@ -50,28 +80,128 @@ def send_daily_review_reminders(self):
             user_schedules[user_id]['schedules'].append(schedule)
 
         sent_count = 0
-        failed_count = 0
-
         # 각 사용자에게 개별 이메일 발송
         for user_data in user_schedules.values():
             try:
-                # 개별 이메일 발송 태스크 큐잉
                 send_individual_review_reminder.delay(
                     user_data['user'].id,
                     [s.id for s in user_data['schedules']]
                 )
                 sent_count += 1
             except Exception as e:
-                logger.error(f"Failed to queue email for user {user_data['user'].email}: {str(e)}")
-                failed_count += 1
+                logger.error(f"Failed to queue daily reminder for user {user_data['user'].email}: {str(e)}")
 
-        result_message = f"Daily reminders queued: {sent_count} sent, {failed_count} failed"
-        logger.info(result_message)
-        return result_message
+        if sent_count > 0:
+            logger.info(f"일일 알림 {sent_count}개 큐잉 완료 - {hour}시")
+        return sent_count
 
-    except Exception as exc:
-        logger.error(f"Error in send_daily_review_reminders: {str(exc)}")
-        raise self.retry(exc=exc)
+    except Exception as e:
+        logger.error(f"Error in send_daily_reminders_for_hour({hour}): {str(e)}")
+        return 0
+
+
+def send_evening_reminders_for_hour(hour: int):
+    """지정된 시간에 저녁 알림을 받을 사용자들에게 발송"""
+    try:
+        today = timezone.now().date()
+
+        # 해당 시간에 저녁 알림을 받을 사용자들의 미완료 스케줄 조회
+        pending_schedules = ReviewSchedule.objects.filter(
+            next_review_date__date=today,
+            is_active=True,
+            user__notification_preference__email_notifications_enabled=True,
+            user__notification_preference__evening_reminder_enabled=True,
+            user__notification_preference__evening_reminder_time__hour=hour
+        ).select_related(
+            'user', 'content', 'user__notification_preference'
+        ).prefetch_related('content__category')
+
+        # 오늘 이미 복습 완료한 콘텐츠 확인
+        today_completed_content_ids = ReviewHistory.objects.filter(
+            review_date__date=today
+        ).values_list('content_id', flat=True)
+
+        # 아직 완료하지 않은 스케줄만 필터링
+        pending_schedules = pending_schedules.exclude(
+            content_id__in=today_completed_content_ids
+        )
+
+        # 사용자별로 그룹화
+        user_schedules = {}
+        for schedule in pending_schedules:
+            user_id = schedule.user.id
+            if user_id not in user_schedules:
+                user_schedules[user_id] = []
+            user_schedules[user_id].append(schedule)
+
+        sent_count = 0
+        # 각 사용자에게 저녁 리마인더 발송
+        for user_id, schedules in user_schedules.items():
+            try:
+                send_individual_evening_reminder.delay(
+                    user_id,
+                    [s.id for s in schedules]
+                )
+                sent_count += 1
+            except Exception as e:
+                logger.error(f"Failed to queue evening reminder for user {user_id}: {str(e)}")
+
+        if sent_count > 0:
+            logger.info(f"저녁 알림 {sent_count}개 큐잉 완료 - {hour}시")
+        return sent_count
+
+    except Exception as e:
+        logger.error(f"Error in send_evening_reminders_for_hour({hour}): {str(e)}")
+        return 0
+
+
+def send_weekly_summaries_for_hour(hour: int):
+    """지정된 시간에 주간 요약을 받을 사용자들에게 발송 (월요일만)"""
+    try:
+        # 해당 시간에 주간 요약을 받을 사용자들
+        users_for_summary = User.objects.filter(
+            notification_preference__email_notifications_enabled=True,
+            notification_preference__weekly_summary_enabled=True,
+            notification_preference__weekly_summary_time__hour=hour
+        ).select_related('notification_preference')
+
+        # 지난주/이번주 기간 계산
+        today = timezone.now().date()
+        last_week_end = today - timedelta(days=today.weekday() + 1)
+        last_week_start = last_week_end - timedelta(days=6)
+        this_week_start = today
+        this_week_end = today + timedelta(days=6)
+
+        sent_count = 0
+        for user in users_for_summary:
+            try:
+                send_individual_weekly_summary.delay(
+                    user.id,
+                    last_week_start.isoformat(),
+                    last_week_end.isoformat(),
+                    this_week_start.isoformat(),
+                    this_week_end.isoformat()
+                )
+                sent_count += 1
+            except Exception as e:
+                logger.error(f"Failed to queue weekly summary for user {user.email}: {str(e)}")
+
+        if sent_count > 0:
+            logger.info(f"주간 요약 {sent_count}개 큐잉 완료 - {hour}시")
+        return sent_count
+
+    except Exception as e:
+        logger.error(f"Error in send_weekly_summaries_for_hour({hour}): {str(e)}")
+        return 0
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_daily_review_reminders(self):
+    """
+    [DEPRECATED] 기존 고정 시간 일일 알림 태스크 (send_hourly_notifications으로 대체됨)
+    """
+    logger.warning("send_daily_review_reminders is deprecated. Use send_hourly_notifications instead.")
+    return "DEPRECATED: Use send_hourly_notifications"
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -138,62 +268,10 @@ def send_individual_review_reminder(self, user_id: int, schedule_ids: List[int])
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_evening_review_reminders(self):
     """
-    매일 오후 8시에 실행되는 저녁 리마인더
-    아직 완료하지 못한 오늘의 복습이 있는 사용자들에게 알림
+    [DEPRECATED] 기존 고정 시간 저녁 알림 태스크 (send_hourly_notifications으로 대체됨)
     """
-    try:
-        today = timezone.now().date()
-
-        # 오늘 복습 예정이었지만 아직 완료하지 않은 스케줄들
-        pending_schedules = ReviewSchedule.objects.filter(
-            next_review_date__date=today,
-            is_active=True,
-            user__notification_preference__email_notifications_enabled=True,
-            user__notification_preference__evening_reminder_enabled=True
-        ).select_related(
-            'user', 'content', 'user__notification_preference'
-        ).prefetch_related('content__category')
-
-        # 오늘 이미 복습 완료한 콘텐츠 확인
-        today_completed_content_ids = ReviewHistory.objects.filter(
-            reviewed_at__date=today
-        ).values_list('schedule__content_id', flat=True)
-
-        # 아직 완료하지 않은 스케줄만 필터링
-        pending_schedules = pending_schedules.exclude(
-            content_id__in=today_completed_content_ids
-        )
-
-        # 사용자별로 그룹화
-        user_schedules = {}
-        for schedule in pending_schedules:
-            user_id = schedule.user.id
-            if user_id not in user_schedules:
-                user_schedules[user_id] = []
-            user_schedules[user_id].append(schedule)
-
-        sent_count = 0
-        failed_count = 0
-
-        # 각 사용자에게 저녁 리마인더 발송
-        for user_id, schedules in user_schedules.items():
-            try:
-                send_individual_evening_reminder.delay(
-                    user_id,
-                    [s.id for s in schedules]
-                )
-                sent_count += 1
-            except Exception as e:
-                logger.error(f"Failed to queue evening reminder for user {user_id}: {str(e)}")
-                failed_count += 1
-
-        result_message = f"Evening reminders queued: {sent_count} sent, {failed_count} failed"
-        logger.info(result_message)
-        return result_message
-
-    except Exception as exc:
-        logger.error(f"Error in send_evening_review_reminders: {str(exc)}")
-        raise self.retry(exc=exc)
+    logger.warning("send_evening_review_reminders is deprecated. Use send_hourly_notifications instead.")
+    return "DEPRECATED: Use send_hourly_notifications"
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -253,49 +331,10 @@ def send_individual_evening_reminder(self, user_id: int, schedule_ids: List[int]
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_weekly_summary(self):
     """
-    주간 요약 이메일 발송 (매주 월요일 오전 9시)
-    지난주 성과와 이번주 예정 복습에 대한 요약
+    [DEPRECATED] 기존 고정 시간 주간 요약 태스크 (send_hourly_notifications으로 대체됨)
     """
-    try:
-        # 지난주 기간 계산
-        today = timezone.now().date()
-        last_week_end = today - timedelta(days=today.weekday() + 1)  # 지난주 일요일
-        last_week_start = last_week_end - timedelta(days=6)  # 지난주 월요일
-
-        # 이번주 기간 계산
-        this_week_start = today
-        this_week_end = today + timedelta(days=6)
-
-        # 주간 요약을 받을 사용자들
-        users_for_summary = User.objects.filter(
-            notification_preference__email_notifications_enabled=True,
-            notification_preference__weekly_summary_enabled=True
-        ).select_related('notification_preference')
-
-        sent_count = 0
-        failed_count = 0
-
-        for user in users_for_summary:
-            try:
-                send_individual_weekly_summary.delay(
-                    user.id,
-                    last_week_start.isoformat(),
-                    last_week_end.isoformat(),
-                    this_week_start.isoformat(),
-                    this_week_end.isoformat()
-                )
-                sent_count += 1
-            except Exception as e:
-                logger.error(f"Failed to queue weekly summary for user {user.email}: {str(e)}")
-                failed_count += 1
-
-        result_message = f"Weekly summaries queued: {sent_count} sent, {failed_count} failed"
-        logger.info(result_message)
-        return result_message
-
-    except Exception as exc:
-        logger.error(f"Error in send_weekly_summary: {str(exc)}")
-        raise self.retry(exc=exc)
+    logger.warning("send_weekly_summary is deprecated. Use send_hourly_notifications instead.")
+    return "DEPRECATED: Use send_hourly_notifications"
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -313,12 +352,12 @@ def send_individual_weekly_summary(self, user_id: int, last_week_start: str, las
 
         # 지난주 복습 통계
         last_week_reviews = ReviewHistory.objects.filter(
-            schedule__user=user,
-            reviewed_at__date__range=[last_week_start_date, last_week_end_date]
+            user=user,
+            review_date__date__range=[last_week_start_date, last_week_end_date]
         )
 
         last_week_total = last_week_reviews.count()
-        last_week_success = last_week_reviews.filter(success=True).count()
+        last_week_success = last_week_reviews.filter(result='remembered').count()
         last_week_success_rate = (last_week_success / last_week_total * 100) if last_week_total > 0 else 0
 
         # 이번주 예정 복습
