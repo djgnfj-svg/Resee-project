@@ -17,6 +17,8 @@ from .email.email_views import EmailVerificationView, ResendVerificationView
 
 # Health check views
 from .health.health_views import health_check, health_detailed, readiness_check, liveness_check
+from .health.log_views import log_summary, recent_errors, log_file_content, cleanup_old_logs, log_analytics
+from .health.monitoring_views import monitoring_dashboard, dashboard_data, system_status, log_viewer
 
 app_name = 'accounts'
 
@@ -51,4 +53,15 @@ urlpatterns = [
     path('health/detailed/', health_detailed, name='health-detailed'),
     path('health/ready/', readiness_check, name='readiness-check'),
     path('health/live/', liveness_check, name='liveness-check'),
+    # Log management (admin only)
+    path('logs/summary/', log_summary, name='log-summary'),
+    path('logs/errors/', recent_errors, name='recent-errors'),
+    path('logs/file/<str:filename>/', log_file_content, name='log-file-content'),
+    path('logs/cleanup/', cleanup_old_logs, name='cleanup-old-logs'),
+    path('logs/analytics/', log_analytics, name='log-analytics'),
+    # Monitoring dashboard (admin only)
+    path('monitoring/', monitoring_dashboard, name='monitoring-dashboard'),
+    path('dashboard-data/', dashboard_data, name='dashboard-data'),
+    path('system-status/', system_status, name='system-status'),
+    path('logs/', log_viewer, name='log-viewer'),
 ]
