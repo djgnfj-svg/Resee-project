@@ -18,7 +18,7 @@ from .email.email_views import EmailVerificationView, ResendVerificationView
 # Health check views
 from .health.health_views import health_check, health_detailed, readiness_check, liveness_check
 from .health.log_views import log_summary, recent_errors, log_file_content, cleanup_old_logs, log_analytics
-from .health.monitoring_views import monitoring_dashboard, dashboard_data, system_status, log_viewer
+from .health.monitoring_views import dashboard_data
 
 app_name = 'accounts'
 
@@ -59,9 +59,6 @@ urlpatterns = [
     path('logs/file/<str:filename>/', log_file_content, name='log-file-content'),
     path('logs/cleanup/', cleanup_old_logs, name='cleanup-old-logs'),
     path('logs/analytics/', log_analytics, name='log-analytics'),
-    # Monitoring dashboard (admin only)
-    path('monitoring/', monitoring_dashboard, name='monitoring-dashboard'),
+    # Monitoring dashboard API (개발 환경에서는 인증 불필요, 운영 환경에서는 관리자 권한 필요)
     path('dashboard-data/', dashboard_data, name='dashboard-data'),
-    path('system-status/', system_status, name='system-status'),
-    path('logs/', log_viewer, name='log-viewer'),
 ]

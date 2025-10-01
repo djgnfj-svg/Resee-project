@@ -12,6 +12,23 @@ services:
     restart: unless-stopped
     ports:
       - "5432:5432"  # AWS 보안그룹에서 IP 제한 설정
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   backend:
     build:
@@ -25,8 +42,12 @@ services:
       - .env.prod
     environment:
       - DJANGO_SETTINGS_MODULE=resee.settings.production
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
@@ -34,6 +55,44 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    command: celery -A resee worker -l info
+    volumes:
+      - media_volume:/app/media
+    env_file:
+      - .env.prod
+    environment:
+      - DJANGO_SETTINGS_MODULE=resee.settings.production
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    command: celery -A resee beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - media_volume:/app/media
+    env_file:
+      - .env.prod
+    environment:
+      - DJANGO_SETTINGS_MODULE=resee.settings.production
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
   frontend:
     build:
@@ -64,6 +123,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   static_volume:
   media_volume:
   frontend_build:
