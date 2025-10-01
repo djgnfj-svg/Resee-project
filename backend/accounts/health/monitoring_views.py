@@ -1,67 +1,79 @@
 """
-Web-based monitoring dashboard views.
+Monitoring dashboard API - 통합 모니터링 데이터 제공
 """
-import json
-from django.shortcuts import render
-from django.contrib.admin.views.decorators import staff_member_required
-from django.http import JsonResponse
+import os
+import glob
+import time
+import shutil
+from datetime import datetime, timedelta
+from django.conf import settings
+from django.db import connection
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-
-from .health_views import health_detailed
-from .log_views import log_summary, recent_errors, log_analytics
-
-
-@staff_member_required
-def monitoring_dashboard(request):
-    """모니터링 대시보드 메인 페이지"""
-    return render(request, 'accounts/monitoring_dashboard.html')
+from rest_framework import status as http_status
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def dashboard_data(request):
-    """대시보드에서 사용할 통합 데이터 제공"""
+    """통합 대시보드 데이터 (개발 환경에서는 인증 불필요)"""
+    # Production에서는 관리자 권한 체크
+    if not settings.DEBUG and not request.user.is_staff:
+        return Response({'error': 'Permission denied'}, status=http_status.HTTP_403_FORBIDDEN)
+
     try:
-        # 헬스체크 데이터
-        health_response = health_detailed(request)
-        health_data = health_response.data if hasattr(health_response, 'data') else {}
+        start_time = time.time()
 
-        # 로그 요약 데이터
-        log_response = log_summary(request)
-        log_data = log_response.data if hasattr(log_response, 'data') else {}
+        # 1. 기본 헬스체크
+        health_data = {
+            'status': 'healthy',
+            'timestamp': int(start_time)
+        }
 
-        # 최근 에러 데이터
-        error_response = recent_errors(request)
-        error_data = error_response.data if hasattr(error_response, 'data') else {}
+        # 2. 데이터베이스 체크
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                cursor.fetchone()
+            health_data['database'] = 'healthy'
+        except Exception:
+            health_data['database'] = 'unhealthy'
+            health_data['status'] = 'degraded'
 
-        # 로그 분석 데이터
-        analytics_response = log_analytics(request)
-        analytics_data = analytics_response.data if hasattr(analytics_response, 'data') else {}
+        # 3. 디스크 체크
+        try:
+            disk_usage = shutil.disk_usage('/')
+            usage_percent = ((disk_usage.total - disk_usage.free) / disk_usage.total) * 100
+            health_data['disk_usage_percent'] = round(usage_percent, 2)
+            health_data['disk_free_gb'] = round(disk_usage.free / (1024**3), 2)
+        except Exception:
+            health_data['disk_usage_percent'] = None
+
+        # 4. 로그 파일 정보
+        log_dir = os.path.join(settings.BASE_DIR, 'logs')
+        log_info = {'total_files': 0, 'total_size_mb': 0}
+
+        if os.path.exists(log_dir):
+            log_files = []
+            for ext in ['*.log', '*.log.*']:
+                log_files.extend(glob.glob(os.path.join(log_dir, ext)))
+
+            total_size = sum(os.path.getsize(f) for f in log_files if os.path.exists(f))
+            log_info = {
+                'total_files': len(log_files),
+                'total_size_mb': round(total_size / (1024 * 1024), 2)
+            }
 
         return Response({
             'health': health_data,
-            'logs': log_data,
-            'recent_errors': error_data,
-            'analytics': analytics_data,
-            'timestamp': health_data.get('timestamp', 0)
+            'logs': log_info,
+            'environment': 'development' if settings.DEBUG else 'production',
+            'response_time_ms': round((time.time() - start_time) * 1000, 2)
         })
 
     except Exception as e:
         return Response({
             'error': str(e),
-            'timestamp': 0
-        }, status=500)
-
-
-@staff_member_required
-def system_status(request):
-    """시스템 상태 간단 페이지"""
-    return render(request, 'accounts/system_status.html')
-
-
-@staff_member_required
-def log_viewer(request):
-    """로그 뷰어 페이지"""
-    return render(request, 'accounts/log_viewer.html')
+            'timestamp': int(time.time())
+        }, status=http_status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -11,6 +11,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-postgres}"]
       interval: 5s
@@ -24,6 +25,12 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   backend:
     build: ./backend
@@ -41,7 +48,14 @@ services:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   celery:
     build: ./backend
@@ -54,8 +68,11 @@ services:
       - DJANGO_SETTINGS_MODULE=resee.settings.development
       - REDIS_URL=redis://redis:6379/0
     depends_on:
-      - redis
-      - postgres
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
   celery-beat:
     build: ./backend
@@ -68,9 +85,11 @@ services:
       - DJANGO_SETTINGS_MODULE=resee.settings.development
       - REDIS_URL=redis://redis:6379/0
     depends_on:
-      - redis
-      - postgres
-
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
   frontend:
     build: ./frontend
@@ -91,6 +110,7 @@ services:
       - WDS_SOCKET_HOST=localhost
       - WDS_SOCKET_PORT=3000
       - FAST_REFRESH=false
+    restart: unless-stopped
 
   nginx:
     image: nginx:alpine
@@ -101,8 +121,11 @@ services:
       - static_volume:/app/static
       - media_volume:/app/media
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    restart: unless-stopped
 
 volumes:
   postgres_data:

@@ -10,8 +10,15 @@ from django.conf import settings
 from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+
+
+def check_permission(request):
+    """개발 환경에서는 모든 접근 허용, 운영 환경에서는 관리자만 허용"""
+    if not settings.DEBUG and not request.user.is_staff:
+        return False
+    return True
 
 
 def get_log_directory():
@@ -27,9 +34,12 @@ def ensure_log_directory():
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def log_summary(request):
     """Get summary of log files and recent errors"""
+    if not check_permission(request):
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
     try:
         log_dir = get_log_directory()
 
@@ -81,9 +91,12 @@ def log_summary(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def recent_errors(request):
     """Get recent error logs"""
+    if not check_permission(request):
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
     try:
         log_dir = get_log_directory()
         hours = int(request.GET.get('hours', 24))
@@ -130,9 +143,12 @@ def recent_errors(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def log_file_content(request, filename):
     """Get content of a specific log file"""
+    if not check_permission(request):
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
     try:
         log_dir = get_log_directory()
         file_path = os.path.join(log_dir, filename)
@@ -180,9 +196,12 @@ def log_file_content(request, filename):
 
 
 @api_view(['DELETE'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def cleanup_old_logs(request):
     """Clean up old log files"""
+    if not check_permission(request):
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
     try:
         log_dir = get_log_directory()
         days = int(request.GET.get('days', 7))
@@ -223,9 +242,12 @@ def cleanup_old_logs(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
 def log_analytics(request):
     """Get analytics on log patterns and errors"""
+    if not check_permission(request):
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
     try:
         log_dir = get_log_directory()
         hours = int(request.GET.get('hours', 24))

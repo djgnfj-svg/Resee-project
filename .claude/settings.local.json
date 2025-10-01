@@ -72,7 +72,10 @@
       "Bash(else echo \"✅ 설정됨\")",
       "Bash(fi)",
       "Bash(done)",
-      "mcp__playwright__browser_tabs"
+      "mcp__playwright__browser_tabs",
+      "Bash(sudo mkdir:*)",
+      "Bash(sudo chown:*)",
+      "Read(//var/log/resee/**)"
     ],
     "deny": [],
     "ask": []
