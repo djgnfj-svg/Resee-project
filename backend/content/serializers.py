@@ -22,7 +22,7 @@ class ContentSerializer(serializers.ModelSerializer):
         model = Content
         fields = ('id', 'title', 'content', 'author', 'category',
                  'created_at', 'updated_at', 'review_count',
-                 'next_review_date')
+                 'next_review_date', 'review_mode')
         read_only_fields = ('id', 'author', 'created_at', 'updated_at')
 
     def to_representation(self, instance):

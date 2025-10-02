@@ -49,10 +49,21 @@ class Category(BaseModel):
 class Content(BaseModel):
     """Learning content"""
 
+    REVIEW_MODE_CHOICES = [
+        ('objective', '객관식 (내용 보고 기억함/모름 선택)'),
+        ('subjective', '주관식 (먼저 작성 후 AI 자동 평가)'),
+    ]
+
     title = models.CharField(max_length=30)  # 프론트엔드와 동기화
     content = models.TextField(help_text='Markdown content')
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='contents')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
+    review_mode = models.CharField(
+        max_length=20,
+        choices=REVIEW_MODE_CHOICES,
+        default='objective',
+        help_text='Review test mode: objective or subjective with AI auto-evaluation'
+    )
     
     class Meta:
         ordering = ['-created_at']
@@ -79,6 +90,14 @@ class Content(BaseModel):
 
         if not self.title or not self.title.strip():
             raise ValidationError({'title': 'Title cannot be empty.'})
+
+        # 서술 평가 모드일 때는 콘텐츠가 200자 이상이어야 함
+        if self.review_mode == 'subjective':
+            content_length = len(self.content.strip())
+            if content_length < 200:
+                raise ValidationError({
+                    'content': f'서술 평가 모드는 콘텐츠가 최소 200자 이상이어야 합니다. (현재: {content_length}자)'
+                })
 
     def save(self, *args, **kwargs):
         """Override save to run validation"""

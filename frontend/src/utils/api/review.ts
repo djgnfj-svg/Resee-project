@@ -29,7 +29,14 @@ export const reviewAPI = {
     return response.data;
   },
 
-  completeReview: async (data: CompleteReviewData): Promise<{ message: string; next_review_date?: string }> => {
+  completeReview: async (data: CompleteReviewData): Promise<{
+    message: string;
+    next_review_date?: string;
+    ai_evaluation?: {
+      score: number;
+      feedback: string;
+    };
+  }> => {
     const response = await api.post('/review/complete/', data);
     return response.data;
   },

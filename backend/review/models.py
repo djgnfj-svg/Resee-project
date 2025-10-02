@@ -148,6 +148,22 @@ class ReviewHistory(BaseUserModel):
         blank=True
     )
     notes = models.TextField(blank=True, max_length=1000)
+
+    # AI 서술형 답변 평가 (v0.4)
+    descriptive_answer = models.TextField(
+        blank=True,
+        max_length=2000,
+        help_text='User descriptive answer for AI evaluation'
+    )
+    ai_score = models.FloatField(
+        null=True,
+        blank=True,
+        help_text='AI evaluation score (0-100)'
+    )
+    ai_feedback = models.TextField(
+        blank=True,
+        help_text='AI generated feedback'
+    )
     
     class Meta:
         ordering = ['-review_date']

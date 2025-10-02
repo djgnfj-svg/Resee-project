@@ -55,6 +55,7 @@ export interface Content {
   updated_at: string;
   review_count: number;
   next_review_date?: string;
+  review_mode: 'objective' | 'subjective';
 }
 
 export interface ContentUsage {
@@ -184,6 +185,7 @@ export interface CreateContentData {
   title: string;
   content: string;
   category?: number;
+  review_mode?: 'objective' | 'subjective';
 }
 
 export interface UpdateContentData extends Partial<CreateContentData> {}
@@ -199,6 +201,7 @@ export interface CompleteReviewData {
   result: 'remembered' | 'partial' | 'forgot';
   time_spent?: number;
   notes?: string;
+  descriptive_answer?: string;  // v0.4: AI 평가용 서술형 답변
 }
 
 export interface CreateReviewHistoryData extends CompleteReviewData {}

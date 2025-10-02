@@ -138,17 +138,28 @@ export const useReviewLogic = (
   });
 
 
-  const handleReviewComplete = useCallback((result: 'remembered' | 'forgot') => {
+  const handleReviewComplete = useCallback((result: 'remembered' | 'partial' | 'forgot', descriptiveAnswer?: string) => {
     const currentReview = reviews[currentReviewIndex];
     if (currentReview) {
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
 
-      completeReviewMutation.mutate({
-        content_id: currentReview.content.id,
-        result: result,
-        time_spent: timeSpent,
+      return new Promise((resolve, reject) => {
+        completeReviewMutation.mutate({
+          content_id: currentReview.content.id,
+          result: result,
+          time_spent: timeSpent,
+          descriptive_answer: descriptiveAnswer || '',
+        }, {
+          onSuccess: (data) => {
+            resolve(data);
+          },
+          onError: (error) => {
+            reject(error);
+          }
+        });
       });
     }
+    return Promise.resolve(null);
   }, [reviews, currentReviewIndex, startTime, completeReviewMutation]);
 
   // No need for useEffect to reset state as we're doing it directly in card operations
