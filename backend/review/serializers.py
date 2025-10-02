@@ -21,9 +21,9 @@ class ReviewHistorySerializer(serializers.ModelSerializer):
     """Review history serializer"""
     content = ContentSerializer(read_only=True)
     user = serializers.StringRelatedField(read_only=True)
-    
+
     class Meta:
         model = ReviewHistory
-        fields = ('id', 'content', 'user', 'review_date', 'result', 
-                 'time_spent', 'notes')
-        read_only_fields = ('id', 'user', 'review_date')
+        fields = ('id', 'content', 'user', 'review_date', 'result',
+                 'time_spent', 'notes', 'descriptive_answer', 'ai_score', 'ai_feedback')
+        read_only_fields = ('id', 'user', 'review_date', 'ai_score', 'ai_feedback')

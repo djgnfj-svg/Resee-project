@@ -8,6 +8,15 @@ import UpgradeModal from '../components/review/UpgradeModal';
 import Toast from '../components/common/Toast';
 
 const ReviewPage: React.FC = () => {
+  // v0.5: AI 평가용 서술형 답변 상태
+  const [descriptiveAnswer, setDescriptiveAnswer] = useState<string>('');
+  const [aiEvaluation, setAiEvaluation] = useState<{
+    score: number;
+    feedback: string;
+    auto_result?: string;
+  } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
   // Toast state
   const [toast, setToast] = useState<{
     message: string;
@@ -53,6 +62,52 @@ const ReviewPage: React.FC = () => {
     reviewsCompleted,
     totalSchedules,
   } = useReviewLogic(showToast, resetReviewState);
+
+  // v0.5: 주관식 모드 - 제출 핸들러
+  const [submittedAnswer, setSubmittedAnswer] = useState<string>('');
+
+  const handleSubmitSubjective = useCallback(async () => {
+    if (!currentReview || descriptiveAnswer.length < 10) return;
+
+    setIsSubmitting(true);
+    setSubmittedAnswer(descriptiveAnswer); // 제출한 답변 저장
+
+    try {
+      // 주관식은 result를 보내지 않음 (AI가 자동 판단)
+      const response = await handleReviewComplete(null as any, descriptiveAnswer) as any;
+
+      // AI 평가 결과 표시
+      if (response && response.ai_evaluation) {
+        setAiEvaluation(response.ai_evaluation);
+        const resultText = response.ai_evaluation.auto_result === 'remembered' ? '기억함' : '모름';
+        showToast(`AI 평가: ${Math.round(response.ai_evaluation.score)}점 - ${resultText}`,
+                  response.ai_evaluation.auto_result === 'remembered' ? 'success' : 'warning');
+      }
+
+      // 카드 뒤집기
+      setIsFlipped(true);
+      setShowContent(true);
+
+      // 잠시 후 자동으로 다음 리뷰로 (AI 평가 결과 확인 시간 제공)
+      setTimeout(() => {
+        setAiEvaluation(null);
+        setDescriptiveAnswer('');
+        setSubmittedAnswer('');
+        resetReviewState();
+      }, 5000);
+    } catch (error) {
+      showToast('평가에 실패했습니다. 다시 시도해주세요.', 'error');
+      setSubmittedAnswer(''); // 에러 시 초기화
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [currentReview, descriptiveAnswer, handleReviewComplete, showToast, setIsFlipped, setShowContent, resetReviewState]);
+
+  // v0.4: 객관식 모드 - 복습 완료 핸들러
+  const handleReviewCompleteWithAI = useCallback(async (result: 'remembered' | 'partial' | 'forgot') => {
+    // 기억 확인 모드에서는 descriptiveAnswer를 전달하지 않음
+    await handleReviewComplete(result, '');
+  }, [handleReviewComplete]);
 
 
   if (isLoading) {
@@ -106,13 +161,22 @@ const ReviewPage: React.FC = () => {
               setIsFlipped(prev => !prev);
               setShowContent(true);
             }}
+            descriptiveAnswer={descriptiveAnswer}
+            onDescriptiveAnswerChange={setDescriptiveAnswer}
+            onSubmitSubjective={handleSubmitSubjective}
+            isSubmitting={isSubmitting}
+            submittedAnswer={submittedAnswer}
+            aiEvaluation={aiEvaluation}
           />
 
-          <ReviewControls
-            showContent={showContent}
-            onReviewComplete={handleReviewComplete}
-            isPending={completeReviewMutation.isPending}
-          />
+          {/* 기억 확인 모드에서만 ReviewControls 표시 */}
+          {currentReview.content.review_mode === 'objective' && (
+            <ReviewControls
+              showContent={showContent}
+              onReviewComplete={handleReviewCompleteWithAI}
+              isPending={completeReviewMutation.isPending}
+            />
+          )}
         </div>
 
         <UpgradeModal

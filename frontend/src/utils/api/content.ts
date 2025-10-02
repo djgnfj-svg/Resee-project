@@ -73,4 +73,15 @@ export const contentAPI = {
     const response = await api.get('/contents/by_category/');
     return response.data;
   },
+
+  validateContent: async (title: string, content: string): Promise<{
+    is_valid: boolean;
+    factual_accuracy: { score: number; issues: string[] };
+    logical_consistency: { score: number; issues: string[] };
+    title_relevance: { score: number; issues: string[] };
+    overall_feedback: string;
+  }> => {
+    const response = await api.post('/contents/validate/', { title, content });
+    return response.data;
+  },
 };

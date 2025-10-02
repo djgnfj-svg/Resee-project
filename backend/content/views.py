@@ -18,6 +18,7 @@ from resee.structured_logging import (log_api_call, log_performance,
 
 from .models import Category, Content
 from .serializers import CategorySerializer, ContentSerializer
+from .ai_validation import validate_content
 
 logger = logging.getLogger(__name__)
 
@@ -278,6 +279,61 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Error in by_category view: {str(e)}", exc_info=True)
             return Response(
-                {'error': '카테고리별 콘텐츠 조회 중 오류가 발생했습니다.'}, 
+                {'error': '카테고리별 콘텐츠 조회 중 오류가 발생했습니다.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @swagger_auto_schema(
+        operation_summary="콘텐츠 AI 검증",
+        operation_description="학습 콘텐츠의 사실적 정확성, 논리적 일관성, 제목 적합성을 AI로 검증합니다.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['title', 'content'],
+            properties={
+                'title': openapi.Schema(type=openapi.TYPE_STRING, description='콘텐츠 제목'),
+                'content': openapi.Schema(type=openapi.TYPE_STRING, description='콘텐츠 내용 (마크다운)'),
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description="검증 완료",
+                examples={
+                    "application/json": {
+                        "is_valid": True,
+                        "factual_accuracy": {"score": 95, "issues": []},
+                        "logical_consistency": {"score": 90, "issues": []},
+                        "title_relevance": {"score": 100, "issues": []},
+                        "overall_feedback": "훌륭한 학습 자료입니다."
+                    }
+                }
+            ),
+            400: "잘못된 요청"
+        }
+    )
+    @action(detail=False, methods=['post'])
+    def validate(self, request):
+        """Validate content using AI"""
+        title = request.data.get('title', '').strip()
+        content = request.data.get('content', '').strip()
+
+        if not title or not content:
+            return Response(
+                {'error': '제목과 내용을 모두 입력해주세요.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if len(content) < 200:
+            return Response(
+                {'error': '서술 평가는 최소 200자 이상의 콘텐츠가 필요합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            result = validate_content(title, content)
+            return Response(result)
+        except Exception as e:
+            logger.error(f"Content validation failed: {str(e)}", exc_info=True)
+            return Response(
+                {'error': f'AI 검증 중 오류가 발생했습니다: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

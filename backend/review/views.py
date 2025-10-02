@@ -210,22 +210,8 @@ class CompleteReviewView(APIView):
         result = request.data.get('result')  # 'remembered', 'partial', 'forgot'
         time_spent = request.data.get('time_spent')
         notes = request.data.get('notes', '')
-        
-        # Validate required fields
-        if not content_id or not result:
-            return Response(
-                {'error': 'content_id and result are required'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Validate result value
-        valid_results = ['remembered', 'partial', 'forgot']
-        if result not in valid_results:
-            return Response(
-                {'error': f'result must be one of: {", ".join(valid_results)}'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
+        descriptive_answer = request.data.get('descriptive_answer', '')  # v0.4: AI 평가용 서술형 답변
+
         try:
             with transaction.atomic():
                 # Get the review schedule
@@ -234,14 +220,86 @@ class CompleteReviewView(APIView):
                     user=request.user,
                     is_active=True
                 )
-                
-                # Create review history
+
+                # v0.5: 주관식 모드 - AI 자동 평가 및 result 판단
+                ai_score = None
+                ai_feedback = None
+                ai_auto_result = None
+
+                if schedule.content.review_mode == 'subjective':
+                    # 주관식: 반드시 답변을 작성해야 함
+                    if not descriptive_answer or len(descriptive_answer.strip()) < 10:
+                        return Response(
+                            {'error': '주관식 모드에서는 최소 10자 이상의 답변을 작성해야 합니다.'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # AI 평가 수행
+                    from .ai_evaluation import ai_answer_evaluator
+                    if not ai_answer_evaluator.is_available():
+                        return Response(
+                            {'error': 'AI 평가 서비스를 사용할 수 없습니다.'},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE
+                        )
+
+                    evaluation = ai_answer_evaluator.evaluate_answer(
+                        content_title=schedule.content.title,
+                        content_body=schedule.content.content,
+                        user_answer=descriptive_answer
+                    )
+
+                    if not evaluation:
+                        return Response(
+                            {'error': 'AI 평가에 실패했습니다. 다시 시도해주세요.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        )
+
+                    ai_score = evaluation['score']
+                    ai_feedback = evaluation['feedback']
+                    ai_auto_result = evaluation.get('auto_result', 'remembered' if ai_score >= 70 else 'forgot')
+                    result = ai_auto_result  # AI 자동 판단으로 result 덮어쓰기
+                    logger.info(f"AI 자동 평가 완료: {schedule.content.title} - {ai_score}점 -> {result}")
+
+                else:
+                    # 객관식: 기존 방식 (선택적 AI 평가)
+                    if not result:
+                        return Response(
+                            {'error': 'result is required for objective mode'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # Validate result value
+                    valid_results = ['remembered', 'partial', 'forgot']
+                    if result not in valid_results:
+                        return Response(
+                            {'error': f'result must be one of: {", ".join(valid_results)}'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # 선택적 AI 평가 (답변이 있는 경우)
+                    if descriptive_answer and len(descriptive_answer.strip()) >= 10:
+                        from .ai_evaluation import ai_answer_evaluator
+                        if ai_answer_evaluator.is_available():
+                            evaluation = ai_answer_evaluator.evaluate_answer(
+                                content_title=schedule.content.title,
+                                content_body=schedule.content.content,
+                                user_answer=descriptive_answer
+                            )
+                            if evaluation:
+                                ai_score = evaluation['score']
+                                ai_feedback = evaluation['feedback']
+                                logger.info(f"AI 평가 완료: {schedule.content.title} - {ai_score}점")
+
+                # Create review history with AI evaluation
                 history = ReviewHistory.objects.create(
                     content=schedule.content,
                     user=request.user,
                     result=result,
                     time_spent=time_spent,
-                    notes=notes
+                    notes=notes,
+                    descriptive_answer=descriptive_answer,
+                    ai_score=ai_score,
+                    ai_feedback=ai_feedback
                 )
                 
                 # Update schedule based on result with subscription limits
@@ -294,11 +352,22 @@ class CompleteReviewView(APIView):
                     # Don't change next_review_date - keep it available for immediate retry in same session
                     schedule.save()
                 
-                return Response({
+                response_data = {
                     'message': 'Review completed successfully',
                     'next_review_date': schedule.next_review_date,
-                    'interval_index': schedule.interval_index
-                })
+                    'interval_index': schedule.interval_index,
+                    'final_result': result  # AI가 자동 판단한 최종 result
+                }
+
+                # v0.5: AI 평가 결과 포함 (auto_result 추가)
+                if ai_score is not None:
+                    response_data['ai_evaluation'] = {
+                        'score': ai_score,
+                        'feedback': ai_feedback,
+                        'auto_result': ai_auto_result if ai_auto_result else result
+                    }
+
+                return Response(response_data)
                 
         except ReviewSchedule.DoesNotExist:
             logger.warning(f"Review schedule not found for content_id={content_id}, user={request.user.id}")

@@ -33,7 +33,8 @@ bleach==6.1.0
 drf-yasg==1.21.7
 
 # AI Services
-anthropic==0.25.9
+anthropic==0.39.0
+httpx==0.27.0  # Pin to version compatible with anthropic SDK
 
 # Email Services
 django-ses==3.5.2

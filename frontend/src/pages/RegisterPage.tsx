@@ -190,29 +190,27 @@ const RegisterPage: React.FC = () => {
                   </div>
 
                   {/* 비밀번호 강도 표시기 */}
-                  {password && (
-                    <div className="animate-fadeIn">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-gray-600 dark:text-gray-400">비밀번호 강도</span>
-                        <span className={
-                          password.length >= 12 ? 'text-green-600 dark:text-green-400' :
-                          password.length >= 8 ? 'text-yellow-600 dark:text-yellow-400' :
-                          'text-red-600 dark:text-red-400'
-                        }>
-                          {password.length >= 12 ? '강함' : password.length >= 8 ? '보통' : '약함'}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            password.length >= 12 ? 'bg-green-500 w-full' :
-                            password.length >= 8 ? 'bg-yellow-500 w-2/3' :
-                            'bg-red-500 w-1/3'
-                          }`}
-                        />
-                      </div>
+                  <div className={password ? 'animate-fadeIn' : 'invisible'}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-gray-600 dark:text-gray-400">비밀번호 강도</span>
+                      <span className={
+                        password && password.length >= 12 ? 'text-green-600 dark:text-green-400' :
+                        password && password.length >= 8 ? 'text-yellow-600 dark:text-yellow-400' :
+                        'text-red-600 dark:text-red-400'
+                      }>
+                        {password && (password.length >= 12 ? '강함' : password.length >= 8 ? '보통' : '약함')}
+                      </span>
                     </div>
-                  )}
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          password && password.length >= 12 ? 'bg-green-500 w-full' :
+                          password && password.length >= 8 ? 'bg-yellow-500 w-2/3' :
+                          'bg-red-500 w-1/3'
+                        }`}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* 약관 동의 */}
