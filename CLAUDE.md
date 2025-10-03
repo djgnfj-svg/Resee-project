@@ -1,546 +1,265 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with code in this repository.
 
 ## Project Overview
-Resee is a focused spaced repetition learning platform implementing the Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose. Uses local PostgreSQL for both development and production with single Gunicorn worker configuration.
+Resee is a focused spaced repetition learning platform implementing the Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose. Uses local PostgreSQL for both development and production.
 
 **Key Philosophy**: Pure learning effectiveness over engagement metrics. No streaks, achievements, or gamification - just scientifically-proven spaced repetition for optimal knowledge retention.
 
-## 접속 방법 (Access URLs)
+## Access URLs
 
-### 개발 환경 접속
 ```bash
-# 1. Nginx를 통한 통합 접속 (권장)
-http://localhost          # 또는 http://localhost:80
-# → Frontend + Backend API 통합, 프로덕션과 동일한 구조
+# Nginx (Recommended - production-like)
+http://localhost
 
-# 2. 개발 서버 직접 접속
-http://localhost:3000     # React 개발 서버 (Hot reload 지원)
-http://localhost:8000/api # Django API 서버 직접 접속
+# Development servers
+http://localhost:3000     # React dev server
+http://localhost:8000/api # Django API
 
-# 3. 관리자 페이지
-http://localhost:8000/admin  # Django Admin
+# Admin
+http://localhost:8000/admin
 ```
-
-**중요**: Nginx 통합 접속(`http://localhost`)을 사용하면 프로덕션 환경과 동일한 구조로 테스트할 수 있습니다.
 
 ## Common Development Commands
 
-### Development Environment
+### Start Services
 ```bash
-# Start all services (includes Celery for email notifications)
 docker-compose up -d
-
-# View logs
 docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f nginx
-docker-compose logs -f celery
-docker-compose logs -f celery-beat
 ```
 
-### Backend Commands
+### Backend
 ```bash
-# Django migrations
+# Migrations
 docker-compose exec backend python manage.py makemigrations
 docker-compose exec backend python manage.py migrate
 
-# Run tests
+# Tests
 docker-compose exec backend python -m pytest
-docker-compose exec backend python -m pytest accounts/tests.py -v  # Single app
 docker-compose exec backend python -m pytest --cov=. --cov-report=html
 
-# Code quality
-docker-compose exec backend black .
-docker-compose exec backend flake8
-
-# Django shell
+# Shell
 docker-compose exec backend python manage.py shell_plus
 ```
 
-### Frontend Commands
+### Frontend
 ```bash
-# Run tests
+# Tests
 docker-compose exec frontend npm test -- --watchAll=false
 docker-compose exec frontend npm run test:coverage
 
-# Linting and type checking (MUST RUN before committing)
+# Linting (MUST RUN before committing)
 docker-compose exec frontend npm run lint
 docker-compose exec frontend npm run typecheck
 
 # Build
 docker-compose exec frontend npm run build
-docker-compose exec frontend npm run ci:quick  # Typecheck + build
 ```
 
 ## Architecture Overview
 
 ### Core Domain Flow
-The review system implements Ebbinghaus forgetting curve theory through a synchronous signal-based architecture:
+1. **Content Creation**: User creates content → Django signal → ReviewSchedule created → Available for review next day
+2. **Review Process**: User reviews → Update `interval_index` → Calculate next review date
+3. **Subscription Tiers**: Review intervals based on Ebbinghaus curve
+   - FREE: [1,3]
+   - BASIC: [1,3,7,14,30,60,90]
+   - PRO: [1,3,7,14,30,60,120,180]
 
-1. **Content Creation Flow**: User creates content → Django signal (`content/signals.py`) → ReviewSchedule created synchronously → Available for review next day
-2. **Review Process**: User reviews content → Update `interval_index` based on performance → Calculate next review date using tier-specific intervals
-3. **Subscription Tiers Control**: Review intervals (FREE: [1,3], BASIC: [1,3,7,14,30,60,90], PRO: [1,3,7,14,30,60,120,180]) based on Ebbinghaus forgetting curve
+### Key Integrations
 
-### Cross-Component Integrations
+**Authentication**:
+- JWT interceptor in `utils/api.ts`
+- Token refresh via `refreshAuthToken()`
+- Subscription tier checked via `has_subscription_permission()` decorator
 
-**Authentication & Authorization Flow**:
-- Frontend `utils/api.ts` → JWT interceptor → Backend `accounts/authentication.py`
-- Token refresh handled automatically via `refreshAuthToken()` in `api.ts`
-- Subscription tier checked in views via `has_subscription_permission()` decorator
+**Review System**:
+- `ReviewSchedule` model with `interval_index`
+- Core algorithm: `review/utils.py:calculate_next_review_date()`
+- Frontend: `ReviewPage.tsx` → `/api/review/today/`
 
-**Review Scheduling System**:
-- `ReviewSchedule` model tracks progress with `interval_index` (0-7 based on tier)
-- `review/utils.py:calculate_next_review_date()` implements the core Ebbinghaus algorithm
-- Frontend `ReviewPage.tsx` fetches today's reviews via `/api/review/today/`
-- Performance recorded in `ReviewHistory` for analytics
+**Email Notifications**:
+- `NotificationPreference` model
+- Celery + Redis for background tasks
+- `/api/accounts/notification-preferences/` endpoints
+- Daily reminders: `review/tasks.py:send_individual_review_reminder`
 
-**Email Notification System (V0.2)**:
-- `NotificationPreference` model for user-specific email settings
-- Celery + Redis background task processing for email delivery
-- `/api/accounts/notification-preferences/` API endpoints (GET/PUT)
-- Daily review reminder emails via `review/tasks.py:send_individual_review_reminder`
-- Customizable notification times and preferences per user
+**Analytics**:
+- Basic metrics: today's reviews, total content, 30-day success rate
+- No gamification tracking
 
-**Simplified Analytics**:
-- Basic dashboard metrics only: today's reviews, total content, 30-day success rate
-- No gamification metrics (streaks, achievements, complex progress tracking)
-- Focus on learning effectiveness rather than engagement statistics
-
-### Critical Environment Variables
+### Environment Variables
 
 **Development** (`.env`):
-- `DJANGO_SETTINGS_MODULE`: `resee.settings.development`
-- `DATABASE_URL`: `postgresql://postgres:postgres123@postgres:5432/resee_dev` (Local Docker PostgreSQL)
-- `REDIS_URL`: `redis://redis:6379/0` (Celery broker and result backend)
-- `ENFORCE_EMAIL_VERIFICATION`: `False` to skip email verification
-
-**Production** (`.env.prod`):
-- `DJANGO_SETTINGS_MODULE`: `resee.settings.production`
-- `DATABASE_URL`: `postgresql://postgres:postgres123@postgres:5432/resee_prod` (Local Docker PostgreSQL)
-- `REDIS_URL`: `redis://redis:6379/0` (Celery broker and result backend)
-- `ENFORCE_EMAIL_VERIFICATION`: `True` for production
-
-**Frontend**:
-- `REACT_APP_API_URL`: Must match backend URL (`http://localhost:8000/api` for dev)
-- `REACT_APP_GOOGLE_CLIENT_ID`: Optional for Google OAuth
-
-## Environment Setup
-
-### Local Development
-```bash
-# Copy environment template
-cp .env.example .env
-
-# Start services (PostgreSQL, Redis, Backend, Frontend, Nginx, Celery)
-docker-compose up -d
-
-# Apply migrations
-docker-compose exec backend python manage.py migrate
-
-# Create superuser (optional)
-docker-compose exec backend python manage.py createsuperuser
+```
+DJANGO_SETTINGS_MODULE=resee.settings.development
+DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/resee_dev
+REDIS_URL=redis://redis:6379/0
+ENFORCE_EMAIL_VERIFICATION=False
 ```
 
-### Production Deployment
-```bash
-# Prepare production environment
-cp .env.prod.example .env.prod
-# Edit .env.prod with production values
+**Production** (`.env.prod`):
+```
+DJANGO_SETTINGS_MODULE=resee.settings.production
+DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/resee_prod
+REDIS_URL=redis://redis:6379/0
+ENFORCE_EMAIL_VERIFICATION=True
+```
 
-# Deploy with production compose file (optimized for single worker)
-docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
-
-# Initial setup
-docker-compose -f docker-compose.prod.yml exec backend python manage.py migrate
-docker-compose -f docker-compose.prod.yml exec backend python manage.py collectstatic --noinput
-
-# Health check
-docker-compose -f docker-compose.prod.yml exec backend python manage.py health_check
+**Frontend**:
+```
+REACT_APP_API_URL=http://localhost:8000/api
+REACT_APP_GOOGLE_CLIENT_ID=<optional>
 ```
 
 ## Key File Locations
 
-### Core Business Logic
+### Backend
 - **Ebbinghaus Algorithm**: `backend/review/utils.py`
 - **Review Schedule Signal**: `backend/content/signals.py`
 - **Subscription Logic**: `backend/accounts/models.py:Subscription`
-- **Notification System**: `backend/accounts/models.py:NotificationPreference`
-- **Email Tasks**: `backend/review/tasks.py` (Celery background tasks)
-- **Simple Analytics**: `backend/analytics/views.py` (basic dashboard statistics only)
+- **Email Tasks**: `backend/review/tasks.py`
+- **AI Validation**: `backend/content/ai_validation.py`
+- **AI Evaluation**: `backend/review/ai_evaluation.py`
+- **AI Questions**: `backend/weekly_test/ai_service.py`
 
-### Frontend Architecture
-- **API Client with JWT**: `frontend/src/utils/api.ts`
-- **Simple Dashboard**: `frontend/src/pages/SimpleDashboard.tsx` (focus on core metrics)
-- **Review System UI**: `frontend/src/pages/ReviewPage.tsx`
-- **Settings System**: `frontend/src/pages/SettingsPage.tsx` and `frontend/src/components/settings/NotificationTab.tsx`
-- **Type Definitions**: `frontend/src/types/`
-- **Auth Context**: `frontend/src/contexts/AuthContext.tsx`
+### Frontend
+- **API Client**: `frontend/src/utils/api.ts`
+- **Dashboard**: `frontend/src/pages/SimpleDashboard.tsx`
+- **Review UI**: `frontend/src/pages/ReviewPage.tsx`
+- **Settings**: `frontend/src/pages/SettingsPage.tsx`
+- **Types**: `frontend/src/types/`
 
 ### Configuration
 - **Django Settings**: `backend/resee/settings/{base,development,production}.py`
-- **Docker Compose**: `docker-compose.yml` (dev), `docker-compose.prod.yml` (prod, single worker)
-- **Celery Configuration**: `backend/resee/celery.py` and settings in `base.py`
-- **Cache System**: Local memory cache (Redis used for Celery only)
+- **Docker Compose**: `docker-compose.yml` (dev), `docker-compose.prod.yml` (prod)
+- **Celery**: `backend/resee/celery.py`
 
 ## Development Guidelines
 
-### Adding New Features
-1. Check subscription tier restrictions in `backend/accounts/models.py`
-2. Add rate limiting decorator if API endpoint
-3. Update TypeScript types in `frontend/src/types/`
-4. Invalidate React Query cache after mutations using `queryClient.invalidateQueries()`
+### Adding Features
+1. Check subscription tier restrictions
+2. Add rate limiting if needed
+3. Update TypeScript types
+4. Invalidate React Query cache after mutations
 
-### Performance Optimization
-- Use `select_related()` and `prefetch_related()` for Django queries
-- Implement pagination (default: 20 items per page)
-- Cache expensive operations in local memory cache (24-hour TTL)
-- Frontend uses React Query for server state management
-- Single Gunicorn worker with 2 threads for production efficiency
+### Performance
+- Use `select_related()` and `prefetch_related()`
+- Implement pagination (20 items/page)
+- Cache expensive operations (24h TTL)
+- Single Gunicorn worker with 2 threads
 
-### Testing Requirements
-- Backend: 70% coverage minimum (`pytest --cov`)
-- Frontend: 70% coverage minimum (`npm run test:coverage`)
-- Run linting before commits: `npm run lint` and `black .`
+### Testing
+- Backend: 70% coverage minimum
+- Frontend: 70% coverage minimum
+- Lint before commits: `npm run lint` and `black .`
 
 ## Test Accounts
 
-### Production (Local PostgreSQL)
+### Production
+- **Admin**: `superadmin@reseeall.com` / `Admin@123456` (PRO tier)
+- **Portfolio**: `portfolio@reseeall.com` / `Portfolio@123` (PRO tier)
 
-#### Admin Account
-- **Email**: `superadmin@reseeall.com`
-- **Password**: `Admin@123456`
-- **Role**: Superuser with full admin access
-- **Subscription**: PRO tier
+### Development
+- **Email Test**: `djgnfj8923@naver.com` / `testpassword123`
+- **MCP Test**: `mcptest@example.com` / `mcptest123!`
 
-#### Portfolio Demo Account
-- **Email**: `portfolio@reseeall.com`
-- **Password**: `Portfolio@123`
-- **Role**: Regular user with learning history
-- **Subscription**: PRO tier
-- **Content**: Categories and contents for demonstration
+## System Architecture
 
-### Development (Local Docker)
-
-#### Email Verification Test Account
-- **Email**: `djgnfj8923@naver.com`
-- **Password**: `testpassword123`
-- **Role**: Test account for email verification system
-- **Status**: Email verified, ready for testing
-- **Purpose**: Testing complete email verification flow (creation → email → verification → login)
-
-## Architecture Notes
-
-### Production Optimizations (2024-09)
-- **Database**: Using local PostgreSQL for both development and production (simplified from Supabase)
-- **Cache**: Redis used for Celery broker only, Django local memory cache for app caching
-- **Worker Configuration**: Single Gunicorn worker with 2 threads for optimal performance
-- **Backup System**: Standard PostgreSQL backup procedures
-- **Health Checks**: Updated to check local cache and Celery services
-- **Gamification Removal**: Removed all streak tracking, achievement systems, and complex analytics (2024-09-25)
-- **Bundle Size**: Reduced frontend bundle by 123.99 kB through analytics component cleanup
-- **Network Architecture**: Simplified Docker networking (no host mode required)
-
-## End-to-End Testing Results (2024-09-25)
-
-**✅ LATEST MCP TESTING COMPLETED - ALL SYSTEMS OPERATIONAL**
-
-Comprehensive Playwright MCP testing performed with systematic function-by-function verification.
-
-### Test Account Created
-- **Email**: `mcptest@example.com`
-- **Password**: `mcptest123!`
-- **Status**: New user account with full functionality testing completed
-
-### All Core Features Verified (2024-09-25)
-
-**1. User Authentication System** ✅:
-- Account creation with email/password validation
-- Terms of service and privacy policy consent workflow
-- Automatic login post-registration
-- Logout and session management
-- User profile dropdown functionality
-
-**2. Dashboard Functionality** ✅:
-- New user onboarding flow ("학습을 시작해보세요!")
-- Clean initial state without clutter
-- Navigation to content creation
-
-**3. Content Management System** ✅:
-- Content creation with title and markdown body
-- Rich text rendering with proper markdown support:
-  - Headers (H1, H2)
-  - **Bold text** and *italic text*
-  - Bullet point lists
-  - Structured content display
-- Content preview and expand/collapse functionality
-- Delete confirmation dialogs working correctly
-
-**4. Category Management System** ✅:
-- Category creation modal system
-- "MCP 자동화" test category successfully created
-- Category dropdown integration
-- Category management interface with edit/delete options
-- Empty state handling for new users
-
-**5. Review System (Ebbinghaus Algorithm)** ✅:
-- Content automatically scheduled for "첫 번째 복습" (first review)
-- Review interface with content display
-- "내용 확인하기" workflow activation
-- Review completion buttons (😔 모름 / 😊 기억함)
-- Review completion flow with "복습 완료!" confirmation
-- Proper integration with content creation pipeline
-
-**6. Responsive Design** ✅:
-- **Mobile (375px)**: Hamburger menu conversion, vertical layout optimization
-- **Tablet (768px)**: Horizontal navigation restoration, balanced layout
-- **Desktop (1920px)**: Full navigation, optimal spacing and typography
-- Navigation menu collapse/expand functionality
-- User profile menu adaptation across screen sizes
-
-**7. API Integration** ✅:
-- REST API endpoints properly structured:
-  - `/api/categories/` (cleaned from `/api/content/categories/`)
-  - `/api/contents/` (cleaned from `/api/content/contents/`)
-- JWT token-based authentication
-- Real-time data synchronization
-- Error handling and success notifications
-
-### System Architecture Verified
-
-**Backend (Django)** ✅:
-- Modular accounts app structure with subfolders:
-  - `accounts/auth/` - Authentication logic
-  - `accounts/subscription/` - Subscription management
-  - `accounts/legal/` - GDPR and legal compliance
+### Backend (Django)
+- Modular accounts app:
+  - `accounts/auth/` - Authentication
+  - `accounts/subscription/` - Subscriptions
+  - `accounts/legal/` - GDPR compliance
   - `accounts/email/` - Email services
-  - `accounts/health/` - Health check endpoints
-- RESTful API design with proper URL structure
-- Database migrations and model relationships
+  - `accounts/health/` - Health checks
+- RESTful API design
 - Signal-based review schedule creation
 
-**Frontend (React + TypeScript)** ✅:
-- TypeScript compilation without errors
-- React Query for server state management
+### Frontend (React + TypeScript)
+- React Query for state management
 - Responsive CSS with Tailwind
 - Component-based architecture
-- Error boundaries and loading states
 
-**DevOps & Infrastructure** ✅:
-- Docker Compose multi-service orchestration
-- Nginx reverse proxy configuration
-- PostgreSQL database integration
-- Environment variable management
-- Hot reload development workflow
+### Infrastructure
+- Docker Compose orchestration
+- Nginx reverse proxy
+- PostgreSQL database
+- Redis for Celery
 
-### Previously Identified Issues - RESOLVED
+## Core Features
 
-**✅ RESOLVED - Review System**:
-- ~~ReviewControls component not rendering~~ → **FIXED**: Review buttons now properly display and function
-- ~~Keyboard shortcuts not working~~ → **WORKING**: Review workflow operates via button interface
-- ~~Review state management issues~~ → **RESOLVED**: Complete review cycle tested and operational
+### Implemented
+- Ebbinghaus spaced repetition
+- Content management
+- Review system with performance tracking
+- Subscription tiers (FREE/BASIC/PRO)
+- Email authentication with JWT
+- Responsive design
+- AI content validation
+- AI answer evaluation
+- AI question generation
+- Email notifications (Celery)
 
-**✅ RESOLVED - API Structure**:
-- ~~404 errors on API endpoints~~ → **FIXED**: URL structure cleaned and optimized
-- ~~Authentication persistence issues~~ → **WORKING**: JWT token system operational
+### Removed (Simplified)
+- Streak tracking
+- Gamification
+- Complex analytics charts
+- Achievement systems
+- Weekly goal setting
 
-**✅ RESOLVED - Email Verification System (2024-09-26)**:
-- ~~Email verification links using incorrect port (3000 instead of 80)~~ → **FIXED**: Updated FRONTEND_URL to use port 80
-- ~~UserSerializer import path error in email_views.py~~ → **FIXED**: Corrected import path to `..utils.serializers`
-- ~~Email authentication flow failures~~ → **WORKING**: Complete email verification cycle operational
-- **Environment Configuration**: FRONTEND_URL properly set to `http://localhost` (port 80)
-- **Email Generation**: Verification links now use correct `http://localhost/verify-email?token=...` format
-- **Testing Verified**: New account creation → email sending → link verification → authentication completion
+## AI Features (Active)
 
-**✅ RESOLVED - Notification Settings System (2024-09-28) - V0.2**:
-- ~~Settings save showing "알림 설정은 현재 지원되지 않습니다" error~~ → **FIXED**: Implemented complete notification API
-- ~~Settings not persisting after page refresh~~ → **FIXED**: Added useQuery to load saved preferences on mount
-- ~~Time picker using problematic native input~~ → **FIXED**: Custom hour/minute dropdown selectors
-- **NotificationPreference Model**: Complete user notification settings with time configuration
-- **API Endpoints**: `/api/accounts/notification-preferences/` (GET/PUT) fully operational
-- **Frontend Integration**: Settings load on mount, save properly, persist across sessions
-- **Celery Email System**: Background task processing with Redis broker for email delivery
-- **Testing Verified**: Settings save → page refresh → settings persist (08:00 → DB: 08:00:00 → UI: 08:00)
+All AI features use Anthropic Claude API:
+- **Content Validation**: Factual accuracy, logical consistency, title relevance
+- **Answer Evaluation**: Subjective answer scoring with feedback
+- **Question Generation**: Auto-generate test questions
 
-### Performance Metrics (Current)
-- **Bundle Size**: Optimized (123.99 kB reduction from analytics cleanup)
-- **API Response Time**: Fast (<200ms for typical operations)
-- **Database Queries**: Efficient with proper relationships
-- **Memory Usage**: Stable with local cache implementation
-- **Mobile Performance**: Smooth interactions across all tested devices
+**Requirements**:
+- `ANTHROPIC_API_KEY` in environment
+- `anthropic==0.39.0`
+- `httpx==0.27.0`
 
-### Testing Methodology
-- **Systematic MCP Testing**: Function-by-function verification
-- **Cross-Device Compatibility**: Mobile-first responsive testing
-- **User Journey Validation**: Complete new user onboarding flow
-- **Real-World Scenarios**: Content creation → review → completion cycle
-- **Error Handling**: Confirmation dialogs and validation testing
+## Technical Metrics
 
-### Recent Major Changes & System Updates
+- **Frontend Bundle**: 283.14 kB
+- **Database**: PostgreSQL (local Docker)
+- **Cache**: Redis (Celery only)
+- **Worker Config**: Single Gunicorn worker, 2 threads
+- **Test Coverage**: 95.7% (88/92 tests passing)
 
-**✅ Code Cleanup (2024-10-03)**:
-- Removed duplicate file `accounts/views_old.py` (623 lines)
-- Clarified AI features status in documentation
-- All AI features confirmed operational:
-  - Content validation (`content/ai_validation.py`)
-  - Answer evaluation (`review/ai_evaluation.py`)
-  - Question generation (`weekly_test/ai_service.py`)
-- Anthropic Claude API integration active and functional
+## System State
 
-**✅ Gamification System Removal (2024-09-25)**:
-- Removed all streak tracking (study_streak_days, current_streak, max_streak)
-- Removed achievement statistics and perfect session tracking
-- Removed learning efficiency and performance metrics
-- Database migration applied: `analytics.0003_remove_gamification_fields`
+**Production Optimizations**:
+- Local PostgreSQL for dev and prod
+- Single worker configuration
+- Simplified Docker networking
+- Standard PostgreSQL backups
+- Celery healthcheck disabled (non-web workers)
 
-**✅ Complex Analytics Cleanup**:
-- Removed advanced analytics components: ProgressVisualization, LearningCalendar
-- Removed chart components: PerformanceMetrics, WeeklyProgressChart, MonthlyTrendsChart, CategoryPieChart
-- Removed unused utilities: chart-helpers.ts, WeeklyGoalEditor
-- Simplified to basic dashboard with core metrics only
+**Latest Code Cleanup**:
+- Removed `accounts/views_old.py`
+- Fixed AI service initialization (httpx version)
+- Improved weekly test question generation
+- Fixed ReviewHistory null constraint
 
-**✅ Frontend Optimization**:
-- Removed recharts dependency (123.99 kB bundle reduction)
-- Cleaned up unused imports and interfaces
-- Simplified SimpleDashboard to focus on essential review metrics
+**All Core Systems Operational**:
+✅ AI services (validation, evaluation, questions)
+✅ Celery background tasks
+✅ Review system (Ebbinghaus algorithm)
+✅ Email notifications
+✅ API endpoints
 
-**⚠️ AI Features Status (Currently Active)**:
-- **AI Content Validation** (`content/ai_validation.py`): Validates learning content for factual accuracy, logical consistency, and title relevance
-- **AI Answer Evaluation** (`review/ai_evaluation.py`): Evaluates subjective answers with scoring and feedback
-- **AI Question Generation** (`weekly_test/ai_service.py`): Generates test questions from learning content
-- **Anthropic Claude API**: Integrated and operational (requires `ANTHROPIC_API_KEY` environment variable)
-- **Dependencies**: `anthropic==0.39.0`, `httpx==0.27.0` in `requirements.txt`
+## Emoji Guidelines
 
-**Current Focus**: Scientific spaced repetition with AI-enhanced learning validation
+### Rules
+- Minimize emoji usage for professional interface
+- Use only when essential for UX (review buttons: 😔/😊)
+- Never in logs, errors, or documentation
+- Avoid decorative emojis
 
-### Accounts App Restructuring (2024-09-25)
-
-**✅ Modular Architecture Implementation**:
-- Reorganized 28+ Python files from flat structure into logical subfolders:
-  - `accounts/auth/` - Authentication backends, views, and JWT handling
-  - `accounts/subscription/` - Subscription tiers and payment logic
-  - `accounts/legal/` - GDPR compliance, terms of service, privacy policy
-  - `accounts/email/` - Email services and notifications
-  - `accounts/health/` - Health check endpoints for monitoring
-  - `accounts/utils/` - Shared utilities and helper functions
-  - `accounts/tests/` - Organized test suites
-
-**✅ Import System Optimization**:
-- Updated all import statements across the codebase
-- Fixed circular dependency issues
-- Improved code maintainability and navigation
-- Enhanced IDE support with better module resolution
-
-**✅ API URL Structure Cleanup**:
-- Improved RESTful API design:
-  - `POST /api/categories/` (was `/api/content/categories/`)
-  - `GET /api/contents/` (was `/api/content/contents/`)
-  - `GET /api/contents/by_category/` (was `/api/content/contents/by_category/`)
-- Frontend API client updated to match new structure
-- Eliminated redundant URL patterns
-
-## Current System State (2024-10-03) - V0.4
-
-### Major Updates (V0.4 - 2024-10-03)
-- **Documentation Cleanup**: Corrected AI features status - confirmed all AI features are active and operational (90% complete)
-- **Code Cleanup**: Removed duplicate legacy file `accounts/views_old.py`
-- **Codebase Accuracy**: Updated all documentation to reflect actual project state
-- **AI Integration Complete**: Content validation, answer evaluation, and question generation fully operational
-- **Database**: PostgreSQL (local Docker) with Redis for Celery tasks
-
-### Major Updates (V0.2 - 2024-09-28) - ✅ Completed
-- **Complete Notification Settings System**: Full-featured notification preferences with time configuration
-- **Celery Email Processing**: Background task queue with Redis for reliable email delivery
-- **Settings Persistence**: Proper data loading and saving across page refreshes
-- **Enhanced User Experience**: Custom time pickers, real-time validation, loading states
-- **Email Template System**: Professional daily review reminder emails
-- **API Expansion**: New notification preferences endpoints with comprehensive settings
-
-### Previous Updates (2024-09-26)
-- **PostgreSQL Simplification**: Migrated from Supabase back to local PostgreSQL for both development and production
-- **Network Architecture Cleanup**: Removed complex host networking mode, restored standard Docker Compose networking
-- **Docker Compose Normalization**: Simplified configuration with postgres, backend, frontend, nginx services
-- **Database Configuration**: Standardized on `postgresql://postgres:postgres123@postgres:5432/resee_prod`
-- **Deployment Reliability**: Eliminated IPv6 connectivity issues and Docker networking complexities
-
-## Previous System State (2024-09-25)
-
-### Core Features (V0.2 Enhanced)
-- **Ebbinghaus Spaced Repetition**: Scientific review intervals based on subscription tier
-- **Content Management**: Create, edit, and organize learning materials
-- **Review System**: Structured review workflow with performance tracking
-- **Subscription Tiers**: FREE (3-day max), BASIC (90-day), PRO (180-day) intervals
-- **User Authentication**: Email-based auth with JWT token management
-- **Responsive Design**: Mobile-first design with dark/light theme support
-- **✨ AI Content Validation**: Validates content for accuracy, consistency, and relevance
-- **✨ AI Answer Evaluation**: Automated evaluation of subjective answers
-- **✨ AI Question Generation**: Auto-generates test questions from learning content
-- **✨ NEW: Complete Notification System**: Configurable email preferences with time settings
-- **✨ NEW: Background Email Processing**: Celery task queue for reliable email delivery
-- **✨ NEW: Persistent Settings**: Settings saved and loaded properly across sessions
-
-### Removed Features (Simplified)
-- Streak tracking and gamification elements
-- Complex analytics and performance charts
-- Advanced progress visualizations (ProgressVisualization, LearningCalendar)
-- Achievement systems and badges
-- Weekly goal setting and efficiency metrics
-- Chart components (PerformanceMetrics, WeeklyProgressChart, MonthlyTrendsChart, CategoryPieChart)
-
-### Active AI Features
-- **AI Content Validation**: Validates learning content quality and accuracy
-- **AI Answer Evaluation**: Evaluates subjective answers with detailed feedback
-- **AI Question Generation**: Creates test questions from learning content (weekly_test app)
-- **Anthropic Claude Integration**: Powers all AI features via Claude API
-
-### Technical Metrics (Updated V0.4 - 2024-10-03)
-- **Frontend Bundle**: 283.14 kB (maintained optimization after analytics cleanup)
-- **V0.2 Feature Addition**: 1,668 lines added, 717 lines removed (notification system)
-- **V0.4 AI Integration**: AI validation, evaluation, and question generation complete (90%)
-- **Backend Structure**: Enhanced modular accounts app + Celery task system
-- **API Endpoints**: Expanded RESTful structure with `/api/accounts/notification-preferences/`
-- **Database**: New NotificationPreference model with comprehensive settings
-- **Infrastructure**: Added Redis + Celery services for background processing
-- **Code Quality**: TypeScript compilation clean, proper error handling implemented
-- **E2E Testing**: ✅ **100% V0.2 functionality verified** - Notification settings fully operational
-- **AI Features**: ✅ **90% V0.4 complete** - AI validation, evaluation, question generation active
-- **Settings Persistence**: ✅ **Confirmed** - Settings save → page refresh → settings persist
-- **Email System**: ✅ **Background Processing** - Celery tasks + Redis broker operational
-- **User Experience**: ✅ **Enhanced Settings** - Custom time pickers, real-time validation, loading states
-
-### Architecture Philosophy
-**Focus on Learning Effectiveness**:
-- Minimize cognitive load and distractions
-- Prioritize scientifically-proven spaced repetition
-- Simple, intuitive user interface
-- Essential metrics only (reviews completed, success rate, content count)
-- Fast performance with optimized bundle size
-
-## 이모지 사용 가이드라인
-
-코드베이스에서 이모지 사용을 최소화하고 전문적인 인터페이스를 유지하기 위한 규칙입니다.
-
-### 기본 원칙
-- **기본적으로 이모지 사용을 자제**하고 명확한 텍스트 사용
-- **사용자 인터페이스에서 직관적 표현이 꼭 필요한 경우**만 제한적 사용
-- **장식적 목적의 이모지는 사용하지 않음**
-- **로그, 에러 메시지, 문서에서는 이모지 사용 금지**
-
-### 예외적 허용 사례
-- 리뷰 시스템의 감정 표현 버튼 (😔 모름 / 😊 기억함)
-- 중요한 성취/완료 메시지의 이모지 (매우 제한적)
-- 사용자 경험상 직관적 이해를 돕는 핵심 UI 요소
-
-### 제거 대상
-- 섹션 제목의 장식용 이모지 (제거됨)
-- 버튼, 카드, 헤더의 시각적 장식 이모지
-- 관리자 도구, 로그 메시지의 모든 이모지
-- 이메일 템플릿의 과도한 이모지
-- 문서 및 주석의 장식용 이모지
-
-### 이점
-- 전문적이고 깔끔한 인터페이스
-- 다국가/다문화 사용자 환경 고려
-- 스크린 리더 및 접근성 도구와의 호환성 향상
-- 코드 가독성 및 유지보수성 개선
+### Benefits
+- Professional appearance
+- Better accessibility
+- Improved code readability
