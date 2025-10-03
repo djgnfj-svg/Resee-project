@@ -75,7 +75,8 @@
       "mcp__playwright__browser_tabs",
       "Bash(sudo mkdir:*)",
       "Bash(sudo chown:*)",
-      "Read(//var/log/resee/**)"
+      "Read(//var/log/resee/**)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

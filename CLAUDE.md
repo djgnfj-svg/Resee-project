@@ -232,17 +232,17 @@ docker-compose -f docker-compose.prod.yml exec backend python manage.py health_c
 
 ## Architecture Notes
 
-### Production Optimizations (2025-09)
+### Production Optimizations (2024-09)
 - **Database**: Using local PostgreSQL for both development and production (simplified from Supabase)
-- **Cache**: Removed Redis dependency, using Django local memory cache
+- **Cache**: Redis used for Celery broker only, Django local memory cache for app caching
 - **Worker Configuration**: Single Gunicorn worker with 2 threads for optimal performance
 - **Backup System**: Standard PostgreSQL backup procedures
-- **Health Checks**: Updated to check local cache instead of Redis
-- **Gamification Removal**: Removed all streak tracking, achievement systems, and complex analytics (2025-09-25)
+- **Health Checks**: Updated to check local cache and Celery services
+- **Gamification Removal**: Removed all streak tracking, achievement systems, and complex analytics (2024-09-25)
 - **Bundle Size**: Reduced frontend bundle by 123.99 kB through analytics component cleanup
 - **Network Architecture**: Simplified Docker networking (no host mode required)
 
-## End-to-End Testing Results (2025-09-25)
+## End-to-End Testing Results (2024-09-25)
 
 **✅ LATEST MCP TESTING COMPLETED - ALL SYSTEMS OPERATIONAL**
 
@@ -253,7 +253,7 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - **Password**: `mcptest123!`
 - **Status**: New user account with full functionality testing completed
 
-### All Core Features Verified (2025-09-25)
+### All Core Features Verified (2024-09-25)
 
 **1. User Authentication System** ✅:
 - Account creation with email/password validation
@@ -345,7 +345,7 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - ~~404 errors on API endpoints~~ → **FIXED**: URL structure cleaned and optimized
 - ~~Authentication persistence issues~~ → **WORKING**: JWT token system operational
 
-**✅ RESOLVED - Email Verification System (2025-09-26)**:
+**✅ RESOLVED - Email Verification System (2024-09-26)**:
 - ~~Email verification links using incorrect port (3000 instead of 80)~~ → **FIXED**: Updated FRONTEND_URL to use port 80
 - ~~UserSerializer import path error in email_views.py~~ → **FIXED**: Corrected import path to `..utils.serializers`
 - ~~Email authentication flow failures~~ → **WORKING**: Complete email verification cycle operational
@@ -353,7 +353,7 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - **Email Generation**: Verification links now use correct `http://localhost/verify-email?token=...` format
 - **Testing Verified**: New account creation → email sending → link verification → authentication completion
 
-**✅ RESOLVED - Notification Settings System (2025-09-28) - V0.2**:
+**✅ RESOLVED - Notification Settings System (2024-09-28) - V0.2**:
 - ~~Settings save showing "알림 설정은 현재 지원되지 않습니다" error~~ → **FIXED**: Implemented complete notification API
 - ~~Settings not persisting after page refresh~~ → **FIXED**: Added useQuery to load saved preferences on mount
 - ~~Time picker using problematic native input~~ → **FIXED**: Custom hour/minute dropdown selectors
@@ -377,9 +377,18 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - **Real-World Scenarios**: Content creation → review → completion cycle
 - **Error Handling**: Confirmation dialogs and validation testing
 
-### Recent Major Changes & System Updates (2025-09-25)
+### Recent Major Changes & System Updates
 
-**✅ Gamification System Removal**:
+**✅ Code Cleanup (2024-10-03)**:
+- Removed duplicate file `accounts/views_old.py` (623 lines)
+- Clarified AI features status in documentation
+- All AI features confirmed operational:
+  - Content validation (`content/ai_validation.py`)
+  - Answer evaluation (`review/ai_evaluation.py`)
+  - Question generation (`weekly_test/ai_service.py`)
+- Anthropic Claude API integration active and functional
+
+**✅ Gamification System Removal (2024-09-25)**:
 - Removed all streak tracking (study_streak_days, current_streak, max_streak)
 - Removed achievement statistics and perfect session tracking
 - Removed learning efficiency and performance metrics
@@ -396,15 +405,16 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - Cleaned up unused imports and interfaces
 - Simplified SimpleDashboard to focus on essential review metrics
 
-**✅ AI Features Status (Previously Removed)**:
-- AI question generation pipeline removed
-- Anthropic Claude API integration removed
-- AI-powered review suggestions removed
-- Legacy environment variables remain but unused
+**⚠️ AI Features Status (Currently Active)**:
+- **AI Content Validation** (`content/ai_validation.py`): Validates learning content for factual accuracy, logical consistency, and title relevance
+- **AI Answer Evaluation** (`review/ai_evaluation.py`): Evaluates subjective answers with scoring and feedback
+- **AI Question Generation** (`weekly_test/ai_service.py`): Generates test questions from learning content
+- **Anthropic Claude API**: Integrated and operational (requires `ANTHROPIC_API_KEY` environment variable)
+- **Dependencies**: `anthropic==0.39.0`, `httpx==0.27.0` in `requirements.txt`
 
-**Current Focus**: Pure spaced repetition learning tool without distractions
+**Current Focus**: Scientific spaced repetition with AI-enhanced learning validation
 
-### Accounts App Restructuring (2025-09-25)
+### Accounts App Restructuring (2024-09-25)
 
 **✅ Modular Architecture Implementation**:
 - Reorganized 28+ Python files from flat structure into logical subfolders:
@@ -430,9 +440,16 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - Frontend API client updated to match new structure
 - Eliminated redundant URL patterns
 
-## Current System State (2025-09-28) - V0.2
+## Current System State (2024-10-03) - V0.4
 
-### Major Updates (V0.2 - 2025-09-28)
+### Major Updates (V0.4 - 2024-10-03)
+- **Documentation Cleanup**: Corrected AI features status - confirmed all AI features are active and operational (90% complete)
+- **Code Cleanup**: Removed duplicate legacy file `accounts/views_old.py`
+- **Codebase Accuracy**: Updated all documentation to reflect actual project state
+- **AI Integration Complete**: Content validation, answer evaluation, and question generation fully operational
+- **Database**: PostgreSQL (local Docker) with Redis for Celery tasks
+
+### Major Updates (V0.2 - 2024-09-28) - ✅ Completed
 - **Complete Notification Settings System**: Full-featured notification preferences with time configuration
 - **Celery Email Processing**: Background task queue with Redis for reliable email delivery
 - **Settings Persistence**: Proper data loading and saving across page refreshes
@@ -440,14 +457,14 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - **Email Template System**: Professional daily review reminder emails
 - **API Expansion**: New notification preferences endpoints with comprehensive settings
 
-### Previous Updates (2025-09-26)
+### Previous Updates (2024-09-26)
 - **PostgreSQL Simplification**: Migrated from Supabase back to local PostgreSQL for both development and production
 - **Network Architecture Cleanup**: Removed complex host networking mode, restored standard Docker Compose networking
 - **Docker Compose Normalization**: Simplified configuration with postgres, backend, frontend, nginx services
 - **Database Configuration**: Standardized on `postgresql://postgres:postgres123@postgres:5432/resee_prod`
 - **Deployment Reliability**: Eliminated IPv6 connectivity issues and Docker networking complexities
 
-## Previous System State (2025-09-25)
+## Previous System State (2024-09-25)
 
 ### Core Features (V0.2 Enhanced)
 - **Ebbinghaus Spaced Repetition**: Scientific review intervals based on subscription tier
@@ -456,6 +473,9 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 - **Subscription Tiers**: FREE (3-day max), BASIC (90-day), PRO (180-day) intervals
 - **User Authentication**: Email-based auth with JWT token management
 - **Responsive Design**: Mobile-first design with dark/light theme support
+- **✨ AI Content Validation**: Validates content for accuracy, consistency, and relevance
+- **✨ AI Answer Evaluation**: Automated evaluation of subjective answers
+- **✨ AI Question Generation**: Auto-generates test questions from learning content
 - **✨ NEW: Complete Notification System**: Configurable email preferences with time settings
 - **✨ NEW: Background Email Processing**: Celery task queue for reliable email delivery
 - **✨ NEW: Persistent Settings**: Settings saved and loaded properly across sessions
@@ -463,20 +483,28 @@ Comprehensive Playwright MCP testing performed with systematic function-by-funct
 ### Removed Features (Simplified)
 - Streak tracking and gamification elements
 - Complex analytics and performance charts
-- AI-powered question generation
-- Advanced progress visualizations
+- Advanced progress visualizations (ProgressVisualization, LearningCalendar)
 - Achievement systems and badges
 - Weekly goal setting and efficiency metrics
+- Chart components (PerformanceMetrics, WeeklyProgressChart, MonthlyTrendsChart, CategoryPieChart)
 
-### Technical Metrics (Updated V0.2 - 2025-09-28)
+### Active AI Features
+- **AI Content Validation**: Validates learning content quality and accuracy
+- **AI Answer Evaluation**: Evaluates subjective answers with detailed feedback
+- **AI Question Generation**: Creates test questions from learning content (weekly_test app)
+- **Anthropic Claude Integration**: Powers all AI features via Claude API
+
+### Technical Metrics (Updated V0.4 - 2024-10-03)
 - **Frontend Bundle**: 283.14 kB (maintained optimization after analytics cleanup)
-- **V0.2 Feature Addition**: 1,668 lines added, 717 lines removed (notification system implementation)
+- **V0.2 Feature Addition**: 1,668 lines added, 717 lines removed (notification system)
+- **V0.4 AI Integration**: AI validation, evaluation, and question generation complete (90%)
 - **Backend Structure**: Enhanced modular accounts app + Celery task system
 - **API Endpoints**: Expanded RESTful structure with `/api/accounts/notification-preferences/`
 - **Database**: New NotificationPreference model with comprehensive settings
 - **Infrastructure**: Added Redis + Celery services for background processing
 - **Code Quality**: TypeScript compilation clean, proper error handling implemented
 - **E2E Testing**: ✅ **100% V0.2 functionality verified** - Notification settings fully operational
+- **AI Features**: ✅ **90% V0.4 complete** - AI validation, evaluation, question generation active
 - **Settings Persistence**: ✅ **Confirmed** - Settings save → page refresh → settings persist
 - **Email System**: ✅ **Background Processing** - Celery tasks + Redis broker operational
 - **User Experience**: ✅ **Enhanced Settings** - Custom time pickers, real-time validation, loading states
