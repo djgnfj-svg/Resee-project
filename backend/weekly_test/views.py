@@ -183,37 +183,73 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
             return False
 
     def _create_simple_question(self, weekly_test, content, order):
-        """간단한 문제 생성 (AI 없이)"""
-        # 객관식과 O/X 문제만 생성
-        question_types = ['true_false', 'multiple_choice']
-        question_type = random.choice(question_types)
+        """간단한 문제 생성 (AI 없이) - 개선된 버전"""
+        import re
 
-        if question_type == 'true_false':
-            question_text = f"다음 설명이 '{content.title}'에 대한 올바른 설명입니까? (O/X)\n\n{content.content[:100]}..."
-            correct_answer = "O"  # 실제 내용이므로 O
-            choices = None
-        else:  # multiple_choice
-            question_text = f"'{content.title}'에 대한 설명으로 가장 적절한 것은?"
-            choices = [
-                content.content[:100] + "...",  # 정답
-                "관련 없는 내용입니다.",
-                "이 콘텐츠는 다른 주제를 다룹니다.",
-                "해당 사항이 없습니다."
-            ]
-            random.shuffle(choices)
-            correct_answer = content.content[:100] + "..."
+        # 콘텐츠에서 의미있는 문장 추출
+        sentences = self._extract_meaningful_sentences(content.content)
+
+        if not sentences:
+            # 문장 추출 실패 시 전체 내용 사용
+            sentences = [content.content[:200]]
+
+        # 첫 번째 의미있는 문장을 문제로 사용
+        selected_sentence = sentences[0] if sentences else content.content[:200]
+
+        # O/X 문제 생성 (50% 확률로 O 또는 X)
+        is_correct_statement = random.choice([True, False])
+
+        if is_correct_statement:
+            # 실제 내용을 그대로 사용 (정답: O)
+            question_text = f"'{content.title}'에 대한 다음 설명이 맞습니까? (O/X)\n\n{selected_sentence}"
+            correct_answer = "O"
+            explanation = f"O - 학습 내용에 정확히 포함된 내용입니다."
+        else:
+            # 내용을 살짝 변형하여 오답 생성 (정답: X)
+            modified_sentence = self._create_modified_statement(content.title, selected_sentence)
+            question_text = f"'{content.title}'에 대한 다음 설명이 맞습니까? (O/X)\n\n{modified_sentence}"
+            correct_answer = "X"
+            explanation = f"X - 학습 내용과 다릅니다. 정확한 내용: {selected_sentence[:100]}..."
 
         WeeklyTestQuestion.objects.create(
             weekly_test=weekly_test,
             content=content,
-            question_type=question_type,
+            question_type='true_false',
             question_text=question_text,
-            choices=choices,
+            choices=None,
             correct_answer=correct_answer,
-            explanation=f"정답: {correct_answer}",
+            explanation=explanation,
             order=order,
             points=10
         )
+
+    def _extract_meaningful_sentences(self, text):
+        """텍스트에서 의미있는 문장 추출"""
+        import re
+
+        # 마크다운 헤더, 코드 블록 등 제거
+        text = re.sub(r'#+\s+', '', text)  # 헤더 제거
+        text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)  # 코드 블록 제거
+        text = re.sub(r'`[^`]+`', '', text)  # 인라인 코드 제거
+
+        # 문장 분리 (. ! ? 기준)
+        sentences = re.split(r'[.!?]\s+', text)
+
+        # 의미있는 길이의 문장만 필터링 (50-300자)
+        meaningful = [s.strip() for s in sentences if 50 <= len(s.strip()) <= 300]
+
+        return meaningful[:3]  # 최대 3개 반환
+
+    def _create_modified_statement(self, title, original_sentence):
+        """문장을 살짝 변형하여 오답 생성"""
+        # 간단한 부정 또는 수정을 통해 오답 만들기
+        modifications = [
+            f"{original_sentence.replace('입니다', '가 아닙니다').replace('합니다', '하지 않습니다')}",
+            f"{title}은(는) 다른 개념과 관련이 없습니다.",
+            f"{original_sentence[:50]}... 는 잘못된 설명입니다.",
+        ]
+
+        return random.choice(modifications)
 
 
 class WeeklyTestDetailView(UserOwnershipMixin, generics.RetrieveUpdateDestroyAPIView):

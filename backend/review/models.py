@@ -161,6 +161,7 @@ class ReviewHistory(BaseUserModel):
         help_text='AI evaluation score (0-100)'
     )
     ai_feedback = models.TextField(
+        null=True,
         blank=True,
         help_text='AI generated feedback'
     )

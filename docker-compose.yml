@@ -73,6 +73,8 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      disable: true
 
   celery-beat:
     build: ./backend
@@ -90,6 +92,8 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      disable: true
 
   frontend:
     build: ./frontend
