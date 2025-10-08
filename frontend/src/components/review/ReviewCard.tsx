@@ -116,13 +116,15 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
         {/* Back of Card */}
         <div className="absolute inset-0 w-full bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-2xl shadow-xl dark:shadow-gray-900/40 backface-hidden rotate-y-180 border-2 border-green-200 dark:border-green-700" style={{ minHeight: '500px' }}>
           <div className="p-8 h-full flex flex-col space-y-4 overflow-y-auto">
-            {/* 서술 평가: 제출한 답변 표시 */}
-            {isSubjective && submittedAnswer && (
-              <div className="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">내가 작성한 답변</h4>
-                <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{submittedAnswer}</p>
+            {/* 정답 내용 - 최우선 배치 */}
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">정답</h4>
+              <div className="prose prose-base dark:prose-invert max-w-none">
+                <ReactMarkdown>
+                  {review.content.content}
+                </ReactMarkdown>
               </div>
-            )}
+            </div>
 
             {/* 서술 평가: AI 평가 결과 */}
             {isSubjective && aiEvaluation && (
@@ -147,15 +149,13 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
               </div>
             )}
 
-            {/* 정답 내용 */}
-            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">정답</h4>
-              <div className="prose prose-base dark:prose-invert max-w-none">
-                <ReactMarkdown>
-                  {review.content.content}
-                </ReactMarkdown>
+            {/* 서술 평가: 제출한 답변 표시 */}
+            {isSubjective && submittedAnswer && (
+              <div className="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">내가 작성한 답변</h4>
+                <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{submittedAnswer}</p>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
