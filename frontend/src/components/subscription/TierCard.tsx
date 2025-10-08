@@ -72,14 +72,22 @@ const TierCard: React.FC<TierCardProps> = ({
       </div>
 
       <div className="mt-auto">
-        {tier.name === 'free' ? (
+        {currentTier === tier.name ? (
           <div className="w-full bg-green-500 text-white py-3 px-6 rounded-lg font-medium text-center">
-            현재 무료 플랜
+            현재 {tier.display_name} 플랜
           </div>
-        ) : (
+        ) : tier.coming_soon ? (
           <div className="w-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 py-3 px-6 rounded-lg font-medium text-center border-2 border-indigo-200 dark:border-indigo-700">
             사용자 20명 후 오픈
           </div>
+        ) : (
+          <button
+            onClick={() => onUpgrade?.(tier.name as SubscriptionTier, billingCycle)}
+            disabled={upgrading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-6 rounded-lg font-medium transition-colors"
+          >
+            {upgrading ? '처리 중...' : `${tier.display_name} 플랜 구독하기`}
+          </button>
         )}
       </div>
     </div>

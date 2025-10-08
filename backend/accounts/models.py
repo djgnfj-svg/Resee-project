@@ -121,9 +121,9 @@ class User(AbstractUser):
         if self.email_verification_token != token:
             return False
         
-        # 토큰 유효기간 확인 (24시간)
+        # 토큰 유효기간 확인
         if self.email_verification_sent_at:
-            expiry_time = self.email_verification_sent_at + timedelta(hours=24)
+            expiry_time = self.email_verification_sent_at + timedelta(days=settings.EMAIL_VERIFICATION_TIMEOUT_DAYS)
             if timezone.now() > expiry_time:
                 return False
         

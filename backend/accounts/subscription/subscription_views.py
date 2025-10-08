@@ -400,7 +400,7 @@ def subscription_downgrade(request):
         logger.info(f"Subscription downgraded: {user.email} from {old_tier} to {target_tier}, refund: {refund_amount}")
         
         # Return updated subscription
-        from .serializers import SubscriptionSerializer
+        from ..utils.serializers import SubscriptionSerializer
         response_serializer = SubscriptionSerializer(subscription)
         response_data = response_serializer.data
         response_data['message'] = f'구독이 성공적으로 {subscription.get_tier_display()}으로 다운그레이드되었습니다!'
@@ -474,7 +474,7 @@ def subscription_cancel(request):
         logger.info(f"Subscription cancelled: {user.email} from {old_tier} to FREE")
         
         # Return updated subscription
-        from .serializers import SubscriptionSerializer
+        from ..utils.serializers import SubscriptionSerializer
         response_serializer = SubscriptionSerializer(subscription)
         response_data = response_serializer.data
         response_data['message'] = '구독이 성공적으로 취소되었습니다. 무료 플랜으로 변경되었습니다.'
@@ -499,7 +499,7 @@ def payment_history(request):
         histories = PaymentHistory.objects.filter(user=user).order_by('-created_at')
         
         # Serialize the data
-        from .serializers import PaymentHistorySerializer
+        from ..utils.serializers import PaymentHistorySerializer
         serializer = PaymentHistorySerializer(histories, many=True)
         
         return Response({
@@ -547,7 +547,7 @@ def toggle_auto_renewal(request):
         logger.info(f"Auto-renewal {'enabled' if subscription.auto_renewal else 'disabled'} for {user.email}")
         
         # Return updated subscription
-        from .serializers import SubscriptionSerializer
+        from ..utils.serializers import SubscriptionSerializer
         serializer = SubscriptionSerializer(subscription)
         response_data = serializer.data
         response_data['message'] = f"자동갱신이 {'활성화' if subscription.auto_renewal else '비활성화'}되었습니다."

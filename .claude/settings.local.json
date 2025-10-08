@@ -76,7 +76,11 @@
       "Bash(sudo mkdir:*)",
       "Bash(sudo chown:*)",
       "Read(//var/log/resee/**)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(python3:*)",
+      "Bash(for i in {1..8})",
+      "Bash(awk:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []
@@ -86,5 +90,6 @@
     "github",
     "sequential-thinking",
     "playwright"
-  ]
+  ],
+  "outputStyle": "Explanatory"
 }

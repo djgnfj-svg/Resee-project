@@ -19,6 +19,7 @@ import WeeklyTestPage from './pages/WeeklyTestPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import SubscriptionPage from './pages/SubscriptionPage';
+import PaymentHistoryPage from './pages/PaymentHistoryPage';
 import NotFoundPage from './pages/NotFoundPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
@@ -115,13 +116,21 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              <Route 
-                path="/subscription" 
+              <Route
+                path="/subscription"
                 element={
                   <ProtectedRoute>
                     <SubscriptionPage />
                   </ProtectedRoute>
-                } 
+                }
+              />
+              <Route
+                path="/payment-history"
+                element={
+                  <ProtectedRoute>
+                    <PaymentHistoryPage />
+                  </ProtectedRoute>
+                }
               />
               {/* 404 페이지 - 모든 라우트의 맨 마지막에 위치 */}
               <Route path="*" element={<NotFoundPage />} />
