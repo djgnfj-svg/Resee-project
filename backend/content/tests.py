@@ -55,8 +55,9 @@ class CategoryModelTest(TestCase):
         Category.objects.create(name='Same Name', user=self.user)
 
         # Second category with same name should fail due to unique constraint
-        from django.db import IntegrityError
-        with self.assertRaises(IntegrityError):
+        # Note: ValidationError is raised because save() calls full_clean()
+        from django.core.exceptions import ValidationError
+        with self.assertRaises(ValidationError):
             Category.objects.create(name='Same Name', user=self.user)
 
 
@@ -159,15 +160,20 @@ class CategoryAPITest(APITestCase):
     
     def test_create_category(self):
         """Test creating a new category"""
+        # Set user to PRO tier to avoid subscription limits
+        from accounts.models import SubscriptionTier
+        self.user.subscription.tier = SubscriptionTier.PRO
+        self.user.subscription.save()
+
         url = reverse('content:categories-list')
         data = {
             'name': 'New Category',
             'description': 'New description'
         }
-        
+
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        
+
         # Check if category was created
         self.assertTrue(Category.objects.filter(name='New Category', user=self.user).exists())
         self.assertEqual(response.data['name'], 'New Category')
@@ -477,8 +483,10 @@ class SerializerTest(TestCase):
             'category': self.category.id
         }
 
-        serializer = ContentSerializer(data=data)
-        self.assertTrue(serializer.is_valid())
+        # Mock request context for validation
+        mock_request = type('MockRequest', (), {'user': self.user})()
+        serializer = ContentSerializer(data=data, context={'request': mock_request})
+        self.assertTrue(serializer.is_valid(), serializer.errors)
 
         # Note: We can't actually save without proper context
         # This tests validation only
@@ -519,19 +527,22 @@ class ContentSignalTest(TestCase):
             user=self.user
         )
     
-    @patch('content.signals.create_review_schedule_for_content.delay')
-    def test_content_post_save_signal(self, mock_create_schedule):
+    def test_content_post_save_signal(self):
         """Test that creating content triggers review schedule creation"""
+        from review.models import ReviewSchedule
+
         content = Content.objects.create(
             title='Test Content',
             content='Test content body',
             author=self.user,
             category=self.category
         )
-        
-        # Check if signal was called
-        # The actual signal implementation would be in signals.py
-        self.assertTrue(Content.objects.filter(id=content.id).exists())
-        
-        # Note: The actual signal testing would depend on the signal implementation
+
+        # Check that ReviewSchedule was created by the signal
+        self.assertTrue(
+            ReviewSchedule.objects.filter(
+                content=content,
+                user=self.user
+            ).exists()
+        )
         # This is a placeholder for where such tests would go
