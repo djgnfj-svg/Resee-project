@@ -107,9 +107,18 @@ const SubscriptionPage: React.FC = () => {
     const confirmMessage = `${tierNames[tier]} 플랜으로 변경하시겠습니까?`;
 
     if (window.confirm(confirmMessage)) {
+      // Request password for security
+      const password = window.prompt('보안을 위해 비밀번호를 입력해주세요:');
+
+      if (!password) {
+        toast.error('비밀번호를 입력해야 구독을 변경할 수 있습니다.');
+        return;
+      }
+
       upgradeMutation.mutate({
         tier,
-        billing_cycle: billingCycle
+        billing_cycle: billingCycle,
+        password
       });
     }
   };

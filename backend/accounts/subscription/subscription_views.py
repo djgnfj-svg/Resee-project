@@ -86,26 +86,50 @@ def subscription_upgrade(request):
     """Upgrade user's subscription"""
     import logging
     logger = logging.getLogger(__name__)
-    
+
     try:
         logger.info(f"Starting subscription upgrade for user: {request.user.email}")
-        
+
         # Check user and subscription first
         user = request.user
         logger.info(f"User: {user}, has subscription: {hasattr(user, 'subscription')}")
-        
+
         if not hasattr(user, 'subscription'):
             logger.error(f"User {user.email} has no subscription attribute")
             return Response({'error': 'User subscription not found'}, status=status.HTTP_400_BAD_REQUEST)
-            
+
         subscription = user.subscription
         logger.info(f"Current subscription: {subscription}, tier: {subscription.tier}")
-        
+
+        # Verify admin password before allowing subscription change
+        password = request.data.get('password')
+        if not password:
+            return Response(
+                {'error': '비밀번호를 입력해주세요.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        admin_password = getattr(settings, 'SUBSCRIPTION_ADMIN_PASSWORD', None)
+        if not admin_password:
+            logger.error("SUBSCRIPTION_ADMIN_PASSWORD not configured")
+            return Response(
+                {'error': '구독 변경이 일시적으로 비활성화되었습니다.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        if password != admin_password:
+            return Response(
+                {'error': '비밀번호가 올바르지 않습니다.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        logger.info("Admin password verification passed")
+
         serializer = SubscriptionUpgradeSerializer(
             data=request.data,
             context={'request': request}
         )
-        
+
         # 환경변수로 이메일 인증 강제 여부 제어
         if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not request.user.is_email_verified:
             return Response(
@@ -306,17 +330,41 @@ def subscription_downgrade(request):
     """Downgrade user's subscription with refund calculation"""
     import logging
     logger = logging.getLogger(__name__)
-    
+
     try:
         logger.info(f"Starting subscription downgrade for user: {request.user.email}")
-        
+
         user = request.user
         subscription = getattr(user, 'subscription', None)
-        
+
         if not subscription:
             logger.error(f"User {user.email} has no subscription")
             return Response({'error': '구독 정보를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
-        
+
+        # Verify admin password before allowing subscription change
+        password = request.data.get('password')
+        if not password:
+            return Response(
+                {'error': '비밀번호를 입력해주세요.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        admin_password = getattr(settings, 'SUBSCRIPTION_ADMIN_PASSWORD', None)
+        if not admin_password:
+            logger.error("SUBSCRIPTION_ADMIN_PASSWORD not configured")
+            return Response(
+                {'error': '구독 변경이 일시적으로 비활성화되었습니다.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        if password != admin_password:
+            return Response(
+                {'error': '비밀번호가 올바르지 않습니다.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        logger.info("Admin password verification passed")
+
         # Get target tier and billing cycle from request
         target_tier = request.data.get('tier')
         billing_cycle = request.data.get('billing_cycle', 'monthly')
@@ -427,21 +475,37 @@ def subscription_cancel(request):
     """Cancel user's subscription (downgrade to FREE)"""
     import logging
     logger = logging.getLogger(__name__)
-    
+
     try:
         user = request.user
         logger.info(f"Starting subscription cancellation for user: {user.email}")
-        
+
         # Get user's subscription
         subscription = getattr(user, 'subscription', None)
         if not subscription:
             logger.error(f"User {user.email} has no subscription")
             return Response({'error': '구독 정보를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
-        
+
         # Check if already FREE tier
         if subscription.tier == SubscriptionTier.FREE:
             logger.info(f"User {user.email} is already on FREE tier")
             return Response({'error': '이미 무료 플랜을 사용중입니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verify password before allowing subscription cancellation
+        password = request.data.get('password')
+        if not password:
+            return Response(
+                {'error': '비밀번호를 입력해주세요.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not user.check_password(password):
+            return Response(
+                {'error': '비밀번호가 올바르지 않습니다.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        logger.info("Password verification passed")
         
         # Cancel subscription by downgrading to FREE
         from datetime import timedelta
