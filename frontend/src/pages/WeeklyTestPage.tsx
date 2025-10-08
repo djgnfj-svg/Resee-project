@@ -4,6 +4,42 @@ import { weeklyTestAPI, WeeklyTest } from '../utils/api/weeklyTest';
 import { contentAPI } from '../utils/api/content';
 import { Category } from '../types';
 
+/**
+ * 백틱으로 감싸진 텍스트를 코드 스타일로 렌더링
+ */
+const renderTextWithCode = (text: string) => {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  const regex = /`([^`]+)`/g;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    // 백틱 앞의 일반 텍스트
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+
+    // 백틱 안의 코드
+    parts.push(
+      <code
+        key={match.index}
+        className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-blue-600 dark:text-blue-300 rounded text-sm font-mono"
+      >
+        {match[1]}
+      </code>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // 남은 텍스트
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+};
+
 const WeeklyTestPage: React.FC = () => {
   const navigate = useNavigate();
   const [tests, setTests] = useState<WeeklyTest[]>([]);
@@ -217,8 +253,8 @@ const WeeklyTestPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <p className="text-gray-700 dark:text-gray-300 mb-4">
-                      {question.question_text}
+                    <p className="text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-wrap">
+                      {renderTextWithCode(question.question_text)}
                     </p>
 
                     {answer ? (
@@ -250,8 +286,8 @@ const WeeklyTestPage: React.FC = () => {
                             <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
                               해설:
                             </p>
-                            <p className="text-gray-700 dark:text-gray-300">
-                              {question.explanation}
+                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                              {renderTextWithCode(question.explanation)}
                             </p>
                           </div>
                         )}
@@ -269,8 +305,8 @@ const WeeklyTestPage: React.FC = () => {
                             <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
                               해설:
                             </p>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">
-                              {question.explanation}
+                            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                              {renderTextWithCode(question.explanation)}
                             </p>
                           </div>
                         )}
@@ -350,8 +386,8 @@ const WeeklyTestPage: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                   문제 {currentQuestionIndex + 1}
                 </h3>
-                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                  {currentQuestion.question_text}
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  {renderTextWithCode(currentQuestion.question_text)}
                 </p>
 
                 {currentQuestion.content && (
@@ -602,6 +638,16 @@ const WeeklyTestPage: React.FC = () => {
                         className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors"
                       >
                         시험 시작
+                      </button>
+                    )}
+
+                    {test.status === 'in_progress' && (
+                      <button
+                        onClick={() => startTest(test.id)}
+                        disabled={isLoading}
+                        className="bg-yellow-600 dark:bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 transition-colors"
+                      >
+                        시험 계속
                       </button>
                     )}
 

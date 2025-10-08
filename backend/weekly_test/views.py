@@ -196,6 +196,9 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         # 첫 번째 의미있는 문장을 문제로 사용
         selected_sentence = sentences[0] if sentences else content.content[:200]
 
+        # 코드 요소를 백틱으로 감싸기
+        selected_sentence = self._wrap_code_elements(selected_sentence)
+
         # O/X 문제 생성 (50% 확률로 O 또는 X)
         is_correct_statement = random.choice([True, False])
 
@@ -207,6 +210,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         else:
             # 내용을 살짝 변형하여 오답 생성 (정답: X)
             modified_sentence = self._create_modified_statement(content.title, selected_sentence)
+            modified_sentence = self._wrap_code_elements(modified_sentence)
             question_text = f"'{content.title}'에 대한 다음 설명이 맞습니까? (O/X)\n\n{modified_sentence}"
             correct_answer = "X"
             explanation = f"X - 학습 내용과 다릅니다. 정확한 내용: {selected_sentence[:100]}..."
@@ -251,6 +255,42 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
         return random.choice(modifications)
 
+    def _wrap_code_elements(self, text):
+        """코드 요소를 백틱으로 감싸서 마크다운 형식으로 변환"""
+        import re
+
+        # 이미 백틱으로 감싸진 부분은 보존
+        if '`' in text:
+            return text
+
+        # 코드 패턴들 정의
+        # 한글과 함께 사용되므로 \b 대신 (?<![a-zA-Z0-9_])와 (?![a-zA-Z0-9_]) 사용
+        patterns = [
+            # 던더 메서드 (__init__, __str__ 등) - 괄호 포함
+            (r'(__[a-zA-Z_]+__)\s*\(', r'`\1`('),
+            # 던더 메서드 (__init__, __str__ 등) - 괄호 없음
+            (r'(?<![a-zA-Z0-9_])(__[a-zA-Z_]+__)(?![a-zA-Z0-9_])', r'`\1`'),
+            # self, cls 같은 특수 키워드 (한글 앞뒤 허용)
+            (r'(?<![a-zA-Z0-9_])(self|cls)(?![a-zA-Z0-9_])', r'`\1`'),
+            # 함수/메서드 호출 (괄호 포함, 던더 메서드 제외)
+            (r'(?<![a-zA-Z0-9_])(?!__)([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', r'`\1`('),
+            # 파이썬 키워드들
+            (r'(?<![a-zA-Z0-9_])(def|class|import|from|return|if|else|elif|for|while|try|except|with|as|lambda|yield|async|await)(?![a-zA-Z0-9_])', r'`\1`'),
+            # 타입 힌트나 타입 이름
+            (r'(?<![a-zA-Z0-9_])(int|str|float|bool|list|dict|tuple|set|None|True|False)(?![a-zA-Z0-9_])', r'`\1`'),
+            # 변수명 패턴 (언더스코어 포함)
+            (r'(?<![a-zA-Z0-9_])([a-z][a-z0-9_]*_[a-z0-9_]+)(?![a-zA-Z0-9_])', r'`\1`'),
+        ]
+
+        result = text
+        for pattern, replacement in patterns:
+            result = re.sub(pattern, replacement, result)
+
+        # 중복 백틱 제거 (예: ``code``)
+        result = re.sub(r'`+', '`', result)
+
+        return result
+
 
 class WeeklyTestDetailView(UserOwnershipMixin, generics.RetrieveUpdateDestroyAPIView):
     """주간 시험 상세 조회/수정/삭제"""
@@ -265,22 +305,26 @@ class WeeklyTestDetailView(UserOwnershipMixin, generics.RetrieveUpdateDestroyAPI
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def start_test(request):
-    """시험 시작"""
+    """시험 시작 또는 계속하기"""
     serializer = StartTestSerializer(data=request.data, context={'request': request})
 
     if serializer.is_valid():
         test_id = serializer.validated_data['test_id']
         weekly_test = WeeklyTest.objects.get(id=test_id)
 
-        # 시험 상태 업데이트
-        weekly_test.status = 'in_progress'
-        weekly_test.started_at = timezone.now()
-        weekly_test.save()
+        # 시험 상태 업데이트 (pending인 경우에만)
+        if weekly_test.status == 'pending':
+            weekly_test.status = 'in_progress'
+            weekly_test.started_at = timezone.now()
+            weekly_test.save()
+            message = '시험이 시작되었습니다.'
+        else:
+            message = '시험을 계속합니다.'
 
         # 시험 정보 반환
         test_serializer = WeeklyTestSerializer(weekly_test)
         return Response({
-            'message': '시험이 시작되었습니다.',
+            'message': message,
             'test': test_serializer.data
         }, status=status.HTTP_200_OK)
 
