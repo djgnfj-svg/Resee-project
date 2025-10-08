@@ -95,8 +95,10 @@ docker-compose exec frontend npm run build
 ```
 DJANGO_SETTINGS_MODULE=resee.settings.development
 DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/resee_dev
-REDIS_URL=redis://redis:6379/0
-ENFORCE_EMAIL_VERIFICATION=False
+ENFORCE_EMAIL_VERIFICATION=True
+
+# Note: REDIS_URL is set in docker-compose.yml
+# REDIS_URL=redis://redis:6379/0
 ```
 
 **Production** (`.env.prod`):
@@ -107,9 +109,9 @@ REDIS_URL=redis://redis:6379/0
 ENFORCE_EMAIL_VERIFICATION=True
 ```
 
-**Frontend**:
+**Frontend** (set in `docker-compose.yml`):
 ```
-REACT_APP_API_URL=http://localhost:8000/api
+REACT_APP_API_URL=/api  # Proxied through Nginx
 REACT_APP_GOOGLE_CLIENT_ID=<optional>
 ```
 
@@ -126,8 +128,9 @@ REACT_APP_GOOGLE_CLIENT_ID=<optional>
 
 ### Frontend
 - **API Client**: `frontend/src/utils/api.ts`
-- **Dashboard**: `frontend/src/pages/SimpleDashboard.tsx`
+- **Dashboard**: `frontend/src/pages/DashboardPage.tsx`
 - **Review UI**: `frontend/src/pages/ReviewPage.tsx`
+- **Review Controls**: `frontend/src/components/review/ReviewControls.tsx`
 - **Settings**: `frontend/src/pages/SettingsPage.tsx`
 - **Types**: `frontend/src/types/`
 
@@ -162,8 +165,9 @@ REACT_APP_GOOGLE_CLIENT_ID=<optional>
 - **Portfolio**: `portfolio@reseeall.com` / `Portfolio@123` (PRO tier)
 
 ### Development
-- **Email Test**: `djgnfj8923@naver.com` / `testpassword123`
-- **MCP Test**: `mcptest@example.com` / `mcptest123!`
+- **Admin**: `admin@resee.com` / `admin123!` (PRO tier, 180-day intervals)
+- **Email Test**: `djgnfj8923@naver.com` / `testpassword123` (BASIC tier, 90-day intervals)
+- **MCP Test**: `mcptest@example.com` / `mcptest123!` (FREE tier, 3-day intervals)
 
 ## System Architecture
 
@@ -238,9 +242,11 @@ All AI features use Anthropic Claude API:
 - Standard PostgreSQL backups
 - Celery healthcheck disabled (non-web workers)
 
-**Latest Code Cleanup**:
-- Removed `accounts/views_old.py`
-- Fixed AI service initialization (httpx version)
+**Latest Code Updates**:
+- Subjective review UX improvement: Removed auto-advance, added user-controlled "Next" button
+- AI evaluation enhancement: Added invalid answer detection (number/character spam → 0 points)
+- ReviewCard layout optimization: Answer-first display for better readability
+- Fixed AI service initialization (httpx version compatibility)
 - Improved weekly test question generation
 - Fixed ReviewHistory null constraint
 
