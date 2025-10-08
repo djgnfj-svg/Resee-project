@@ -244,6 +244,7 @@ export interface SubscriptionTierInfo {
 export interface SubscriptionUpgradeData {
   tier: SubscriptionTier;
   billing_cycle?: 'monthly' | 'yearly';
+  password: string;
 }
 
 export interface SubscriptionUpgradeError {

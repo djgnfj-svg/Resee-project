@@ -80,7 +80,8 @@
       "Bash(python3:*)",
       "Bash(for i in {1..8})",
       "Bash(awk:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

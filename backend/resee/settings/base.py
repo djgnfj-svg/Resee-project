@@ -206,6 +206,9 @@ SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@localhost')
 # Email verification settings
 EMAIL_VERIFICATION_TIMEOUT_DAYS = int(os.environ.get('EMAIL_VERIFICATION_TIMEOUT_DAYS', 1))
 
+# Subscription settings
+SUBSCRIPTION_ADMIN_PASSWORD = os.environ.get('SUBSCRIPTION_ADMIN_PASSWORD')
+
 
 # Alert System Configuration
 SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL')
