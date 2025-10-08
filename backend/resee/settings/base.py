@@ -203,6 +203,9 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@localhost')
 COMPANY_NAME = os.environ.get('COMPANY_NAME', 'Resee')
 SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@localhost')
 
+# Email verification settings
+EMAIL_VERIFICATION_TIMEOUT_DAYS = int(os.environ.get('EMAIL_VERIFICATION_TIMEOUT_DAYS', 1))
+
 
 # Alert System Configuration
 SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL')

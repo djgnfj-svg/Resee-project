@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { SubscriptionTierInfo, SubscriptionUpgradeData, SubscriptionTier } from '../types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { SubscriptionTierInfo, SubscriptionTier } from '../types';
 import { toast } from 'react-hot-toast';
 import TierCard from '../components/subscription/TierCard';
+import { subscriptionAPI } from '../utils/api';
 
 const SubscriptionPage: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
   const [billingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  // Fetch current subscription
+  const { data: currentSubscription, isLoading: subscriptionLoading } = useQuery({
+    queryKey: ['current-subscription'],
+    queryFn: subscriptionAPI.getSubscription,
+    enabled: !!user,
+  });
 
   // Get pricing based on billing cycle
   const getPrice = (monthlyPrice: number) => {
@@ -65,36 +73,15 @@ const SubscriptionPage: React.FC = () => {
   ];
 
 
-  // Subscription API
-  const subscriptionAPI = {
-    upgradeSubscription: async (data: SubscriptionUpgradeData) => {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/accounts/subscription/upgrade/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(data)
-      });
-      
-      const responseData = await response.json();
-      if (!response.ok) {
-        throw new Error(responseData.error || 'Failed to upgrade subscription');
-      }
-      return responseData;
-    }
-  };
 
   // Mutations
   const upgradeMutation = useMutation({
     mutationFn: subscriptionAPI.upgradeSubscription,
     onSuccess: async (data) => {
-      const tier = data.subscription?.tier;
+      const tier = data.tier;
       const maxDays = subscriptionTiers.find(t => t.name === tier)?.max_days || 7;
-      
+
       toast.success(
-        data.message || 
         `구독이 성공적으로 변경되었습니다! 이제 최대 ${maxDays}일까지의 복습을 확인할 수 있습니다.`
       );
       
@@ -115,10 +102,16 @@ const SubscriptionPage: React.FC = () => {
       return;
     }
 
-    upgradeMutation.mutate({
-      tier,
-      billing_cycle: billingCycle
-    });
+    // Confirm subscription change
+    const tierNames = { free: '무료', basic: '베이직', pro: '프로' };
+    const confirmMessage = `${tierNames[tier]} 플랜으로 변경하시겠습니까?`;
+
+    if (window.confirm(confirmMessage)) {
+      upgradeMutation.mutate({
+        tier,
+        billing_cycle: billingCycle
+      });
+    }
   };
 
   if (!user) {
@@ -131,6 +124,17 @@ const SubscriptionPage: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">
             구독 정보를 확인하려면 로그인해주세요.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (subscriptionLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">구독 정보를 불러오는 중...</p>
         </div>
       </div>
     );
@@ -150,6 +154,29 @@ const SubscriptionPage: React.FC = () => {
 
         </div>
 
+        {/* Payment History Link */}
+        <div className="mb-8 text-center">
+          <a
+            href="/payment-history"
+            className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+          >
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            결제 내역 보기
+          </a>
+        </div>
+
         {/* Subscription Tiers Preview */}
         <div className="mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
@@ -157,7 +184,7 @@ const SubscriptionPage: React.FC = () => {
               <TierCard
                 key={tier.name}
                 tier={tier}
-                currentTier={user.subscription?.tier}
+                currentTier={currentSubscription?.tier}
                 billingCycle={billingCycle}
                 isPopular={tier.name === 'basic'}
                 onUpgrade={handleTierUpgrade}

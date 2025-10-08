@@ -127,8 +127,22 @@ const WeeklyTestPage: React.FC = () => {
   const completeTest = async () => {
     if (!currentTest) return;
 
+    // BUG-SECTION5-001 FIX: 모든 문제에 답했는지 검증
+    const totalQuestions = currentTest.questions?.length || 0;
+    const answeredCount = Object.keys(answers).length;
+
+    if (answeredCount < totalQuestions) {
+      const unansweredCount = totalQuestions - answeredCount;
+      setError(
+        `${unansweredCount}개의 문제를 아직 답하지 않았습니다. ` +
+        `모든 문제에 답해주세요. (${answeredCount}/${totalQuestions} 완료)`
+      );
+      return;
+    }
+
     try {
       setIsLoading(true);
+      setError(''); // 에러 메시지 초기화
       await weeklyTestAPI.completeTest(currentTest.id);
       const detailedResults = await weeklyTestAPI.getTestResults(currentTest.id);
       setTestResults(detailedResults);
@@ -168,68 +182,103 @@ const WeeklyTestPage: React.FC = () => {
             </div>
 
             <div className="space-y-6">
-              {testResults.answers.map((answer: any, index: number) => (
-                <div
-                  key={answer.question.id}
-                  className={`p-6 rounded-lg border ${
-                    answer.is_correct
-                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
-                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                      문제 {index + 1}: {answer.question.content_title}
-                    </h3>
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        answer.is_correct
-                          ? 'bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200'
-                          : 'bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200'
-                      }`}
-                    >
-                      {answer.is_correct ? '정답' : '오답'}
-                    </span>
-                  </div>
+              {/* BUG-SECTION5-002 FIX: 모든 문제 표시 (답변 여부와 관계없이) */}
+              {testResults.test.questions?.map((question: any, index: number) => {
+                // 해당 문제에 대한 답변 찾기
+                const answer = testResults.answers?.find(
+                  (a: any) => a.question.id === question.id
+                );
 
-                  <p className="text-gray-700 dark:text-gray-300 mb-4">
-                    {answer.question.question_text}
-                  </p>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        내 답변:
-                      </p>
-                      <p className="text-gray-900 dark:text-gray-100">
-                        {answer.user_answer}
-                      </p>
+                return (
+                  <div
+                    key={question.id}
+                    className={`p-6 rounded-lg border ${
+                      !answer
+                        ? 'bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                        : answer.is_correct
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
+                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                        문제 {index + 1}: {question.content_title}
+                      </h3>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          !answer
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                            : answer.is_correct
+                            ? 'bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200'
+                            : 'bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200'
+                        }`}
+                      >
+                        {!answer ? '미답변' : answer.is_correct ? '정답' : '오답'}
+                      </span>
                     </div>
 
-                    {!answer.is_correct && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                          정답:
+                    <p className="text-gray-700 dark:text-gray-300 mb-4">
+                      {question.question_text}
+                    </p>
+
+                    {answer ? (
+                      <>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                              내 답변:
+                            </p>
+                            <p className="text-gray-900 dark:text-gray-100">
+                              {answer.user_answer}
+                            </p>
+                          </div>
+
+                          {!answer.is_correct && (
+                            <div>
+                              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                정답:
+                              </p>
+                              <p className="text-gray-900 dark:text-gray-100">
+                                {question.correct_answer}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {question.explanation && (
+                          <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                              해설:
+                            </p>
+                            <p className="text-gray-700 dark:text-gray-300">
+                              {question.explanation}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        <p className="text-gray-600 dark:text-gray-400">
+                          이 문제는 답변하지 않았습니다.
                         </p>
-                        <p className="text-gray-900 dark:text-gray-100">
-                          {answer.question.correct_answer}
+                        <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+                          정답: {question.correct_answer}
                         </p>
+                        {question.explanation && (
+                          <div className="mt-3 pt-3 border-t border-gray-300 dark:border-gray-600">
+                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                              해설:
+                            </p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              {question.explanation}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-
-                  {answer.question.explanation && (
-                    <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        해설:
-                      </p>
-                      <p className="text-gray-700 dark:text-gray-300">
-                        {answer.question.explanation}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mt-8 text-center">
@@ -261,9 +310,21 @@ const WeeklyTestPage: React.FC = () => {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {currentTest.title}
                 </h1>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {currentQuestionIndex + 1} / {currentTest.questions.length}
-                </span>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {currentQuestionIndex + 1} / {currentTest.questions.length}
+                  </div>
+                  <div className="text-xs mt-1">
+                    <span className="text-blue-600 dark:text-blue-400 font-medium">
+                      답변: {Object.keys(answers).length}/{currentTest.questions.length}
+                    </span>
+                    {Object.keys(answers).length < currentTest.questions.length && (
+                      <span className="ml-2 text-red-500">
+                        (미답변 {currentTest.questions.length - Object.keys(answers).length}개)
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -275,6 +336,13 @@ const WeeklyTestPage: React.FC = () => {
                 />
               </div>
             </div>
+
+            {/* 에러 메시지 표시 */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                <p className="text-red-800 dark:text-red-200">{error}</p>
+              </div>
+            )}
 
             {/* 문제 */}
             <div className="mb-8">

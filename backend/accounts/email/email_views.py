@@ -4,6 +4,7 @@ Email-related views: verification, resend, and subscription.
 import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from drf_yasg import openapi
@@ -78,8 +79,8 @@ class EmailVerificationView(APIView):
         try:
             user = User.objects.get(email=email, email_verification_token=token)
 
-            # Check if token has expired (default 24 hours)
-            expiry_time = user.email_verification_sent_at + timedelta(days=1)
+            # Check if token has expired
+            expiry_time = user.email_verification_sent_at + timedelta(days=settings.EMAIL_VERIFICATION_TIMEOUT_DAYS)
             if timezone.now() > expiry_time:
                 logger.warning(f"Email verification token expired for user {user.email}")
                 return Response(
