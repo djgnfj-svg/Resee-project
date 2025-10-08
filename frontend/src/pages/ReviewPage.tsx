@@ -61,6 +61,8 @@ const ReviewPage: React.FC = () => {
     handleReviewComplete,
     reviewsCompleted,
     totalSchedules,
+    removeCurrentCard,
+    moveCurrentCardToEnd,
   } = useReviewLogic(showToast, resetReviewState);
 
   // v0.5: 주관식 모드 - 제출 핸들러
@@ -87,21 +89,30 @@ const ReviewPage: React.FC = () => {
       // 카드 뒤집기
       setIsFlipped(true);
       setShowContent(true);
-
-      // 잠시 후 자동으로 다음 리뷰로 (AI 평가 결과 확인 시간 제공)
-      setTimeout(() => {
-        setAiEvaluation(null);
-        setDescriptiveAnswer('');
-        setSubmittedAnswer('');
-        resetReviewState();
-      }, 5000);
     } catch (error) {
       showToast('평가에 실패했습니다. 다시 시도해주세요.', 'error');
       setSubmittedAnswer(''); // 에러 시 초기화
     } finally {
       setIsSubmitting(false);
     }
-  }, [currentReview, descriptiveAnswer, handleReviewComplete, showToast, setIsFlipped, setShowContent, resetReviewState]);
+  }, [currentReview, descriptiveAnswer, handleReviewComplete, showToast, setIsFlipped, setShowContent]);
+
+  // 서술형 평가 - 다음으로 넘어가기
+  const handleNextSubjective = useCallback(() => {
+    // AI 평가 결과에 따라 카드 이동/제거
+    if (aiEvaluation?.auto_result === 'remembered') {
+      removeCurrentCard();  // 기억함 → 카드 제거
+      showToast('잘 기억하고 있어요!', 'success');
+    } else {
+      moveCurrentCardToEnd();  // 모름 → 카드 맨 뒤로
+      showToast('괜찮아요, 나중에 다시 시도해보세요!', 'info');
+    }
+
+    // 상태 초기화
+    setAiEvaluation(null);
+    setDescriptiveAnswer('');
+    setSubmittedAnswer('');
+  }, [aiEvaluation, removeCurrentCard, moveCurrentCardToEnd, showToast]);
 
   // v0.4: 객관식 모드 - 복습 완료 핸들러
   const handleReviewCompleteWithAI = useCallback(async (result: 'remembered' | 'partial' | 'forgot') => {
@@ -169,13 +180,24 @@ const ReviewPage: React.FC = () => {
             aiEvaluation={aiEvaluation}
           />
 
-          {/* 기억 확인 모드에서만 ReviewControls 표시 */}
-          {currentReview.content.review_mode === 'objective' && (
+          {/* ReviewControls 표시 */}
+          {currentReview.content.review_mode === 'objective' ? (
             <ReviewControls
               showContent={showContent}
               onReviewComplete={handleReviewCompleteWithAI}
               isPending={completeReviewMutation.isPending}
             />
+          ) : (
+            // 서술형 평가: AI 평가 완료 후 "다음으로" 버튼 표시
+            aiEvaluation && (
+              <ReviewControls
+                showContent={showContent}
+                onReviewComplete={handleReviewCompleteWithAI}
+                isPending={false}
+                isSubjectiveMode={true}
+                onNext={handleNextSubjective}
+              />
+            )
           )}
         </div>
 
