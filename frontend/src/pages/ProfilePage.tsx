@@ -55,7 +55,13 @@ const ProfilePage: React.FC = () => {
               </h2>
               <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                가입일: {new Date(user.created_at).toLocaleDateString('ko-KR')}
+                가입일: {user.created_at
+                  ? new Date(user.created_at).toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })
+                  : '정보 없음'}
               </p>
             </div>
           </div>

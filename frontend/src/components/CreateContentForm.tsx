@@ -319,21 +319,20 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
               </button>
 
               <div className="flex items-center space-x-4">
-                {/* AI 검증 버튼 (서술 평가 모드에서만) */}
-                {isSubjectiveMode && (
-                  <button
-                    type="button"
-                    onClick={handleValidateContent}
-                    disabled={isValidating || !watchedTitle || !hasValidContentLength}
-                    className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all ${
-                      !isValidating && watchedTitle && hasValidContentLength
-                        ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700 hover:bg-purple-100 dark:hover:bg-purple-900/30'
-                        : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 cursor-not-allowed'
-                    }`}
-                  >
-                    {isValidating ? 'AI 검증 중...' : 'AI 검증'}
-                  </button>
-                )}
+                {/* AI 검증 버튼 */}
+                <button
+                  type="button"
+                  onClick={handleValidateContent}
+                  disabled={isValidating || !watchedTitle || !hasValidContentLength}
+                  className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all ${
+                    !isValidating && watchedTitle && hasValidContentLength
+                      ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700 hover:bg-purple-100 dark:hover:bg-purple-900/30'
+                      : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 cursor-not-allowed'
+                  }`}
+                  title={!watchedTitle || !hasValidContentLength ? 'AI 검증을 사용하려면 제목과 충분한 내용을 입력하세요' : ''}
+                >
+                  {isValidating ? 'AI 검증 중...' : 'AI 검증'}
+                </button>
 
                 <button
                   type="submit"
