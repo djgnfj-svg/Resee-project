@@ -115,6 +115,19 @@ export const useReviewLogic = (
   const completeReviewMutation = useMutation({
     mutationFn: reviewAPI.completeReview,
     onSuccess: async (data, variables) => {
+      // 서술형 평가 (descriptive_answer가 있음): 카드 이동 안함
+      // 사용자가 "다음으로" 버튼 눌렀을 때 이동
+      if (variables.descriptive_answer && variables.descriptive_answer.length > 0) {
+        setReviewsCompleted(prev => prev + 1);
+
+        // Invalidate dashboard to update stats
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+
+        // 토스트는 ReviewPage에서 처리
+        return;
+      }
+
+      // 객관식 평가: 기존 로직
       if (variables.result === 'remembered') {
         // "기억함": 완료 처리
         setReviewsCompleted(prev => prev + 1);
@@ -179,5 +192,7 @@ export const useReviewLogic = (
     handleReviewComplete,
     reviewsCompleted,
     totalSchedules: reviews.length + reviewsCompleted,
+    removeCurrentCard,
+    moveCurrentCardToEnd,
   };
 };
