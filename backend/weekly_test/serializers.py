@@ -182,8 +182,9 @@ class StartTestSerializer(serializers.Serializer):
             if test.user != user:
                 raise serializers.ValidationError("접근 권한이 없습니다.")
 
-            if test.status != 'pending':
-                raise serializers.ValidationError("이미 시작된 시험입니다.")
+            # pending 또는 in_progress 상태만 허용 (계속하기 기능 지원)
+            if test.status not in ['pending', 'in_progress']:
+                raise serializers.ValidationError("이미 완료된 시험입니다.")
 
             return value
         except WeeklyTest.DoesNotExist:
