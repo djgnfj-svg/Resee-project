@@ -76,7 +76,11 @@ class CustomUserAdmin(UserAdmin):
     bulk_verify_email.short_description = "Verify selected user emails"
 
     def bulk_send_welcome_email(self, request, queryset):
-        """Send welcome email to selected users"""
+        """Send welcome email to selected users with individual error tracking"""
+        import logging
+        from django.core.mail import send_mail
+
+        logger = logging.getLogger(__name__)
         users = list(queryset.all())
 
         if len(users) > 100:
@@ -87,8 +91,10 @@ class CustomUserAdmin(UserAdmin):
             )
             return
 
-        # Prepare mass email
-        messages_to_send = []
+        # Send emails individually to track success/failure
+        successful_sends = []
+        failed_sends = []
+
         for user in users:
             subject = 'Welcome to Resee - Smart Review Platform'
             message = f'''
@@ -104,26 +110,43 @@ Best regards,
 The Resee Team
             '''.strip()
 
-            messages_to_send.append((
-                subject,
-                message,
-                'noreply@reseeall.com',  # From email
-                [user.email]  # To emails
-            ))
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    'noreply@reseeall.com',
+                    [user.email],
+                    fail_silently=False,
+                )
+                successful_sends.append(user.email)
+                logger.info(f'Welcome email sent successfully to {user.email}')
+            except Exception as e:
+                failed_sends.append((user.email, str(e)))
+                logger.error(f'Failed to send welcome email to {user.email}: {str(e)}')
 
-        try:
-            send_mass_mail(messages_to_send)
+        # Report results
+        if successful_sends:
             self.message_user(
                 request,
-                f'Successfully sent welcome emails to {len(users)} users.',
+                f'Successfully sent welcome emails to {len(successful_sends)} users.',
                 messages.SUCCESS
             )
-        except Exception as e:
+
+        if failed_sends:
+            failed_list = ', '.join([email for email, _ in failed_sends[:5]])
+            if len(failed_sends) > 5:
+                failed_list += f' (and {len(failed_sends) - 5} more)'
+
             self.message_user(
                 request,
-                f'Failed to send emails: {str(e)}',
-                messages.ERROR
+                f'Failed to send emails to {len(failed_sends)} users: {failed_list}',
+                messages.WARNING
             )
+
+        # Log detailed failure information
+        for email, error in failed_sends:
+            logger.error(f'Email send failure - User: {email}, Error: {error}')
+
     bulk_send_welcome_email.short_description = "Send welcome email to selected users"
 
 

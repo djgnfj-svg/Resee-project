@@ -298,10 +298,27 @@ class Subscription(BaseModel):
             SubscriptionTier.BASIC: 90,   # Medium-term memory retention
             SubscriptionTier.PRO: 180,    # Complete long-term retention (6 months)
         }
-        
+
+        # Defensive code: Infer tier from max_interval_days if tier is invalid
+        valid_tiers = [choice[0] for choice in SubscriptionTier.choices]
+        if self.tier not in valid_tiers:
+            # Reverse mapping: max_interval_days -> tier
+            interval_to_tier = {v: k for k, v in tier_max_intervals.items()}
+            inferred_tier = interval_to_tier.get(self.max_interval_days)
+
+            if inferred_tier:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    f'Invalid tier "{self.tier}" for {self.user.email}. '
+                    f'Inferred tier "{inferred_tier}" from max_interval_days={self.max_interval_days}'
+                )
+                self.tier = inferred_tier
+
+        # Set max_interval_days based on tier
         if self.tier in tier_max_intervals:
             self.max_interval_days = tier_max_intervals[self.tier]
-        
+
         super().save(*args, **kwargs)
 
 

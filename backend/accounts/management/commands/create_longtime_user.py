@@ -41,7 +41,7 @@ class Command(BaseCommand):
         subscription, created = Subscription.objects.update_or_create(
             user=user,
             defaults={
-                'tier': 'PRO',
+                'tier': 'pro',  # Fixed: lowercase to match SubscriptionTier.PRO = 'pro'
                 'is_active': True,
                 'start_date': timezone.now() - timedelta(days=180),
                 'end_date': timezone.now() + timedelta(days=180)
