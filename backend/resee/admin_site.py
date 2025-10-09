@@ -48,10 +48,12 @@ admin_site = ReseeAdminSite(name='admin')
 from accounts.admin import CustomUserAdmin, SubscriptionAdmin
 from content.admin import CategoryAdmin, ContentAdmin
 from review.admin import ReviewScheduleAdmin, ReviewHistoryAdmin
+from weekly_test.admin import WeeklyTestAdmin, WeeklyTestQuestionAdmin, WeeklyTestAnswerAdmin
 
 from accounts.models import User, Subscription
 from content.models import Category, Content
 from review.models import ReviewSchedule, ReviewHistory
+from weekly_test.models import WeeklyTest, WeeklyTestQuestion, WeeklyTestAnswer
 
 # Register basic models with custom admin site
 admin_site.register(User, CustomUserAdmin)
@@ -60,3 +62,6 @@ admin_site.register(Category, CategoryAdmin)
 admin_site.register(Content, ContentAdmin)
 admin_site.register(ReviewSchedule, ReviewScheduleAdmin)
 admin_site.register(ReviewHistory, ReviewHistoryAdmin)
+admin_site.register(WeeklyTest, WeeklyTestAdmin)
+admin_site.register(WeeklyTestQuestion, WeeklyTestQuestionAdmin)
+admin_site.register(WeeklyTestAnswer, WeeklyTestAnswerAdmin)
