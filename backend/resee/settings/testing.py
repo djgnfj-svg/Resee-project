@@ -133,6 +133,7 @@ MIGRATION_MODULES = {
     'monitoring': None,
     'payments': None,
     'legal': None,
+    'weekly_test': None,  # Add weekly_test to avoid dependency errors
 }
 
 # Test-specific cache timeouts (very short)
