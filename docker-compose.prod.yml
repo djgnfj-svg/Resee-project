@@ -10,8 +10,7 @@ services:
     env_file:
       - .env.prod
     restart: unless-stopped
-    ports:
-      - "5432:5432"  # AWS 보안그룹에서 IP 제한 설정
+    # Port removed for security - only accessible within Docker network
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 10s
@@ -74,6 +73,12 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "celery", "-A", "resee", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   celery-beat:
     build:
@@ -93,6 +98,12 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "celery", "-A", "resee", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   frontend:
     build:
