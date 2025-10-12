@@ -209,8 +209,8 @@ fi
 log_info "모든 컨테이너 상태를 확인합니다..."
 sleep 10
 
-# 각 서비스별 상태 체크 (PostgreSQL 포함)
-services=("postgres" "redis" "backend" "celery" "celery-beat" "frontend" "nginx")
+# 각 서비스별 상태 체크 (초기 서비스만)
+services=("postgres" "redis" "backend" "frontend" "nginx")
 all_running=true
 for service in "${services[@]}"; do
     if ! $COMPOSE_CMD -f docker-compose.prod.yml ps $service | grep -q "Up"; then
@@ -295,6 +295,26 @@ if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d celery-beat; then
     exit 1
 fi
 sleep 2
+
+# Celery 서비스 상태 확인
+log_info "Celery 서비스 상태를 확인합니다..."
+celery_services=("celery" "celery-beat")
+celery_all_running=true
+for service in "${celery_services[@]}"; do
+    if ! $COMPOSE_CMD -f docker-compose.prod.yml ps $service | grep -q "Up"; then
+        log_error "$service 컨테이너가 실행되지 않았습니다."
+        log_info "$service 로그:"
+        $COMPOSE_CMD -f docker-compose.prod.yml logs $service --tail=20
+        celery_all_running=false
+    else
+        log_success "$service 컨테이너 정상 실행"
+    fi
+done
+
+if [ "$celery_all_running" = false ]; then
+    log_error "Celery 서비스 시작 실패"
+    exit 1
+fi
 
 # 최종 상태 확인
 echo ""
