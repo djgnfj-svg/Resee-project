@@ -21,11 +21,11 @@ const EditContentPage: React.FC = () => {
   const updateContentMutation = useMutation({
     mutationFn: ({ contentId, data }: { contentId: number; data: CreateContentData }) =>
       contentAPI.updateContent(contentId, data),
-    onSuccess: () => {
+    onSuccess: async () => {
       alert('Success: 콘텐츠가 성공적으로 수정되었습니다!');
-      queryClient.invalidateQueries({ queryKey: ['contents'] });
-      queryClient.invalidateQueries({ queryKey: ['content', id] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['contents'] });
+      await queryClient.invalidateQueries({ queryKey: ['content', id] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       navigate('/content');
     },
     onError: (error: any) => {

@@ -30,10 +30,10 @@ const CreateContentPage: React.FC = () => {
   // Create content mutation
   const createContentMutation = useMutation({
     mutationFn: contentAPI.createContent,
-    onSuccess: () => {
+    onSuccess: async () => {
       alert('Success: 콘텐츠가 성공적으로 생성되었습니다!');
-      queryClient.invalidateQueries({ queryKey: ['contents'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['contents'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       navigate('/content');
     },
     onError: (error: any) => {
