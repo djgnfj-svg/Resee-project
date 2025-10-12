@@ -88,9 +88,6 @@ class Command(BaseCommand):
             return False
 
     def _check_ai_service(self):
-        if getattr(settings, 'AI_USE_MOCK_RESPONSES', True):
-            return False
-
         try:
             api_key = getattr(settings, 'ANTHROPIC_API_KEY', None)
             if not api_key:
@@ -137,5 +134,5 @@ class Command(BaseCommand):
         self.stdout.write(f'Debug mode: {debug}')
 
         # AI Service
-        ai_mock = getattr(settings, 'AI_USE_MOCK_RESPONSES', True)
-        self.stdout.write(f'AI Mock responses: {ai_mock}')
+        ai_key_configured = bool(getattr(settings, 'ANTHROPIC_API_KEY', None))
+        self.stdout.write(f'AI API key configured: {ai_key_configured}')

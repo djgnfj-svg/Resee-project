@@ -156,15 +156,9 @@ def health_detailed(request):
         health_data['status'] = 'degraded'
 
     # AI Service check
-    ai_mock = getattr(settings, 'AI_USE_MOCK_RESPONSES', True)
     anthropic_key = getattr(settings, 'ANTHROPIC_API_KEY', None)
 
-    if ai_mock:
-        health_data['services']['ai'] = {
-            'status': 'mock',
-            'message': 'Using mock responses'
-        }
-    elif anthropic_key:
+    if anthropic_key:
         health_data['services']['ai'] = {
             'status': 'configured',
             'message': 'API key configured'
