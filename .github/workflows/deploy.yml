@@ -1,0 +1,57 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+
+            echo "🚀 Starting deployment..."
+
+            # Navigate to project directory
+            cd ${{ secrets.PROJECT_PATH }}
+
+            # Pull latest changes
+            echo "📥 Pulling latest code..."
+            git pull origin main
+
+            # Run deployment script
+            echo "🔧 Running deployment script..."
+            ./deploy.sh
+
+            echo "✅ Deployment completed successfully!"
+          script_stop: true  # 에러 발생 시 즉시 중단
+          command_timeout: 30m  # 타임아웃 30분 (배포 시간 고려)
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Deployment to production completed successfully!"
+          echo "🌐 Site: https://reseeall.com"
+          echo "📊 Health check: https://reseeall.com/api/health/"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Please check the logs above for details."
+          exit 1

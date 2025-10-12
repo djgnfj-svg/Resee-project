@@ -15,7 +15,28 @@
 
 ---
 
-## 🚀 배포 절차
+## 🚀 배포 방법
+
+### ⭐ 권장: 자동 배포 (GitHub Actions)
+
+**한 번만 설정하면 이후 자동 배포됩니다!**
+
+```bash
+git push origin main  # 이것만으로 배포 완료!
+```
+
+**설정 방법**: [CD_SETUP.md](./CD_SETUP.md) 문서 참고
+
+**장점**:
+- ✅ 코드 푸시만으로 자동 배포
+- ✅ SSH 접속 불필요
+- ✅ 비밀번호 입력 불필요
+- ✅ 배포 히스토리 자동 관리
+- ✅ 실패 시 즉시 알림
+
+---
+
+## 🔧 수동 배포 (대안)
 
 ### Step 1: EC2 접속
 ```bash
@@ -24,14 +45,14 @@ ssh -i your-key.pem ubuntu@reseeall.com
 
 ### Step 2: 프로젝트 클론 (최초 1회)
 ```bash
-git clone https://github.com/your-username/Resee-project.git
+git clone https://github.com/djgnfj-svg/Resee-project
 cd Resee-project
 ```
 
 ### Step 3: 환경변수 설정
 ```bash
 # .env.prod 파일 확인 (이미 있음)
-nano .env.prod
+vim .env.prod
 
 # 필수 확인 사항:
 # - SECRET_KEY 설정됨
@@ -44,6 +65,7 @@ nano .env.prod
 ```bash
 chmod +x deploy.sh
 ./deploy.sh
+newgrp docker
 ```
 
 **배포 시간**: 5-10분 소요
