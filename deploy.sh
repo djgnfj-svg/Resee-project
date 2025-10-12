@@ -188,7 +188,34 @@ if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d --build backend; then
 fi
 sleep 5
 
-# 2. Frontend 빌드 및 시작
+# 2. Redis 시작
+log_info "Redis 시작 중..."
+if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d redis; then
+    log_error "Redis 시작 실패"
+    $COMPOSE_CMD -f docker-compose.prod.yml logs redis --tail=20
+    exit 1
+fi
+sleep 3
+
+# 3. Celery worker 시작
+log_info "Celery worker 시작 중..."
+if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d celery; then
+    log_error "Celery worker 시작 실패"
+    $COMPOSE_CMD -f docker-compose.prod.yml logs celery --tail=20
+    exit 1
+fi
+sleep 2
+
+# 4. Celery beat 시작
+log_info "Celery beat 시작 중..."
+if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d celery-beat; then
+    log_error "Celery beat 시작 실패"
+    $COMPOSE_CMD -f docker-compose.prod.yml logs celery-beat --tail=20
+    exit 1
+fi
+sleep 2
+
+# 5. Frontend 빌드 및 시작
 log_info "Frontend 빌드 및 시작 중..."
 if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d --build frontend; then
     log_error "Frontend 빌드/시작 실패"
@@ -197,7 +224,7 @@ if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d --build frontend; then
 fi
 sleep 5
 
-# 3. Nginx 마지막으로 시작 (빌드 불필요)
+# 6. Nginx 마지막으로 시작 (빌드 불필요)
 log_info "Nginx 시작 중..."
 if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d nginx; then
     log_error "Nginx 시작 실패"
@@ -210,7 +237,7 @@ log_info "모든 컨테이너 상태를 확인합니다..."
 sleep 10
 
 # 각 서비스별 상태 체크 (PostgreSQL 포함)
-services=("postgres" "backend" "frontend" "nginx")
+services=("postgres" "redis" "backend" "celery" "celery-beat" "frontend" "nginx")
 all_running=true
 for service in "${services[@]}"; do
     if ! $COMPOSE_CMD -f docker-compose.prod.yml ps $service | grep -q "Up"; then
