@@ -188,34 +188,7 @@ if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d --build backend; then
 fi
 sleep 5
 
-# 2. Redis 시작
-log_info "Redis 시작 중..."
-if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d redis; then
-    log_error "Redis 시작 실패"
-    $COMPOSE_CMD -f docker-compose.prod.yml logs redis --tail=20
-    exit 1
-fi
-sleep 3
-
-# 3. Celery worker 시작
-log_info "Celery worker 시작 중..."
-if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d celery; then
-    log_error "Celery worker 시작 실패"
-    $COMPOSE_CMD -f docker-compose.prod.yml logs celery --tail=20
-    exit 1
-fi
-sleep 2
-
-# 4. Celery beat 시작
-log_info "Celery beat 시작 중..."
-if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d celery-beat; then
-    log_error "Celery beat 시작 실패"
-    $COMPOSE_CMD -f docker-compose.prod.yml logs celery-beat --tail=20
-    exit 1
-fi
-sleep 2
-
-# 5. Frontend 빌드 및 시작
+# 2. Frontend 빌드 및 시작
 log_info "Frontend 빌드 및 시작 중..."
 if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d --build frontend; then
     log_error "Frontend 빌드/시작 실패"
@@ -224,7 +197,7 @@ if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d --build frontend; then
 fi
 sleep 5
 
-# 6. Nginx 마지막으로 시작 (빌드 불필요)
+# 3. Nginx 시작 (빌드 불필요)
 log_info "Nginx 시작 중..."
 if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d nginx; then
     log_error "Nginx 시작 실패"
@@ -279,20 +252,7 @@ if [ $attempt -eq $max_attempts ]; then
     exit 1
 fi
 
-# 로그 디렉토리 생성 (프로덕션 설정 오류 방지)
-log_info "로그 디렉토리를 생성합니다..."
-if $COMPOSE_CMD -f docker-compose.prod.yml exec -T backend mkdir -p /app/logs; then
-    log_success "로그 디렉토리 생성 완료"
-else
-    log_warning "로그 디렉토리 생성 실패했지만 계속 진행"
-fi
-
-# 백엔드 재시작 (로그 설정 적용)
-log_info "백엔드 서비스를 재시작합니다..."
-$COMPOSE_CMD -f docker-compose.prod.yml restart backend
-sleep 5
-
-# 데이터베이스 마이그레이션
+# 데이터베이스 마이그레이션 (Celery 시작 전 필수!)
 log_info "데이터베이스 마이그레이션 실행 중..."
 if $COMPOSE_CMD -f docker-compose.prod.yml exec -T backend python manage.py migrate; then
     log_success "데이터베이스 마이그레이션 완료"
@@ -308,6 +268,33 @@ if $COMPOSE_CMD -f docker-compose.prod.yml exec -T backend python manage.py coll
 else
     log_warning "정적 파일 수집 실패했지만 계속 진행"
 fi
+
+# 4. Redis 시작
+log_info "Redis 시작 중..."
+if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d redis; then
+    log_error "Redis 시작 실패"
+    $COMPOSE_CMD -f docker-compose.prod.yml logs redis --tail=20
+    exit 1
+fi
+sleep 3
+
+# 5. Celery worker 시작
+log_info "Celery worker 시작 중..."
+if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d celery; then
+    log_error "Celery worker 시작 실패"
+    $COMPOSE_CMD -f docker-compose.prod.yml logs celery --tail=20
+    exit 1
+fi
+sleep 2
+
+# 6. Celery beat 시작
+log_info "Celery beat 시작 중..."
+if ! $COMPOSE_CMD -f docker-compose.prod.yml up -d celery-beat; then
+    log_error "Celery beat 시작 실패"
+    $COMPOSE_CMD -f docker-compose.prod.yml logs celery-beat --tail=20
+    exit 1
+fi
+sleep 2
 
 # 최종 상태 확인
 echo ""
