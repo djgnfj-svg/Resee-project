@@ -96,6 +96,7 @@ required_vars=(
     "DEFAULT_FROM_EMAIL"
     "REACT_APP_API_URL"
     "DJANGO_SETTINGS_MODULE"
+    "ADMIN_PASSWORD"
 )
 
 missing_vars=()
@@ -261,6 +262,14 @@ else
     exit 1
 fi
 
+# 초기 사용자 생성 (자동)
+log_info "초기 관리자 계정 생성 중..."
+if $COMPOSE_CMD -f docker-compose.prod.yml exec -T backend python manage.py create_initial_users --skip-if-exists; then
+    log_success "초기 사용자 설정 완료"
+else
+    log_warning "초기 사용자 생성 실패 (이미 존재하거나 ADMIN_PASSWORD 미설정)"
+fi
+
 # 정적 파일 수집
 log_info "정적 파일 수집 중..."
 if $COMPOSE_CMD -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --noinput; then
@@ -355,10 +364,10 @@ echo "  재시작: $COMPOSE_CMD -f docker-compose.prod.yml restart"
 echo "  중지: $COMPOSE_CMD -f docker-compose.prod.yml down"
 echo ""
 
-# 슈퍼유저 생성 옵션
-read -p "관리자 계정을 지금 생성하시겠습니까? (y/N): " create_admin
+# 추가 슈퍼유저 생성 옵션 (선택사항)
+read -p "추가 관리자 계정을 수동으로 생성하시겠습니까? (y/N): " create_admin
 if [[ $create_admin =~ ^[Yy]$ ]]; then
-    log_info "관리자 계정 생성 중..."
+    log_info "추가 관리자 계정 생성 중..."
     $COMPOSE_CMD -f docker-compose.prod.yml exec backend python manage.py createsuperuser
 fi
 

@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import secrets
 from datetime import timedelta
@@ -104,29 +105,49 @@ class User(AbstractUser):
         return self.email
     
     def generate_email_verification_token(self):
-        """Generate a unique token for email verification."""
-        # 32자 길이의 URL-safe 토큰 생성
+        """Generate a unique token for email verification.
+
+        Security: Token is hashed with SHA-256 before storage to prevent
+        unauthorized access if database is compromised.
+        """
+        # 32자 길이의 URL-safe 토큰 생성 (사용자에게 전송할 원본)
         token = secrets.token_urlsafe(32)
-        self.email_verification_token = token
+
+        # 🔒 보안: DB에는 해시만 저장 (SHA-256)
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        self.email_verification_token = token_hash
         self.email_verification_sent_at = timezone.now()
         self.save()
+
+        # 원본 토큰만 반환 (이메일로 전송)
         return token
     
     def verify_email(self, token):
-        """Verify email with the given token"""
+        """Verify email with the given token.
+
+        Security:
+        - Uses constant-time comparison to prevent timing attacks
+        - Validates token hash instead of plaintext
+        - Checks expiration before comparison
+        """
         if not self.email_verification_token:
             return False
-        
-        # 토큰 일치 확인
-        if self.email_verification_token != token:
+
+        # 🔒 보안: 입력받은 토큰을 해싱하여 저장된 해시와 비교
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+        # 🔒 보안: Constant-time 비교 (timing attack 방어)
+        if not secrets.compare_digest(self.email_verification_token, token_hash):
             return False
-        
+
         # 토큰 유효기간 확인
         if self.email_verification_sent_at:
-            expiry_time = self.email_verification_sent_at + timedelta(days=settings.EMAIL_VERIFICATION_TIMEOUT_DAYS)
+            expiry_time = self.email_verification_sent_at + timedelta(
+                days=settings.EMAIL_VERIFICATION_TIMEOUT_DAYS
+            )
             if timezone.now() > expiry_time:
                 return False
-        
+
         # 이메일 인증 완료
         self.is_email_verified = True
         self.email_verification_token = None

@@ -64,7 +64,12 @@ class EmailVerificationView(APIView):
         }
     )
     def post(self, request):
-        """Verify email with token"""
+        """Verify email with token.
+
+        Security: Uses hashed token verification with constant-time comparison.
+        The token is sent in plaintext by the user, but compared against the
+        SHA-256 hash stored in the database.
+        """
         from ..utils.serializers import UserSerializer
 
         token = request.data.get('token')
@@ -77,37 +82,35 @@ class EmailVerificationView(APIView):
             )
 
         try:
-            user = User.objects.get(email=email, email_verification_token=token)
+            # Get user by email only
+            user = User.objects.get(email=email)
 
-            # Check if token has expired
-            expiry_time = user.email_verification_sent_at + timedelta(days=settings.EMAIL_VERIFICATION_TIMEOUT_DAYS)
-            if timezone.now() > expiry_time:
-                logger.warning(f"Email verification token expired for user {user.email}")
+            # 🔒 보안: Use secure hashed token verification method
+            # This method:
+            # 1. Hashes the provided token with SHA-256
+            # 2. Uses constant-time comparison to prevent timing attacks
+            # 3. Checks token expiration
+            if user.verify_email(token):
+                logger.info(f"Email verification successful for user {user.email}")
+
+                # Send welcome email
+                from .email_service import EmailService
+                email_service = EmailService()
+                email_service.send_welcome_email(user.id)
+
                 return Response(
-                    {'error': '인증 토큰이 만료되었습니다. 새로운 인증 이메일을 요청해주세요.'},
+                    {
+                        'message': '이메일 인증이 완료되었습니다!',
+                        'user': UserSerializer(user).data
+                    },
+                    status=status.HTTP_200_OK
+                )
+            else:
+                logger.warning(f"Invalid email verification attempt: {email}")
+                return Response(
+                    {'error': '유효하지 않은 인증 정보입니다.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-
-            # Mark email as verified
-            user.is_email_verified = True
-            user.email_verification_token = None
-            user.email_verification_sent_at = None
-            user.save()
-
-            logger.info(f"Email verification successful for user {user.email}")
-
-            # Send welcome email
-            from .email_service import EmailService
-            email_service = EmailService()
-            email_service.send_welcome_email(user.id)
-
-            return Response(
-                {
-                    'message': '이메일 인증이 완료되었습니다!',
-                    'user': UserSerializer(user).data
-                },
-                status=status.HTTP_200_OK
-            )
 
         except User.DoesNotExist:
             logger.warning(f"Invalid email verification attempt: {email}")

@@ -22,15 +22,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Third party apps
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',  # JWT token blacklist support
     'corsheaders',
     'django_filters',
     'drf_yasg',
     'django_celery_beat',
-    
+
     # Local apps
     'accounts',  # includes legal functionality
     'content',
