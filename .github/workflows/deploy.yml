@@ -30,7 +30,13 @@ jobs:
             # Navigate to project directory
             cd ${{ secrets.PROJECT_PATH }}
 
-            # Pull latest changes
+            # Clean any local changes and sync with remote
+            echo "🧹 Cleaning local changes..."
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
+
+            # Pull latest changes (should be fast-forward now)
             echo "📥 Pulling latest code..."
             git pull origin main
 
