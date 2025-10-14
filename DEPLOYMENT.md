@@ -66,6 +66,7 @@ vim .env.prod
 chmod +x deploy.sh
 ./deploy.sh
 newgrp docker
+./deploy.sh
 ```
 
 **배포 시간**: 5-10분 소요
