@@ -1,5 +1,5 @@
-const CACHE_NAME = 'resee-v3';
-const API_CACHE_NAME = 'resee-api-v3';
+const CACHE_NAME = 'resee-v4';
+const API_CACHE_NAME = 'resee-api-v4';
 
 // 캐시할 정적 자원들
 const STATIC_ASSETS = [
@@ -11,12 +11,9 @@ const STATIC_ASSETS = [
   '/icons/icon-512x512.png'
 ];
 
-// 캐시할 API 엔드포인트 패턴
-const API_PATTERNS = [
-  /^https?:\/\/[^\/]+\/api\/content\/contents\//,
-  /^https?:\/\/[^\/]+\/api\/review\/today/,
-  /^https?:\/\/[^\/]+\/api\/analytics\/dashboard/,
-];
+// API 캐싱 비활성화 - React Query가 캐시 관리를 전담
+// Service Worker는 정적 파일(JS, CSS, 이미지)만 캐싱
+const API_PATTERNS = [];
 
 // Service Worker 설치
 self.addEventListener('install', event => {
