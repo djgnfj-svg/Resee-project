@@ -364,11 +364,17 @@ echo "  재시작: $COMPOSE_CMD -f docker-compose.prod.yml restart"
 echo "  중지: $COMPOSE_CMD -f docker-compose.prod.yml down"
 echo ""
 
-# 추가 슈퍼유저 생성 옵션 (선택사항)
-read -p "추가 관리자 계정을 수동으로 생성하시겠습니까? (y/N): " create_admin
-if [[ $create_admin =~ ^[Yy]$ ]]; then
-    log_info "추가 관리자 계정 생성 중..."
-    $COMPOSE_CMD -f docker-compose.prod.yml exec backend python manage.py createsuperuser
+# 추가 슈퍼유저 생성 옵션 (로컬 배포 시에만)
+# CI 환경에서는 skip
+if [ -z "$CI" ] && [ -t 0 ]; then
+    read -p "추가 관리자 계정을 수동으로 생성하시겠습니까? (y/N): " create_admin
+    if [[ $create_admin =~ ^[Yy]$ ]]; then
+        log_info "추가 관리자 계정 생성 중..."
+        $COMPOSE_CMD -f docker-compose.prod.yml exec backend python manage.py createsuperuser
+    fi
 fi
 
 log_success "배포가 성공적으로 완료되었습니다! 🚀"
+
+# Ensure successful exit for CI/CD
+exit 0
