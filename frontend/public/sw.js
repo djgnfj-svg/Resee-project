@@ -1,9 +1,9 @@
-const CACHE_NAME = 'resee-v4';
-const API_CACHE_NAME = 'resee-api-v4';
+const CACHE_NAME = 'resee-v5';
+const API_CACHE_NAME = 'resee-api-v5';
 
 // 캐시할 정적 자원들
+// 주의: HTML 파일(/)은 캐싱하지 않음 - 항상 최신 bundle 참조를 위해
 const STATIC_ASSETS = [
-  '/',
   '/static/js/bundle.js',
   '/static/css/main.css',
   '/manifest.json',
@@ -59,14 +59,33 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   // API 요청 처리
   if (isApiRequest(request.url)) {
     event.respondWith(handleApiRequest(request));
     return;
   }
-  
-  // 정적 자원 처리
+
+  // HTML 파일은 항상 네트워크에서 가져오기 (캐싱 방지)
+  if (request.destination === 'document' || url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(request)
+        .catch(() => {
+          // 오프라인 시 기본 폴백 (캐시에서 가져오기)
+          return caches.match('/offline.html').then(cachedResponse => {
+            if (cachedResponse) return cachedResponse;
+            // offline.html도 없으면 최소한의 HTML 응답
+            return new Response(
+              '<html><body><h1>Offline</h1><p>인터넷 연결을 확인해주세요.</p></body></html>',
+              { headers: { 'Content-Type': 'text/html' } }
+            );
+          });
+        })
+    );
+    return;
+  }
+
+  // 정적 자원 처리 (Cache-first)
   event.respondWith(
     caches.match(request)
       .then(response => {
@@ -74,7 +93,7 @@ self.addEventListener('fetch', event => {
         if (response) {
           return response;
         }
-        
+
         // 네트워크에서 가져오기
         return fetch(request)
           .then(response => {
@@ -82,21 +101,19 @@ self.addEventListener('fetch', event => {
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
             }
-            
+
             // 응답을 복제하여 캐시에 저장
             const responseToCache = response.clone();
             caches.open(CACHE_NAME)
               .then(cache => {
                 cache.put(request, responseToCache);
               });
-            
+
             return response;
           })
           .catch(() => {
-            // 오프라인일 때 기본 페이지 반환
-            if (request.destination === 'document') {
-              return caches.match('/');
-            }
+            // 정적 자원 로딩 실패 시 아무것도 하지 않음
+            return new Response('Resource not available', { status: 404 });
           });
       })
   );
