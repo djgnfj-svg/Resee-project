@@ -6,6 +6,8 @@ import { Category, ContentUsage } from '../types';
 import { extractResults } from '../utils/helpers';
 import TipTapEditor from './TipTapEditor';
 import CategoryField from './contentform/CategoryField';
+import ValidationResultCard from './contentform/ValidationResultCard';
+import { useContentValidation } from '../hooks/useContentValidation';
 
 interface ContentFormData {
   title: string;
@@ -27,17 +29,15 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
   isLoading = false,
   initialData
 }) => {
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors }, 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
     watch,
     setValue,
   } = useForm<ContentFormData>({
     mode: 'onChange',
-    defaultValues: {
-      ...initialData
-    }
+    defaultValues: initialData
   });
 
   const [content, setContent] = useState<string>(initialData?.content || '');
@@ -45,31 +45,20 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
   const [reviewMode, setReviewMode] = useState<'objective' | 'subjective'>(
     initialData?.review_mode || 'objective'
   );
-  const [isValidating, setIsValidating] = useState(false);
-  const [validationResult, setValidationResult] = useState<{
-    is_valid: boolean;
-    factual_accuracy: { score: number; issues: string[] };
-    logical_consistency: { score: number; issues: string[] };
-    title_relevance: { score: number; issues: string[] };
-    overall_feedback: string;
-  } | null>(null);
 
-  // Watch form values for real-time validation
+  const { isValidating, validationResult, validateContent } = useContentValidation();
   const watchedTitle = watch('title');
 
-  // 서술 평가 모드에서 콘텐츠 길이 검증
   const contentLength = content.trim().length;
   const isSubjectiveMode = reviewMode === 'subjective';
   const minContentLength = isSubjectiveMode ? 200 : 1;
   const hasValidContentLength = contentLength >= minContentLength;
 
-  // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: () => contentAPI.getCategories().then(extractResults),
   });
 
-  // Fetch content usage
   useQuery({
     queryKey: ['contents-usage'],
     queryFn: async () => {
@@ -81,44 +70,28 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
     },
   });
 
-  // Check if user can create content
   const canCreateContent = contentUsage ? contentUsage.can_create : true;
-
 
   const onFormSubmit = useCallback((data: ContentFormData) => {
     onSubmit({
       ...data,
-      content: content,
+      content,
       review_mode: reviewMode,
     });
   }, [content, reviewMode, onSubmit]);
 
-  const handleValidateContent = useCallback(async () => {
+  const handleValidate = useCallback(() => {
     const title = watchedTitle?.trim();
-    if (!title || !hasValidContentLength) return;
-
-    setIsValidating(true);
-    setValidationResult(null);
-
-    try {
-      const result = await contentAPI.validateContent(title, content);
-      setValidationResult(result);
-    } catch (error: any) {
-      alert(`AI 검증 실패: ${error.response?.data?.error || error.message}`);
-    } finally {
-      setIsValidating(false);
+    if (title && hasValidContentLength) {
+      validateContent(title, content);
     }
-  }, [watchedTitle, content, hasValidContentLength]);
-
-
-
+  }, [watchedTitle, content, hasValidContentLength, validateContent]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <form onSubmit={handleSubmit(onFormSubmit)}>
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12">
-            {/* Title */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
                 <label className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -139,8 +112,6 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                 className={`w-full px-4 py-3 text-2xl font-bold border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
                   errors.title
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500'
-                    : watchedTitle && watchedTitle.trim().length >= 1
-                    ? 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:focus:border-blue-400'
                     : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:focus:border-blue-400'
                 }`}
                 placeholder="예: React Hook 완벽 가이드"
@@ -152,7 +123,6 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
               )}
             </div>
 
-            {/* Category */}
             <div className="mb-6">
               <CategoryField
                 register={register}
@@ -161,7 +131,6 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
               />
             </div>
 
-            {/* Review Mode */}
             <div className="mb-6">
               <label className="block text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
                 복습 방식
@@ -205,7 +174,6 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
               </div>
             </div>
 
-            {/* Content */}
             <div className="mb-8">
               <div className="flex justify-between items-center mb-4">
                 <label className="block text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -229,86 +197,9 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                 </p>
               )}
 
-              {/* AI 검증 결과 */}
-              {validationResult && (
-                <div className="mt-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                    AI 검증 결과 {validationResult.is_valid ? '✓' : '⚠️'}
-                  </h3>
-
-                  <div className="space-y-3 mb-4">
-                    {/* 사실적 정확성 */}
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">사실적 정확성</span>
-                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{validationResult.factual_accuracy.score}점</span>
-                      </div>
-                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
-                          style={{ width: `${validationResult.factual_accuracy.score}%` }}
-                        />
-                      </div>
-                      {validationResult.factual_accuracy.issues.length > 0 && (
-                        <ul className="mt-1 text-xs text-red-600 dark:text-red-400 list-disc list-inside">
-                          {validationResult.factual_accuracy.issues.map((issue, i) => (
-                            <li key={i}>{issue}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    {/* 논리적 일관성 */}
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">논리적 일관성</span>
-                        <span className="text-sm font-bold text-purple-600 dark:text-purple-400">{validationResult.logical_consistency.score}점</span>
-                      </div>
-                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
-                          style={{ width: `${validationResult.logical_consistency.score}%` }}
-                        />
-                      </div>
-                      {validationResult.logical_consistency.issues.length > 0 && (
-                        <ul className="mt-1 text-xs text-red-600 dark:text-red-400 list-disc list-inside">
-                          {validationResult.logical_consistency.issues.map((issue, i) => (
-                            <li key={i}>{issue}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    {/* 제목 적합성 */}
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">제목 적합성</span>
-                        <span className="text-sm font-bold text-green-600 dark:text-green-400">{validationResult.title_relevance.score}점</span>
-                      </div>
-                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500"
-                          style={{ width: `${validationResult.title_relevance.score}%` }}
-                        />
-                      </div>
-                      {validationResult.title_relevance.issues.length > 0 && (
-                        <ul className="mt-1 text-xs text-red-600 dark:text-red-400 list-disc list-inside">
-                          {validationResult.title_relevance.issues.map((issue, i) => (
-                            <li key={i}>{issue}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {validationResult.overall_feedback}
-                  </p>
-                </div>
-              )}
+              {validationResult && <ValidationResultCard result={validationResult} />}
             </div>
 
-            {/* Actions */}
             <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
@@ -319,10 +210,9 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
               </button>
 
               <div className="flex items-center space-x-4">
-                {/* AI 검증 버튼 */}
                 <button
                   type="button"
-                  onClick={handleValidateContent}
+                  onClick={handleValidate}
                   disabled={isValidating || !watchedTitle || !hasValidContentLength}
                   className={`px-6 py-2.5 text-sm font-medium rounded-lg transition-all ${
                     !isValidating && watchedTitle && hasValidContentLength

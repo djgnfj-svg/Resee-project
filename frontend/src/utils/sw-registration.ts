@@ -1,4 +1,4 @@
-// Service Worker 등록 및 관리
+import { logger } from './logger';
 
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
@@ -28,9 +28,7 @@ export function registerSW(config?: SWRegistrationCallbacks) {
       if (isLocalhost) {
         checkValidServiceWorker(swUrl, config);
         navigator.serviceWorker.ready.then(() => {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[SW] App is being served from cache by a service worker');
-          }
+          logger.log('[SW] App is being served from cache by a service worker');
           config?.onOfflineReady?.();
         });
       } else {
@@ -44,10 +42,8 @@ function registerValidSW(swUrl: string, config?: SWRegistrationCallbacks) {
   navigator.serviceWorker
     .register(swUrl)
     .then(registration => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[SW] Registration successful:', registration);
-      }
-      
+      logger.log('[SW] Registration successful:', registration);
+
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
         if (installingWorker == null) return;
@@ -55,14 +51,10 @@ function registerValidSW(swUrl: string, config?: SWRegistrationCallbacks) {
         installingWorker.onstatechange = () => {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
-              if (process.env.NODE_ENV === 'development') {
-                console.log('[SW] New content available; please refresh');
-              }
+              logger.log('[SW] New content available; please refresh');
               config?.onUpdate?.(registration);
             } else {
-              if (process.env.NODE_ENV === 'development') {
-                console.log('[SW] Content cached for offline use');
-              }
+              logger.log('[SW] Content cached for offline use');
               config?.onSuccess?.(registration);
             }
           }
@@ -70,7 +62,7 @@ function registerValidSW(swUrl: string, config?: SWRegistrationCallbacks) {
       };
     })
     .catch(error => {
-      console.error('[SW] Registration failed:', error);
+      logger.error('[SW] Registration failed:', error);
       config?.onError?.(new Error('Service Worker registration failed'));
     });
 }
@@ -95,9 +87,7 @@ function checkValidServiceWorker(swUrl: string, config?: SWRegistrationCallbacks
       }
     })
     .catch(() => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[SW] No internet connection. App is running in offline mode');
-      }
+      logger.log('[SW] No internet connection. App is running in offline mode');
     });
 }
 
@@ -108,7 +98,7 @@ export function unregisterSW() {
         registration.unregister();
       })
       .catch(error => {
-        console.error('[SW] Unregistration error:', error);
+        logger.error('[SW] Unregistration error:', error);
       });
   }
 }
@@ -141,18 +131,14 @@ declare global {
 
 export function setupInstallPrompt(options?: InstallPromptOptions) {
   window.addEventListener('beforeinstallprompt', (e: BeforeInstallPromptEvent) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[PWA] Install prompt available');
-    }
+    logger.log('[PWA] Install prompt available');
     e.preventDefault();
     deferredPrompt = e;
     options?.onInstallAvailable?.();
   });
 
   window.addEventListener('appinstalled', () => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[PWA] App installed successfully');
-    }
+    logger.log('[PWA] App installed successfully');
     deferredPrompt = null;
     options?.onInstallSuccess?.();
   });
@@ -160,24 +146,20 @@ export function setupInstallPrompt(options?: InstallPromptOptions) {
 
 export async function promptInstall(): Promise<boolean> {
   if (!deferredPrompt) {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[PWA] Install prompt not available');
-    }
+    logger.log('[PWA] Install prompt not available');
     return false;
   }
 
   try {
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[PWA] Install prompt outcome: ${outcome}`);
-    }
+
+    logger.log(`[PWA] Install prompt outcome: ${outcome}`);
     deferredPrompt = null;
-    
+
     return outcome === 'accepted';
   } catch (error) {
-    console.error('[PWA] Install prompt error:', error);
+    logger.error('[PWA] Install prompt error:', error);
     return false;
   }
 }
@@ -205,12 +187,9 @@ export function setupNetworkStatusTracking() {
   updateOnlineStatus();
 }
 
-// 앱 업데이트 관리
 export function setupAppUpdateManagement() {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[SW] Controller changed - reloading page');
-    }
+    logger.log('[SW] Controller changed - reloading page');
     window.location.reload();
   });
 }
