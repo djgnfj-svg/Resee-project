@@ -51,6 +51,10 @@ django-storages==1.14.4
 
 # Note: psutil removed with monitoring app deletion
 
+# Monitoring & Logging
+sentry-sdk[django]==2.19.2
+python-json-logger==2.0.7
+
 # Development
 django-extensions==3.2.3
 django-debug-toolbar==4.2.0

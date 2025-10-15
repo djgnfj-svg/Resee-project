@@ -222,6 +222,14 @@ ALERT_SUMMARY_RECIPIENTS = os.environ.get('ALERT_SUMMARY_RECIPIENTS', '').split(
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
 
 
+# Toss Payments Configuration
+TOSS_CLIENT_KEY = os.environ.get('TOSS_CLIENT_KEY')
+TOSS_SECRET_KEY = os.environ.get('TOSS_SECRET_KEY')
+TOSS_API_URL = os.environ.get('TOSS_API_URL', 'https://api.tosspayments.com')
+TOSS_SUCCESS_URL = os.environ.get('TOSS_SUCCESS_URL', 'http://localhost/payment/success')
+TOSS_FAIL_URL = os.environ.get('TOSS_FAIL_URL', 'http://localhost/payment/fail')
+
+
 # Cache Configuration - Local Memory Cache (Redis removed)
 CACHES = {
     'default': {
@@ -273,6 +281,10 @@ LOGGING = {
             'format': '[{levelname}] {asctime} {name} {funcName}:{lineno} {message}',
             'style': '{',
             'datefmt': '%Y-%m-%d %H:%M:%S'
+        },
+        'json': {
+            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+            'format': '%(asctime)s %(name)s %(levelname)s %(funcName)s %(lineno)d %(message)s'
         },
     },
     'handlers': {

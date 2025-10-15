@@ -399,6 +399,18 @@ class PaymentHistory(models.Model):
         blank=True,
         help_text='Payment method used for this transaction'
     )
+    gateway_payment_id = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text='Payment ID from gateway (Toss, Stripe, etc.)'
+    )
+    gateway_order_id = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text='Order ID from gateway'
+    )
     description = models.TextField(
         blank=True,
         help_text='Additional details about the payment'

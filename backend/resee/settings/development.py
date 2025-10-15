@@ -148,3 +148,22 @@ STRIPE_PRICE_ID_PRO = os.environ.get('STRIPE_PRICE_ID_PRO')
 # Development environment configuration complete
 # Google OAuth: Enabled if GOOGLE_OAUTH2_CLIENT_ID is set
 # Email verification: Controlled by ENFORCE_EMAIL_VERIFICATION
+
+# Sentry configuration for development (optional)
+SENTRY_DSN = os.environ.get('SENTRY_DSN')
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(
+                transaction_style='url',
+                middleware_spans=True,
+            ),
+        ],
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+        environment='development',  # 중요: development로 표시
+    )
