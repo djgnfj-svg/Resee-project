@@ -680,3 +680,284 @@ def billing_schedule(request):
             {'error': '결제 일정 조회 중 오류가 발생했습니다.'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+# ==================== Toss Payments Integration ====================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def payment_checkout(request):
+    """
+    Create a payment checkout session with Toss Payments
+
+    Request body:
+    - tier: Target subscription tier (BASIC or PRO)
+    - billing_cycle: MONTHLY or YEARLY
+    """
+    import logging
+    import uuid
+    from decimal import Decimal
+    from .toss_service import TossPaymentsService
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        user = request.user
+        target_tier = request.data.get('tier')
+        billing_cycle = request.data.get('billing_cycle', 'MONTHLY')
+
+        # Validate tier
+        if target_tier not in [SubscriptionTier.BASIC, SubscriptionTier.PRO]:
+            return Response(
+                {'error': 'FREE 티어는 결제가 필요하지 않습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get subscription
+        subscription = getattr(user, 'subscription', None)
+        if not subscription:
+            return Response(
+                {'error': '구독 정보를 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Calculate amount
+        tier_pricing = {
+            SubscriptionTier.BASIC: {'MONTHLY': 5000, 'YEARLY': 50000},
+            SubscriptionTier.PRO: {'MONTHLY': 20000, 'YEARLY': 200000}
+        }
+
+        amount = tier_pricing.get(target_tier, {}).get(billing_cycle, 0)
+
+        if amount == 0:
+            return Response(
+                {'error': '잘못된 요금제입니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Generate order ID
+        order_id = f"order_{user.id}_{uuid.uuid4().hex[:12]}"
+        order_name = f"Resee {target_tier} 구독 ({billing_cycle})"
+
+        # Create payment via Toss
+        toss_service = TossPaymentsService()
+        result = toss_service.create_payment(
+            amount=amount,
+            order_id=order_id,
+            order_name=order_name,
+            customer_email=user.email,
+            customer_name=user.email.split('@')[0]
+        )
+
+        if not result.get('success'):
+            logger.error(f"Payment creation failed: {result.get('error')}")
+            return Response(
+                {'error': result.get('error', '결제 생성에 실패했습니다.')},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # Create pending payment history record
+        PaymentHistory.objects.create(
+            user=user,
+            payment_type=PaymentHistory.PaymentType.UPGRADE if target_tier != subscription.tier else PaymentHistory.PaymentType.RENEWAL,
+            from_tier=subscription.tier,
+            to_tier=target_tier,
+            amount=Decimal(str(amount)),
+            billing_cycle=billing_cycle,
+            payment_method_used='toss_payments',
+            gateway_order_id=order_id,
+            gateway_payment_id=result.get('payment_key', ''),
+            description=f"결제 대기: {order_name}",
+            notes='Payment pending confirmation'
+        )
+
+        logger.info(f"Payment checkout created for user {user.email}: {order_id}")
+
+        return Response({
+            'success': True,
+            'order_id': order_id,
+            'amount': amount,
+            'tier': target_tier,
+            'billing_cycle': billing_cycle,
+            'checkout_url': result.get('checkout_url'),
+            'client_key': result.get('client_key'),
+            'payment_key': result.get('payment_key')
+        })
+
+    except Exception as e:
+        logger.error(f"Error creating payment checkout: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response(
+            {'error': '결제 생성 중 오류가 발생했습니다.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def payment_confirm(request):
+    """
+    Confirm payment after user completes checkout
+
+    Request body:
+    - payment_key: Payment key from Toss
+    - order_id: Order ID
+    - amount: Payment amount
+    """
+    import logging
+    from decimal import Decimal
+    from datetime import timedelta
+    from django.utils import timezone
+    from .toss_service import TossPaymentsService
+    from .billing_service import BillingScheduleService
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        user = request.user
+        payment_key = request.data.get('payment_key')
+        order_id = request.data.get('order_id')
+        amount = request.data.get('amount')
+
+        # Validate inputs
+        if not all([payment_key, order_id, amount]):
+            return Response(
+                {'error': '필수 정보가 누락되었습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Find payment history record
+        payment_record = PaymentHistory.objects.filter(
+            user=user,
+            gateway_order_id=order_id
+        ).first()
+
+        if not payment_record:
+            return Response(
+                {'error': '결제 정보를 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Confirm payment with Toss
+        toss_service = TossPaymentsService()
+        result = toss_service.confirm_payment(
+            payment_key=payment_key,
+            order_id=order_id,
+            amount=int(amount)
+        )
+
+        if not result.get('success'):
+            logger.error(f"Payment confirmation failed: {result.get('error')}")
+            payment_record.notes = f"Payment failed: {result.get('error')}"
+            payment_record.save()
+            return Response(
+                {'error': result.get('error', '결제 승인에 실패했습니다.')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Update subscription
+        subscription = user.subscription
+        target_tier = payment_record.to_tier
+        billing_cycle = payment_record.billing_cycle
+
+        subscription.tier = target_tier
+        subscription.billing_cycle = billing_cycle
+        subscription.auto_renewal = True
+
+        # Calculate next billing date
+        if billing_cycle == 'MONTHLY':
+            subscription.next_billing_date = timezone.now().date() + timedelta(days=30)
+        else:  # YEARLY
+            subscription.next_billing_date = timezone.now().date() + timedelta(days=365)
+
+        subscription.save()
+
+        # Update payment record
+        payment_record.gateway_payment_id = payment_key
+        payment_record.description = f"결제 완료: {payment_record.description}"
+        payment_record.notes = 'Payment confirmed successfully'
+        payment_record.save()
+
+        # Create billing schedule
+        BillingScheduleService.create_schedule(subscription)
+
+        logger.info(f"Payment confirmed for user {user.email}: {order_id}")
+
+        return Response({
+            'success': True,
+            'message': '결제가 완료되었습니다.',
+            'subscription': {
+                'tier': subscription.tier,
+                'tier_display': subscription.get_tier_display(),
+                'billing_cycle': subscription.billing_cycle,
+                'next_billing_date': subscription.next_billing_date.isoformat()
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error confirming payment: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response(
+            {'error': '결제 확인 중 오류가 발생했습니다.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+def payment_webhook(request):
+    """
+    Webhook endpoint for Toss Payments notifications
+
+    This endpoint receives payment status updates from Toss Payments.
+    It does not require authentication as it's called by Toss servers.
+    """
+    import logging
+    from django.views.decorators.csrf import csrf_exempt
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Log webhook data
+        logger.info(f"Received Toss webhook: {request.data}")
+
+        # Extract webhook data
+        event_type = request.data.get('eventType')
+        payment_key = request.data.get('data', {}).get('paymentKey')
+        order_id = request.data.get('data', {}).get('orderId')
+        status_value = request.data.get('data', {}).get('status')
+
+        # Find payment record
+        payment_record = PaymentHistory.objects.filter(
+            gateway_order_id=order_id
+        ).first()
+
+        if not payment_record:
+            logger.warning(f"Payment record not found for webhook: {order_id}")
+            return Response({'status': 'received'})
+
+        # Handle different event types
+        if event_type == 'PAYMENT_CONFIRMED':
+            payment_record.notes = 'Payment confirmed via webhook'
+            payment_record.save()
+            logger.info(f"Webhook confirmed payment: {order_id}")
+
+        elif event_type == 'PAYMENT_CANCELED':
+            payment_record.notes = 'Payment canceled via webhook'
+            payment_record.save()
+            logger.info(f"Webhook canceled payment: {order_id}")
+
+        else:
+            logger.info(f"Webhook received for {order_id}: {event_type}")
+
+        return Response({'status': 'received'})
+
+    except Exception as e:
+        logger.error(f"Error processing webhook: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return Response(
+            {'error': 'Webhook processing failed'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

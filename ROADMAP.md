@@ -1,10 +1,10 @@
 # ROADMAP: v0.7 → v1.0
 
-## 현재 상태: v0.8 (78% 완성)
+## 현재 상태: v0.8 (82% 완성)
 
-**최종 업데이트**: 2025-10-15
+**최종 업데이트**: 2025-10-15 (Toss Payments 백엔드 구현 완료)
 
-### ✅ 완성된 기능 (78%)
+### ✅ 완성된 기능 (82%)
 
 #### 핵심 학습 시스템
 - [x] Ebbinghaus 간격 반복 알고리즘
@@ -33,7 +33,8 @@
 - [x] PaymentHistory 추적
 - [x] 환불 계산 로직
 - [x] 비밀번호 보호된 구독 변경
-- [⚠️] **부족**: 실제 결제 게이트웨이 연동 (시뮬레이션만 구현)
+- [x] **NEW**: Toss Payments 백엔드 API (checkout, confirm, webhook)
+- [⚠️] **부족**: 프론트엔드 Toss 위젯 연동 필요
 
 #### AI 기능
 - [x] 콘텐츠 검증 (Claude API)
@@ -77,9 +78,9 @@
 - [x] TypeScript 타입 안전성
 - [x] React 성능 최적화 (25개 useMemo/useCallback/React.memo)
 
-### ⚠️ 부분 완성 (12%)
+### ⚠️ 부분 완성 (8%)
 
-- [⚠️] **결제 시스템**: UI + 백엔드 로직 완성, 실제 게이트웨이 연동 필요
+- [⚠️] **결제 시스템**: 백엔드 API 완성 (Toss), 프론트엔드 위젯 연동 필요
 - [⚠️] **모니터링**: Health check 있음, Sentry 연동 필요
 - [⚠️] **로깅**: 구조화된 로깅 있음, JSON 포맷터 필요
 - [⚠️] **백업**: 수동 백업 가능, 자동화 필요
@@ -126,12 +127,14 @@
 #### 1.1 Toss Payments 연동
 
 **백엔드 작업**
-- [ ] toss-payments SDK 설치
-- [ ] 결제 시작 API 실제 연동 (/api/payments/checkout/)
-- [ ] Toss 웹훅 처리 구현 (/api/payments/webhook/)
-- [ ] Payment 모델에 gateway_payment_id 추가
-- [ ] 결제 성공 시 구독 활성화
-- [ ] 결제 실패 처리
+- [x] Toss Payments 설정 추가 (settings/base.py)
+- [x] TossPaymentsService 클래스 생성 (httpx 기반 REST API)
+- [x] 결제 시작 API 구현 (/api/accounts/payment/checkout/)
+- [x] Toss 웹훅 처리 구현 (/api/accounts/payment/webhook/)
+- [x] PaymentHistory 모델에 gateway_payment_id, gateway_order_id 추가
+- [x] 결제 확인 API 구현 (/api/accounts/payment/confirm/)
+- [x] 결제 성공 시 구독 활성화 로직
+- [x] 결제 실패 처리 로직
 - [ ] 샌드박스 모드 테스트
 
 **프론트엔드 작업**

@@ -4,7 +4,8 @@ from rest_framework.routers import DefaultRouter
 # Subscription views
 from .subscription.subscription_views import (subscription_cancel, subscription_detail,
                                              subscription_tiers, subscription_upgrade, subscription_downgrade,
-                                             payment_history, toggle_auto_renewal, billing_schedule)
+                                             payment_history, toggle_auto_renewal, billing_schedule,
+                                             payment_checkout, payment_confirm, payment_webhook)
 
 # Account management views (non-auth)
 from .views import (AccountDeleteView, ProfileView, WeeklyGoalUpdateView, NotificationPreferenceView)
@@ -48,6 +49,10 @@ urlpatterns = [
     path('subscription/toggle-auto-renewal/', toggle_auto_renewal, name='toggle-auto-renewal'),
     path('payment-history/', payment_history, name='payment-history'),
     path('billing-schedule/', billing_schedule, name='billing-schedule'),
+    # Toss Payments integration
+    path('payment/checkout/', payment_checkout, name='payment-checkout'),
+    path('payment/confirm/', payment_confirm, name='payment-confirm'),
+    path('payment/webhook/', payment_webhook, name='payment-webhook'),
     # Health checks
     path('health/', health_check, name='health-check'),
     path('health/detailed/', health_detailed, name='health-detailed'),
