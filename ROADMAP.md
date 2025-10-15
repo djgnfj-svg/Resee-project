@@ -35,7 +35,8 @@
 - [x] 비밀번호 보호된 구독 변경
 - [x] **NEW**: Toss Payments 백엔드 API (checkout, confirm, webhook)
 - [x] **NEW**: Toss Payments 프론트엔드 (CheckoutPage, Success/Fail pages)
-- [⚠️] **부족**: 실제 Toss 테스트 계정 연동 및 샌드박스 테스트
+- [💡] **전략 변경**: 사업자 등록 전까지 FREE 티어만 운영
+- [📝] **향후 계획**: 사용자 확보 후 사업자 등록 → 유료 티어 오픈
 
 #### AI 기능
 - [x] 콘텐츠 검증 (Claude API)
@@ -81,7 +82,7 @@
 
 ### ⚠️ 부분 완성 (2%)
 
-- [⚠️] **결제 시스템**: 코드 완성, Toss 테스트 계정 연동 필요
+- [✅➡️📝] **결제 시스템**: 코드 완성, 사업자 등록 시 활성화 예정 (FREE 티어로 먼저 운영)
 - [⚠️] **모니터링**: Health check 있음, Sentry 연동 필요
 - [⚠️] **로깅**: 구조화된 로깅 있음, JSON 포맷터 필요
 - [⚠️] **백업**: 수동 백업 가능, 자동화 필요
@@ -89,7 +90,7 @@
 
 ### ❌ 미완성 (10%)
 
-- [ ] 실제 결제 게이트웨이 연동 (Toss/Stripe webhook)
+- [📝] 실제 결제 게이트웨이 연동 (사업자 등록 후 진행)
 - [ ] Sentry 에러 추적 설정
 - [ ] python-json-logger 설치
 - [ ] 자동 백업 시스템
@@ -112,18 +113,20 @@
 
 ## 실행 계획 (총 3-4주)
 
-### Phase 1: 결제 시스템 완성 (1-2주)
+### Phase 1: 결제 시스템 완성 ✅ (완료)
 
 #### 목표
-시뮬레이션된 결제를 실제 Toss Payments로 연동.
+~~시뮬레이션된 결제를 실제 Toss Payments로 연동~~ → **코드 구현 완료, FREE 티어로 먼저 운영**
 
-#### 현재 상태
-- ✅ Payment UI 완성 (SubscriptionPage, PaymentHistoryPage)
-- ✅ 백엔드 로직 완성 (upgrade/downgrade/cancel/refund)
+#### 최종 상태 (2025-10-15)
+- ✅ Payment UI 완성 (SubscriptionPage, PaymentHistoryPage, CheckoutPage)
+- ✅ 백엔드 API 완성 (checkout, confirm, webhook)
+- ✅ 프론트엔드 결제 플로우 완성
 - ✅ BillingSchedule 서비스
 - ✅ PaymentHistory 추적
-- ❌ 실제 Toss Payments 연동
-- ❌ Webhook 처리
+- ✅ Toss Payments SDK 통합
+- 📝 **전략 변경**: 사업자 등록 전까지 FREE 티어만 운영
+- 📝 **향후**: 사용자 확보 후 사업자 등록 → 유료 활성화
 
 #### 1.1 Toss Payments 연동
 
@@ -147,11 +150,13 @@
 - [x] 라우팅 추가 (/payment/checkout, /payment/success, /payment/fail)
 
 #### 1.2 테스트 & 검증
-- [ ] Toss 샌드박스 테스트
-- [ ] 웹훅 처리 검증
-- [ ] 업그레이드/다운그레이드 시나리오
-- [ ] 결제 실패 처리
-- [ ] 환불 테스트
+- [📝] Toss 샌드박스 테스트 (사업자 등록 후 진행)
+- [📝] 웹훅 처리 검증 (사업자 등록 후 진행)
+- [📝] 업그레이드/다운그레이드 시나리오 (사업자 등록 후 진행)
+- [📝] 결제 실패 처리 (사업자 등록 후 진행)
+- [📝] 환불 테스트 (사업자 등록 후 진행)
+
+**결론**: Phase 1 코드 구현 완료. 사업자 등록 후 Phase 1.2 재개 예정.
 
 ---
 

@@ -145,7 +145,11 @@ docker-compose exec frontend npm run build
 backend/
 ├── review/utils.py                    # Ebbinghaus algorithm
 ├── content/signals.py                 # ReviewSchedule auto-creation
-├── accounts/models.py                 # Subscription model
+├── accounts/models.py                 # Subscription, PaymentHistory models
+├── accounts/subscription/
+│   ├── toss_service.py                # Toss Payments API integration
+│   ├── subscription_views.py          # Payment APIs (checkout, confirm, webhook)
+│   └── billing_service.py             # Billing schedule automation
 ├── review/tasks.py                    # Email reminder tasks
 ├── content/ai_validation.py           # AI content validation
 ├── review/ai_evaluation.py            # AI answer evaluation
@@ -165,6 +169,9 @@ frontend/src/
 │   ├── ReviewPage.tsx                 # Review interface
 │   ├── SubscriptionPage.tsx           # Subscription tiers, pricing
 │   ├── PaymentHistoryPage.tsx         # Payment records
+│   ├── CheckoutPage.tsx               # Toss Payments checkout
+│   ├── PaymentSuccessPage.tsx         # Payment confirmation
+│   ├── PaymentFailPage.tsx            # Payment error handling
 │   └── SettingsPage.tsx               # User settings
 ├── components/
 │   ├── review/ReviewControls.tsx      # Review buttons
@@ -312,6 +319,45 @@ Weekly Test
 → Multiple choice from content
 ```
 
+#### Payment System Integration
+```
+User Flow (when business registration complete):
+1. SubscriptionPage: User clicks "구독하기"
+   → FREE tier: Password verification
+   → BASIC/PRO tier: Redirect to /payment/checkout
+
+2. CheckoutPage
+   → POST /api/accounts/payment/checkout/
+   → Backend creates PaymentHistory (pending)
+   → Load Toss Payment Widget SDK
+   → Render payment methods
+
+3. User Completes Payment
+   → Toss processes payment
+   → Success: /payment/success?paymentKey=xxx&orderId=xxx
+   → Fail: /payment/fail?code=xxx&message=xxx
+
+4. PaymentSuccessPage
+   → POST /api/accounts/payment/confirm/
+   → Backend calls Toss confirm API
+   → Update Subscription tier
+   → Update PaymentHistory (completed)
+   → Create BillingSchedule
+   → Redirect to /subscription
+
+5. Webhook (Background)
+   → POST /api/accounts/payment/webhook/
+   → Process PAYMENT_CONFIRMED/CANCELED events
+   → Update PaymentHistory notes
+```
+
+**Key Files**:
+- Backend: `accounts/subscription/toss_service.py`, `subscription_views.py`
+- Frontend: `pages/CheckoutPage.tsx`, `PaymentSuccessPage.tsx`, `PaymentFailPage.tsx`
+- Routes: `/api/accounts/payment/{checkout,confirm,webhook}/`
+
+**Current Status**: Code complete, awaiting business registration for activation.
+
 ### Infrastructure
 
 **Docker Compose Services**:
@@ -348,6 +394,11 @@ DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/resee_prod
 REDIS_URL=redis://redis:6379/0
 ENFORCE_EMAIL_VERIFICATION=True
 ANTHROPIC_API_KEY=<required>
+
+# Toss Payments (activate after business registration)
+TOSS_CLIENT_KEY=<test_gck_docs_... or production key>
+TOSS_SECRET_KEY=<test_gsk_docs_... or production key>
+TOSS_API_URL=https://api.tosspayments.com
 ```
 
 **Frontend (docker-compose.yml)**:
@@ -468,6 +519,10 @@ httpx==0.27.0
 - ✅ Subscription management (UI + backend logic)
 - ✅ Payment history tracking
 - ✅ Billing schedule automation
+- ✅ **NEW**: Toss Payments integration (full-stack implementation)
+  - Backend: checkout, confirm, webhook APIs
+  - Frontend: CheckoutPage, PaymentSuccessPage, PaymentFailPage
+  - Status: Code complete, awaiting business registration
 
 **Infrastructure Completed**:
 - ✅ Security: Rate limiting (100/hr anon, 1000/hr user, 5/min login)
@@ -480,10 +535,15 @@ httpx==0.27.0
 - ✅ Session/CSRF cookie security
 
 **Partially Implemented**:
-- ⚠️ Payment system: UI + logic complete, real gateway integration needed
+- 📝 Payment system: Code complete, deferred until business registration (FREE tier strategy)
 - ⚠️ Monitoring: Health check exists, Sentry integration needed
 - ⚠️ Logging: Structured logs exist, JSON formatter needed
 - ⚠️ Frontend optimization: Some React.memo usage, code splitting needed
+
+**Business Strategy**:
+- 🎯 Current: FREE tier only (max 3-day review intervals)
+- 📝 Future: After user acquisition → Business registration → Activate paid tiers (BASIC/PRO)
+- 💡 Reasoning: Complete payment infrastructure in place, ready to activate when viable
 
 **Configuration**:
 - Local PostgreSQL for dev and prod
