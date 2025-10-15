@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SubscriptionTierInfo, SubscriptionTier } from '../types';
@@ -8,6 +9,7 @@ import { subscriptionAPI } from '../utils/api';
 
 const SubscriptionPage: React.FC = () => {
   const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [billingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
@@ -102,24 +104,28 @@ const SubscriptionPage: React.FC = () => {
       return;
     }
 
-    // Confirm subscription change
-    const tierNames = { free: '무료', basic: '베이직', pro: '프로' };
-    const confirmMessage = `${tierNames[tier]} 플랜으로 변경하시겠습니까?`;
+    // For FREE tier, use old password-based flow
+    if (tier === 'free') {
+      const confirmMessage = '무료 플랜으로 변경하시겠습니까?';
 
-    if (window.confirm(confirmMessage)) {
-      // Request password for security
-      const password = window.prompt('보안을 위해 비밀번호를 입력해주세요:');
+      if (window.confirm(confirmMessage)) {
+        const password = window.prompt('보안을 위해 비밀번호를 입력해주세요:');
 
-      if (!password) {
-        toast.error('비밀번호를 입력해야 구독을 변경할 수 있습니다.');
-        return;
+        if (!password) {
+          toast.error('비밀번호를 입력해야 구독을 변경할 수 있습니다.');
+          return;
+        }
+
+        upgradeMutation.mutate({
+          tier,
+          billing_cycle: billingCycle,
+          password
+        });
       }
-
-      upgradeMutation.mutate({
-        tier,
-        billing_cycle: billingCycle,
-        password
-      });
+    } else {
+      // For paid tiers (BASIC/PRO), redirect to checkout page
+      const cycle = billingCycle === 'monthly' ? 'MONTHLY' : 'YEARLY';
+      navigate(`/payment/checkout?tier=${tier}&cycle=${cycle}`);
     }
   };
 

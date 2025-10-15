@@ -1,10 +1,10 @@
 # ROADMAP: v0.7 → v1.0
 
-## 현재 상태: v0.8 (82% 완성)
+## 현재 상태: v0.9 (88% 완성)
 
-**최종 업데이트**: 2025-10-15 (Toss Payments 백엔드 구현 완료)
+**최종 업데이트**: 2025-10-15 (Toss Payments 풀스택 구현 완료)
 
-### ✅ 완성된 기능 (82%)
+### ✅ 완성된 기능 (88%)
 
 #### 핵심 학습 시스템
 - [x] Ebbinghaus 간격 반복 알고리즘
@@ -34,7 +34,8 @@
 - [x] 환불 계산 로직
 - [x] 비밀번호 보호된 구독 변경
 - [x] **NEW**: Toss Payments 백엔드 API (checkout, confirm, webhook)
-- [⚠️] **부족**: 프론트엔드 Toss 위젯 연동 필요
+- [x] **NEW**: Toss Payments 프론트엔드 (CheckoutPage, Success/Fail pages)
+- [⚠️] **부족**: 실제 Toss 테스트 계정 연동 및 샌드박스 테스트
 
 #### AI 기능
 - [x] 콘텐츠 검증 (Claude API)
@@ -78,9 +79,9 @@
 - [x] TypeScript 타입 안전성
 - [x] React 성능 최적화 (25개 useMemo/useCallback/React.memo)
 
-### ⚠️ 부분 완성 (8%)
+### ⚠️ 부분 완성 (2%)
 
-- [⚠️] **결제 시스템**: 백엔드 API 완성 (Toss), 프론트엔드 위젯 연동 필요
+- [⚠️] **결제 시스템**: 코드 완성, Toss 테스트 계정 연동 필요
 - [⚠️] **모니터링**: Health check 있음, Sentry 연동 필요
 - [⚠️] **로깅**: 구조화된 로깅 있음, JSON 포맷터 필요
 - [⚠️] **백업**: 수동 백업 가능, 자동화 필요
@@ -138,10 +139,12 @@
 - [ ] 샌드박스 모드 테스트
 
 **프론트엔드 작업**
-- [ ] @tosspayments/react-payment-widgets 설치
-- [ ] CheckoutPage Toss 위젯 통합
-- [ ] 결제 성공/실패 리다이렉트
-- [ ] 결제 진행 상태 표시
+- [x] @tosspayments/payment-widget-sdk 설치
+- [x] CheckoutPage Toss 위젯 통합
+- [x] PaymentSuccessPage 구현 (결제 확인 API 호출)
+- [x] PaymentFailPage 구현 (에러 처리)
+- [x] SubscriptionPage에서 Checkout으로 리다이렉트
+- [x] 라우팅 추가 (/payment/checkout, /payment/success, /payment/fail)
 
 #### 1.2 테스트 & 검증
 - [ ] Toss 샌드박스 테스트

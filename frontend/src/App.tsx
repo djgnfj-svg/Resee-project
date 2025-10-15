@@ -20,6 +20,9 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import PaymentHistoryPage from './pages/PaymentHistoryPage';
+import CheckoutPage from './pages/CheckoutPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import PaymentFailPage from './pages/PaymentFailPage';
 import NotFoundPage from './pages/NotFoundPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
@@ -131,6 +134,26 @@ function App() {
                     <PaymentHistoryPage />
                   </ProtectedRoute>
                 }
+              />
+              <Route
+                path="/payment/checkout"
+                element={
+                  <ProtectedRoute>
+                    <CheckoutPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment/success"
+                element={
+                  <ProtectedRoute>
+                    <PaymentSuccessPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payment/fail"
+                element={<PaymentFailPage />}
               />
               {/* 404 페이지 - 모든 라우트의 맨 마지막에 위치 */}
               <Route path="*" element={<NotFoundPage />} />
