@@ -273,12 +273,12 @@
 
 **현재 상태**:
 - ✅ 일부 React 성능 최적화 (25개 useMemo/useCallback/React.memo)
-- ❌ React.lazy 코드 스플리팅
-- ❌ 번들 크기 최적화
+- ✅ React.lazy 코드 스플리팅 (완료 - 70% 번들 감소)
+- ✅ 번들 크기 최적화 (283 kB → 85 kB main bundle)
 
 **작업 목록**:
-- [ ] React.lazy로 주요 페이지 lazy loading
-- [ ] 번들 분석 (webpack-bundle-analyzer)
+- [x] React.lazy로 주요 페이지 lazy loading (18개 페이지)
+- [x] 번들 분석 (코드 스플리팅 적용)
 - [ ] Tree shaking 확인
 - [ ] 이미지 최적화
 - [ ] Lighthouse 측정 (> 90)

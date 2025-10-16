@@ -146,8 +146,8 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
     ],
     'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle'
+        'resee.throttling.RedisAnonRateThrottle',
+        'resee.throttling.RedisUserRateThrottle'
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/hour',
@@ -230,15 +230,31 @@ TOSS_SUCCESS_URL = os.environ.get('TOSS_SUCCESS_URL', 'http://localhost/payment/
 TOSS_FAIL_URL = os.environ.get('TOSS_FAIL_URL', 'http://localhost/payment/fail')
 
 
-# Cache Configuration - Local Memory Cache (Redis removed)
+# Cache Configuration
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'resee-cache',
         'OPTIONS': {
-            'MAX_ENTRIES': 1000,
+            'MAX_ENTRIES': 5000,
             'CULL_FREQUENCY': 4,
         }
+    },
+    # Redis cache for rate limiting
+    'throttle': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.environ.get('REDIS_URL', 'redis://redis:6379/0'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_CLASS_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+            },
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+        },
+        'KEY_PREFIX': 'throttle',
+        'TIMEOUT': 3600,  # 1 hour default
     }
 }
 

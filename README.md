@@ -24,7 +24,7 @@
 ### Backend
 - **Django 5.1** + Django REST Framework
 - **PostgreSQL** (데이터베이스)
-- **Redis** (Celery 백그라운드 작업)
+- **Redis** (Rate limiting + Celery 백그라운드 작업)
 - **Gunicorn** (WSGI 서버)
 
 ### Frontend
@@ -196,7 +196,7 @@ git push origin main  # main 브랜치 푸시 시 자동 배포
 - ✅ 타이밍 공격 방어 (constant-time comparison)
 - ✅ HTTPS 강제
 - ✅ CSRF 보호
-- ✅ Rate Limiting
+- ✅ Rate Limiting (Redis 기반, 100/hr anon, 1000/hr user)
 
 ---
 

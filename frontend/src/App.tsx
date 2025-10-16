@@ -1,34 +1,37 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import EmailVerificationPage from './pages/EmailVerificationPage';
-import VerificationPendingPage from './pages/VerificationPendingPage';
-import DashboardPage from './pages/DashboardPage';
-import ContentPage from './pages/ContentPage';
-import CreateContentPage from './pages/CreateContentPage';
-import EditContentPage from './pages/EditContentPage';
-import ReviewPage from './pages/ReviewPage';
-import WeeklyTestPage from './pages/WeeklyTestPage';
-import ProfilePage from './pages/ProfilePage';
-import SettingsPage from './pages/SettingsPage';
-import SubscriptionPage from './pages/SubscriptionPage';
-import PaymentHistoryPage from './pages/PaymentHistoryPage';
-import CheckoutPage from './pages/CheckoutPage';
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
-import PaymentFailPage from './pages/PaymentFailPage';
-import NotFoundPage from './pages/NotFoundPage';
-import TermsPage from './pages/TermsPage';
-import PrivacyPage from './pages/PrivacyPage';
+import LoadingFallback from './components/LoadingFallback';
 import ProtectedRoute from './components/ProtectedRoute';
 import './styles/design-system.css';
 import './styles/animations.css';
+
+// Lazy load all page components for code splitting
+const HomePage = lazy(() => import('./pages/HomePage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const EmailVerificationPage = lazy(() => import('./pages/EmailVerificationPage'));
+const VerificationPendingPage = lazy(() => import('./pages/VerificationPendingPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const ContentPage = lazy(() => import('./pages/ContentPage'));
+const CreateContentPage = lazy(() => import('./pages/CreateContentPage'));
+const EditContentPage = lazy(() => import('./pages/EditContentPage'));
+const ReviewPage = lazy(() => import('./pages/ReviewPage'));
+const WeeklyTestPage = lazy(() => import('./pages/WeeklyTestPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'));
+const PaymentHistoryPage = lazy(() => import('./pages/PaymentHistoryPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
+const PaymentFailPage = lazy(() => import('./pages/PaymentFailPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,8 +50,9 @@ function App() {
           <AuthProvider>
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <Layout>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
+                <Suspense fallback={<LoadingFallback />}>
+                  <Routes>
+                    <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/verify-email" element={<EmailVerificationPage />} />
@@ -155,10 +159,11 @@ function App() {
                 path="/payment/fail"
                 element={<PaymentFailPage />}
               />
-              {/* 404 페이지 - 모든 라우트의 맨 마지막에 위치 */}
-              <Route path="*" element={<NotFoundPage />} />
-              </Routes>
-            </Layout>
+                    {/* 404 페이지 - 모든 라우트의 맨 마지막에 위치 */}
+                    <Route path="*" element={<NotFoundPage />} />
+                  </Routes>
+                </Suspense>
+              </Layout>
           </Router>
         </AuthProvider>
       </QueryClientProvider>

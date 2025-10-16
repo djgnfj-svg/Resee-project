@@ -368,10 +368,13 @@ User Flow (when business registration complete):
 - `celery`: Background workers
 - `nginx`: Reverse proxy (production-like)
 
-**Database**:
+**Database & Cache**:
 - PostgreSQL 15 (local Docker)
-- Development: `resee_dev`
-- Production: `resee_prod`
+  - Development: `resee_dev`
+  - Production: `resee_prod`
+- Redis (Docker)
+  - Database 0: Rate limiting + Celery broker
+  - Locmem cache: General application cache (5000 entries)
 
 ---
 
@@ -462,10 +465,10 @@ httpx==0.27.0
 - ReviewSchedule: 3 indexes (user+date+active, date, user+active)
 - ReviewHistory: 4 indexes
 - Content: 3 indexes (author+created, category+created)
-- Caching: locmem (5000 max entries)
+- Caching: Redis for rate limiting, locmem for general cache (5000 max entries)
 
 **Security**:
-- Rate limiting configured (REST Framework throttling)
+- Rate limiting: Redis-based DRF throttling (100/hr anon, 1000/hr user, 5/min login)
 - Security headers (XSS, HSTS, X-Frame-Options, CSP)
 - CORS policy enforced
 - HTTPS via CloudFlare
@@ -488,7 +491,13 @@ httpx==0.27.0
 
 ## Recent Changes
 
-### Latest Code Updates (2025-01)
+### Latest Code Updates (2025-10)
+
+**Performance Optimizations**:
+- ✅ React.lazy code splitting: 70% main bundle reduction (283 kB → 85 kB)
+- ✅ 18 pages lazy-loaded on demand
+- ✅ LoadingFallback component for smooth UX
+- ✅ Rate limiting migrated to Redis
 
 **UX Improvements**:
 - Subjective review: Removed auto-advance, added user-controlled "Next" button
@@ -503,10 +512,11 @@ httpx==0.27.0
 - Fixed ReviewHistory null constraint
 - Resolved Celery healthcheck issues
 
-**Optimizations**:
+**Infrastructure**:
 - Removed obsolete management commands
 - Optimized frontend with component separation
 - Improved logging structure
+- Redis-based rate limiting
 
 ### System Status
 
@@ -530,12 +540,12 @@ httpx==0.27.0
   - Monitoring utilities (MetricsMonitor, SlackNotifier)
 
 **Infrastructure Completed**:
-- ✅ Security: Rate limiting (100/hr anon, 1000/hr user, 5/min login)
+- ✅ Security: Rate limiting using Redis (100/hr anon, 1000/hr user, 5/min login)
 - ✅ Security headers (XSS, HSTS, X-Frame-Options, Content-Type-Nosniff)
 - ✅ CORS configuration
 - ✅ Structured logging (RotatingFileHandler, 10MB, 5 backups)
 - ✅ Database indexes (ReviewSchedule: 3, ReviewHistory: 4, Content: 3)
-- ✅ Caching system (locmem, 5000 max entries)
+- ✅ Caching system (Redis for rate limiting, locmem for general cache)
 - ✅ CI/CD pipeline (GitHub Actions: tests, linting, deployment)
 - ✅ Session/CSRF cookie security
 - ✅ Celery automated backup (pg_dump + gzip, 매일 새벽 3시, Slack 알림)
@@ -544,7 +554,7 @@ httpx==0.27.0
 
 **Partially Implemented**:
 - 📝 Payment system: Code complete, deferred until business registration (FREE tier strategy)
-- ⚠️ Frontend optimization: Some React.memo usage, code splitting needed
+- ✅ Frontend optimization: React.lazy code splitting complete (70% bundle reduction)
 
 **Business Strategy**:
 - 🎯 Current: FREE tier only (max 3-day review intervals)
@@ -557,8 +567,8 @@ httpx==0.27.0
 - Simplified Docker networking
 - Celery Beat for scheduled tasks (backup, email reminders)
 - Test coverage: 95.7% (88/92 tests passing)
-- Frontend bundle: 283.14 kB
-- React performance hooks: 25+ usages (useMemo/useCallback/React.memo)
+- Frontend bundle: 84.94 kB main (70% reduction via React.lazy)
+- React performance: 25+ hooks + code splitting (18 lazy-loaded pages)
 
 **Monitoring & Alerts**:
 - Logging: 4 separate log files (django, celery, security, error)
