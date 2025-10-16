@@ -32,6 +32,11 @@ app.conf.beat_schedule = {
         'task': 'review.tasks.send_weekly_summary',
         'schedule': crontab(hour=9, minute=0, day_of_week=1),  # 매주 월요일 오전 9시
     },
+    'backup-database': {
+        'task': 'review.backup_tasks.backup_database',
+        'schedule': crontab(hour=3, minute=0),  # 매일 새벽 3시
+        'kwargs': {'environment': 'production'},
+    },
 }
 
 app.conf.timezone = 'Asia/Seoul'

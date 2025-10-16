@@ -149,24 +149,7 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'email': '10/hour',
 }
 
-# Monitoring (if Sentry is configured)
-SENTRY_DSN = os.environ.get('SENTRY_DSN')
-if SENTRY_DSN:
-    import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
-
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        integrations=[
-            DjangoIntegration(
-                transaction_style='url',
-                middleware_spans=True,
-            ),
-        ],
-        traces_sample_rate=0.1,
-        send_default_pii=False,
-        environment='production',
-    )
+# Monitoring removed - using logging + Slack alerts instead
 
 # DATABASE CONFIGURATION - Local PostgreSQL
 DATABASES = {

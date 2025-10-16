@@ -13,6 +13,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from utils.slack_notifications import send_health_alert
 
 
 @api_view(['GET'])
@@ -51,6 +52,8 @@ def health_detailed(request):
             'error': str(e)
         }
         health_data['status'] = 'degraded'
+        # Send Slack alert for database failure
+        send_health_alert('database', 'down', str(e))
 
     # Cache check (Local Memory)
     cache_start = time.time()
@@ -107,8 +110,12 @@ def health_detailed(request):
         if usage_percent > 90:
             disk_status = 'critical'
             health_data['status'] = 'degraded'
+            # Send Slack alert for critical disk usage
+            send_health_alert('disk', 'degraded', f'Disk usage at {usage_percent:.1f}% (critical)')
         elif usage_percent > 80:
             disk_status = 'warning'
+            # Send Slack alert for warning disk usage
+            send_health_alert('disk', 'degraded', f'Disk usage at {usage_percent:.1f}% (warning)')
 
         health_data['services']['disk'] = {
             'status': disk_status,
@@ -138,6 +145,8 @@ def health_detailed(request):
 
         if worker_count == 0:
             health_data['status'] = 'degraded'
+            # Send Slack alert for no Celery workers
+            send_health_alert('celery', 'down', 'No active Celery workers found')
 
         health_data['services']['celery'] = {
             'status': worker_status,

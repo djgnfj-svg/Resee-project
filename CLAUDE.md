@@ -519,10 +519,15 @@ httpx==0.27.0
 - ✅ Subscription management (UI + backend logic)
 - ✅ Payment history tracking
 - ✅ Billing schedule automation
-- ✅ **NEW**: Toss Payments integration (full-stack implementation)
+- ✅ Toss Payments integration (full-stack implementation)
   - Backend: checkout, confirm, webhook APIs
   - Frontend: CheckoutPage, PaymentSuccessPage, PaymentFailPage
   - Status: Code complete, awaiting business registration
+- ✅ **NEW (Phase 2)**: 운영 인프라 완성
+  - Logging system (JSON 포맷터, 4개 분리된 로그 파일)
+  - Celery automated backup (pg_dump, gzip, 매일 새벽 3시)
+  - Slack alert system (9+ 트리거, 테스트 완료)
+  - Monitoring utilities (MetricsMonitor, SlackNotifier)
 
 **Infrastructure Completed**:
 - ✅ Security: Rate limiting (100/hr anon, 1000/hr user, 5/min login)
@@ -533,11 +538,12 @@ httpx==0.27.0
 - ✅ Caching system (locmem, 5000 max entries)
 - ✅ CI/CD pipeline (GitHub Actions: tests, linting, deployment)
 - ✅ Session/CSRF cookie security
+- ✅ Celery automated backup (pg_dump + gzip, 매일 새벽 3시, Slack 알림)
+- ✅ Slack alert system (health, backup, payment, API performance)
+- ✅ Monitoring utilities (backend/utils/slack_notifications.py, monitoring.py)
 
 **Partially Implemented**:
 - 📝 Payment system: Code complete, deferred until business registration (FREE tier strategy)
-- ⚠️ Monitoring: Health check exists, Sentry integration needed
-- ⚠️ Logging: Structured logs exist, JSON formatter needed
 - ⚠️ Frontend optimization: Some React.memo usage, code splitting needed
 
 **Business Strategy**:
@@ -549,7 +555,15 @@ httpx==0.27.0
 - Local PostgreSQL for dev and prod
 - Single worker configuration (Gunicorn: 1 worker, 2 threads)
 - Simplified Docker networking
-- Standard PostgreSQL backups
+- Celery Beat for scheduled tasks (backup, email reminders)
 - Test coverage: 95.7% (88/92 tests passing)
 - Frontend bundle: 283.14 kB
 - React performance hooks: 25+ usages (useMemo/useCallback/React.memo)
+
+**Monitoring & Alerts**:
+- Logging: 4 separate log files (django, celery, security, error)
+- Slack alerts: ✅ **Active & Tested** - Database, Redis, Disk, Celery, Backup, Payment failures
+- Celery backup: ✅ **Operational** - Daily 3am via Celery Beat, Slack notifications
+- Health check: `/api/health/` (basic), `/api/health/detailed/` (full)
+- Metrics tracking: API performance, error rates, payment failures
+- **Status**: Fully operational & tested (2025-10-15)
