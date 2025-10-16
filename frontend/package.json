@@ -2,6 +2,10 @@
   "name": "resee-frontend",
   "version": "0.1.0",
   "private": true,
+  "sideEffects": [
+    "*.css",
+    "src/index.tsx"
+  ],
   "dependencies": {
     "@heroicons/react": "^2.0.13",
     "@tanstack/react-query": "^4.16.1",
@@ -44,6 +48,7 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "typecheck": "tsc --noEmit --skipLibCheck",
     "ci:quick": "npm run typecheck && npm run build --silent",
+    "analyze": "source-map-explorer 'build/static/js/*.js'",
     "eject": "react-scripts eject",
     "pwa:icons": "node ../scripts/generate-pwa-icons.js",
     "pwa:test": "lighthouse http://localhost:3000 --output=html --output-path=./lighthouse-report.html --view"
@@ -68,7 +73,8 @@
   },
   "devDependencies": {
     "@types/node": "^16.18.3",
-    "msw": "^1.3.5"
+    "msw": "^1.3.5",
+    "source-map-explorer": "^2.5.3"
   },
   "proxy": "http://backend:8000",
   "jest": {

@@ -494,10 +494,12 @@ httpx==0.27.0
 ### Latest Code Updates (2025-10)
 
 **Performance Optimizations**:
-- ✅ React.lazy code splitting: 70% main bundle reduction (283 kB → 85 kB)
-- ✅ 18 pages lazy-loaded on demand
+- ✅ React.lazy code splitting: 70% main bundle reduction (283 kB → 84.21 kB)
+- ✅ Tree shaking: sideEffects configuration (additional 733 B reduction)
+- ✅ 18 pages lazy-loaded on demand (Playwright MCP verified)
 - ✅ LoadingFallback component for smooth UX
 - ✅ Rate limiting migrated to Redis
+- ✅ source-map-explorer for bundle analysis
 
 **UX Improvements**:
 - Subjective review: Removed auto-advance, added user-controlled "Next" button
@@ -567,8 +569,8 @@ httpx==0.27.0
 - Simplified Docker networking
 - Celery Beat for scheduled tasks (backup, email reminders)
 - Test coverage: 95.7% (88/92 tests passing)
-- Frontend bundle: 84.94 kB main (70% reduction via React.lazy)
-- React performance: 25+ hooks + code splitting (18 lazy-loaded pages)
+- Frontend bundle: 84.21 kB main (70.9% reduction via React.lazy + tree shaking)
+- React performance: 25+ hooks + code splitting + tree shaking (18 lazy-loaded pages)
 
 **Monitoring & Alerts**:
 - Logging: 4 separate log files (django, celery, security, error)

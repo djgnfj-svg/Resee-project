@@ -279,7 +279,7 @@
 **작업 목록**:
 - [x] React.lazy로 주요 페이지 lazy loading (18개 페이지)
 - [x] 번들 분석 (코드 스플리팅 적용)
-- [ ] Tree shaking 확인
+- [x] Tree shaking 확인 (sideEffects 설정, Playwright MCP 테스트)
 - [ ] 이미지 최적화
 - [ ] Lighthouse 측정 (> 90)
 
