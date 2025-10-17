@@ -81,7 +81,21 @@
       "Bash(for i in {1..8})",
       "Bash(awk:*)",
       "Bash(tree:*)",
-      "Bash(git commit:*)"
+      "Bash(for dir in accounts analytics content review weekly_test resee)",
+      "Bash(do echo \"=== $dir ===\")",
+      "Bash(ls:*)",
+      "Bash(for app in accounts content review analytics weekly_test)",
+      "Bash(do echo \"=== $app 앱 ===\" ls -1 /home/djgnf/projects/Resee-project/backend/$app/migrations/)",
+      "Bash(do echo:*)",
+      "Bash(ADMIN_EMAIL=\"djgnfj8923@naver.com\" ADMIN_PASSWORD=\"TestAdmin123!@#\" docker-compose exec:*)",
+      "Bash(git update-index:*)",
+      "Bash(truncate:*)",
+      "Bash(sudo rm:*)",
+      "WebFetch(domain:docs.tosspayments.com)",
+      "Bash(for i in {1..3})",
+      "Bash(tee:*)",
+      "Bash(timeout 30 npx playwright test --project=chromium --reporter=list)",
+      "Bash(timeout 40 npx playwright test --project=chromium --reporter=list)"
     ],
     "deny": [],
     "ask": []
@@ -92,5 +106,5 @@
     "sequential-thinking",
     "playwright"
   ],
-  "outputStyle": "Explanatory"
+  "outputStyle": "default"
 }

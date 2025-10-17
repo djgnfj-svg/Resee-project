@@ -541,12 +541,11 @@ httpx==0.27.0
   - Celery automated backup (pg_dump, gzip, 매일 새벽 3시)
   - Slack alert system (9+ 트리거, 테스트 완료)
   - Monitoring utilities (MetricsMonitor, SlackNotifier)
-- ✅ **Phase 3 & v1.0 완료**: E2E 인프라 및 프로덕션 준비
-  - Playwright E2E 테스트 인프라 구축
-  - 핵심 플로우 테스트 템플릿 (login → content → review)
-  - 크로스 브라우저 지원 (Chromium, Firefox, WebKit)
-  - 모바일 뷰포트 테스트
+- ✅ **Phase 3 & v1.0 완료**: 프로덕션 준비
+  - React.lazy 코드 스플리팅 (70% 번들 감소)
+  - Tree shaking 검증
   - Redis throttle 캐시 프로덕션 설정 추가
+  - 보안 문서화 (SECURITY.md)
 
 **Infrastructure Completed**:
 - ✅ Security: Rate limiting using Redis (100/hr anon, 1000/hr user, 5/min login)

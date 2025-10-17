@@ -1,0 +1,10 @@
+# Development dependencies (not required for production)
+
+# Include all production requirements
+-r requirements.txt
+
+# Development-only tools
+django-debug-toolbar==4.2.0
+
+# Testing tools (already in main requirements.txt)
+# pytest, pytest-django, factory-boy, faker
