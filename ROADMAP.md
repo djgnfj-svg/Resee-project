@@ -75,10 +75,10 @@
 - [x] 캐싱 시스템 (locmem, 5000 max entries)
 
 #### 테스트 & 품질
-- [x] 95.7% 테스트 커버리지 (88/92 테스트 통과)
+- [x] 테스트 커버리지 (40/41 테스트 통과, 1개 security 테스트 실패)
 - [x] 린팅 설정 (ESLint, Black)
 - [x] TypeScript 타입 안전성
-- [x] React 성능 최적화 (25개 useMemo/useCallback/React.memo)
+- [x] React 성능 최적화 (React.lazy 코드 스플리팅, 18페이지)
 
 ### ⚠️ 부분 완성 (0%)
 
@@ -99,8 +99,9 @@
 **최종 업데이트**: 2025-10-17
 
 - [✅] **프론트엔드 최적화 완료**
-  - React.lazy 코드 스플리팅 (70% 번들 감소)
-  - Tree shaking 검증
+  - React.lazy 코드 스플리팅 (18페이지 lazy-loaded)
+  - Tree shaking 검증 (sideEffects 설정)
+  - 번들 최적화 (254 kB main + 27 chunks)
   - Production-ready 상태
 
 - [✅] **E2E 테스트 인프라 구축**

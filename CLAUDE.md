@@ -211,7 +211,7 @@ When adding new features:
 **Frontend**:
 - React Query for server state
 - Invalidate cache after mutations
-- Bundle size: ~283 kB
+- Bundle size: ~254 kB (main bundle, with 27 lazy-loaded chunks)
 
 ---
 
@@ -394,9 +394,10 @@ ENFORCE_EMAIL_VERIFICATION=True
 ```bash
 DJANGO_SETTINGS_MODULE=resee.settings.production
 DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/resee_prod
-REDIS_URL=redis://redis:6379/0
+# Note: REDIS_URL is set in docker-compose.yml (redis://redis:6379/0)
 ENFORCE_EMAIL_VERIFICATION=True
 ANTHROPIC_API_KEY=<required>
+SLACK_WEBHOOK_URL=<optional, for production alerts>
 
 # Toss Payments (activate after business registration)
 TOSS_CLIENT_KEY=<test_gck_docs_... or production key>
@@ -444,15 +445,15 @@ httpx==0.27.0
 - PostgreSQL 15
 - Celery + Redis
 - Gunicorn (1 worker, 2 threads)
-- pytest (95.7% coverage)
+- pytest (40/41 tests passing, 1 security test failing)
 - Stripe SDK (installed, not integrated)
 
 **Frontend**:
 - React 18 + TypeScript
 - React Query
 - Tailwind CSS
-- Bundle size: 283.14 kB
-- Performance: 25+ React optimization hooks
+- Bundle size: 254 kB (main) + 27 lazy-loaded chunks
+- Performance: React.lazy code splitting on 18 pages
 
 **Infrastructure**:
 - Docker Compose
@@ -494,9 +495,9 @@ httpx==0.27.0
 ### Latest Code Updates (2025-10)
 
 **Performance Optimizations**:
-- ✅ React.lazy code splitting: 70% main bundle reduction (283 kB → 84.21 kB)
-- ✅ Tree shaking: sideEffects configuration (additional 733 B reduction)
-- ✅ 18 pages lazy-loaded on demand (Playwright MCP verified)
+- ✅ React.lazy code splitting: 18 pages lazy-loaded on demand
+- ✅ Tree shaking: sideEffects configuration in package.json
+- ✅ Bundle optimization: 254 kB main bundle + 27 lazy-loaded chunks
 - ✅ LoadingFallback component for smooth UX
 - ✅ Rate limiting migrated to Redis
 - ✅ source-map-explorer for bundle analysis
@@ -535,11 +536,17 @@ httpx==0.27.0
   - Backend: checkout, confirm, webhook APIs
   - Frontend: CheckoutPage, PaymentSuccessPage, PaymentFailPage
   - Status: Code complete, awaiting business registration
-- ✅ **NEW (Phase 2)**: 운영 인프라 완성
+- ✅ **Phase 2 완료**: 운영 인프라
   - Logging system (JSON 포맷터, 4개 분리된 로그 파일)
   - Celery automated backup (pg_dump, gzip, 매일 새벽 3시)
   - Slack alert system (9+ 트리거, 테스트 완료)
   - Monitoring utilities (MetricsMonitor, SlackNotifier)
+- ✅ **Phase 3 & v1.0 완료**: E2E 인프라 및 프로덕션 준비
+  - Playwright E2E 테스트 인프라 구축
+  - 핵심 플로우 테스트 템플릿 (login → content → review)
+  - 크로스 브라우저 지원 (Chromium, Firefox, WebKit)
+  - 모바일 뷰포트 테스트
+  - Redis throttle 캐시 프로덕션 설정 추가
 
 **Infrastructure Completed**:
 - ✅ Security: Rate limiting using Redis (100/hr anon, 1000/hr user, 5/min login)
@@ -556,7 +563,7 @@ httpx==0.27.0
 
 **Partially Implemented**:
 - 📝 Payment system: Code complete, deferred until business registration (FREE tier strategy)
-- ✅ Frontend optimization: React.lazy code splitting complete (70% bundle reduction)
+- ✅ Frontend optimization: React.lazy code splitting complete (18 pages, 27 chunks)
 
 **Business Strategy**:
 - 🎯 Current: FREE tier only (max 3-day review intervals)
@@ -568,9 +575,9 @@ httpx==0.27.0
 - Single worker configuration (Gunicorn: 1 worker, 2 threads)
 - Simplified Docker networking
 - Celery Beat for scheduled tasks (backup, email reminders)
-- Test coverage: 95.7% (88/92 tests passing)
-- Frontend bundle: 84.21 kB main (70.9% reduction via React.lazy + tree shaking)
-- React performance: 25+ hooks + code splitting + tree shaking (18 lazy-loaded pages)
+- Test coverage: 40/41 tests passing (1 security test failing: test_token_blacklisted_on_password_change)
+- Frontend bundle: 254 kB main + 27 lazy-loaded chunks
+- React performance: React.lazy code splitting on 18 pages
 
 **Monitoring & Alerts**:
 - Logging: 4 separate log files (django, celery, security, error)
