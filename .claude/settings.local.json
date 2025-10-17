@@ -95,7 +95,8 @@
       "Bash(for i in {1..3})",
       "Bash(tee:*)",
       "Bash(timeout 30 npx playwright test --project=chromium --reporter=list)",
-      "Bash(timeout 40 npx playwright test --project=chromium --reporter=list)"
+      "Bash(timeout 40 npx playwright test --project=chromium --reporter=list)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

@@ -7,8 +7,9 @@ This file provides guidance to Claude Code when working with code in this reposi
 2. [Core Concepts](#core-concepts) - Understand the domain
 3. [Development Workflow](#development-workflow) - Daily commands and tasks
 4. [System Architecture](#system-architecture) - Technical structure
-5. [Reference](#reference) - Detailed specifications
-6. [Recent Changes](#recent-changes) - Latest updates
+5. [AI Services](#ai-services) - Anthropic Claude integration details
+6. [Reference](#reference) - Detailed specifications
+7. [Recent Changes](#recent-changes) - Latest updates
 
 ---
 
@@ -85,13 +86,14 @@ The system implements scientifically-proven intervals for optimal memory retenti
 
 ### Key Models
 
-- **Content**: User-created learning material
-- **ReviewSchedule**: Tracks next review date, interval_index
-- **ReviewHistory**: Performance records
+- **User**: Email-based authentication with hashed verification tokens (SHA-256)
+- **Content**: User-created learning material with AI validation
+- **ReviewSchedule**: Tracks next review date, interval_index, initial_review_completed
+- **ReviewHistory**: Performance records with AI scoring
 - **Subscription**: User tier (FREE/BASIC/PRO), billing cycles, auto-renewal
-- **PaymentHistory**: Payment records (upgrade/downgrade/cancellation)
+- **PaymentHistory**: Payment records (upgrade/downgrade/cancellation) with gateway IDs
 - **BillingSchedule**: Automated billing schedules for renewals
-- **NotificationPreference**: Email notification settings
+- **NotificationPreference**: Email notification settings with unsubscribe tokens
 
 ---
 
@@ -105,6 +107,8 @@ docker-compose up -d
 docker-compose down
 docker-compose logs -f backend
 docker-compose logs -f frontend
+docker-compose logs -f celery
+docker-compose logs -f celery-beat
 ```
 
 #### Backend Development
@@ -120,6 +124,11 @@ docker-compose exec backend python -m pytest --cov=. --cov-report=html
 # Shell
 docker-compose exec backend python manage.py shell_plus
 
+# Management Commands
+docker-compose exec backend python manage.py create_initial_users
+docker-compose exec backend python manage.py health_check
+docker-compose exec backend python manage.py rate_limit_status
+
 # Formatting
 docker-compose exec backend black .
 ```
@@ -134,8 +143,9 @@ docker-compose exec frontend npm run test:coverage
 docker-compose exec frontend npm run lint
 docker-compose exec frontend npm run typecheck
 
-# Build
+# Build & Analysis
 docker-compose exec frontend npm run build
+docker-compose exec frontend npm run analyze  # Bundle size analysis
 ```
 
 ### Key File Locations
@@ -143,55 +153,130 @@ docker-compose exec frontend npm run build
 #### Backend Critical Files
 ```
 backend/
-├── review/utils.py                    # Ebbinghaus algorithm
-├── content/signals.py                 # ReviewSchedule auto-creation
-├── accounts/models.py                 # Subscription, PaymentHistory models
-├── accounts/subscription/
-│   ├── toss_service.py                # Toss Payments API integration
-│   ├── subscription_views.py          # Payment APIs (checkout, confirm, webhook)
-│   └── billing_service.py             # Billing schedule automation
-├── review/tasks.py                    # Email reminder tasks
-├── content/ai_validation.py           # AI content validation
-├── review/ai_evaluation.py            # AI answer evaluation
-├── weekly_test/ai_service.py          # AI question generation
-└── resee/settings/
-    ├── base.py
-    ├── development.py
-    └── production.py
+├── review/
+│   ├── utils.py                       # Ebbinghaus algorithm, interval calculations
+│   ├── ai_evaluation.py               # AI answer evaluation (claude-3-haiku)
+│   ├── tasks.py                       # Email reminder tasks
+│   ├── backup_tasks.py                # Automated database backups
+│   └── services.py                    # Review business logic
+├── content/
+│   ├── signals.py                     # ReviewSchedule auto-creation
+│   └── ai_validation.py               # AI content validation (claude-3-5-sonnet)
+├── accounts/
+│   ├── models.py                      # User, Subscription, PaymentHistory, BillingSchedule
+│   ├── auth/
+│   │   ├── views.py                   # JWT login/logout/refresh
+│   │   ├── authentication.py          # JWT authentication classes
+│   │   └── middleware.py              # Auth middleware
+│   ├── subscription/
+│   │   ├── toss_service.py            # Toss Payments API integration
+│   │   ├── subscription_views.py      # Payment APIs (checkout, confirm, webhook)
+│   │   ├── billing_service.py         # Billing schedule automation
+│   │   └── services.py                # Subscription & permission logic
+│   ├── email/
+│   │   ├── email_service.py           # Email sending logic
+│   │   └── email_views.py             # Verification endpoints
+│   ├── health/
+│   │   ├── health_views.py            # Health check endpoints
+│   │   ├── monitoring_views.py        # Monitoring endpoints
+│   │   └── log_views.py               # Log viewing endpoints
+│   └── legal/
+│       └── legal_views.py             # Terms, privacy, GDPR compliance
+├── weekly_test/
+│   └── ai_service.py                  # AI question generation (claude-3-haiku)
+├── utils/
+│   ├── slack_notifications.py         # Slack alert integration
+│   └── monitoring.py                  # Metrics tracking utilities
+└── resee/
+    ├── settings/
+    │   ├── base.py                    # Common settings
+    │   ├── development.py             # Dev environment
+    │   └── production.py              # Production environment
+    ├── celery.py                      # Celery configuration
+    ├── throttling.py                  # Redis-based rate limiting
+    ├── structured_logging.py          # JSON logging formatters
+    ├── permissions.py                 # Custom DRF permissions
+    └── middleware.py                  # Custom middleware
 ```
 
 #### Frontend Critical Files
 ```
 frontend/src/
-├── utils/api.ts                       # JWT interceptor, API client
-├── pages/
+├── App.tsx                            # Main app with lazy loading (21 pages)
+├── index.tsx                          # Entry point with PWA setup
+├── utils/
+│   ├── api.ts                         # JWT interceptor, API client
+│   ├── api/
+│   │   ├── auth.ts                    # Authentication API
+│   │   ├── content.ts                 # Content API
+│   │   ├── review.ts                  # Review API
+│   │   ├── subscription.ts            # Subscription API
+│   │   ├── analytics.ts               # Analytics API
+│   │   └── weeklyTest.ts              # Weekly test API
+│   ├── sw-registration.ts             # PWA service worker setup
+│   ├── logger.ts                      # Client-side logging
+│   └── permissions.ts                 # Permission checks
+├── contexts/
+│   ├── AuthContext.tsx                # Authentication context
+│   └── ThemeContext.tsx               # Dark/light theme
+├── pages/ (21 pages, all lazy-loaded)
+│   ├── HomePage.tsx                   # Landing page
+│   ├── LoginPage.tsx                  # Login form
+│   ├── RegisterPage.tsx               # Registration
+│   ├── EmailVerificationPage.tsx      # Email verification
+│   ├── VerificationPendingPage.tsx    # Pending verification notice
 │   ├── DashboardPage.tsx              # Main dashboard
+│   ├── ContentPage.tsx                # Content list
+│   ├── CreateContentPage.tsx          # Content creation
+│   ├── EditContentPage.tsx            # Content editing
 │   ├── ReviewPage.tsx                 # Review interface
+│   ├── WeeklyTestPage.tsx             # Weekly tests
+│   ├── ProfilePage.tsx                # User profile
+│   ├── SettingsPage.tsx               # User settings
 │   ├── SubscriptionPage.tsx           # Subscription tiers, pricing
 │   ├── PaymentHistoryPage.tsx         # Payment records
 │   ├── CheckoutPage.tsx               # Toss Payments checkout
 │   ├── PaymentSuccessPage.tsx         # Payment confirmation
 │   ├── PaymentFailPage.tsx            # Payment error handling
-│   └── SettingsPage.tsx               # User settings
+│   ├── NotFoundPage.tsx               # 404 page
+│   ├── TermsPage.tsx                  # Terms of service
+│   └── PrivacyPage.tsx                # Privacy policy
 ├── components/
-│   ├── review/ReviewControls.tsx      # Review buttons
-│   └── subscription/TierCard.tsx      # Subscription tier cards
-└── types/                             # TypeScript definitions
+│   ├── review/
+│   │   ├── ReviewCard.tsx             # Review content card
+│   │   ├── ReviewControls.tsx         # Review action buttons
+│   │   ├── ReviewHeader.tsx           # Review page header
+│   │   └── UpgradeModal.tsx           # Tier upgrade prompt
+│   ├── subscription/
+│   │   ├── TierCard.tsx               # Subscription tier cards
+│   │   └── BillingToggle.tsx          # Monthly/yearly toggle
+│   ├── dashboard/
+│   │   ├── DashboardStats.tsx         # Statistics display
+│   │   ├── QuickActions.tsx           # Quick action buttons
+│   │   └── LearningTips.tsx           # Learning recommendations
+│   ├── LoadingFallback.tsx            # Suspense loading component
+│   ├── ProtectedRoute.tsx             # Auth route wrapper
+│   └── ErrorBoundary.tsx              # Error boundary
+└── types/
+    ├── index.ts                       # TypeScript type definitions
+    └── tosspayments.d.ts              # Toss Payments SDK types
 ```
 
 #### Configuration
 ```
-docker-compose.yml                     # Development
-docker-compose.prod.yml                # Production
-.env                                   # Development vars
-.env.prod                              # Production vars
-backend/resee/celery.py                # Celery config
+docker-compose.yml                     # Development (runserver, npm start)
+docker-compose.prod.yml                # Production (gunicorn, nginx static)
+.env                                   # Development environment variables
+.env.prod                              # Production environment variables
+.env.example                           # Template for environment setup
+backend/resee/celery.py                # Celery config (broker, beat scheduler)
+frontend/package.json                  # Tree shaking (sideEffects), scripts
 ```
 
 ### Feature Development Checklist
 
 When adding new features:
-- [ ] Check subscription tier restrictions
+- [ ] Check subscription tier restrictions (`PermissionService`)
 - [ ] Add rate limiting if needed (Django REST throttling)
 - [ ] Update TypeScript types (`frontend/src/types/`)
 - [ ] Invalidate React Query cache after mutations
@@ -199,19 +284,23 @@ When adding new features:
 - [ ] Implement pagination (20 items/page)
 - [ ] Add tests (70% coverage minimum)
 - [ ] Run linting: `npm run lint` and `black .`
+- [ ] Check AI service availability if using AI features
 
 ### Performance Guidelines
 
 **Backend**:
 - Use `select_related()` for ForeignKey
 - Use `prefetch_related()` for ManyToMany
-- Cache expensive operations (24h TTL)
-- Single Gunicorn worker with 2 threads
+- Cache expensive operations with locmem cache (24h TTL)
+- Single Gunicorn worker with 2 threads (configured)
+- Monitor throttle cache usage (Redis)
 
 **Frontend**:
-- React Query for server state
+- React Query for server state (retry: 1, refetchOnWindowFocus: false)
 - Invalidate cache after mutations
 - Bundle size: ~254 kB (main bundle, with 27 lazy-loaded chunks)
+- All 21 pages use React.lazy() for code splitting
+- Tree shaking enabled via sideEffects config
 
 ---
 
@@ -222,159 +311,337 @@ When adding new features:
 **Django Apps**:
 ```
 accounts/
-├── auth/                    # JWT authentication, login/logout
-├── subscription/            # Tier management, upgrade/downgrade
-│   ├── subscription_views.py    # Upgrade, cancel, payment history
+├── auth/                    # JWT authentication, login/logout/refresh
+├── subscription/            # Tier management, upgrade/downgrade, billing
+│   ├── subscription_views.py    # Payment APIs (checkout, confirm, webhook)
 │   ├── billing_service.py       # Automated billing schedules
-│   └── services.py             # Subscription logic
-├── legal/                   # GDPR compliance, privacy
-├── email/                   # Email verification
-└── health/                  # Health checks
+│   ├── toss_service.py          # Toss Payments integration (httpx)
+│   └── services.py              # SubscriptionService, PermissionService
+├── legal/                   # GDPR compliance, privacy, terms
+├── email/                   # Email verification, password reset
+└── health/                  # Health checks (/api/health/, /api/health/detailed/)
 
-content/                     # Learning material CRUD
-review/                      # Review system, scheduling
-analytics/                   # Performance metrics
-weekly_test/                 # AI-generated tests
+content/                     # Learning material CRUD, AI validation
+review/                      # Review system, scheduling, AI evaluation, backups
+analytics/                   # Performance metrics, progress tracking
+weekly_test/                 # AI-generated tests, question generation
+utils/                       # Slack notifications, monitoring utilities
 ```
 
 **Design Patterns**:
 - RESTful API architecture
 - Signal-based automation (content → ReviewSchedule)
 - Decorator-based permission checks (`@has_subscription_permission`)
-- Celery for async tasks
+- Celery for async tasks (email, backups)
+- Service layer pattern (SubscriptionService, PermissionService)
+- Singleton pattern for AI services
 
 ### Frontend Structure
 
 **Technology Stack**:
-- React 18 + TypeScript
-- React Query for state management
-- Tailwind CSS for styling
-- Component-based architecture
+- React 18.2.0 + TypeScript 4.9.3
+- React Query 4.16.1 for state management
+- Tailwind CSS 3.2.4 for styling
+- TipTap 3.0.7 for rich text editing
+- Toss Payments Widget SDK 0.12.0
+
+**Architecture**:
+- Component-based with feature-based organization
+- Lazy loading for all 21 pages
+- Context API for global state (Auth, Theme)
+- React Query for server state
+- Modular API clients (`utils/api/`)
 
 **State Management**:
-- Server state: React Query
-- Auth state: JWT tokens in memory
-- Local state: React hooks
+- Server state: React Query (queries, mutations)
+- Auth state: JWT tokens in memory (api.ts)
+- Theme state: Context API with localStorage
+- Local state: React hooks (useState, useReducer)
+
+**PWA Features**:
+- Service worker registration (`sw-registration.ts`)
+- Install prompt management
+- Network status tracking
+- App update management
+- Offline capability
 
 ### Integration Points
 
 #### Authentication Flow
 ```
-Login → JWT tokens (access + refresh)
-→ Store in memory (api.ts)
-→ Interceptor adds Authorization header
-→ Auto-refresh on 401
-→ Subscription tier checked per request
+1. Login Request
+   → POST /api/accounts/auth/login/
+   → Backend validates credentials
+   → Returns access + refresh JWT tokens
+
+2. Token Storage
+   → Store in memory (api.ts interceptor)
+   → No localStorage (security)
+   → Auto-add Authorization header
+
+3. Token Refresh
+   → Interceptor detects 401
+   → Call /api/accounts/auth/refresh/
+   → Update access token
+   → Retry original request
+
+4. Permission Check
+   → @has_subscription_permission decorator
+   → Check user tier per request
+   → Return 403 if insufficient tier
 ```
 
 **Implementation**:
-- Frontend: `utils/api.ts` JWT interceptor
-- Backend: `accounts/auth/` views
-- Token refresh: `refreshAuthToken()`
-- Permission check: `has_subscription_permission()` decorator
+- Frontend: `utils/api.ts` (JWT interceptor with auto-refresh)
+- Backend: `accounts/auth/views.py` (login, logout, refresh, verify)
+- Middleware: `accounts/auth/middleware.py` (token validation)
+- Permission: `resee/permissions.py` (tier-based access control)
 
 #### Review System Integration
 ```
 Frontend (ReviewPage.tsx)
 → GET /api/review/today/
-→ Display content
+→ Display content with ReviewCard
 → User submits review
 → POST /api/review/{id}/submit/
 → Backend updates interval_index
 → calculate_next_review_date()
+→ Create ReviewHistory record
+→ Update analytics
 → Return next review date
 ```
 
 **Key Files**:
 - Frontend: `pages/ReviewPage.tsx`, `components/review/ReviewControls.tsx`
-- Backend: `review/views.py`, `review/utils.py`
-- Model: `review/models.py:ReviewSchedule`
+- Backend: `review/views.py`, `review/utils.py`, `review/services.py`
+- Models: `review/models.py:ReviewSchedule`, `review/models.py:ReviewHistory`
 
 #### Email Notifications
 ```
-User enables notifications (NotificationPreference)
-→ Celery periodic task runs daily
+User Configuration
+→ NotificationPreference model
+→ daily_reminder_enabled, evening_reminder_enabled
+→ Unsubscribe token (64 chars, unique)
+
+Celery Beat Schedule
+→ Daily task at configured times
 → Query users with reviews due + notifications enabled
-→ Send email via Django email backend
+→ Send personalized emails via Django email backend
+
+Email Content
+→ Review count, due items list
+→ Unsubscribe link with token
+→ Support for Gmail SMTP
 ```
 
 **Implementation**:
 - Model: `accounts/models.py:NotificationPreference`
 - Task: `review/tasks.py:send_individual_review_reminder`
 - API: `/api/accounts/notification-preferences/`
-- Background: Celery + Redis
-
-#### AI Services
-```
-Content Creation
-→ Validate via Claude API (ai_validation.py)
-→ Check factual accuracy, relevance
-
-Review Submission
-→ Evaluate answer via Claude API (ai_evaluation.py)
-→ Score 0-100, provide feedback
-
-Weekly Test
-→ Generate questions via Claude API (ai_service.py)
-→ Multiple choice from content
-```
+- Background: Celery Beat + Redis broker
+- Scheduler: DatabaseScheduler (django-celery-beat)
 
 #### Payment System Integration
 ```
-User Flow (when business registration complete):
+Implementation (not activated - FREE tier only):
 1. SubscriptionPage: User clicks "구독하기"
-   → FREE tier: Password verification
-   → BASIC/PRO tier: Redirect to /payment/checkout
+   → FREE tier: Password verification only
+   → BASIC/PRO tier: Would redirect to /payment/checkout (disabled)
 
-2. CheckoutPage
+2. Payment Flow (implemented but inactive)
    → POST /api/accounts/payment/checkout/
-   → Backend creates PaymentHistory (pending)
-   → Load Toss Payment Widget SDK
-   → Render payment methods
-
-3. User Completes Payment
-   → Toss processes payment
-   → Success: /payment/success?paymentKey=xxx&orderId=xxx
-   → Fail: /payment/fail?code=xxx&message=xxx
-
-4. PaymentSuccessPage
-   → POST /api/accounts/payment/confirm/
-   → Backend calls Toss confirm API
-   → Update Subscription tier
-   → Update PaymentHistory (completed)
-   → Create BillingSchedule
-   → Redirect to /subscription
-
-5. Webhook (Background)
-   → POST /api/accounts/payment/webhook/
-   → Process PAYMENT_CONFIRMED/CANCELED events
-   → Update PaymentHistory notes
+   → Toss Payment Widget SDK integration
+   → Confirm API (toss_service.py)
+   → Webhook for payment events
 ```
 
 **Key Files**:
-- Backend: `accounts/subscription/toss_service.py`, `subscription_views.py`
-- Frontend: `pages/CheckoutPage.tsx`, `PaymentSuccessPage.tsx`, `PaymentFailPage.tsx`
+- Backend:
+  * `accounts/subscription/toss_service.py` (API integration, httpx client)
+  * `accounts/subscription/subscription_views.py` (checkout, confirm, webhook)
+  * `accounts/subscription/billing_service.py` (schedule automation)
+- Frontend:
+  * `pages/CheckoutPage.tsx` (Widget SDK integration)
+  * `pages/PaymentSuccessPage.tsx` (Confirm & redirect)
+  * `pages/PaymentFailPage.tsx` (Error handling)
 - Routes: `/api/accounts/payment/{checkout,confirm,webhook}/`
 
-**Current Status**: Code complete, awaiting business registration for activation.
+**Current Status**: Toss Payments integration is code complete but not activated (FREE tier only strategy).
 
 ### Infrastructure
 
 **Docker Compose Services**:
-- `backend`: Django + Gunicorn
-- `frontend`: React dev server (dev) / Nginx static (prod)
-- `postgres`: PostgreSQL 15
-- `redis`: Celery broker
-- `celery`: Background workers
-- `nginx`: Reverse proxy (production-like)
+- `backend`: Django + runserver (dev) / Gunicorn (prod)
+- `frontend`: npm start (dev) / Nginx static (prod)
+- `postgres`: PostgreSQL 15 with healthcheck
+- `redis`: Redis 7-alpine for Celery + throttling
+- `celery`: Background workers (email, AI tasks)
+- `celery-beat`: Scheduled tasks with DatabaseScheduler
+- `nginx`: Reverse proxy (port 80, production-like)
 
 **Database & Cache**:
 - PostgreSQL 15 (local Docker)
   - Development: `resee_dev`
   - Production: `resee_prod`
-- Redis (Docker)
-  - Database 0: Rate limiting + Celery broker
-  - Locmem cache: General application cache (5000 entries)
+  - Healthcheck: pg_isready
+- Redis (Docker, port 6379)
+  - Database 0: Celery broker + rate limiting cache
+  - Healthcheck: redis-cli ping
+- Cache Configuration:
+  - **Default cache**: locmem (5000 max entries, cull frequency 4)
+  - **Throttle cache**: Redis (50 max connections, 5s timeout)
+
+---
+
+## AI Services
+
+### Overview
+
+All AI features use **Anthropic Claude API** with different models optimized for specific tasks:
+
+**Models Used**:
+1. **Content Validation**: `claude-3-5-sonnet-20241022` (high accuracy)
+2. **Answer Evaluation**: `claude-3-haiku-20240307` (cost-efficient)
+3. **Question Generation**: `claude-3-haiku-20240307` (cost-efficient)
+
+### 1. Content Validation
+
+**File**: `backend/content/ai_validation.py`
+
+**Model**: `claude-3-5-sonnet-20241022` (temperature: 0.3, max_tokens: 2000)
+
+**Validation Checks**:
+- **Factual Accuracy** (0-100): Objective correctness, misinformation detection
+- **Logical Consistency** (0-100): Logical flow, contradiction detection
+- **Title Relevance** (0-100): Title-content alignment
+
+**Response Format**:
+```python
+{
+  "is_valid": True/False,  # All scores ≥70
+  "factual_accuracy": {
+    "score": 0-100,
+    "issues": ["issue1", "issue2"]
+  },
+  "logical_consistency": {
+    "score": 0-100,
+    "issues": []
+  },
+  "title_relevance": {
+    "score": 0-100,
+    "issues": []
+  },
+  "overall_feedback": "Summary feedback (2-3 sentences)"
+}
+```
+
+**Usage**:
+```python
+from content.ai_validation import validate_content
+
+result = validate_content(title="Python Basics", content="...")
+if result["is_valid"]:
+    # Proceed with content creation
+```
+
+### 2. Answer Evaluation
+
+**File**: `backend/review/ai_evaluation.py`
+
+**Model**: `claude-3-haiku-20240307` (temperature: 0.3, max_tokens: 500)
+
+**Features**:
+- **Invalid Answer Detection**: Spam, numbers-only, meaningless chars → 0 points
+- **Scoring Criteria**:
+  * 0: Invalid/spam answers
+  * 1-49: Poor understanding, major gaps
+  * 50-69: Fair understanding, important gaps
+  * 70-89: Good understanding, minor gaps
+  * 90-100: Excellent understanding, complete
+
+**Response Format**:
+```python
+{
+  "score": 0-100,
+  "evaluation": "excellent|good|fair|poor",
+  "feedback": "Detailed feedback in Korean",
+  "auto_result": "remembered|forgot"  # 70+ = remembered
+}
+```
+
+**Singleton Instance**:
+```python
+from review.ai_evaluation import ai_answer_evaluator
+
+if ai_answer_evaluator.is_available():
+    result = ai_answer_evaluator.evaluate_answer(
+        content_title="Title",
+        content_body="Content...",
+        user_answer="User's answer..."
+    )
+```
+
+### 3. Question Generation
+
+**File**: `backend/weekly_test/ai_service.py`
+
+**Model**: `claude-3-haiku-20240307` (temperature: 0.3, max_tokens: 1000)
+
+**Question Types**:
+- **Multiple Choice**: 4 options, one correct answer
+- **True/False**: O/X format
+
+**Response Format**:
+```python
+{
+  "question_type": "multiple_choice|true_false",
+  "question_text": "Clear question statement",
+  "choices": ["Option 1", "Option 2", "Option 3", "Option 4"],  # or null for true/false
+  "correct_answer": "Exact correct answer",
+  "explanation": "Brief explanation"
+}
+```
+
+**Validation**:
+- Required fields: question_type, question_text, correct_answer, explanation
+- Multiple choice: Must have 4 choices, answer in choices
+- True/false: Answer normalized to O/X
+
+**Singleton Instance**:
+```python
+from weekly_test.ai_service import ai_question_generator
+
+if ai_question_generator.is_available():
+    question = ai_question_generator.generate_question(content)
+
+    # Batch generation
+    questions = ai_question_generator.generate_batch_questions(content_list)
+```
+
+### AI Service Configuration
+
+**Environment Variable**:
+```bash
+ANTHROPIC_API_KEY=sk-ant-api...  # Required
+```
+
+**API Key Validation**:
+- Must start with `sk-ant-api`
+- Minimum length: 20 characters
+- Validated on initialization
+
+**Error Handling**:
+- AuthenticationError: Invalid API key
+- RateLimitError: API quota exceeded
+- APIConnectionError: Network issues
+- APITimeoutError: Request timeout
+- All errors logged with context
+
+**Requirements**:
+```python
+anthropic==0.39.0
+httpx==0.27.0  # For Toss Payments, compatible with Anthropic
+```
 
 ---
 
@@ -384,96 +651,220 @@ User Flow (when business registration complete):
 
 **Development (`.env`)**:
 ```bash
+# Django Core
+SECRET_KEY=your-secret-key
+DEBUG=True
 DJANGO_SETTINGS_MODULE=resee.settings.development
+ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+
+# Database
 DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/resee_dev
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres123
+POSTGRES_DB=resee_dev
+
+# Redis (set in docker-compose.yml)
+# REDIS_URL=redis://redis:6379/0
+
+# Email Verification
 ENFORCE_EMAIL_VERIFICATION=True
-# REDIS_URL set in docker-compose.yml
+EMAIL_VERIFICATION_TIMEOUT_DAYS=1
+
+# Frontend
+FRONTEND_URL=http://localhost
+REACT_APP_API_URL=/api
+
+# AI Services
+ANTHROPIC_API_KEY=your-anthropic-api-key
+
+# Optional
+SLACK_WEBHOOK_URL=your-slack-webhook
+GOOGLE_OAUTH2_CLIENT_ID=your-google-client-id
 ```
 
 **Production (`.env.prod`)**:
 ```bash
+# Django Core
+SECRET_KEY=your-production-secret-key
+DEBUG=False
 DJANGO_SETTINGS_MODULE=resee.settings.production
-DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/resee_prod
-# Note: REDIS_URL is set in docker-compose.yml (redis://redis:6379/0)
-ENFORCE_EMAIL_VERIFICATION=True
-ANTHROPIC_API_KEY=<required>
-SLACK_WEBHOOK_URL=<optional, for production alerts>
+ALLOWED_HOSTS=yourdomain.com
+CSRF_TRUSTED_ORIGINS=https://yourdomain.com
 
-# Toss Payments (activate after business registration)
-TOSS_CLIENT_KEY=<test_gck_docs_... or production key>
-TOSS_SECRET_KEY=<test_gsk_docs_... or production key>
-TOSS_API_URL=https://api.tosspayments.com
+# Database
+DATABASE_URL=postgresql://postgres:secure_password@postgres:5432/resee_prod
+
+# Redis (set in docker-compose.yml)
+# REDIS_URL=redis://redis:6379/0
+
+# Email Verification
+ENFORCE_EMAIL_VERIFICATION=True
+
+# AI Services (Required)
+ANTHROPIC_API_KEY=your-anthropic-api-key
+
+# Monitoring (Optional)
+SLACK_WEBHOOK_URL=your-slack-webhook-url
+SLACK_DEFAULT_CHANNEL=#alerts
+
+# Toss Payments (not activated - FREE tier only)
+# TOSS_CLIENT_KEY=test_gck_docs_... or live_gck_...
+# TOSS_SECRET_KEY=test_gsk_docs_... or live_gsk_...
+# TOSS_API_URL=https://api.tosspayments.com
+
+# Email (Production)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
 ```
 
 **Frontend (docker-compose.yml)**:
 ```bash
 REACT_APP_API_URL=/api  # Proxied through Nginx
-REACT_APP_GOOGLE_CLIENT_ID=<optional>
+REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id (optional)
 ```
 
-### AI Features
+### API Endpoints
 
-All AI features use **Anthropic Claude API**:
+**Authentication**:
+- `POST /api/accounts/auth/login/` - JWT login
+- `POST /api/accounts/auth/logout/` - Logout (blacklist token)
+- `POST /api/accounts/auth/refresh/` - Refresh access token
+- `POST /api/accounts/auth/register/` - User registration
+- `POST /api/accounts/auth/verify-token/` - Verify JWT token
 
-**1. Content Validation** (`content/ai_validation.py`):
-- Factual accuracy check
-- Logical consistency
-- Title relevance validation
+**Content**:
+- `GET /api/content/` - List user content (paginated)
+- `POST /api/content/` - Create content (with AI validation)
+- `GET /api/content/{id}/` - Retrieve content
+- `PUT /api/content/{id}/` - Update content
+- `DELETE /api/content/{id}/` - Delete content
 
-**2. Answer Evaluation** (`review/ai_evaluation.py`):
-- Subjective answer scoring (0-100)
-- Detailed feedback generation
-- Invalid answer detection (spam → 0 points)
+**Review**:
+- `GET /api/review/today/` - Get today's reviews
+- `POST /api/review/{id}/submit/` - Submit review (with AI evaluation)
+- `GET /api/review/history/` - Review history
 
-**3. Question Generation** (`weekly_test/ai_service.py`):
-- Auto-generate multiple choice questions
-- Based on user's content library
+**Subscription**:
+- `GET /api/accounts/subscription/` - Current subscription
+- `POST /api/accounts/subscription/upgrade/` - Upgrade tier
+- `POST /api/accounts/subscription/cancel/` - Cancel subscription
+- `GET /api/accounts/payment-history/` - Payment records
 
-**Requirements**:
-```python
-anthropic==0.39.0
-httpx==0.27.0
-```
+**Payment (Toss)**:
+- `POST /api/accounts/payment/checkout/` - Create payment
+- `POST /api/accounts/payment/confirm/` - Confirm payment
+- `POST /api/accounts/payment/webhook/` - Payment webhook
 
-**Environment**: `ANTHROPIC_API_KEY` required
+**Health**:
+- `GET /api/health/` - Basic health check
+- `GET /api/health/detailed/` - Detailed system health (DB, Redis, Celery)
+
+**Analytics**:
+- `GET /api/analytics/stats/` - User learning stats
+- `GET /api/analytics/progress/` - Progress over time
+
+### Security Configuration
+
+**Rate Limiting** (Redis-based DRF throttling):
+- Anonymous: **100 requests/hour**
+- Authenticated: **1000 requests/hour**
+- Login: **5 requests/minute**
+- Registration: **3 requests/minute**
+
+**Throttle Classes**:
+- `resee.throttling.RedisAnonRateThrottle`
+- `resee.throttling.RedisUserRateThrottle`
+
+**Security Headers**:
+- XSS Protection: `X-XSS-Protection: 1; mode=block`
+- HSTS: Enabled (max-age: 31536000)
+- X-Frame-Options: `DENY`
+- Content-Type-Options: `nosniff`
+- CSP: Configured for scripts, styles
+
+**Authentication Security**:
+- Email verification token: SHA-256 hashed
+- Token comparison: Constant-time (`secrets.compare_digest`)
+- JWT tokens: Stored in memory (not localStorage)
+- Password: Django's PBKDF2 hasher
+- CSRF protection: Enabled for state-changing requests
+
+**Session & Cookies**:
+- CSRF cookie: HttpOnly, Secure (production)
+- Session cookie: HttpOnly, Secure (production)
+- SameSite: Lax
 
 ### Technical Stack
 
 **Backend**:
-- Django 4.2
-- Django REST Framework
+- Django 4.2 (Python 3.11)
+- Django REST Framework 3.14
 - PostgreSQL 15
-- Celery + Redis
+- Redis 7-alpine
+- Celery 5.3 + django-celery-beat
 - Gunicorn (1 worker, 2 threads)
-- pytest (40/41 tests passing, 1 security test failing)
-- Stripe SDK (installed, not integrated)
+- pytest (40/41 tests passing)
+- Anthropic SDK 0.39.0
 
 **Frontend**:
-- React 18 + TypeScript
-- React Query
-- Tailwind CSS
-- Bundle size: 254 kB (main) + 27 lazy-loaded chunks
-- Performance: React.lazy code splitting on 18 pages
+- React 18.2.0 + TypeScript 4.9.3
+- TanStack React Query 4.16.1
+- Tailwind CSS 3.2.4
+- TipTap 3.0.7 (rich text editor)
+- Toss Payments Widget SDK 0.12.0
+- Bundle: 254 kB (main) + 27 lazy-loaded chunks
+- 21 pages with React.lazy() code splitting
 
 **Infrastructure**:
-- Docker Compose
-- Nginx (reverse proxy)
+- Docker Compose (development & production)
+- Nginx (reverse proxy, static files)
 - PostgreSQL (local Docker)
-- Redis (Celery broker)
+- Redis (Celery broker, throttle cache)
 - GitHub Actions CI/CD
+- CloudFlare (HTTPS, CDN)
 
 **Database Optimization**:
-- ReviewSchedule: 3 indexes (user+date+active, date, user+active)
-- ReviewHistory: 4 indexes
-- Content: 3 indexes (author+created, category+created)
-- Caching: Redis for rate limiting, locmem for general cache (5000 max entries)
+- **ReviewSchedule**: 3 indexes
+  * `user + next_review_date + is_active`
+  * `next_review_date`
+  * `user + is_active`
+- **ReviewHistory**: 4 indexes
+- **Content**: 3 indexes
+  * `author + created_at`
+  * `category + created_at`
+- **Cache**: Redis (throttle) + locmem (default, 5000 entries)
 
-**Security**:
-- Rate limiting: Redis-based DRF throttling (100/hr anon, 1000/hr user, 5/min login)
-- Security headers (XSS, HSTS, X-Frame-Options, CSP)
-- CORS policy enforced
-- HTTPS via CloudFlare
-- Session/CSRF cookie security
+### Logging & Monitoring
+
+**Structured Logging** (JSON format):
+- **django.log**: General application logs (10MB, 5 backups)
+- **celery.log**: Celery task logs
+- **security.log**: Authentication, permission errors
+- **error.log**: Error-level logs only
+
+**Slack Alerts** (9+ triggers):
+- Database connection failures
+- Redis connection failures
+- Disk space warnings (>80%)
+- Celery worker failures
+- Backup failures/successes
+- Payment failures
+- API performance issues (>2s response)
+- High error rates (>10/min)
+- Health check failures
+
+**Monitoring Utilities**:
+- `backend/utils/slack_notifications.py`: SlackNotifier class
+- `backend/utils/monitoring.py`: MetricsMonitor class
+- Celery Beat: Automated backups (daily 3am, pg_dump + gzip)
+
+**Health Checks**:
+- `/api/health/`: Basic (DB ping)
+- `/api/health/detailed/`: Full (DB, Redis, Celery, Disk)
+- Docker healthchecks: PostgreSQL, Redis, Backend
 
 ### Emoji Guidelines
 
@@ -485,17 +876,17 @@ httpx==0.27.0
 
 **Benefits**:
 - Professional appearance
-- Better accessibility
+- Better accessibility (screen readers)
 - Improved code readability
 
 ---
 
 ## Recent Changes
 
-### Latest Code Updates (2025-10)
+### Latest Code Updates (2025-10-17)
 
 **Performance Optimizations**:
-- ✅ React.lazy code splitting: 18 pages lazy-loaded on demand
+- ✅ React.lazy code splitting: **21 pages** lazy-loaded on demand
 - ✅ Tree shaking: sideEffects configuration in package.json
 - ✅ Bundle optimization: 254 kB main bundle + 27 lazy-loaded chunks
 - ✅ LoadingFallback component for smooth UX
@@ -505,83 +896,73 @@ httpx==0.27.0
 **UX Improvements**:
 - Subjective review: Removed auto-advance, added user-controlled "Next" button
 - ReviewCard layout: Answer-first display for better readability
+- PWA features: Service worker, install prompt, offline support
 
 **AI Enhancements**:
 - Added invalid answer detection (spam → 0 points)
 - Fixed AI service initialization (httpx compatibility)
 - Improved weekly test question generation
+- Documented AI models: claude-3-5-sonnet (validation), claude-3-haiku (evaluation, questions)
 
 **Bug Fixes**:
 - Fixed ReviewHistory null constraint
 - Resolved Celery healthcheck issues
+- Fixed AI service singleton initialization
 
 **Infrastructure**:
+- Added celery-beat with DatabaseScheduler
 - Removed obsolete management commands
 - Optimized frontend with component separation
-- Improved logging structure
-- Redis-based rate limiting
+- Improved logging structure (4 separate log files)
+- Redis-based rate limiting with detailed configuration
+
+**Documentation**:
+- Comprehensive AI services section
+- Detailed environment variable guide
+- Complete API endpoint reference
+- Security configuration details
+- Corrected page count (21 pages, added EditContentPage)
 
 ### System Status
 
 **All Core Systems Operational**:
-- ✅ AI services (validation, evaluation, questions)
-- ✅ Celery background tasks
+- ✅ AI services (validation: claude-3-5-sonnet, evaluation/questions: claude-3-haiku)
+- ✅ Celery background tasks (worker + beat)
 - ✅ Review system (Ebbinghaus algorithm)
-- ✅ Email notifications
-- ✅ API endpoints
+- ✅ Email notifications (Celery Beat scheduled)
+- ✅ API endpoints (health checks, detailed monitoring)
 - ✅ Subscription management (UI + backend logic)
 - ✅ Payment history tracking
 - ✅ Billing schedule automation
-- ✅ Toss Payments integration (full-stack implementation)
-  - Backend: checkout, confirm, webhook APIs
-  - Frontend: CheckoutPage, PaymentSuccessPage, PaymentFailPage
-  - Status: Code complete, awaiting business registration
-- ✅ **Phase 2 완료**: 운영 인프라
-  - Logging system (JSON 포맷터, 4개 분리된 로그 파일)
-  - Celery automated backup (pg_dump, gzip, 매일 새벽 3시)
-  - Slack alert system (9+ 트리거, 테스트 완료)
-  - Monitoring utilities (MetricsMonitor, SlackNotifier)
-- ✅ **Phase 3 & v1.0 완료**: 프로덕션 준비
-  - React.lazy 코드 스플리팅 (70% 번들 감소)
-  - Tree shaking 검증
-  - Redis throttle 캐시 프로덕션 설정 추가
-  - 보안 문서화 (SECURITY.md)
+- ✅ Toss Payments integration (code complete, not activated - FREE tier only)
 
 **Infrastructure Completed**:
-- ✅ Security: Rate limiting using Redis (100/hr anon, 1000/hr user, 5/min login)
+- ✅ Security: Rate limiting using Redis (100/hr anon, 1000/hr user, 5/min login, 3/min registration)
 - ✅ Security headers (XSS, HSTS, X-Frame-Options, Content-Type-Nosniff)
 - ✅ CORS configuration
 - ✅ Structured logging (RotatingFileHandler, 10MB, 5 backups)
 - ✅ Database indexes (ReviewSchedule: 3, ReviewHistory: 4, Content: 3)
-- ✅ Caching system (Redis for rate limiting, locmem for general cache)
+- ✅ Caching system (Redis: throttle + Celery, locmem: general cache, 5000 max)
 - ✅ CI/CD pipeline (GitHub Actions: tests, linting, deployment)
 - ✅ Session/CSRF cookie security
-- ✅ Celery automated backup (pg_dump + gzip, 매일 새벽 3시, Slack 알림)
+- ✅ Celery automated backup (pg_dump + gzip, daily 3am, Slack alerts)
 - ✅ Slack alert system (health, backup, payment, API performance)
 - ✅ Monitoring utilities (backend/utils/slack_notifications.py, monitoring.py)
-
-**Partially Implemented**:
-- 📝 Payment system: Code complete, deferred until business registration (FREE tier strategy)
-- ✅ Frontend optimization: React.lazy code splitting complete (18 pages, 27 chunks)
-
-**Business Strategy**:
-- 🎯 Current: FREE tier only (max 3-day review intervals)
-- 📝 Future: After user acquisition → Business registration → Activate paid tiers (BASIC/PRO)
-- 💡 Reasoning: Complete payment infrastructure in place, ready to activate when viable
+- ✅ PWA features (service worker, install prompt, offline, updates)
 
 **Configuration**:
-- Local PostgreSQL for dev and prod
+- Local PostgreSQL for dev (resee_dev) and prod (resee_prod)
 - Single worker configuration (Gunicorn: 1 worker, 2 threads)
 - Simplified Docker networking
-- Celery Beat for scheduled tasks (backup, email reminders)
+- Celery Beat with DatabaseScheduler for scheduled tasks
 - Test coverage: 40/41 tests passing (1 security test failing: test_token_blacklisted_on_password_change)
 - Frontend bundle: 254 kB main + 27 lazy-loaded chunks
-- React performance: React.lazy code splitting on 18 pages
+- React performance: 21 pages with React.lazy code splitting
 
 **Monitoring & Alerts**:
 - Logging: 4 separate log files (django, celery, security, error)
 - Slack alerts: ✅ **Active & Tested** - Database, Redis, Disk, Celery, Backup, Payment failures
 - Celery backup: ✅ **Operational** - Daily 3am via Celery Beat, Slack notifications
-- Health check: `/api/health/` (basic), `/api/health/detailed/` (full)
+- Health check: `/api/health/` (basic), `/api/health/detailed/` (full system)
 - Metrics tracking: API performance, error rates, payment failures
-- **Status**: Fully operational & tested (2025-10-15)
+- **Status**: Fully operational & tested (2025-10-17)
