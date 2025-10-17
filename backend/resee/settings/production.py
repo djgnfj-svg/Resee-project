@@ -47,7 +47,7 @@ USE_X_FORWARDED_PORT = True
 
 # Database configuration will be set at the end of this file
 
-# Cache settings - Local Memory Cache (No Redis needed)
+# Cache settings - Local Memory Cache for general use + Redis for rate limiting
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -59,6 +59,22 @@ CACHES = {
         'KEY_PREFIX': 'resee_prod',
         'TIMEOUT': 300,
         'VERSION': 1,
+    },
+    # Redis cache for rate limiting
+    'throttle': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.environ.get('REDIS_URL', 'redis://redis:6379/0'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_CLASS_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+            },
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+        },
+        'KEY_PREFIX': 'throttle',
+        'TIMEOUT': 3600,  # 1 hour default
     }
 }
 
