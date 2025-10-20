@@ -93,8 +93,8 @@ def backup_database(self, environment='production'):
                     level='error',
                     title='Backup Failed'
                 )
-            except:
-                pass
+            except Exception as slack_error:
+                logger.warning(f"Failed to send Slack notification: {slack_error}")
 
             raise Exception(f"Backup failed: {error_msg}")
 

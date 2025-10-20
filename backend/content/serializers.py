@@ -95,5 +95,8 @@ class ContentSerializer(serializers.ModelSerializer):
         try:
             schedule = obj.review_schedules.filter(user=self.context['request'].user).first()
             return schedule.next_review_date if schedule else None
-        except:
+        except (KeyError, AttributeError) as e:
+            # KeyError: 'request' not in context (e.g., during tests)
+            # AttributeError: request.user not available
+            logger.warning(f"Failed to get next_review_date for content {obj.id}: {e}")
             return None

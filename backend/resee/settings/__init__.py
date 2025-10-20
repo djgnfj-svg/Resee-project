@@ -36,7 +36,8 @@ def validate_environment():
     # Try to get SECRET_KEY from globals, skip validation if not available
     try:
         secret_key = globals().get('SECRET_KEY', '')
-    except:
+    except Exception as e:
+        warnings.append(f"WARNING: Failed to get SECRET_KEY for validation: {e}")
         return warnings
     
     if not secret_key or secret_key == 'django-insecure-development-key-change-this-in-production':
@@ -49,14 +50,14 @@ def validate_environment():
         try:
             if globals().get('DEBUG'):
                 warnings.append("CRITICAL: DEBUG=True in production environment!")
-            
+
             if not globals().get('DATABASES', {}).get('default', {}).get('NAME'):
                 warnings.append("CRITICAL: Database not configured in production!")
-            
+
             if globals().get('CORS_ALLOW_ALL_ORIGINS'):
                 warnings.append("CRITICAL: CORS_ALLOW_ALL_ORIGINS=True in production!")
-        except:
-            pass
+        except Exception as e:
+            warnings.append(f"WARNING: Failed to validate production settings: {e}")
     
     
     return warnings
