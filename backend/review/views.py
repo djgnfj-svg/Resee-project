@@ -212,14 +212,74 @@ class CompleteReviewView(APIView):
         notes = request.data.get('notes', '')
         descriptive_answer = request.data.get('descriptive_answer', '')  # v0.4: AI 평가용 서술형 답변
 
+        # === Input Validation ===
+        # 1. content_id validation
+        if not content_id:
+            return Response(
+                {'error': 'content_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            content_id = int(content_id)
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'content_id must be a valid integer'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2. time_spent validation
+        if time_spent is not None:
+            try:
+                time_spent = int(time_spent)
+                if time_spent < 0:
+                    return Response(
+                        {'error': 'time_spent cannot be negative'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                if time_spent > 86400:  # 24 hours in seconds
+                    return Response(
+                        {'error': 'time_spent cannot exceed 24 hours (86400 seconds)'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except (ValueError, TypeError):
+                return Response(
+                    {'error': 'time_spent must be a valid integer (seconds)'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # 3. notes length validation (DoS prevention)
+        if notes and len(notes) > 5000:
+            return Response(
+                {'error': 'notes cannot exceed 5000 characters'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 4. descriptive_answer length validation (DoS prevention)
+        if descriptive_answer and len(descriptive_answer) > 10000:
+            return Response(
+                {'error': 'descriptive_answer cannot exceed 10000 characters'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         try:
             with transaction.atomic():
-                # Get the review schedule
-                schedule = ReviewSchedule.objects.select_for_update().get(
-                    content_id=content_id,
-                    user=request.user,
-                    is_active=True
-                )
+                # Get the review schedule (also verifies content ownership)
+                try:
+                    schedule = ReviewSchedule.objects.select_for_update().get(
+                        content_id=content_id,
+                        user=request.user,
+                        is_active=True
+                    )
+                except ReviewSchedule.DoesNotExist:
+                    logger.warning(
+                        f"Review schedule not found or access denied: "
+                        f"user={request.user.email}, content_id={content_id}"
+                    )
+                    return Response(
+                        {'error': 'Review schedule not found or you do not have permission to access it'},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
 
                 # v0.5: 주관식 모드 - AI 자동 평가 및 result 판단
                 ai_score = None
@@ -368,13 +428,7 @@ class CompleteReviewView(APIView):
                     }
 
                 return Response(response_data)
-                
-        except ReviewSchedule.DoesNotExist:
-            logger.warning(f"Review schedule not found for content_id={content_id}, user={request.user.id}")
-            return Response(
-                {'error': 'Review schedule not found'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+
         except Exception as e:
             logger.error(f"Error completing review: {str(e)}", exc_info=True)
             return Response(

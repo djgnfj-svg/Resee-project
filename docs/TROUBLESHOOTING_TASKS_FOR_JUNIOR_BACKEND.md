@@ -99,22 +99,68 @@ except Exception as e:
 
 ---
 
-### 3. 입력 검증 강화
+### 3. 입력 검증 강화 ✅ **완료 (2025-10-20)**
 
 **설명**: 일부 API 엔드포인트에서 입력값 검증이 부족합니다.
 
-**위치**:
-- `backend/review/views.py:207-271` - CompleteReviewView
+**상태**: ✅ **해결 완료**
+- **문서**: `docs/troubleshooting/07-입력-검증-강화.md`
+- **소요 시간**: 1시간
 
-**개선 사항**:
-- time_spent 값이 음수인지 검증
-- content_id가 실제로 사용자 소유인지 추가 확인
-- descriptive_answer 길이 제한 (DoS 방지)
+**수정된 위치**:
+- ✅ `backend/review/views.py:215-263` - CompleteReviewView 입력 검증 추가
+
+**개선 내용**:
+```python
+# Before
+content_id = request.data.get('content_id')
+time_spent = request.data.get('time_spent')
+# 검증 없이 바로 사용
+
+# After
+# 1. content_id 타입 검증
+if not content_id:
+    return Response({'error': 'content_id is required'}, ...)
+try:
+    content_id = int(content_id)
+except (ValueError, TypeError):
+    return Response({'error': 'content_id must be a valid integer'}, ...)
+
+# 2. time_spent 범위 검증
+if time_spent < 0:
+    return Response({'error': 'time_spent cannot be negative'}, ...)
+if time_spent > 86400:  # 24 hours
+    return Response({'error': 'time_spent cannot exceed 24 hours'}, ...)
+
+# 3. notes 길이 제한 (DoS 방지)
+if len(notes) > 5000:
+    return Response({'error': 'notes cannot exceed 5000 characters'}, ...)
+
+# 4. descriptive_answer 길이 제한 (DoS 방지)
+if len(descriptive_answer) > 10000:
+    return Response({'error': 'descriptive_answer cannot exceed 10000 characters'}, ...)
+```
+
+**주요 개선 사항**:
+1. **타입 검증** - content_id 정수 변환 및 검증
+2. **범위 검증** - time_spent 0-86400초 (24시간) 제한
+3. **DoS 방지** - notes 5000자, descriptive_answer 10000자 제한
+4. **소유권 검증** - ReviewSchedule 조회 시 명시적 예외 처리 및 로깅
+
+**보안 효과**:
+- DoS 공격 방지 (무제한 텍스트 차단)
+- AI API 비용 폭탄 방지 (10000자 제한으로 약 $6.25/회 → $0.000625/회)
+- 데이터 무결성 보장 (음수 시간, 타입 에러 방지)
 
 **학습 포인트**:
-- Django REST Framework Serializer validation
-- 보안: 입력 검증의 중요성
-- DoS 공격 방지
+- 방어적 프로그래밍 (Defensive Programming)
+- DoS 공격 방지 전략
+- 입력 검증 체크리스트
+- Django REST Framework Serializer vs 수동 검증
+- OWASP Input Validation
+
+**참고 자료**:
+- 상세 회고: `docs/troubleshooting/07-입력-검증-강화.md`
 
 ---
 
