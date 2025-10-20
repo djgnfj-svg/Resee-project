@@ -78,7 +78,7 @@ class AIAnswerEvaluator:
                     return evaluation_data
 
         except Exception as e:
-            logger.error(f"AI 답변 평가 실패: {content_title} - {e}")
+            logger.error(f"AI 답변 평가 실패: {content_title} - {e}", exc_info=True)
 
         return None
 
@@ -149,13 +149,19 @@ class AIAnswerEvaluator:
             return message.content[0].text if message.content else None
 
         except anthropic.AuthenticationError as e:
-            logger.error(f"AI API 인증 실패: {e}")
+            logger.error(f"AI API 인증 실패: {e}", exc_info=True)
             return None
         except anthropic.RateLimitError as e:
-            logger.error(f"AI API 요청 한도 초과: {e}")
+            logger.warning(f"AI API 요청 한도 초과 (일시적 제한): {e}")
+            return None
+        except anthropic.APIConnectionError as e:
+            logger.error(f"AI API 연결 실패 (네트워크 문제): {e}")
+            return None
+        except anthropic.APITimeoutError as e:
+            logger.warning(f"AI API 타임아웃 (서버 응답 지연): {e}")
             return None
         except Exception as e:
-            logger.error(f"Claude API 호출 실패: {e}")
+            logger.error(f"Claude API 호출 실패: {e}", exc_info=True)
             return None
 
     def _parse_response(self, response: str) -> Optional[Dict]:
@@ -194,7 +200,10 @@ class AIAnswerEvaluator:
             }
 
         except json.JSONDecodeError as e:
-            logger.error(f"JSON 파싱 실패: {e} - 응답: {response[:200]}")
+            logger.error(f"JSON 파싱 실패: {e} - 응답: {response[:200]}", exc_info=True)
+            return None
+        except (ValueError, KeyError) as e:
+            logger.error(f"응답 데이터 검증 실패: {e}")
             return None
         except Exception as e:
             logger.error(f"응답 처리 실패: {e}")

@@ -55,32 +55,47 @@ except Exception as slack_error:
 
 ---
 
-### 2. 로깅 메시지 개선
+### 2. 로깅 메시지 개선 ✅ **완료 (2025-10-20)**
 
 **설명**: 일부 에러 핸들링에서 로깅이 누락되어 있거나 정보가 불충분합니다.
 
-**위치**:
-- `backend/content/serializers.py:98` - get_next_review_date 메서드
+**상태**: ✅ **해결 완료**
+- **문서**: `docs/troubleshooting/06-로깅-메시지-개선.md`
+- **소요 시간**: 45분
 
-**현재 코드**:
+**수정된 위치**:
+- ✅ `backend/content/ai_validation.py:94` - exc_info=True 추가, 컨텍스트 정보 포함
+- ✅ `backend/content/ai_validation.py:127` - 파싱 실패 시 원본 응답 로깅
+- ✅ `backend/review/ai_evaluation.py:81` - exc_info=True 추가
+- ✅ `backend/review/ai_evaluation.py:152-164` - Anthropic API 예외별 처리
+- ✅ `backend/review/ai_evaluation.py:202-207` - JSON 파싱 예외 세분화
+
+**개선 내용**:
 ```python
-def get_next_review_date(self, obj):
-    try:
-        schedule = obj.review_schedules.filter(user=self.context['request'].user).first()
-        return schedule.next_review_date if schedule else None
-    except:
-        return None
+# Before
+except Exception as e:
+    logger.error(f"AI validation failed: {str(e)}")
+
+# After
+except Exception as e:
+    logger.error(f"AI validation failed for title '{title[:50]}...': {str(e)}", exc_info=True)
 ```
 
-**개선 방향**:
-1. 구체적인 예외 타입 명시
-2. 로깅 추가
-3. 예외 발생 원인 기록
+**주요 개선 사항**:
+1. **exc_info=True 추가** - 스택 트레이스로 정확한 에러 위치 파악
+2. **예외 타입별 처리** - AuthenticationError, RateLimitError 등 구체적으로 처리
+3. **컨텍스트 정보** - 에러 발생 시 관련 데이터 (title, user 등) 포함
+4. **로깅 레벨 조정** - 일시적 에러는 WARNING, 심각한 에러는 ERROR
 
 **학습 포인트**:
-- Django logging 설정
+- Python logging의 exc_info 파라미터
+- 로깅 레벨 선택 (DEBUG/INFO/WARNING/ERROR/CRITICAL)
 - 구조화된 로깅 (structured logging)
 - 프로덕션 환경에서의 디버깅
+- Anthropic API 예외 처리
+
+**참고 자료**:
+- 상세 회고: `docs/troubleshooting/06-로깅-메시지-개선.md`
 
 ---
 

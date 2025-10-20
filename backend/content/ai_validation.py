@@ -91,7 +91,7 @@ JSON만 반환하세요."""
         return result
 
     except Exception as e:
-        logger.error(f"AI validation failed: {str(e)}")
+        logger.error(f"AI validation failed for title '{title[:50]}...': {str(e)}", exc_info=True)
         return {
             "is_valid": False,
             "factual_accuracy": {"score": 0, "issues": ["AI 검증 실패"]},
@@ -124,5 +124,6 @@ def _parse_validation_response(response_text: str) -> dict:
         return result
 
     except Exception as e:
-        logger.error(f"Failed to parse validation response: {str(e)}")
+        logger.error(f"Failed to parse validation response: {str(e)}", exc_info=True)
+        logger.debug(f"Raw response text: {response_text[:500]}...")
         raise ValueError(f"AI 응답 파싱 실패: {str(e)}")
