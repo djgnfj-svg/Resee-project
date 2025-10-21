@@ -255,6 +255,22 @@ CACHES = {
         },
         'KEY_PREFIX': 'throttle',
         'TIMEOUT': 3600,  # 1 hour default
+    },
+    # Redis cache for API responses
+    'api': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.environ.get('REDIS_URL', 'redis://redis:6379/1'),  # Database 1
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_CLASS_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+            },
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+        },
+        'KEY_PREFIX': 'api',
+        'TIMEOUT': 300,  # 5 minutes default
     }
 }
 

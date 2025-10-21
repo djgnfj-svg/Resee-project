@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 
+from django.core.cache import caches
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -13,6 +14,7 @@ from rest_framework.views import APIView
 
 from resee.mixins import UserOwnershipMixin
 from resee.pagination import OptimizedPageNumberPagination, ReviewPagination
+from utils.cache_utils import invalidate_cache
 
 from .models import ReviewHistory, ReviewSchedule
 from .serializers import ReviewHistorySerializer, ReviewScheduleSerializer
@@ -82,20 +84,22 @@ class TodayReviewView(APIView):
         operation_summary="구독 티어별 복습 목록 조회",
         operation_description="""
         사용자의 구독 티어에 따라 복습할 콘텐츠를 반환합니다.
-        
+
         **구독 티어별 복습 범위:**
         - FREE: 최대 7일 전까지의 밀린 복습
-        - BASIC: 최대 30일 전까지의 밀린 복습  
+        - BASIC: 최대 30일 전까지의 밀린 복습
         - PREMIUM: 최대 60일 전까지의 밀린 복습
         - PRO: 최대 180일 전까지의 밀린 복습
-        
+
         초기 복습이 완료되지 않은 콘텐츠는 항상 포함됩니다.
+
+        **캐싱**: Redis 캐싱 적용 (TTL: 1시간)
         """,
         manual_parameters=[
             openapi.Parameter(
-                'category_slug', 
-                openapi.IN_QUERY, 
-                description="특정 카테고리만 필터링", 
+                'category_slug',
+                openapi.IN_QUERY,
+                description="특정 카테고리만 필터링",
                 type=openapi.TYPE_STRING
             ),
         ],
@@ -103,6 +107,20 @@ class TodayReviewView(APIView):
     )
     def get(self, request):
         """Get review items due today or overdue (within subscription limits)"""
+        # Generate cache key
+        category_slug = request.query_params.get('category_slug', '')
+        cache_key = f'review:today:{request.user.id}:{category_slug}'
+
+        # Try to get from cache
+        cache = caches['api']
+        cached_data = cache.get(cache_key)
+
+        if cached_data is not None:
+            logger.info(f"Cache HIT: {cache_key}")
+            return Response(cached_data)
+
+        logger.info(f"Cache MISS: {cache_key}")
+
         today = timezone.now().date()
         
         # Get user's subscription tier and determine overdue limit
@@ -148,14 +166,19 @@ class TodayReviewView(APIView):
             ).count()
         
         serializer = ReviewScheduleSerializer(schedules, many=True)
-        
-        return Response({
+
+        response_data = {
             'results': serializer.data,
             'count': len(serializer.data),  # Today's reviews count
             'total_count': total_schedules,  # Total active schedules
             'subscription_tier': request.user.subscription.tier,
             'max_interval_days': request.user.get_max_review_interval()
-        })
+        }
+
+        # Cache the response (TTL: 1 hour)
+        cache.set(cache_key, response_data, timeout=3600)
+
+        return Response(response_data)
 
 
 class CompleteReviewView(APIView):
@@ -426,6 +449,14 @@ class CompleteReviewView(APIView):
                         'feedback': ai_feedback,
                         'auto_result': ai_auto_result if ai_auto_result else result
                     }
+
+                # Invalidate related caches
+                cache_keys = [
+                    f'review:today:{request.user.id}:',  # All categories
+                    f'analytics:stats:{request.user.id}',
+                ]
+                invalidate_cache(*cache_keys)
+                logger.info(f"Cache invalidated for user {request.user.id} after review completion")
 
                 return Response(response_data)
 
