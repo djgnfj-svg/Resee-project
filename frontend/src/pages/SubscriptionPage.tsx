@@ -15,7 +15,7 @@ const SubscriptionPage: React.FC = () => {
 
   // Fetch current subscription
   const { data: currentSubscription, isLoading: subscriptionLoading } = useQuery({
-    queryKey: ['current-subscription'],
+    queryKey: ['current-subscription', user?.id],
     queryFn: subscriptionAPI.getSubscription,
     enabled: !!user,
   });

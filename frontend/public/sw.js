@@ -1,5 +1,5 @@
-const CACHE_NAME = 'resee-v5';
-const API_CACHE_NAME = 'resee-api-v5';
+const CACHE_NAME = 'resee-v6';
+const API_CACHE_NAME = 'resee-api-v6';
 
 // 캐시할 정적 자원들
 // 주의: HTML 파일(/)은 캐싱하지 않음 - 항상 최신 bundle 참조를 위해
@@ -60,9 +60,10 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // API 요청 처리
-  if (isApiRequest(request.url)) {
-    event.respondWith(handleApiRequest(request));
+  // API 요청은 절대 캐싱하지 않음 (React Query가 관리)
+  if (url.pathname.startsWith('/api/')) {
+    // Network-only: 캐싱 없이 항상 네트워크 요청
+    event.respondWith(fetch(request));
     return;
   }
 

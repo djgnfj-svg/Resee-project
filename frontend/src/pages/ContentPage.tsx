@@ -7,8 +7,10 @@ import { extractResults } from '../utils/helpers';
 import CategoryManager from '../components/CategoryManager';
 import ContentFilters from '../components/content/ContentFilters';
 import ContentList from '../components/content/ContentList';
+import { useAuth } from '../contexts/AuthContext';
 
 const ContentPage: React.FC = () => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -20,7 +22,7 @@ const ContentPage: React.FC = () => {
 
   // Fetch contents
   const { data: contents = [], isLoading: contentsLoading } = useQuery<Content[]>({
-    queryKey: ['contents', selectedCategory, sortBy, searchQuery],
+    queryKey: ['contents', user?.id, selectedCategory, sortBy, searchQuery],
     queryFn: () => {
       const params = new URLSearchParams();
       if (selectedCategory !== 'all') {
@@ -32,12 +34,14 @@ const ContentPage: React.FC = () => {
       params.append('ordering', sortBy);
       return contentAPI.getContents(params.toString()).then(extractResults);
     },
+    enabled: !!user,
   });
 
   // Fetch categories
   const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ['categories'],
+    queryKey: ['categories', user?.id],
     queryFn: () => contentAPI.getCategories().then(extractResults),
+    enabled: !!user,
   });
 
 

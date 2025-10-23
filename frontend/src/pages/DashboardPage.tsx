@@ -14,28 +14,31 @@ const SimpleDashboard: React.FC = () => {
   const { user } = useAuth();
 
   const { data: dashboardData, isLoading, error, refetch } = useQuery<DashboardData>({
-    queryKey: ['dashboard'],
+    queryKey: ['dashboard', user?.id],
     queryFn: analyticsAPI.getDashboard,
+    enabled: !!user,
   });
 
 
 
   // Fetch content usage stats
   const { data: contentUsage } = useQuery<ContentUsage>({
-    queryKey: ['content-usage'],
+    queryKey: ['content-usage', user?.id],
     queryFn: async () => {
       const response = await contentAPI.getContents();
       return response.usage || null;
     },
+    enabled: !!user,
   });
 
   // Fetch category usage stats
   const { data: categoryUsage } = useQuery<CategoryUsage>({
-    queryKey: ['category-usage'],
+    queryKey: ['category-usage', user?.id],
     queryFn: async () => {
       const response = await contentAPI.getCategories();
       return response.usage || null;
     },
+    enabled: !!user,
   });
 
 

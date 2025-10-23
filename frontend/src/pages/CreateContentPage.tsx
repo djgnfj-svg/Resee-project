@@ -4,15 +4,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
 import { CreateContentData, ContentUsage } from '../types';
 import CreateContentForm from '../components/CreateContentForm';
+import { useAuth } from '../contexts/AuthContext';
 
 const CreateContentPage: React.FC = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [contentUsage, setContentUsage] = useState<ContentUsage | null>(null);
 
   // Check content usage and redirect if at limit
   useQuery({
-    queryKey: ['contents-usage-check'],
+    queryKey: ['contents-usage-check', user?.id],
     queryFn: async () => {
       const response = await contentAPI.getContents();
       if (response.usage) {
@@ -25,6 +27,7 @@ const CreateContentPage: React.FC = () => {
       }
       return response;
     },
+    enabled: !!user,
   });
 
   // Create content mutation

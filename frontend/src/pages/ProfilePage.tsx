@@ -6,12 +6,16 @@ import UserProfileForm from '../components/profile/UserProfileForm';
 import SubscriptionManagement from '../components/profile/SubscriptionManagement';
 import PaymentHistory from '../components/profile/PaymentHistory';
 import AccountStats from '../components/profile/AccountStats';
+import { useAuth } from '../contexts/AuthContext';
 
 const ProfilePage: React.FC = () => {
+  const { user: currentUser } = useAuth();
+
   // Fetch user profile
   const { data: user, isLoading } = useQuery<User>({
-    queryKey: ['profile'],
+    queryKey: ['profile', currentUser?.id],
     queryFn: authAPI.getProfile,
+    enabled: !!currentUser,
   });
 
 

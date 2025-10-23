@@ -8,7 +8,7 @@ const PaymentHistoryPage: React.FC = () => {
   const { user } = useAuth();
 
   const { data: paymentData, isLoading } = useQuery({
-    queryKey: ['payment-history'],
+    queryKey: ['payment-history', user?.id],
     queryFn: subscriptionAPI.getPaymentHistory,
     enabled: !!user,
   });

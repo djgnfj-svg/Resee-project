@@ -114,12 +114,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Clear all React Query cache first to prevent data leakage between users
+    await queryClient.clear();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     setUser(null);
-    // Clear all React Query cache to prevent data leakage between users
-    queryClient.clear();
   };
 
   const refreshUser = async () => {

@@ -4,17 +4,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
 import { CreateContentData } from '../types';
 import CreateContentForm from '../components/CreateContentForm';
+import { useAuth } from '../contexts/AuthContext';
 
 const EditContentPage: React.FC = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
 
   // Fetch existing content
   const { data: content, isLoading, error } = useQuery({
-    queryKey: ['content', id],
+    queryKey: ['content', user?.id, id],
     queryFn: () => contentAPI.getContent(Number(id)),
-    enabled: !!id,
+    enabled: !!id && !!user,
   });
 
   // Update content mutation

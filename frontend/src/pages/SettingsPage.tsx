@@ -4,15 +4,18 @@ import { authAPI } from '../utils/api';
 import { User } from '../types';
 import NotificationTab from '../components/settings/NotificationTab';
 import SecurityTab from '../components/settings/SecurityTab';
+import { useAuth } from '../contexts/AuthContext';
 
 
 const SettingsPage: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'notifications' | 'security'>('notifications');
 
   // Fetch user profile
   const { isLoading } = useQuery<User>({
-    queryKey: ['profile'],
+    queryKey: ['profile', user?.id],
     queryFn: authAPI.getProfile,
+    enabled: !!user,
   });
 
 
