@@ -60,6 +60,7 @@ const ReviewPage: React.FC = () => {
     completeReviewMutation,
     handleReviewComplete,
     reviewsCompleted,
+    setReviewsCompleted,
     totalSchedules,
     removeCurrentCard,
     moveCurrentCardToEnd,
@@ -97,14 +98,15 @@ const ReviewPage: React.FC = () => {
     }
   }, [currentReview, descriptiveAnswer, handleReviewComplete, showToast, setIsFlipped, setShowContent]);
 
-  // 서술형 평가 - 다음으로 넘어가기
+  // 주관식 평가 - 다음으로 넘어가기
   const handleNextSubjective = useCallback(() => {
     // AI 평가 결과에 따라 카드 이동/제거
     if (aiEvaluation?.auto_result === 'remembered') {
+      setReviewsCompleted(prev => prev + 1);  // 기억함 → 완료 개수 증가
       removeCurrentCard();  // 기억함 → 카드 제거
       showToast('잘 기억하고 있어요!', 'success');
     } else {
-      moveCurrentCardToEnd();  // 모름 → 카드 맨 뒤로
+      moveCurrentCardToEnd();  // 모름 → 카드 맨 뒤로 (완료 개수 증가 안함)
       showToast('괜찮아요, 나중에 다시 시도해보세요!', 'info');
     }
 
@@ -112,7 +114,7 @@ const ReviewPage: React.FC = () => {
     setAiEvaluation(null);
     setDescriptiveAnswer('');
     setSubmittedAnswer('');
-  }, [aiEvaluation, removeCurrentCard, moveCurrentCardToEnd, showToast]);
+  }, [aiEvaluation, removeCurrentCard, moveCurrentCardToEnd, showToast, setReviewsCompleted]);
 
   // v0.4: 객관식 모드 - 복습 완료 핸들러
   const handleReviewCompleteWithAI = useCallback(async (result: 'remembered' | 'partial' | 'forgot') => {
@@ -188,7 +190,7 @@ const ReviewPage: React.FC = () => {
               isPending={completeReviewMutation.isPending}
             />
           ) : (
-            // 서술형 평가: AI 평가 완료 후 "다음으로" 버튼 표시
+            // 주관식 평가: AI 평가 완료 후 "다음으로" 버튼 표시
             aiEvaluation && (
               <ReviewControls
                 showContent={showContent}

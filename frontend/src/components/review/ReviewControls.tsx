@@ -17,7 +17,7 @@ const ReviewControls: React.FC<ReviewControlsProps> = ({
 }) => {
   const isDisabled = !showContent || isPending;
 
-  // 서술형 평가: 단일 "다음으로" 버튼
+  // 주관식 평가: 단일 "다음으로" 버튼
   if (isSubjectiveMode) {
     return (
       <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/25 border border-gray-200 dark:border-gray-700 p-6 transition-opacity duration-300 ${!showContent ? 'opacity-50' : 'opacity-100'}`}>

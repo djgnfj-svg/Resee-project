@@ -19,10 +19,10 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
         <div className="text-center">
           <div className="text-4xl mb-4"></div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            서술형 평가 기능
+            주관식 평가 기능
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            AI 서술형 평가는 <span className="font-semibold text-indigo-600 dark:text-indigo-400">유료 구독</span>에서 사용할 수 있습니다.
+            AI 주관식 평가는 <span className="font-semibold text-indigo-600 dark:text-indigo-400">유료 구독</span>에서 사용할 수 있습니다.
           </p>
           
           <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 mb-6">

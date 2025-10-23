@@ -34,10 +34,10 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   const isSubjective = review.content.review_mode === 'subjective';
 
   return (
-    <div className="relative mb-8" style={{ minHeight: '500px' }}>
-      <div className={`w-full transition-transform duration-700 transform-style-preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`} style={{ minHeight: '500px' }}>
+    <div className="relative mb-8" style={{ minHeight: '600px' }}>
+      <div className={`w-full transition-transform duration-700 transform-style-preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`} style={{ minHeight: '600px' }}>
         {/* Front of Card */}
-        <div className="absolute inset-0 w-full bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl shadow-xl dark:shadow-gray-900/40 backface-hidden border-2 border-blue-200 dark:border-blue-700" style={{ minHeight: '500px' }}>
+        <div className="absolute inset-0 w-full bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl shadow-xl dark:shadow-gray-900/40 backface-hidden border-2 border-blue-200 dark:border-blue-700" style={{ minHeight: '600px' }}>
           <div className="p-8 h-full flex flex-col justify-center items-center text-center gap-6">
             <div className="mb-6">
               <div className="text-4xl mb-4"></div>
@@ -56,7 +56,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                     '첫 번째 복습'}
                 </span>
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
-                  {isSubjective ? '서술 평가' : '기억 확인'}
+                  {isSubjective ? '주관식 평가' : '기억 확인'}
                 </span>
               </div>
             </div>
@@ -114,7 +114,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
         </div>
 
         {/* Back of Card */}
-        <div className="absolute inset-0 w-full bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-2xl shadow-xl dark:shadow-gray-900/40 backface-hidden rotate-y-180 border-2 border-green-200 dark:border-green-700" style={{ minHeight: '500px' }}>
+        <div className="absolute inset-0 w-full bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-2xl shadow-xl dark:shadow-gray-900/40 backface-hidden rotate-y-180 border-2 border-green-200 dark:border-green-700" style={{ minHeight: '600px' }}>
           <div className="p-8 h-full flex flex-col space-y-4 overflow-y-auto">
             {/* 정답 내용 - 최우선 배치 */}
             <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
@@ -126,7 +126,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
               </div>
             </div>
 
-            {/* 서술 평가: AI 평가 결과 */}
+            {/* 주관식 평가: AI 평가 결과 */}
             {isSubjective && aiEvaluation && (
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">AI 평가</h4>
@@ -149,7 +149,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
               </div>
             )}
 
-            {/* 서술 평가: 제출한 답변 표시 */}
+            {/* 주관식 평가: 제출한 답변 표시 */}
             {isSubjective && submittedAnswer && (
               <div className="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">내가 작성한 답변</h4>

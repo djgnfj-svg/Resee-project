@@ -167,7 +167,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                     className="w-4 h-4 text-blue-600"
                   />
                   <div className="ml-3">
-                    <div className="font-medium text-gray-900 dark:text-gray-100">서술 평가</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">주관식 평가</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">먼저 작성하고 AI가 자동 평가 (최소 200자)</div>
                   </div>
                 </label>
@@ -181,7 +181,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                 </label>
                 {isSubjectiveMode && (
                   <span className={`text-sm ${hasValidContentLength ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {contentLength}/200자 {hasValidContentLength ? '✓' : '(서술 평가는 최소 200자)'}
+                    {contentLength}/200자 {hasValidContentLength ? '✓' : '(주관식 평가는 최소 200자)'}
                   </span>
                 )}
               </div>
@@ -193,7 +193,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
               />
               {isSubjectiveMode && !hasValidContentLength && content.length > 0 && (
                 <p className="text-sm text-red-600 dark:text-red-400 mt-2">
-                  서술 평가 모드는 AI가 판단할 수 있도록 최소 200자 이상의 콘텐츠가 필요합니다.
+                  주관식 평가 모드는 AI가 판단할 수 있도록 최소 200자 이상의 콘텐츠가 필요합니다.
                 </p>
               )}
 
@@ -236,7 +236,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                     !canCreateContent
                       ? '콘텐츠 생성 제한에 도달했습니다'
                       : !hasValidContentLength && isSubjectiveMode
-                      ? '서술 평가는 최소 200자 이상 필요합니다'
+                      ? '주관식 평가는 최소 200자 이상 필요합니다'
                       : ''
                   }
                 >

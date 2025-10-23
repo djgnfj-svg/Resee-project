@@ -15,8 +15,8 @@ def create_review_schedule_on_content_creation(sender, instance, created, **kwar
         from review.models import ReviewSchedule
         from django.utils import timezone
 
-        # Create review schedule synchronously (start with 1 day interval)
-        next_review_date = timezone.now() + timezone.timedelta(days=1)
+        # Create review schedule synchronously (available immediately, +1 second for DB constraint)
+        next_review_date = timezone.now() + timezone.timedelta(seconds=1)
         ReviewSchedule.objects.create(
             content=instance,
             user=instance.author,

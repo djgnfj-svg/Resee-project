@@ -36,6 +36,7 @@ export const useReviewLogic = (
     startTime,
     reviewsCompleted,
     setReviewsCompleted,
+    totalSchedules,
     setTotalSchedules,
   } = useReviewState();
 
@@ -45,30 +46,34 @@ export const useReviewLogic = (
   const [localReviews, setLocalReviews] = useState<ReviewSchedule[]>([]);
 
   // Fetch today's reviews (always all categories)
-  const { data: reviewData, isLoading } = useQuery<ReviewSchedule[]>({
+  const { data: reviewData, isLoading } = useQuery<TodayReviewsResponse | ReviewSchedule[]>({
     queryKey: ['todayReviews'],
     queryFn: async () => {
-      const data = await reviewAPI.getTodayReviews('');
-
-      // Always try to extract total_count if it exists
-      if (data && typeof data === 'object' && 'total_count' in data) {
-        setTotalSchedules((data as any).total_count || 0);
-      }
-
-      if (isTodayReviewsResponse(data)) {
-        return data.results;
-      } else {
-        return extractResults(data) as ReviewSchedule[];
-      }
+      return await reviewAPI.getTodayReviews('');
     }
   });
 
-  // Update local reviews when server data changes
+  // Extract reviews and total count from response
   useEffect(() => {
     if (reviewData) {
-      setLocalReviews([...reviewData]);
+      let reviews: ReviewSchedule[];
+      let totalCount = 0;
+
+      if (isTodayReviewsResponse(reviewData)) {
+        reviews = reviewData.results;
+        totalCount = reviewData.total_count || 0;
+      } else {
+        reviews = extractResults(reviewData) as ReviewSchedule[];
+        // Try to extract total_count if it exists in raw data
+        if (typeof reviewData === 'object' && 'total_count' in reviewData) {
+          totalCount = (reviewData as any).total_count || 0;
+        }
+      }
+
+      setLocalReviews([...reviews]);
+      setTotalSchedules(totalCount);
     }
-  }, [reviewData]);
+  }, [reviewData, setTotalSchedules]);
 
   // Move current card to end of array (for "forgot" case)
   const moveCurrentCardToEnd = useCallback(() => {
@@ -115,11 +120,10 @@ export const useReviewLogic = (
   const completeReviewMutation = useMutation({
     mutationFn: reviewAPI.completeReview,
     onSuccess: async (data, variables) => {
-      // 서술형 평가 (descriptive_answer가 있음): 카드 이동 안함
+      // 주관식 평가 (descriptive_answer가 있음): 카드 이동 안함
       // 사용자가 "다음으로" 버튼 눌렀을 때 이동
       if (variables.descriptive_answer && variables.descriptive_answer.length > 0) {
-        setReviewsCompleted(prev => prev + 1);
-
+        // 주관식은 "다음으로" 버튼에서 reviewsCompleted 증가
         // Invalidate dashboard to update stats
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
@@ -180,8 +184,7 @@ export const useReviewLogic = (
   const currentReview = reviews[currentReviewIndex];
 
   // Calculate progress based on total reviews for today
-  const totalTodayReviews = reviews.length + reviewsCompleted;
-  const progress = totalTodayReviews > 0 ? (reviewsCompleted / totalTodayReviews) * 100 : 0;
+  const progress = totalSchedules > 0 ? (reviewsCompleted / totalSchedules) * 100 : 0;
 
   return {
     reviews,
@@ -191,7 +194,8 @@ export const useReviewLogic = (
     completeReviewMutation,
     handleReviewComplete,
     reviewsCompleted,
-    totalSchedules: reviews.length + reviewsCompleted,
+    setReviewsCompleted,
+    totalSchedules,
     removeCurrentCard,
     moveCurrentCardToEnd,
   };
