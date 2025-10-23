@@ -112,7 +112,7 @@ class WeeklyTestSerializer(serializers.ModelSerializer):
         if category_ids:
             content_query &= Q(category_id__in=category_ids)
 
-        # 콘텐츠 조건 확인: 200자 이상, 최소 10개
+        # 콘텐츠 조건 확인: 200자 이상, 최소 7개
         valid_contents = Content.objects.filter(content_query).extra(
             where=["LENGTH(content) >= %s"],
             params=[200]
@@ -120,19 +120,19 @@ class WeeklyTestSerializer(serializers.ModelSerializer):
 
         valid_count = valid_contents.count()
 
-        if valid_count < 10:
+        if valid_count < 7:
             if category_ids:
                 from content.models import Category
                 category_names = list(Category.objects.filter(id__in=category_ids).values_list('name', flat=True))
                 category_str = ", ".join(category_names)
                 raise serializers.ValidationError(
                     f"선택한 카테고리({category_str})에 충분한 콘텐츠가 없습니다. "
-                    f"현재: {valid_count}개, 필요: 최소 10개의 200자 이상 콘텐츠"
+                    f"현재: {valid_count}개, 필요: 최소 7개의 200자 이상 콘텐츠"
                 )
             else:
                 raise serializers.ValidationError(
                     f"시험 생성에 필요한 콘텐츠가 부족합니다. "
-                    f"현재: {valid_count}개, 필요: 최소 10개의 200자 이상 콘텐츠"
+                    f"현재: {valid_count}개, 필요: 최소 7개의 200자 이상 콘텐츠"
                 )
 
 

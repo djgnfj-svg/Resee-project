@@ -63,26 +63,41 @@ const WeeklyTestPage: React.FC = () => {
 
     try {
       setIsLoading(true);
+      setError('');
       const testData = { category_ids: selectedCategoryIds };
       await weeklyTestAPI.createWeeklyTest(testData);
       await loadTests();
       setShowCategorySelector(false);
       setSelectedCategoryIds([]);
-      setError('');
     } catch (error: any) {
       console.error('Failed to create test:', error);
-      setError(error.response?.data?.detail || '시험 생성에 실패했습니다.');
+
+      // 다양한 에러 형식 처리
+      let errorMessage = '시험 생성에 실패했습니다.';
+
+      if (error.response?.data) {
+        const data = error.response.data;
+        // ValidationError는 non_field_errors, detail, 또는 특정 필드로 올 수 있음
+        if (data.non_field_errors && Array.isArray(data.non_field_errors)) {
+          errorMessage = data.non_field_errors[0];
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        } else if (data.category_ids && Array.isArray(data.category_ids)) {
+          errorMessage = data.category_ids[0];
+        } else if (typeof data === 'string') {
+          errorMessage = data;
+        }
+      }
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleCategoryToggle = (categoryId: number) => {
-    setSelectedCategoryIds(prev =>
-      prev.includes(categoryId)
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
-    );
+    // 단일 선택만 허용
+    setSelectedCategoryIds([categoryId]);
   };
 
   const startTest = async (testId: number) => {

@@ -31,32 +31,39 @@ const CategorySelectorModal: React.FC<CategorySelectorModalProps> = ({
           카테고리 선택
         </h3>
 
-        <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
-          {categories.map((category) => (
-            <label key={category.id} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={selectedCategoryIds.includes(category.id)}
-                onChange={() => onToggleCategory(category.id)}
-                className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="ml-2 text-gray-700 dark:text-gray-300">
+        <div className="mb-6">
+          <select
+            value={selectedCategoryIds[0] || ''}
+            onChange={(e) => {
+              const categoryId = parseInt(e.target.value);
+              if (categoryId) {
+                onToggleCategory(categoryId);
+              }
+            }}
+            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">카테고리를 선택하세요</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
                 {category.name}
-              </span>
-            </label>
-          ))}
+              </option>
+            ))}
+          </select>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
-            <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
+          <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-400 dark:border-red-600 rounded-lg">
+            <div className="flex items-start">
+              <span className="text-red-500 mr-2 text-lg">⚠️</span>
+              <p className="text-red-800 dark:text-red-200 text-sm font-medium">{error}</p>
+            </div>
           </div>
         )}
 
         <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
           {selectedCategoryIds.length === 0
-            ? "카테고리를 선택하세요. 선택된 카테고리에서 200자 이상 콘텐츠 10개가 필요합니다."
-            : `선택된 카테고리에서 200자 이상 콘텐츠 10개가 필요합니다.`
+            ? "카테고리를 선택하세요. 선택된 카테고리에서 200자 이상 콘텐츠 7개가 필요합니다."
+            : `선택된 카테고리에서 200자 이상 콘텐츠 7개가 필요합니다.`
           }
         </div>
 

@@ -115,11 +115,11 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         if hasattr(weekly_test, '_selected_category_ids') and weekly_test._selected_category_ids:
             content_query &= Q(category_id__in=weekly_test._selected_category_ids)
 
-        # 200자 이상 콘텐츠만 선택, 최대 10개, 랜덤 순서
+        # 200자 이상 콘텐츠만 선택, 최대 7개, 랜덤 순서
         contents = Content.objects.filter(content_query).extra(
             where=["LENGTH(content) >= %s"],
             params=[200]
-        ).order_by('?')[:10]
+        ).order_by('?')[:7]
 
         if not contents.exists():
             return
