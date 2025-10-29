@@ -805,7 +805,7 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id (optional)
 - PostgreSQL 15
 - Redis 7-alpine
 - Celery 5.3 + django-celery-beat
-- Gunicorn (1 worker, 2 threads)
+- Gunicorn (2 workers, 2 threads)
 - pytest (40/41 tests passing)
 - Anthropic SDK 0.39.0
 
@@ -952,7 +952,7 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id (optional)
 
 **Configuration**:
 - Local PostgreSQL for dev (resee_dev) and prod (resee_prod)
-- Single worker configuration (Gunicorn: 1 worker, 2 threads)
+- Gunicorn configuration: 2 workers, 2 threads (max-requests: 1000)
 - Simplified Docker networking
 - Celery Beat with DatabaseScheduler for scheduled tasks
 - Test coverage: 40/41 tests passing (1 security test failing: test_token_blacklisted_on_password_change)

@@ -1,0 +1,135 @@
+graph TB
+    subgraph Internet["🌐 인터넷"]
+        Users["사용자"]
+    end
+
+    subgraph CDN["Cloudflare CDN"]
+        CF["SSL/TLS 종단<br/>DDoS 보호<br/>WAF"]
+    end
+
+    subgraph CICD["CI/CD 파이프라인"]
+        GH["GitHub Repository"]
+        Actions["GitHub Actions<br/>- 테스트 자동화<br/>- 빌드<br/>- 배포"]
+    end
+
+    subgraph AWS["☁️ AWS Cloud - ap-northeast-2"]
+        subgraph Network["네트워크 계층"]
+            Route53["Route 53<br/>DNS 관리"]
+            ALB["Application Load Balancer<br/>- Health Check<br/>- SSL Offloading<br/>- Path-based Routing"]
+        end
+
+        subgraph VPC["VPC 10.0.0.0/16"]
+            subgraph PublicSubnet["Public Subnet"]
+                NAT["NAT Gateway<br/>아웃바운드 전용"]
+            end
+
+            subgraph PrivateSubnet["Private Subnet"]
+                subgraph Compute["EC2 t3.medium"]
+                    subgraph AppLayer["Application Layer"]
+                        Nginx["Nginx 1.24<br/>- Reverse Proxy<br/>- SSL Termination<br/>- Rate Limiting"]
+                        Django["Django 4.2<br/>+ Gunicorn<br/>1 worker, 2 threads"]
+                        React["React 18<br/>Static Build<br/>Code Splitting"]
+                    end
+
+                    subgraph TaskQueue["Task Queue"]
+                        Celery["Celery Worker<br/>- Email 발송<br/>- DB 백업<br/>- AI 요청"]
+                        Beat["Celery Beat<br/>스케줄러"]
+                    end
+
+                    subgraph DataServices["Data Services"]
+                        PG["PostgreSQL 15<br/>- WAL Archiving<br/>- Point-in-Time Recovery"]
+                        RD["Redis 7<br/>- 캐시<br/>- 세션<br/>- 메시지 브로커"]
+                    end
+                end
+            end
+
+            subgraph Storage["스토리지"]
+                S3["S3 Bucket<br/>- DB 백업 (일일)<br/>- 정적 파일<br/>- 로그 아카이브<br/>Lifecycle: 30일→Glacier"]
+            end
+        end
+
+        subgraph Monitoring["모니터링 & 로깅"]
+            CW["CloudWatch<br/>- 메트릭 수집<br/>- 로그 집계<br/>- 알람"]
+            SNS["SNS Topics<br/>알람 발송"]
+        end
+
+        subgraph Security["보안"]
+            SG["Security Groups<br/>- ALB: 80,443<br/>- EC2: 22,8000<br/>- DB: 5432"]
+            IAM["IAM Roles<br/>- EC2→S3 접근<br/>- 최소 권한 원칙"]
+        end
+    end
+
+    subgraph External["외부 서비스"]
+        Claude["Anthropic Claude API<br/>- Content Validation (Sonnet 3.5)<br/>- Answer Evaluation (Haiku 3)<br/>- Question Generation (Haiku 3)"]
+        Gmail["Gmail SMTP<br/>이메일 발송"]
+        Slack["Slack Webhooks<br/>운영 알림"]
+    end
+
+    %% 사용자 플로우
+    Users -->|HTTPS| CF
+    CF -->|HTTPS| Route53
+    Route53 --> ALB
+    ALB --> Nginx
+
+    %% CI/CD 플로우
+    GH --> Actions
+    Actions -->|SSH 배포<br/>deploy.sh| Nginx
+    Actions -.->|성공/실패| Slack
+
+    %% 애플리케이션 플로우
+    Nginx -->|/api/*| Django
+    Nginx -->|static/*| React
+
+    Django --> PG
+    Django --> RD
+    Celery --> PG
+    Celery --> RD
+    Beat --> RD
+
+    %% 외부 연동
+    Django --> Claude
+    Celery --> Claude
+    Celery --> Gmail
+    Django -.-> Slack
+
+    %% 백업 & 스토리지
+    Celery -.->|pg_dump<br/>매일 03:00| S3
+    PG -.->|WAL Archive| S3
+
+    %% 모니터링
+    Django -.->|로그| CW
+    Celery -.->|로그| CW
+    Nginx -.->|액세스 로그| CW
+    ALB -.->|메트릭| CW
+    CW -->|임계치 초과| SNS
+    SNS --> Slack
+
+    %% 보안
+    SG -.->|방화벽 규칙| Compute
+    IAM -.->|권한 부여| Compute
+    NAT -.->|아웃바운드| Django
+    NAT -.->|아웃바운드| Celery
+
+    %% 스타일링
+    classDef internet fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,color:#000
+    classDef cdn fill:#F38020,stroke:#E65100,stroke-width:3px,color:#fff
+    classDef aws fill:#FF9900,stroke:#E68900,stroke-width:2px,color:#000
+    classDef compute fill:#FFE0B2,stroke:#F57C00,stroke-width:2px,color:#000
+    classDef data fill:#BBDEFB,stroke:#1976D2,stroke-width:2px,color:#000
+    classDef storage fill:#C8E6C9,stroke:#388E3C,stroke-width:2px,color:#000
+    classDef monitor fill:#FFF9C4,stroke:#F9A825,stroke-width:2px,color:#000
+    classDef security fill:#FFCDD2,stroke:#C62828,stroke-width:2px,color:#000
+    classDef external fill:#E1BEE7,stroke:#7B1FA2,stroke-width:2px,color:#000
+    classDef cicd fill:#B0BEC5,stroke:#455A64,stroke-width:2px,color:#000
+    classDef app fill:#A5D6A7,stroke:#388E3C,stroke-width:2px,color:#000
+
+    class Users internet
+    class CF cdn
+    class Route53,ALB,NAT aws
+    class Nginx,Django,React,Celery,Beat app
+    class PG,RD data
+    class S3 storage
+    class CW,SNS monitor
+    class SG,IAM security
+    class Claude,Gmail,Slack external
+    class GH,Actions cicd

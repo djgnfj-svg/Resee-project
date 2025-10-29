@@ -123,7 +123,19 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('email', 'password', 'password_confirm', 'terms_agreed', 'privacy_agreed')
-    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remove default UniqueValidator and use custom message in validate_email
+        from rest_framework.validators import UniqueValidator
+        email_field = self.fields.get('email')
+        if email_field:
+            # Keep only non-unique validators
+            email_field.validators = [
+                v for v in email_field.validators
+                if not isinstance(v, UniqueValidator)
+            ]
+
     def validate_email(self, value):
         """Validate email"""
         if User.objects.filter(email=value).exists():
@@ -168,6 +180,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create new user"""
         from django.utils import timezone
+        from django.db import IntegrityError
 
         try:
             # Remove terms agreement fields from user creation data
@@ -185,6 +198,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
             user.save()
             return user
+        except IntegrityError:
+            # Handle unique constraint violation for email
+            raise serializers.ValidationError({
+                'email': ["이미 사용 중인 이메일 주소입니다."]
+            })
         except Exception as e:
             raise serializers.ValidationError({
                 'non_field_errors': f"계정 생성 중 오류가 발생했습니다: {str(e)}"

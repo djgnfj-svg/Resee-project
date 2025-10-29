@@ -64,13 +64,35 @@ class Content(BaseModel):
         default='objective',
         help_text='Review test mode: objective or subjective with AI auto-evaluation'
     )
-    
+
+    # AI 검증 관련 필드
+    is_ai_validated = models.BooleanField(
+        default=False,
+        help_text='AI 검증 완료 여부 (주간 시험 생성에 필수)'
+    )
+    ai_validation_score = models.FloatField(
+        null=True,
+        blank=True,
+        help_text='AI 검증 평균 점수 (0-100, 3가지 항목의 평균)'
+    )
+    ai_validation_result = models.JSONField(
+        null=True,
+        blank=True,
+        help_text='AI 검증 상세 결과 (factual_accuracy, logical_consistency, title_relevance)'
+    )
+    ai_validated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='AI 검증 완료 시각'
+    )
+
     class Meta:
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['author', '-created_at'], name='content_author_created'),
             models.Index(fields=['author', 'category', '-created_at'], name='content_auth_cat_created'),
             models.Index(fields=['category', '-created_at'], name='content_category_created'),
+            models.Index(fields=['is_ai_validated', '-created_at'], name='content_ai_validated'),
         ]
         constraints = [
             models.CheckConstraint(
@@ -100,7 +122,20 @@ class Content(BaseModel):
                 })
 
     def save(self, *args, **kwargs):
-        """Override save to run validation"""
+        """Override save to run validation and handle AI validation reset"""
+        # 기존 콘텐츠 수정 시 내용이 변경되었으면 AI 검증 상태 리셋
+        if self.pk:
+            try:
+                old_content = Content.objects.get(pk=self.pk)
+                # 제목 또는 내용이 변경되었으면 재검증 필요
+                if old_content.content != self.content or old_content.title != self.title:
+                    self.is_ai_validated = False
+                    self.ai_validation_score = None
+                    self.ai_validation_result = None
+                    self.ai_validated_at = None
+            except Content.DoesNotExist:
+                pass  # 새 콘텐츠 생성 시
+
         self.full_clean()
         super().save(*args, **kwargs)
 

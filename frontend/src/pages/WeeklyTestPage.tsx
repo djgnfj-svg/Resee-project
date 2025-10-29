@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { weeklyTestAPI, WeeklyTest } from '../utils/api/weeklyTest';
 import { contentAPI } from '../utils/api/content';
-import { Category } from '../types';
+import { Content } from '../types';
 import TestResultsView from '../components/weeklytest/TestResultsView';
 import TestQuestionView from '../components/weeklytest/TestQuestionView';
-import CategorySelectorModal from '../components/weeklytest/CategorySelectorModal';
+import ContentSelectorModal from '../components/weeklytest/ContentSelectorModal';
 import TestListItem from '../components/weeklytest/TestListItem';
 
 const WeeklyTestPage: React.FC = () => {
@@ -17,21 +17,21 @@ const WeeklyTestPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [testResults, setTestResults] = useState<any>(null);
   const [error, setError] = useState<string>('');
-  const [showCategorySelector, setShowCategorySelector] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [showContentSelector, setShowContentSelector] = useState(false);
+  const [contents, setContents] = useState<Content[]>([]);
+  const [selectedContentIds, setSelectedContentIds] = useState<number[]>([]);
 
   useEffect(() => {
     loadTests();
-    loadCategories();
+    loadContents();
   }, []);
 
-  const loadCategories = async () => {
+  const loadContents = async () => {
     try {
-      const response = await contentAPI.getCategories();
-      setCategories(response.results || []);
+      const response = await contentAPI.getContents();
+      setContents(response.results || []);
     } catch (error) {
-      console.error('Failed to load categories:', error);
+      console.error('Failed to load contents:', error);
     }
   };
 
@@ -49,26 +49,26 @@ const WeeklyTestPage: React.FC = () => {
     }
   };
 
-  const openCategorySelector = () => {
-    setShowCategorySelector(true);
-    setSelectedCategoryIds([]);
+  const openContentSelector = () => {
+    setShowContentSelector(true);
+    setSelectedContentIds([]);
     setError('');
   };
 
   const createNewTest = async () => {
-    if (selectedCategoryIds.length === 0) {
-      setError('카테고리를 선택해주세요.');
+    if (selectedContentIds.length < 7 || selectedContentIds.length > 10) {
+      setError('AI 검증된 콘텐츠를 7~10개 선택해주세요.');
       return;
     }
 
     try {
       setIsLoading(true);
       setError('');
-      const testData = { category_ids: selectedCategoryIds };
+      const testData = { content_ids: selectedContentIds };
       await weeklyTestAPI.createWeeklyTest(testData);
       await loadTests();
-      setShowCategorySelector(false);
-      setSelectedCategoryIds([]);
+      setShowContentSelector(false);
+      setSelectedContentIds([]);
     } catch (error: any) {
       console.error('Failed to create test:', error);
 
@@ -82,8 +82,8 @@ const WeeklyTestPage: React.FC = () => {
           errorMessage = data.non_field_errors[0];
         } else if (data.detail) {
           errorMessage = data.detail;
-        } else if (data.category_ids && Array.isArray(data.category_ids)) {
-          errorMessage = data.category_ids[0];
+        } else if (data.content_ids && Array.isArray(data.content_ids)) {
+          errorMessage = data.content_ids[0];
         } else if (typeof data === 'string') {
           errorMessage = data;
         }
@@ -95,9 +95,20 @@ const WeeklyTestPage: React.FC = () => {
     }
   };
 
-  const handleCategoryToggle = (categoryId: number) => {
-    // 단일 선택만 허용
-    setSelectedCategoryIds([categoryId]);
+  const handleContentToggle = (contentId: number) => {
+    setSelectedContentIds(prev => {
+      if (prev.includes(contentId)) {
+        return prev.filter(id => id !== contentId);
+      } else {
+        // 최대 10개까지만 선택 가능
+        if (prev.length >= 10) {
+          setError('최대 10개까지만 선택할 수 있습니다.');
+          return prev;
+        }
+        setError('');
+        return [...prev, contentId];
+      }
+    });
   };
 
   const startTest = async (testId: number) => {
@@ -223,7 +234,7 @@ const WeeklyTestPage: React.FC = () => {
 
         <div className="mb-8">
           <button
-            onClick={openCategorySelector}
+            onClick={openContentSelector}
             disabled={isLoading}
             className="bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors"
           >
@@ -231,15 +242,15 @@ const WeeklyTestPage: React.FC = () => {
           </button>
         </div>
 
-        <CategorySelectorModal
-          show={showCategorySelector}
-          categories={categories}
-          selectedCategoryIds={selectedCategoryIds}
+        <ContentSelectorModal
+          show={showContentSelector}
+          contents={contents}
+          selectedContentIds={selectedContentIds}
           error={error}
           isLoading={isLoading}
-          onToggleCategory={handleCategoryToggle}
+          onToggleContent={handleContentToggle}
           onCreate={createNewTest}
-          onClose={() => setShowCategorySelector(false)}
+          onClose={() => setShowContentSelector(false)}
         />
 
         <div className="space-y-4">

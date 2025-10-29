@@ -25,8 +25,12 @@ class ContentSerializer(serializers.ModelSerializer):
         model = Content
         fields = ('id', 'title', 'content', 'author', 'category',
                  'created_at', 'updated_at', 'review_count',
-                 'next_review_date', 'review_mode')
-        read_only_fields = ('id', 'author', 'created_at', 'updated_at')
+                 'next_review_date', 'review_mode',
+                 'is_ai_validated', 'ai_validation_score',
+                 'ai_validation_result', 'ai_validated_at')
+        read_only_fields = ('id', 'author', 'created_at', 'updated_at',
+                           'is_ai_validated', 'ai_validation_score',
+                           'ai_validation_result', 'ai_validated_at')
 
     def to_representation(self, instance):
         """Custom representation for category"""

@@ -56,7 +56,7 @@ export interface CreateWeeklyTestData {
   description?: string;
   start_date?: string;
   end_date?: string;
-  category_ids?: number[];
+  content_ids?: number[];  // 7-10개의 AI 검증된 콘텐츠 ID (필수)
 }
 
 export interface SubmitAnswerData {

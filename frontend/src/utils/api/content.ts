@@ -84,4 +84,16 @@ export const contentAPI = {
     const response = await api.post('/contents/validate/', { title, content });
     return response.data;
   },
+
+  // AI 검증 후 DB 저장
+  validateAndSave: async (id: number): Promise<{
+    message: string;
+    is_valid: boolean;
+    ai_validation_score?: number;
+    validated_at?: string;
+  }> => {
+    const response = await api.post(`/contents/${id}/validate_and_save/`);
+    invalidateContentCache(); // 캐시 무효화
+    return response.data;
+  },
 };

@@ -337,3 +337,93 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
                 {'error': f'AI 검증 중 오류가 발생했습니다: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    @swagger_auto_schema(
+        operation_summary="콘텐츠 AI 검증 및 저장",
+        operation_description="기존 콘텐츠를 AI로 검증하고 결과를 DB에 저장합니다. 주간 시험 생성 시 필수입니다.",
+        responses={
+            200: openapi.Response(
+                description="검증 성공",
+                examples={
+                    "application/json": {
+                        "message": "AI 검증이 완료되었습니다.",
+                        "is_valid": True,
+                        "ai_validation_score": 95.0,
+                        "validated_at": "2025-01-15T10:30:00Z"
+                    }
+                }
+            ),
+            400: "이미 검증된 콘텐츠 또는 잘못된 요청",
+            500: "AI 검증 실패"
+        }
+    )
+    @action(detail=True, methods=['post'])
+    def validate_and_save(self, request, pk=None):
+        """Validate content using AI and save results to DB"""
+        from django.utils import timezone
+
+        content_obj = self.get_object()
+
+        # 이미 검증된 콘텐츠 체크
+        if content_obj.is_ai_validated:
+            return Response(
+                {
+                    'message': '이미 AI 검증이 완료된 콘텐츠입니다.',
+                    'is_valid': True,
+                    'ai_validation_score': content_obj.ai_validation_score,
+                    'validated_at': content_obj.ai_validated_at
+                },
+                status=status.HTTP_200_OK
+            )
+
+        # 콘텐츠 길이 확인
+        if len(content_obj.content.strip()) < 200:
+            return Response(
+                {'error': 'AI 검증은 최소 200자 이상의 콘텐츠가 필요합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # AI 검증 실행
+            result = validate_content(content_obj.title, content_obj.content)
+
+            # 검증 결과 저장
+            if result.get('is_valid', False):
+                # 평균 점수 계산
+                scores = [
+                    result['factual_accuracy']['score'],
+                    result['logical_consistency']['score'],
+                    result['title_relevance']['score']
+                ]
+                avg_score = sum(scores) / len(scores)
+
+                # DB 업데이트
+                content_obj.is_ai_validated = True
+                content_obj.ai_validation_score = round(avg_score, 1)
+                content_obj.ai_validation_result = result
+                content_obj.ai_validated_at = timezone.now()
+                content_obj.save()
+
+                logger.info(f"Content {content_obj.id} AI validation saved: {avg_score}")
+
+                return Response({
+                    'message': 'AI 검증이 완료되었습니다.',
+                    'is_valid': True,
+                    'ai_validation_score': content_obj.ai_validation_score,
+                    'validated_at': content_obj.ai_validated_at,
+                    'result': result
+                }, status=status.HTTP_200_OK)
+            else:
+                # 검증 실패 (점수 70 미만)
+                return Response({
+                    'message': 'AI 검증 결과 일부 개선이 필요합니다.',
+                    'is_valid': False,
+                    'result': result
+                }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"AI validation failed for content {content_obj.id}: {str(e)}", exc_info=True)
+            return Response(
+                {'error': f'AI 검증 중 오류가 발생했습니다: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

@@ -56,6 +56,26 @@ export interface Content {
   review_count: number;
   next_review_date?: string;
   review_mode: 'objective' | 'subjective';
+  // AI 검증 관련 필드
+  is_ai_validated: boolean;
+  ai_validation_score?: number;
+  ai_validation_result?: {
+    is_valid: boolean;
+    factual_accuracy: {
+      score: number;
+      issues: string[];
+    };
+    logical_consistency: {
+      score: number;
+      issues: string[];
+    };
+    title_relevance: {
+      score: number;
+      issues: string[];
+    };
+    overall_feedback: string;
+  };
+  ai_validated_at?: string;
 }
 
 export interface ContentUsage {

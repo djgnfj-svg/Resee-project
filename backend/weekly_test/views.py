@@ -32,6 +32,9 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         """시험 생성 시 자동으로 문제 생성"""
+        # content_ids는 serializer의 validated_data에 있음
+        content_ids = serializer.validated_data.get('content_ids', [])
+
         weekly_test = serializer.save(user=self.request.user)
 
         # AI 사용 불가능하면 preparing 상태로 설정
@@ -39,52 +42,28 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
             weekly_test.status = 'preparing'
             weekly_test.save()
 
-        self._generate_questions(weekly_test)
+        # 선택된 콘텐츠로 문제 생성
+        self._generate_questions_from_ids(weekly_test, content_ids)
 
     def create(self, request, *args, **kwargs):
-        """Create 메서드 오버라이드로 중복 검사 및 주간 제한 확인"""
+        """Create 메서드 오버라이드로 주간 제한 확인"""
         from rest_framework.exceptions import ValidationError
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         from django.conf import settings
         from django.utils import timezone
 
         user = request.user
 
-        # 날짜가 제공되지 않았다면 기본값 계산 (시리얼라이저와 동일한 로직)
-        start_date = request.data.get('start_date')
-        end_date = request.data.get('end_date')
-
-        if not end_date:
-            end_date = timezone.now().date()
-        else:
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-
-        if not start_date:
-            start_date = end_date - timedelta(days=7)
-        else:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-
-        # 기존 같은 기간의 시험이 있는지 확인
-        existing_test = WeeklyTest.objects.filter(
-            user=user,
-            start_date=start_date,
-            end_date=end_date
-        ).first()
-
-        if existing_test:
-            raise ValidationError({
-                'detail': f'{start_date} ~ {end_date} 기간의 주간 시험이 이미 존재합니다.'
-            })
-
         # 주간 시험 생성 제한 확인 (모든 티어에서 주당 1회)
-        # 같은 주에 생성된 시험이 있는지 확인 (월요일 기준 주차)
-        week_start = start_date - timedelta(days=start_date.weekday())
+        # 이번 주에 생성된 시험 개수 확인 (월요일 기준)
+        today = timezone.now().date()
+        week_start = today - timedelta(days=today.weekday())
         week_end = week_start + timedelta(days=6)
 
         tests_this_week = WeeklyTest.objects.filter(
             user=user,
-            start_date__gte=week_start,
-            start_date__lte=week_end
+            created_at__date__gte=week_start,
+            created_at__date__lte=week_end
         ).count()
 
         # 구독 설정에서 주간 제한 확인
@@ -100,40 +79,34 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
         return super().create(request, *args, **kwargs)
 
-    def _generate_questions(self, weekly_test):
-        """선택된 카테고리 콘텐츠를 기반으로 문제 자동 생성"""
-        from django.db.models import Q
+    def _generate_questions_from_ids(self, weekly_test, content_ids):
+        """전달받은 콘텐츠 ID로 순서대로 문제 생성"""
 
-        # 기본 쿼리: 해당 기간의 사용자 콘텐츠
-        content_query = Q(
+        # 콘텐츠 조회 (AI 검증된 콘텐츠만)
+        contents = Content.objects.filter(
+            id__in=content_ids,
             author=self.request.user,
-            created_at__date__gte=weekly_test.start_date,
-            created_at__date__lte=weekly_test.end_date
+            is_ai_validated=True
         )
 
-        # 카테고리 필터 적용 (serializer에서 전달받은 경우)
-        if hasattr(weekly_test, '_selected_category_ids') and weekly_test._selected_category_ids:
-            content_query &= Q(category_id__in=weekly_test._selected_category_ids)
-
-        # 200자 이상 콘텐츠만 선택, 최대 7개, 랜덤 순서
-        contents = Content.objects.filter(content_query).extra(
-            where=["LENGTH(content) >= %s"],
-            params=[200]
-        ).order_by('?')[:7]
-
-        if not contents.exists():
+        # 존재하지 않거나 검증되지 않은 콘텐츠가 있으면 에러
+        if contents.count() != len(content_ids):
             return
 
-        question_order = 1
-        for content in contents:
-            # AI API 사용 가능 여부 확인
-            if self._is_ai_available():
-                self._create_ai_question(weekly_test, content, question_order)
-            else:
-                self._create_simple_question(weekly_test, content, question_order)
-            question_order += 1
+        # 순서 유지를 위해 딕셔너리 생성 후 재정렬
+        content_dict = {c.id: c for c in contents}
+        ordered_contents = [content_dict[cid] for cid in content_ids]
 
-        # 총 문제 수 업데이트
+        # 각 콘텐츠당 1개 문제 생성 (7-10개)
+        for order, content in enumerate(ordered_contents, start=1):
+            if self._is_ai_available():
+                success = self._create_ai_question(weekly_test, content, order)
+                if not success:
+                    self._create_simple_question(weekly_test, content, order)
+            else:
+                self._create_simple_question(weekly_test, content, order)
+
+        # 문제 수 업데이트
         weekly_test.total_questions = weekly_test.questions.count()
 
         # 문제 생성 완료 후 preparing 상태를 pending으로 변경

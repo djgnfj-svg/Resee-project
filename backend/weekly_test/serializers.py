@@ -40,12 +40,13 @@ class WeeklyTestSerializer(serializers.ModelSerializer):
 
     questions = WeeklyTestQuestionSerializer(many=True, read_only=True)
     user_answers = WeeklyTestAnswerSerializer(source='questions__answers', many=True, read_only=True)
-    category_ids = serializers.ListField(
+    content_ids = serializers.ListField(
         child=serializers.IntegerField(),
         write_only=True,
         required=True,
-        allow_empty=False,
-        help_text="시험에 포함할 카테고리 ID 목록 (필수)"
+        min_length=7,
+        max_length=10,
+        help_text="시험에 포함할 콘텐츠 ID 목록 (7~10개, AI 검증 완료 필수)"
     )
 
     class Meta:
@@ -54,86 +55,57 @@ class WeeklyTestSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'start_date', 'end_date',
             'status', 'total_questions', 'correct_answers', 'score_percentage',
             'started_at', 'completed_at', 'time_spent', 'created_at', 'updated_at',
-            'questions', 'user_answers', 'category_ids'
+            'questions', 'user_answers', 'content_ids'
         ]
         read_only_fields = [
             'id', 'total_questions', 'correct_answers', 'score_percentage',
             'started_at', 'completed_at', 'time_spent', 'created_at', 'updated_at'
         ]
 
-    def validate_category_ids(self, value):
-        """카테고리 ID 목록 유효성 검사"""
-        if value:
-            from content.models import Category
-            user = self.context['request'].user
+    def validate_content_ids(self, value):
+        """콘텐츠 ID 목록 유효성 검사"""
+        from content.models import Content
 
-            # 사용자의 카테고리인지 확인
-            valid_categories = Category.objects.filter(user=user, id__in=value)
-            if len(valid_categories) != len(value):
-                raise serializers.ValidationError("존재하지 않거나 권한이 없는 카테고리가 포함되어 있습니다.")
+        user = self.context['request'].user
+
+        # 중복 제거
+        unique_ids = list(set(value))
+        if len(unique_ids) != len(value):
+            raise serializers.ValidationError("중복된 콘텐츠가 포함되어 있습니다.")
+
+        # 콘텐츠 존재 및 소유 확인
+        contents = Content.objects.filter(id__in=value, author=user)
+        if contents.count() != len(value):
+            raise serializers.ValidationError("유효하지 않은 콘텐츠가 포함되어 있습니다.")
+
+        # AI 검증 확인 (핵심!)
+        not_validated = contents.filter(is_ai_validated=False)
+        if not_validated.exists():
+            titles = list(not_validated.values_list('title', flat=True)[:3])
+            count = not_validated.count()
+            error_msg = f"AI 검증이 완료되지 않은 콘텐츠가 {count}개 있습니다: {', '.join(titles)}"
+            if count > 3:
+                error_msg += f" 외 {count - 3}개"
+            raise serializers.ValidationError(error_msg)
 
         return value
 
     def create(self, validated_data):
         """주간 시험 생성"""
         user = self.context['request'].user
-        category_ids = validated_data.pop('category_ids', None)
+        content_ids = validated_data.pop('content_ids', None)
         validated_data['user'] = user
 
-        # 기본 날짜 설정 (지난 일주일)
-        if 'end_date' not in validated_data:
-            validated_data['end_date'] = timezone.now().date()
-        if 'start_date' not in validated_data:
-            validated_data['start_date'] = validated_data['end_date'] - timedelta(days=7)
-
-        # 카테고리 조건에 맞는 콘텐츠 검증
-        self._validate_content_requirements(user, validated_data['start_date'], validated_data['end_date'], category_ids)
+        # 생성 시각 기록
+        if 'created_at' not in validated_data:
+            validated_data['created_at'] = timezone.now()
 
         weekly_test = super().create(validated_data)
 
-        # 선택된 카테고리 정보를 임시로 저장 (문제 생성에서 사용)
-        weekly_test._selected_category_ids = category_ids
+        # 선택된 콘텐츠 ID를 임시로 저장 (문제 생성에서 사용)
+        weekly_test._selected_content_ids = content_ids
 
         return weekly_test
-
-    def _validate_content_requirements(self, user, start_date, end_date, category_ids):
-        """콘텐츠 요구사항 검증"""
-        from content.models import Content
-        from django.db.models import Q
-
-        # 기본 쿼리: 해당 기간의 사용자 콘텐츠
-        content_query = Q(
-            author=user,
-            created_at__date__gte=start_date,
-            created_at__date__lte=end_date
-        )
-
-        # 카테고리 필터 추가
-        if category_ids:
-            content_query &= Q(category_id__in=category_ids)
-
-        # 콘텐츠 조건 확인: 200자 이상, 최소 7개
-        valid_contents = Content.objects.filter(content_query).extra(
-            where=["LENGTH(content) >= %s"],
-            params=[200]
-        )
-
-        valid_count = valid_contents.count()
-
-        if valid_count < 7:
-            if category_ids:
-                from content.models import Category
-                category_names = list(Category.objects.filter(id__in=category_ids).values_list('name', flat=True))
-                category_str = ", ".join(category_names)
-                raise serializers.ValidationError(
-                    f"선택한 카테고리({category_str})에 충분한 콘텐츠가 없습니다. "
-                    f"현재: {valid_count}개, 필요: 최소 7개의 200자 이상 콘텐츠"
-                )
-            else:
-                raise serializers.ValidationError(
-                    f"시험 생성에 필요한 콘텐츠가 부족합니다. "
-                    f"현재: {valid_count}개, 필요: 최소 7개의 200자 이상 콘텐츠"
-                )
 
 
 class WeeklyTestListSerializer(serializers.ModelSerializer):
