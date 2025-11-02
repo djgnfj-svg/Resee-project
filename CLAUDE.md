@@ -33,8 +33,6 @@ http://localhost:8000/admin
 
 ### Test Accounts
 
-**Production**:
-
 **Development**:
 - Admin: `admin@resee.com` / `admin123!` (PRO, 180-day intervals)
 - Email Test: `djgnfj8923@naver.com` / `testpassword123` (BASIC, 90-day)
