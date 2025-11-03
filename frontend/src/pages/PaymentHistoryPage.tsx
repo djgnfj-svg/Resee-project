@@ -32,7 +32,7 @@ const PaymentHistoryPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">결제 내역을 불러오는 중...</p>
         </div>
       </div>
@@ -46,7 +46,7 @@ const PaymentHistoryPage: React.FC = () => {
       case 'initial':
         return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20';
       case 'upgrade':
-        return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20';
+        return 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20';
       case 'downgrade':
         return 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20';
       case 'cancellation':
@@ -61,14 +61,21 @@ const PaymentHistoryPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            결제 내역
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            구독 변경 및 결제 이력을 확인하세요
-          </p>
+        {/* Gradient Header */}
+        <div className="mb-8 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-8 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">결제 내역</h1>
+              <p className="text-indigo-100 text-sm mt-1">
+                구독 변경 및 결제 이력을 확인하세요
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Payment History List */}
@@ -148,10 +155,10 @@ const PaymentHistoryPage: React.FC = () => {
         <div className="mt-8">
           <a
             href="/subscription"
-            className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+            className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
           >
             <svg
-              className="w-5 h-5 mr-2"
+              className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
