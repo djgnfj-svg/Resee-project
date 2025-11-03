@@ -15,7 +15,7 @@ const PaymentHistory: React.FC = () => {
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">결제 이력</h3>
       {paymentHistoryLoading ? (
         <div className="flex items-center justify-center h-24">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         </div>
       ) : paymentHistoryData?.results && paymentHistoryData.results.length > 0 ? (
         <div className="space-y-3">

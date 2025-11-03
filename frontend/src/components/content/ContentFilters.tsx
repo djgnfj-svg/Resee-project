@@ -39,7 +39,7 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="제목이나 내용으로 검색하세요..."
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
           />
         </div>
 
@@ -52,7 +52,7 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
               </div>
               <button
                 onClick={onCategoryManagerOpen}
-                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 border border-indigo-600 hover:border-indigo-700 rounded transition-colors"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -63,7 +63,7 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
             <select
               value={selectedCategory}
               onChange={(e) => onCategoryChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
             >
               <option value="all">전체 카테고리</option>
               {categories.map((category) => (
@@ -83,7 +83,7 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
             <select
               value={sortBy}
               onChange={(e) => onSortChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
             >
               <option value="-created_at">최신순</option>
               <option value="created_at">오래된순</option>

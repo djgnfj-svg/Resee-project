@@ -21,7 +21,7 @@ const getTierColor = (tier: SubscriptionTier) => {
     case 'free':
       return 'bg-gray-100 text-gray-800 border-gray-200';
     case 'basic':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
+      return 'bg-indigo-100 text-indigo-800 border-indigo-200';
     case 'pro':
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     default:
@@ -81,7 +81,7 @@ export const SubscriptionStatus: React.FC<SubscriptionStatusProps> = ({
       {showUpgradeButton && subscription.tier !== 'pro' && (
         <button
           onClick={onUpgradeClick}
-          className="text-sm bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors"
+          className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-lg hover:bg-indigo-700 transition-colors"
         >
           업그레이드
         </button>

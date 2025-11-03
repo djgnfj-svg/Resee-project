@@ -85,7 +85,7 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
       <div className="space-y-2 sm:space-y-0 sm:flex sm:gap-2">
         <select
           {...register('category')}
-          className="w-full sm:flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:border-blue-500 dark:focus:border-blue-400 focus:ring-1 focus:ring-blue-500 focus:outline-none transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          className="w-full sm:flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
           <option value="">카테고리 선택 (선택사항)</option>
           {categories.map((category) => (
@@ -130,7 +130,7 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               placeholder="카테고리 이름 (예: 영어학습, 프로그래밍)"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
               onKeyPress={(e) => e.key === 'Enter' && handleCreateCategory()}
             />
 
@@ -139,7 +139,7 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
                 type="button"
                 onClick={handleCreateCategory}
                 disabled={!newCategoryName.trim() || isCreatingCategory}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-md text-sm font-medium transition-colors"
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-md text-sm font-medium transition-colors"
               >
                 {isCreatingCategory ? '생성중...' : '생성'}
               </button>

@@ -17,7 +17,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={() => editor.commands.toggleBold()}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('bold')
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="굵게 (Ctrl+B)"
@@ -28,7 +28,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={() => editor.commands.toggleItalic()}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('italic')
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="기울임 (Ctrl+I)"
@@ -39,7 +39,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={() => editor.commands.toggleStrike()}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('strike')
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="취소선"
@@ -50,7 +50,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={() => editor.commands.toggleCode()}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('code')
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="인라인 코드"
@@ -65,7 +65,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={() => editor.commands.toggleHeading({ level: 1 })}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('heading', { level: 1 })
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="제목 1"
@@ -76,7 +76,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={() => editor.commands.toggleHeading({ level: 2 })}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('heading', { level: 2 })
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="제목 2"
@@ -87,7 +87,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={() => editor.commands.toggleHeading({ level: 3 })}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('heading', { level: 3 })
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="제목 3"
@@ -102,7 +102,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={() => editor.commands.toggleBulletList()}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('bulletList')
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="불릿 목록"
@@ -113,7 +113,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={() => editor.commands.toggleOrderedList()}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('orderedList')
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="번호 목록"
@@ -124,7 +124,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={() => editor.commands.toggleBlockquote()}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('blockquote')
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="인용문"
@@ -139,7 +139,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={() => editor.commands.toggleCodeBlock()}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('codeBlock')
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="코드 블록"
@@ -150,7 +150,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, addLink }) => {
           onClick={addLink}
           className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
             editor.isActive('link')
-              ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
           title="링크"

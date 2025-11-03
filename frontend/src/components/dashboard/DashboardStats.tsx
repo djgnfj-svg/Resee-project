@@ -26,8 +26,8 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
       value: todayReviews,
       unit: '개',
       icon: '',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50 dark:bg-indigo-900/20',
     },
     {
       name: '전체 콘텐츠',

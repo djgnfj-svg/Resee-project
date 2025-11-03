@@ -85,7 +85,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
                       {user?.email[0].toUpperCase()}
                     </div>
                     <span className="hidden md:block text-gray-900 dark:text-gray-100">
@@ -173,7 +173,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               {/* Mobile user menu items */}
               <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center px-3 py-2">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
                     {user?.email[0].toUpperCase()}
                   </div>
                   <div className="ml-3">

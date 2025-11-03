@@ -26,8 +26,8 @@ const TitleField: React.FC<TitleFieldProps> = ({ register, errors, watchedTitle 
           errors.title
             ? 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500'
             : watchedTitle && watchedTitle.trim().length >= 1
-            ? 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:focus:border-blue-400'
-            : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:focus:border-blue-400'
+            ? 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:focus:border-indigo-400'
+            : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:focus:border-indigo-400'
         }`}
         placeholder="예: React Hook 완벽 가이드"
       />

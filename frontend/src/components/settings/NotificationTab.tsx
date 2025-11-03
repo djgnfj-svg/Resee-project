@@ -149,14 +149,14 @@ const NotificationTab: React.FC = () => {
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-6">알림 설정</h3>
         <form onSubmit={notificationForm.handleSubmit(onNotificationSubmit)} className="space-y-8">
           {/* 전체 이메일 알림 설정 */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg">
             <div className="flex items-start space-x-3">
               <div className="flex items-center h-5 mt-0.5">
                 <input
                   id="email_notifications_enabled"
                   type="checkbox"
                   {...notificationForm.register('email_notifications_enabled')}
-                  className="focus:ring-blue-500 focus:ring-2 h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded"
+                  className="focus:ring-indigo-500 focus:ring-2 h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded"
                 />
               </div>
               <div className="min-w-0 flex-1">
@@ -179,7 +179,7 @@ const NotificationTab: React.FC = () => {
                     id="daily_reminder_enabled"
                     type="checkbox"
                     {...notificationForm.register('daily_reminder_enabled')}
-                    className="focus:ring-blue-500 focus:ring-2 h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded"
+                    className="focus:ring-indigo-500 focus:ring-2 h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded"
                   />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -203,7 +203,7 @@ const NotificationTab: React.FC = () => {
                     setDailyHour(hour);
                     notificationForm.setValue('daily_reminder_time', formatTime(hour));
                   }}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm min-w-32"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm shadow-sm min-w-32"
                 >
                   {hourOptions.map(hour => (
                     <option key={hour} value={hour}>
@@ -222,7 +222,7 @@ const NotificationTab: React.FC = () => {
                     id="evening_reminder_enabled"
                     type="checkbox"
                     {...notificationForm.register('evening_reminder_enabled')}
-                    className="focus:ring-blue-500 focus:ring-2 h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded"
+                    className="focus:ring-indigo-500 focus:ring-2 h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded"
                   />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -246,7 +246,7 @@ const NotificationTab: React.FC = () => {
                     setEveningHour(hour);
                     notificationForm.setValue('evening_reminder_time', formatTime(hour));
                   }}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm min-w-32"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm shadow-sm min-w-32"
                 >
                   {hourOptions.map(hour => (
                     <option key={hour} value={hour}>
@@ -265,7 +265,7 @@ const NotificationTab: React.FC = () => {
                     id="weekly_summary_enabled"
                     type="checkbox"
                     {...notificationForm.register('weekly_summary_enabled')}
-                    className="focus:ring-blue-500 focus:ring-2 h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded"
+                    className="focus:ring-indigo-500 focus:ring-2 h-4 w-4 text-indigo-600 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded"
                   />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -289,7 +289,7 @@ const NotificationTab: React.FC = () => {
                     setWeeklyHour(hour);
                     notificationForm.setValue('weekly_summary_time', formatTime(hour));
                   }}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm min-w-32"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm shadow-sm min-w-32"
                 >
                   {hourOptions.map(hour => (
                     <option key={hour} value={hour}>

@@ -65,7 +65,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-600 hover:border-blue-700 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 border border-indigo-600 hover:border-indigo-700 rounded-lg transition-colors"
           >
             편집
           </button>
@@ -81,7 +81,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
             <button
               onClick={handleSubmit(onSubmit)}
               disabled={!isDirty || updateProfileMutation.isPending}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {updateProfileMutation.isPending ? '저장 중...' : '저장'}
             </button>
@@ -106,7 +106,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
               }
             })}
             disabled={!isEditing}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
           {errors.email && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
@@ -133,7 +133,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
             })}
             disabled={!isEditing}
             placeholder="사용자명을 입력하세요"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
           {errors.username && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.username.message}</p>

@@ -49,7 +49,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
           </svg>
         ),
         label: '객관식',
-        color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+        color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300'
       };
     }
     return {

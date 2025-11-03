@@ -14,8 +14,8 @@ const ValidationResultCard: React.FC<ValidationResultCardProps> = ({ result }) =
   ) => {
     const colorClasses = {
       blue: {
-        text: 'text-blue-600 dark:text-blue-400',
-        bg: 'bg-gradient-to-r from-blue-500 to-blue-600',
+        text: 'text-indigo-600 dark:text-indigo-400',
+        bg: 'bg-gradient-to-r from-indigo-500 to-purple-600',
       },
       purple: {
         text: 'text-purple-600 dark:text-purple-400',
@@ -51,7 +51,7 @@ const ValidationResultCard: React.FC<ValidationResultCardProps> = ({ result }) =
   };
 
   return (
-    <div className="mt-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-6">
+    <div className="mt-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-2 border-indigo-200 dark:border-indigo-700 rounded-xl p-6">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         AI 검증 결과 {result.is_valid ? '✓' : '⚠️'}
       </h3>

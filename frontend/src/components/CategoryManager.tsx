@@ -216,7 +216,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleEditCategory(category)}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"
+                          className="p-1.5 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400"
                           title="수정"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

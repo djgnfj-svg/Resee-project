@@ -51,7 +51,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }
           {/* Content */}
           <div className="text-center">
             {/* Icon */}
-            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 mb-4">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 mb-4">
               <SparklesIcon className="h-8 w-8 text-white" />
             </div>
 
@@ -65,9 +65,9 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }
             </p>
 
             {/* Description */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-4 mb-6 border border-blue-200 dark:border-blue-800">
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-4 mb-6 border border-indigo-200 dark:border-indigo-800">
               <div className="flex items-center justify-center mb-2">
-                <BookOpenIcon className="w-6 h-6 text-blue-500 mr-2" />
+                <BookOpenIcon className="w-6 h-6 text-indigo-500 mr-2" />
                 <span className="font-semibold text-gray-900 dark:text-gray-100">
                   과학적인 학습을 시작해보세요
                 </span>
@@ -81,7 +81,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }
             <div className="space-y-3">
               <button
                 onClick={handleStartOnboarding}
-                className="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-lg"
+                className="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-lg"
               >
                 <span>🚀 가이드 보기</span>
                 <ArrowRightIcon className="ml-2 w-4 h-4" />
@@ -89,7 +89,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }
               
               <button
                 onClick={handleSkipToContent}
-                className="w-full px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="w-full px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
               >
                 바로 시작하기
               </button>

@@ -55,7 +55,7 @@ const SecurityTab: React.FC = () => {
               type="password"
               id="current_password"
               {...securityForm.register('current_password', { required: '현재 비밀번호를 입력해주세요' })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
@@ -70,7 +70,7 @@ const SecurityTab: React.FC = () => {
                 required: '새 비밀번호를 입력해주세요',
                 minLength: { value: 8, message: '비밀번호는 최소 8자 이상이어야 합니다' }
               })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
@@ -123,8 +123,8 @@ const SecurityTab: React.FC = () => {
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">보안 팁</h3>
-              <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+              <h3 className="text-sm font-medium text-indigo-800 dark:text-indigo-200">보안 팁</h3>
+              <div className="mt-2 text-sm text-indigo-700 dark:text-indigo-300">
                 <ul className="list-disc pl-5 space-y-1">
                   <li>강력한 비밀번호를 사용하세요 (대소문자, 숫자, 특수문자 포함)</li>
                   <li>정기적으로 비밀번호를 변경하세요</li>

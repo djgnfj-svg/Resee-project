@@ -17,7 +17,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
         rounded-lg border border-gray-300 dark:border-gray-600
         bg-white dark:bg-gray-800 
         hover:bg-gray-50 dark:hover:bg-gray-700
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800
+        focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800
         transition-all duration-200 ease-in-out
         ${className}
       `}
@@ -36,7 +36,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
         />
         <MoonIcon 
           className={`
-            absolute inset-0 w-6 h-6 text-blue-400
+            absolute inset-0 w-6 h-6 text-indigo-400
             transition-all duration-300 ease-in-out
             ${theme === 'dark' 
               ? 'opacity-100 rotate-0 scale-100' 

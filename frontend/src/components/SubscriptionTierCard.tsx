@@ -27,11 +27,11 @@ const getTierColors = (tier: SubscriptionTier) => {
       };
     case 'basic':
       return {
-        border: 'border-blue-200',
-        header: 'bg-blue-50',
-        icon: 'text-blue-600',
-        button: 'bg-blue-600 hover:bg-blue-700',
-        accent: 'text-blue-600',
+        border: 'border-indigo-200',
+        header: 'bg-indigo-50',
+        icon: 'text-indigo-600',
+        button: 'bg-indigo-600 hover:bg-indigo-700',
+        accent: 'text-indigo-600',
       };
     case 'pro':
       return {

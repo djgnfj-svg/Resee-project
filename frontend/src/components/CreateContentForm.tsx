@@ -112,7 +112,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                 className={`w-full px-4 py-3 text-2xl font-bold border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
                   errors.title
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500'
-                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:focus:border-blue-400'
+                    : 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:focus:border-indigo-400'
                 }`}
                 placeholder="예: React Hook 완벽 가이드"
               />
@@ -138,7 +138,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
               <div className="flex gap-4">
                 <label className={`flex-1 flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
                   reviewMode === 'objective'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}>
                   <input
@@ -146,7 +146,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                     value="objective"
                     checked={reviewMode === 'objective'}
                     onChange={(e) => setReviewMode(e.target.value as 'objective')}
-                    className="w-4 h-4 text-blue-600"
+                    className="w-4 h-4 text-indigo-600"
                   />
                   <div className="ml-3">
                     <div className="font-medium text-gray-900 dark:text-gray-100">기억 확인</div>
@@ -156,7 +156,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
 
                 <label className={`flex-1 flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
                   reviewMode === 'subjective'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}>
                   <input
@@ -164,7 +164,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                     value="subjective"
                     checked={reviewMode === 'subjective'}
                     onChange={(e) => setReviewMode(e.target.value as 'subjective')}
-                    className="w-4 h-4 text-blue-600"
+                    className="w-4 h-4 text-indigo-600"
                   />
                   <div className="ml-3">
                     <div className="font-medium text-gray-900 dark:text-gray-100">주관식 평가</div>
@@ -229,7 +229,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                   disabled={isLoading || !content || !canCreateContent || !hasValidContentLength}
                   className={`px-8 py-2.5 text-sm font-medium rounded-lg transition-all ${
                     !isLoading && content && canCreateContent && hasValidContentLength
-                      ? 'text-white bg-blue-600 hover:bg-blue-700 shadow-sm'
+                      ? 'text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm'
                       : 'text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
                   }`}
                   title={
