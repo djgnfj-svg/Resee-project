@@ -14,7 +14,7 @@ export const renderTextWithCode = (text: string): React.ReactNode => {
     parts.push(
       <code
         key={match.index}
-        className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-blue-600 dark:text-blue-300 rounded text-sm font-mono"
+        className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-600 text-indigo-600 dark:text-indigo-300 rounded text-sm font-mono"
       >
         {match[1]}
       </code>
