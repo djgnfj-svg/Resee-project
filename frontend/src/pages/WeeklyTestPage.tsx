@@ -217,30 +217,48 @@ const WeeklyTestPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-            주간 시험
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            지난 일주일 동안 학습한 내용을 종합적으로 테스트해보세요.
-          </p>
+        {/* Gradient Header */}
+        <div className="mb-8 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-8 shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-white">주간 시험</h1>
+                  <p className="text-indigo-100 text-sm mt-1">
+                    지난 일주일 동안 학습한 내용을 종합적으로 테스트해보세요
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={openContentSelector}
+              disabled={isLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-indigo-600 px-6 py-3 text-sm font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              {isLoading ? '생성 중...' : '새 시험 생성'}
+            </button>
+          </div>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
-            <p className="text-red-800 dark:text-red-200">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg shadow-sm">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-red-800 dark:text-red-200">{error}</p>
+            </div>
           </div>
         )}
-
-        <div className="mb-8">
-          <button
-            onClick={openContentSelector}
-            disabled={isLoading}
-            className="bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors"
-          >
-            {isLoading ? '생성 중...' : '새 주간 시험 생성'}
-          </button>
-        </div>
 
         <ContentSelectorModal
           show={showContentSelector}
@@ -255,18 +273,37 @@ const WeeklyTestPage: React.FC = () => {
 
         <div className="space-y-4">
           {isLoading && (!tests || tests.length === 0) ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">로딩 중...</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400 mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">시험 목록을 불러오는 중...</p>
+              </div>
             </div>
           ) : (!tests || tests.length === 0) ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                아직 주간 시험이 없습니다.
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-500">
-                새 주간 시험을 생성하여 학습 내용을 점검해보세요.
-              </p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-12">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <p className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  아직 주간 시험이 없습니다
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                  새 주간 시험을 생성하여 학습 내용을 점검해보세요
+                </p>
+                <button
+                  onClick={openContentSelector}
+                  disabled={isLoading}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  첫 시험 만들기
+                </button>
+              </div>
             </div>
           ) : (
             tests.map((test) => (
@@ -284,9 +321,12 @@ const WeeklyTestPage: React.FC = () => {
         <div className="mt-8 text-center">
           <button
             onClick={() => navigate('/dashboard')}
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm font-medium transition-colors"
           >
-            ← 대시보드로 돌아가기
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            대시보드로 돌아가기
           </button>
         </div>
       </div>
