@@ -98,7 +98,7 @@ const SimpleDashboard: React.FC = () => {
               <h3 className="text-gray-700 dark:text-gray-300 font-semibold text-lg">전체 콘텐츠</h3>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-indigo-600">
                 {dashboardData?.total_content || 0}개
               </div>
             </div>

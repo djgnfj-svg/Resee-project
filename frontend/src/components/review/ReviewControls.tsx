@@ -28,7 +28,7 @@ const ReviewControls: React.FC<ReviewControlsProps> = ({
           <button
             onClick={onNext}
             disabled={isDisabled}
-            className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 dark:from-blue-400 dark:to-purple-500 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 dark:hover:from-blue-500 dark:hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg dark:shadow-gray-900/40"
+            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 shadow-lg dark:shadow-gray-900/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
             다음으로
           </button>

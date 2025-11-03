@@ -9,13 +9,13 @@ const QuickActions: React.FC = () => {
       <div className="space-y-3">
         <a
           href="/content/new"
-          className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4 text-white font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 block text-center"
+          className="w-full group relative overflow-hidden rounded-xl bg-indigo-600 hover:bg-indigo-700 px-6 py-4 text-white font-semibold transition-colors duration-150 block text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
           새 콘텐츠 추가
         </a>
         <a
           href="/review"
-          className="w-full group relative overflow-hidden rounded-xl bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4 text-white font-semibold hover:from-green-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 block text-center"
+          className="w-full group relative overflow-hidden rounded-xl bg-green-600 hover:bg-green-700 px-6 py-4 text-white font-semibold transition-colors duration-150 block text-center focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
         >
           오늘의 복습 시작
         </a>

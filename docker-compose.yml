@@ -113,7 +113,6 @@ services:
       - SKIP_PREFLIGHT_CHECK=true
       - WDS_SOCKET_HOST=localhost
       - WDS_SOCKET_PORT=3000
-      - FAST_REFRESH=false
     restart: unless-stopped
 
   nginx:

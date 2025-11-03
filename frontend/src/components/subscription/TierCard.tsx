@@ -22,12 +22,12 @@ const TierCard: React.FC<TierCardProps> = ({
 
   return (
     <div className={`relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/25 border ${
-      isPopular ? 'border-blue-500 dark:border-blue-400' : 'border-gray-200 dark:border-gray-700'
+      isPopular ? 'border-indigo-500 dark:border-indigo-400' : 'border-gray-200 dark:border-gray-700'
     } p-8 flex flex-col h-full`}>
       
       {isPopular && (
         <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-          <span className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-medium">
+          <span className="bg-indigo-600 text-white px-4 py-1 rounded-full text-sm font-medium">
             인기
           </span>
         </div>
@@ -84,7 +84,7 @@ const TierCard: React.FC<TierCardProps> = ({
           <button
             onClick={() => onUpgrade?.(tier.name as SubscriptionTier, billingCycle)}
             disabled={upgrading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-6 rounded-lg font-medium transition-colors"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white py-3 px-6 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
             {upgrading ? '처리 중...' : `${tier.display_name} 플랜 구독하기`}
           </button>

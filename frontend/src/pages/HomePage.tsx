@@ -28,18 +28,13 @@ const HomePage: React.FC = () => {
     <div className="text-center">
       {/* Main Hero Section - Automation Focused */}
       <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background with gradient animation */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-indigo-100 to-purple-100 dark:from-gray-900 dark:via-blue-900 dark:to-indigo-900"></div>
+        {/* Background - simplified solid with subtle glow */}
+        <div className="absolute inset-0 bg-slate-50 dark:bg-slate-900"></div>
 
-        {/* Floating elements for visual interest */}
+        {/* Subtle radial glow for depth */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
-            className="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-3xl"
-            style={{ transform: `translateY(${scrollY * 0.5}px)` }}
-          ></div>
-          <div
-            className="absolute top-3/4 right-1/4 w-96 h-96 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-3xl"
-            style={{ transform: `translateY(${scrollY * -0.3}px)` }}
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-gradient-to-b from-indigo-500/10 to-transparent rounded-full blur-3xl"
           ></div>
         </div>
 
@@ -47,7 +42,7 @@ const HomePage: React.FC = () => {
         <div className={`relative z-10 mx-auto max-w-5xl px-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="text-center mb-12">
             <h1 className="text-5xl font-bold tracking-tight sm:text-7xl">
-              <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+              <span className="text-white">
                 복습을 자동화하다
               </span>
             </h1>
@@ -60,7 +55,7 @@ const HomePage: React.FC = () => {
             <div className="mt-12 flex items-center justify-center">
               <Link
                 to="/register"
-                className="group relative inline-flex items-center justify-center px-10 py-5 text-xl font-bold text-white transition-all duration-300 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 button-press ripple animate-glow"
+                className="group relative inline-flex items-center justify-center px-10 py-5 text-xl font-bold text-white transition-colors duration-150 bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-xl hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
                 무료로 시작하기
                 <svg className="ml-3 h-6 w-6 transition-transform group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor">
@@ -76,19 +71,19 @@ const HomePage: React.FC = () => {
                   label: '자동 주기적 복습',
                   description: '에빙하우스 망각곡선 기반으로 최적의 복습 주기를 자동으로 설정하고 알려드립니다',
                   icon: '',
-                  color: 'from-blue-500 to-indigo-600'
+                  color: 'from-indigo-500 to-indigo-600'
                 },
                 {
                   label: '자동 AI 시험',
                   description: 'AI가 학습 내용을 분석하여 자동으로 시험 문제를 생성하고 평가합니다',
                   icon: '',
-                  color: 'from-green-500 to-teal-600'
+                  color: 'from-indigo-500 to-indigo-600'
                 },
                 {
                   label: '자동 AI 내용 검증',
                   description: 'AI가 학습 자료의 정확성을 검증하고 개선 사항을 자동으로 제안합니다',
                   icon: '',
-                  color: 'from-purple-500 to-pink-600'
+                  color: 'from-indigo-500 to-indigo-600'
                 }
               ].map((feature, index) => (
                 <div
