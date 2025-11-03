@@ -40,7 +40,7 @@ const CategorySelectorModal: React.FC<CategorySelectorModalProps> = ({
                 onToggleCategory(categoryId);
               }
             }}
-            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             <option value="">카테고리를 선택하세요</option>
             {categories.map((category) => (
@@ -77,7 +77,7 @@ const CategorySelectorModal: React.FC<CategorySelectorModalProps> = ({
           <button
             onClick={onCreate}
             disabled={isLoading || selectedCategoryIds.length === 0}
-            className="flex-1 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors"
+            className="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
           >
             {isLoading ? '생성 중...' : '시험 생성'}
           </button>

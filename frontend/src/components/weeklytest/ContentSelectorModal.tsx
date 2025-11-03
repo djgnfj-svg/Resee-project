@@ -50,8 +50,8 @@ const ContentSelectorModal: React.FC<ContentSelectorModalProps> = ({
         </h3>
 
         {/* 안내 메시지 */}
-        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-400 dark:border-blue-600 rounded-lg">
-          <p className="text-blue-800 dark:text-blue-200 text-sm">
+        <div className="mb-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-400 dark:border-indigo-600 rounded-lg">
+          <p className="text-indigo-800 dark:text-indigo-200 text-sm">
             <strong>AI 검증이 완료된 콘텐츠</strong>를 <strong>7~10개</strong> 선택해주세요.
             {selectedCount > 0 && (
               <span className={`ml-2 font-semibold ${isValid ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}`}>
@@ -68,7 +68,7 @@ const ContentSelectorModal: React.FC<ContentSelectorModalProps> = ({
             placeholder="콘텐츠 제목 검색..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
 
@@ -96,7 +96,7 @@ const ContentSelectorModal: React.FC<ContentSelectorModalProps> = ({
                     key={content.id}
                     className={`flex items-start p-3 border-2 rounded-lg cursor-pointer transition-colors ${
                       selectedContentIds.includes(content.id)
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
                   >
@@ -104,7 +104,7 @@ const ContentSelectorModal: React.FC<ContentSelectorModalProps> = ({
                       type="checkbox"
                       checked={selectedContentIds.includes(content.id)}
                       onChange={() => onToggleContent(content.id)}
-                      className="mt-1 mr-3 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      className="mt-1 mr-3 w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
@@ -186,7 +186,7 @@ const ContentSelectorModal: React.FC<ContentSelectorModalProps> = ({
           <button
             onClick={onCreate}
             disabled={isLoading || !isValid}
-            className="flex-1 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
           >
             {isLoading ? '생성 중...' : '시험 생성'}
           </button>

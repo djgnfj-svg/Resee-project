@@ -15,7 +15,7 @@ const TestResultsView: React.FC<TestResultsViewProps> = ({ testResults, onReset 
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
               시험 완료!
             </h1>
-            <div className="text-6xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+            <div className="text-6xl font-bold text-indigo-600 dark:text-indigo-400 mb-2">
               {Math.round(testResults.test.score_percentage || 0)}점
             </div>
             <p className="text-gray-600 dark:text-gray-400">
@@ -124,7 +124,7 @@ const TestResultsView: React.FC<TestResultsViewProps> = ({ testResults, onReset 
           <div className="mt-8 text-center">
             <button
               onClick={onReset}
-              className="bg-blue-600 dark:bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-6 py-3 rounded-lg transition-all duration-200 shadow-md"
             >
               시험 목록으로 돌아가기
             </button>

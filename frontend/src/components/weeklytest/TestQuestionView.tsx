@@ -44,7 +44,7 @@ const TestQuestionView: React.FC<TestQuestionViewProps> = ({
                   {currentQuestionIndex + 1} / {test.questions.length}
                 </div>
                 <div className="text-xs mt-1">
-                  <span className="text-blue-600 dark:text-blue-400 font-medium">
+                  <span className="text-indigo-600 dark:text-indigo-400 font-medium">
                     답변: {Object.keys(answers).length}/{test.questions.length}
                   </span>
                   {Object.keys(answers).length < test.questions.length && (
@@ -58,7 +58,7 @@ const TestQuestionView: React.FC<TestQuestionViewProps> = ({
 
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
-                className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-300"
                 style={{
                   width: `${((currentQuestionIndex + 1) / test.questions.length) * 100}%`
                 }}
@@ -82,8 +82,8 @@ const TestQuestionView: React.FC<TestQuestionViewProps> = ({
               </p>
 
               {currentQuestion.content && (
-                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                <div className="mt-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                  <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
                     관련 콘텐츠: {currentQuestion.content.title}
                   </p>
                 </div>
@@ -99,8 +99,8 @@ const TestQuestionView: React.FC<TestQuestionViewProps> = ({
                       onClick={() => onAnswerSelect(currentQuestion.id, option)}
                       className={`flex-1 py-3 px-6 rounded-lg border-2 transition-all ${
                         answers[currentQuestion.id] === option
-                          ? 'bg-blue-600 border-blue-600 text-white'
-                          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-500'
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-600 border-indigo-600 text-white'
+                          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-indigo-500'
                       }`}
                     >
                       {option}
@@ -115,8 +115,8 @@ const TestQuestionView: React.FC<TestQuestionViewProps> = ({
                       onClick={() => onAnswerSelect(currentQuestion.id, choice)}
                       className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
                         answers[currentQuestion.id] === choice
-                          ? 'bg-blue-600 border-blue-600 text-white'
-                          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-500'
+                          ? 'bg-gradient-to-r from-indigo-500 to-purple-600 border-indigo-600 text-white'
+                          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-indigo-500'
                       }`}
                     >
                       {index + 1}. {choice}
@@ -147,7 +147,7 @@ const TestQuestionView: React.FC<TestQuestionViewProps> = ({
             ) : (
               <button
                 onClick={onNext}
-                className="px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-lg transition-all duration-200 shadow-md"
               >
                 다음 문제
               </button>
