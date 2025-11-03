@@ -82,24 +82,24 @@ const ContentPage: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen">
       {/* Header */}
-      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">콘텐츠 관리</h1>
-          <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
-            학습 콘텐츠를 작성하고 관리합니다.
-          </p>
-        </div>
-        <div className="flex space-x-2">
+      <div className="mb-8 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-8 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">📚 콘텐츠 관리</h1>
+            <p className="text-indigo-100">
+              학습 콘텐츠를 작성하고 효율적으로 관리하세요
+            </p>
+          </div>
           <Link
             to="/content/new"
-            className="inline-flex items-center justify-center rounded-md bg-blue-600 dark:bg-blue-500 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-500 dark:hover:bg-blue-400 w-full sm:w-auto transition-colors"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-indigo-600 px-6 py-3 text-sm font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-150 w-full sm:w-auto"
           >
-            <svg className="-ml-0.5 mr-1.5 h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
               <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
             </svg>
-            새 콘텐츠
+            새 콘텐츠 만들기
           </Link>
         </div>
       </div>
