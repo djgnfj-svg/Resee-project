@@ -52,28 +52,28 @@ const VerificationPendingPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4 mb-6">
             <div className="flex items-center mb-3">
-              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
-                <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center mr-3">
+                <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+              <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
                 다음 단계
               </p>
             </div>
-            <div className="text-left text-sm text-blue-700 dark:text-blue-300 space-y-2">
+            <div className="text-left text-sm text-indigo-700 dark:text-indigo-300 space-y-2">
               <div className="flex items-start">
-                <span className="inline-block w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full mr-2 mt-2 flex-shrink-0"></span>
+                <span className="inline-block w-2 h-2 bg-indigo-600 dark:bg-indigo-400 rounded-full mr-2 mt-2 flex-shrink-0"></span>
                 <span><strong>{email}</strong>로 발송된 인증 이메일을 확인하세요</span>
               </div>
               <div className="flex items-start">
-                <span className="inline-block w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full mr-2 mt-2 flex-shrink-0"></span>
+                <span className="inline-block w-2 h-2 bg-indigo-600 dark:bg-indigo-400 rounded-full mr-2 mt-2 flex-shrink-0"></span>
                 <span>이메일에서 "이메일 인증하기" 버튼을 클릭하세요</span>
               </div>
               <div className="flex items-start">
-                <span className="inline-block w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full mr-2 mt-2 flex-shrink-0"></span>
+                <span className="inline-block w-2 h-2 bg-indigo-600 dark:bg-indigo-400 rounded-full mr-2 mt-2 flex-shrink-0"></span>
                 <span>인증 완료 후 로그인하여 학습을 시작하세요</span>
               </div>
             </div>

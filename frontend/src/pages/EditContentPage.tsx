@@ -50,7 +50,7 @@ const EditContentPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">콘텐츠를 불러오는 중...</p>
         </div>
       </div>
@@ -69,7 +69,7 @@ const EditContentPage: React.FC = () => {
           </p>
           <button
             onClick={() => navigate('/content')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg transition-all duration-200 shadow-md"
           >
             콘텐츠 목록으로 돌아가기
           </button>

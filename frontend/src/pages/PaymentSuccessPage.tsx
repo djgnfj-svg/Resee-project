@@ -66,7 +66,7 @@ const PaymentSuccessPage: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
           {isProcessing ? (
             <>
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-6"></div>
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400 mx-auto mb-6"></div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                 결제를 확인하는 중...
               </h2>
@@ -87,14 +87,14 @@ const PaymentSuccessPage: React.FC = () => {
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 구독이 성공적으로 활성화되었습니다.
               </p>
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 mb-6">
+                <p className="text-sm text-indigo-800 dark:text-indigo-200">
                   3초 후 구독 페이지로 이동합니다...
                 </p>
               </div>
               <button
                 onClick={() => navigate('/subscription')}
-                className="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md"
               >
                 구독 페이지로 이동
               </button>
@@ -115,7 +115,7 @@ const PaymentSuccessPage: React.FC = () => {
               <div className="space-y-3">
                 <button
                   onClick={() => navigate('/subscription')}
-                  className="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md"
                 >
                   구독 페이지로 돌아가기
                 </button>

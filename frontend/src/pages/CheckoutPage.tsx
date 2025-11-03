@@ -113,9 +113,9 @@ const CheckoutPage: React.FC = () => {
         <div className="mb-8">
           <button
             onClick={() => navigate('/subscription')}
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mb-4 flex items-center"
+            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 mb-4 flex items-center gap-2 transition-colors"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             구독 플랜으로 돌아가기
@@ -150,7 +150,7 @@ const CheckoutPage: React.FC = () => {
               <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 총 결제 금액
               </span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+              <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
                 {getPricing().toLocaleString()}원
               </span>
             </div>
@@ -160,7 +160,7 @@ const CheckoutPage: React.FC = () => {
         {/* Payment Widget */}
         {isLoading ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-200 dark:border-gray-700 border-t-indigo-600 dark:border-t-indigo-400 mx-auto mb-4"></div>
             <p className="text-gray-600 dark:text-gray-400">결제 페이지를 준비하는 중...</p>
           </div>
         ) : error ? (
@@ -176,7 +176,7 @@ const CheckoutPage: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
             <button
               onClick={() => navigate('/subscription')}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg transition-all duration-200 shadow-md"
             >
               구독 플랜으로 돌아가기
             </button>
@@ -192,7 +192,7 @@ const CheckoutPage: React.FC = () => {
             {/* Payment Button */}
             <button
               id="payment-button"
-              className="w-full bg-blue-600 text-white font-semibold py-4 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 shadow-md disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
             >
               {getPricing().toLocaleString()}원 결제하기
             </button>

@@ -190,8 +190,8 @@ const EmailVerificationPage: React.FC = () => {
           )}
 
           {status.message && !status.error && !status.success && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-blue-800">{status.message}</p>
+            <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+              <p className="text-indigo-800 dark:text-indigo-200">{status.message}</p>
             </div>
           )}
         </div>

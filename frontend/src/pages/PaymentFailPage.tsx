@@ -69,7 +69,7 @@ const PaymentFailPage: React.FC = () => {
           <div className="space-y-3">
             <button
               onClick={() => navigate('/subscription')}
-              className="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-md"
             >
               다시 시도하기
             </button>
