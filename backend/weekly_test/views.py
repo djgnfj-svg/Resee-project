@@ -121,15 +121,17 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         return ai_question_generator.is_available()
 
     def _create_ai_question(self, weekly_test, content, order):
-        """AI를 사용한 고급 문제 생성"""
+        """
+        AI를 사용한 고급 문제 생성
+
+        LangGraph 기반 고품질 Distractor 생성 시스템 사용
+        """
         from .ai_service import ai_question_generator
 
         try:
-            # AI로 문제 생성 시도
             question_data = ai_question_generator.generate_question(content)
 
             if question_data:
-                # AI가 성공적으로 문제를 생성한 경우
                 WeeklyTestQuestion.objects.create(
                     weekly_test=weekly_test,
                     content=content,
@@ -141,17 +143,17 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
                     order=order,
                     points=10
                 )
+                logger.info(
+                    f"AI question generated (quality: "
+                    f"{question_data.get('metadata', {}).get('quality_score', 0):.1f})"
+                )
                 return True
             else:
-                # AI 문제 생성 실패 시 fallback
                 self._create_simple_question(weekly_test, content, order)
                 return False
 
         except Exception as e:
-            # 예외 발생 시 fallback
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"AI 문제 생성 중 오류 발생: {e}")
+            logger.error(f"AI generation error: {e}", exc_info=True)
             self._create_simple_question(weekly_test, content, order)
             return False
 
