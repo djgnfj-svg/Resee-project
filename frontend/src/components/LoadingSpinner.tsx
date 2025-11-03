@@ -20,16 +20,16 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   };
 
   const colorClasses = {
-    primary: 'border-blue-600',
-    gray: 'border-gray-600',
+    primary: 'border-indigo-600',
+    gray: 'border-gray-600 dark:border-gray-400',
     white: 'border-white'
   };
 
   return (
     <div className={`flex flex-col items-center justify-center ${className}`}>
-      <div className={`animate-spin rounded-full border-2 border-gray-200 ${sizeClasses[size]} ${colorClasses[color]} border-t-transparent`}></div>
+      <div className={`animate-spin rounded-full border-2 border-gray-200 dark:border-gray-700 ${sizeClasses[size]} ${colorClasses[color]} border-t-transparent`}></div>
       {text && (
-        <p className="mt-2 text-sm text-gray-600">{text}</p>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{text}</p>
       )}
     </div>
   );
