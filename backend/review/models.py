@@ -149,7 +149,7 @@ class ReviewHistory(BaseUserModel):
     )
     notes = models.TextField(blank=True, max_length=1000)
 
-    # AI 서술형 답변 평가 (v0.4)
+    # AI 서술형 답변 평가 (descriptive mode)
     descriptive_answer = models.TextField(
         blank=True,
         max_length=2000,
@@ -164,6 +164,20 @@ class ReviewHistory(BaseUserModel):
         null=True,
         blank=True,
         help_text='AI generated feedback'
+    )
+
+    # 객관식 모드 (multiple_choice mode)
+    selected_choice = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text='User selected choice for multiple choice mode'
+    )
+
+    # 주관식 모드 (subjective mode - title guessing)
+    user_title = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text='User guessed title for subjective mode'
     )
     
     class Meta:

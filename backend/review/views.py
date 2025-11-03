@@ -233,7 +233,9 @@ class CompleteReviewView(APIView):
         result = request.data.get('result')  # 'remembered', 'partial', 'forgot'
         time_spent = request.data.get('time_spent')
         notes = request.data.get('notes', '')
-        descriptive_answer = request.data.get('descriptive_answer', '')  # v0.4: AI 평가용 서술형 답변
+        descriptive_answer = request.data.get('descriptive_answer', '')  # descriptive mode
+        selected_choice = request.data.get('selected_choice', '')  # multiple_choice mode
+        user_title = request.data.get('user_title', '')  # subjective mode
 
         # === Input Validation ===
         # 1. content_id validation
@@ -304,20 +306,82 @@ class CompleteReviewView(APIView):
                         status=status.HTTP_404_NOT_FOUND
                     )
 
-                # v0.5: 주관식 모드 - AI 자동 평가 및 result 판단
+                # === Mode-specific processing ===
                 ai_score = None
                 ai_feedback = None
                 ai_auto_result = None
 
-                if schedule.content.review_mode == 'subjective':
-                    # 주관식: 반드시 답변을 작성해야 함
-                    if not descriptive_answer or len(descriptive_answer.strip()) < 10:
+                review_mode = schedule.content.review_mode
+
+                # 1. Multiple Choice Mode: User selects from 4 choices
+                if review_mode == 'multiple_choice':
+                    if not selected_choice:
                         return Response(
-                            {'error': '주관식 모드에서는 최소 10자 이상의 답변을 작성해야 합니다.'},
+                            {'error': '객관식 모드에서는 답변을 선택해야 합니다.'},
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
-                    # AI 평가 수행
+                    # Verify answer
+                    mc_choices = schedule.content.mc_choices
+                    if not mc_choices or 'correct_answer' not in mc_choices:
+                        return Response(
+                            {'error': '객관식 보기가 생성되지 않았습니다.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        )
+
+                    is_correct = selected_choice == mc_choices['correct_answer']
+                    result = 'remembered' if is_correct else 'forgot'
+
+                    # Set AI evaluation data for consistent response format
+                    ai_score = 100.0 if is_correct else 0.0
+                    ai_feedback = '정답입니다!' if is_correct else f'오답입니다. 정답은 "{mc_choices["correct_answer"]}"입니다.'
+                    ai_auto_result = result
+
+                    logger.info(f"객관식 답변: {selected_choice} (정답: {mc_choices['correct_answer']}) -> {result}")
+
+                # 2. Subjective Mode: User guesses title from content → AI evaluates
+                elif review_mode == 'subjective':
+                    if not user_title or len(user_title.strip()) < 2:
+                        return Response(
+                            {'error': '주관식 모드에서는 제목을 작성해야 합니다.'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # AI evaluation
+                    from .ai_title_evaluation import ai_title_evaluator
+                    if not ai_title_evaluator.is_available():
+                        return Response(
+                            {'error': 'AI 평가 서비스를 사용할 수 없습니다.'},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE
+                        )
+
+                    evaluation = ai_title_evaluator.evaluate_title(
+                        content=schedule.content.content,
+                        user_title=user_title,
+                        actual_title=schedule.content.title
+                    )
+
+                    if not evaluation:
+                        return Response(
+                            {'error': 'AI 평가에 실패했습니다. 다시 시도해주세요.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        )
+
+                    ai_score = evaluation['score']
+                    ai_feedback = evaluation['feedback']
+                    ai_auto_result = evaluation.get('auto_result', 'remembered' if ai_score >= 70 else 'forgot')
+                    result = ai_auto_result
+                    logger.info(f"주관식 제목 평가: {user_title} -> {ai_score}점 -> {result}")
+
+                # 3. Descriptive Mode: User writes content from title → AI evaluates
+                elif review_mode == 'descriptive':
+                    if not descriptive_answer or len(descriptive_answer.strip()) < 10:
+                        return Response(
+                            {'error': '서술형 모드에서는 최소 10자 이상의 답변을 작성해야 합니다.'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # AI evaluation
                     from .ai_evaluation import ai_answer_evaluator
                     if not ai_answer_evaluator.is_available():
                         return Response(
@@ -340,11 +404,11 @@ class CompleteReviewView(APIView):
                     ai_score = evaluation['score']
                     ai_feedback = evaluation['feedback']
                     ai_auto_result = evaluation.get('auto_result', 'remembered' if ai_score >= 70 else 'forgot')
-                    result = ai_auto_result  # AI 자동 판단으로 result 덮어쓰기
-                    logger.info(f"AI 자동 평가 완료: {schedule.content.title} - {ai_score}점 -> {result}")
+                    result = ai_auto_result
+                    logger.info(f"서술형 답변 평가: {ai_score}점 -> {result}")
 
-                else:
-                    # 객관식: 기존 방식 (선택적 AI 평가)
+                # 4. Objective Mode: User self-assesses (remembered/partial/forgot)
+                else:  # objective mode
                     if not result:
                         return Response(
                             {'error': 'result is required for objective mode'},
@@ -359,28 +423,18 @@ class CompleteReviewView(APIView):
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
-                    # 선택적 AI 평가 (답변이 있는 경우)
-                    if descriptive_answer and len(descriptive_answer.strip()) >= 10:
-                        from .ai_evaluation import ai_answer_evaluator
-                        if ai_answer_evaluator.is_available():
-                            evaluation = ai_answer_evaluator.evaluate_answer(
-                                content_title=schedule.content.title,
-                                content_body=schedule.content.content,
-                                user_answer=descriptive_answer
-                            )
-                            if evaluation:
-                                ai_score = evaluation['score']
-                                ai_feedback = evaluation['feedback']
-                                logger.info(f"AI 평가 완료: {schedule.content.title} - {ai_score}점")
+                    logger.info(f"기억 확인 모드: 사용자 선택 -> {result}")
 
-                # Create review history with AI evaluation
+                # Create review history with mode-specific data
                 history = ReviewHistory.objects.create(
                     content=schedule.content,
                     user=request.user,
                     result=result,
                     time_spent=time_spent,
                     notes=notes,
-                    descriptive_answer=descriptive_answer,
+                    descriptive_answer=descriptive_answer,  # descriptive mode
+                    selected_choice=selected_choice,  # multiple_choice mode
+                    user_title=user_title,  # subjective mode
                     ai_score=ai_score,
                     ai_feedback=ai_feedback
                 )

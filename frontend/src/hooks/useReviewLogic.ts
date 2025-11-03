@@ -155,7 +155,12 @@ export const useReviewLogic = (
   });
 
 
-  const handleReviewComplete = useCallback((result: 'remembered' | 'partial' | 'forgot', descriptiveAnswer?: string) => {
+  const handleReviewComplete = useCallback((
+    result: 'remembered' | 'partial' | 'forgot' | null,
+    descriptiveAnswer?: string,
+    selectedChoice?: string,
+    userTitle?: string
+  ) => {
     const currentReview = reviews[currentReviewIndex];
     if (currentReview) {
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
@@ -163,9 +168,11 @@ export const useReviewLogic = (
       return new Promise((resolve, reject) => {
         completeReviewMutation.mutate({
           content_id: currentReview.content.id,
-          result: result,
+          result: result || undefined,
           time_spent: timeSpent,
           descriptive_answer: descriptiveAnswer || '',
+          selected_choice: selectedChoice || '',
+          user_title: userTitle || '',
         }, {
           onSuccess: (data) => {
             resolve(data);

@@ -8,12 +8,18 @@ import UpgradeModal from '../components/review/UpgradeModal';
 import Toast from '../components/common/Toast';
 
 const ReviewPage: React.FC = () => {
-  // v0.5: AI 평가용 서술형 답변 상태
+  // Descriptive mode: 제목 보고 내용 작성
   const [descriptiveAnswer, setDescriptiveAnswer] = useState<string>('');
+  // Multiple choice mode: 내용 보고 제목 선택
+  const [selectedChoice, setSelectedChoice] = useState<string>('');
+  // Subjective mode: 내용 보고 제목 유추
+  const [userTitle, setUserTitle] = useState<string>('');
+  // AI evaluation result
   const [aiEvaluation, setAiEvaluation] = useState<{
     score: number;
     feedback: string;
     auto_result?: string;
+    is_correct?: boolean;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -66,20 +72,19 @@ const ReviewPage: React.FC = () => {
     moveCurrentCardToEnd,
   } = useReviewLogic(showToast, resetReviewState);
 
-  // v0.5: 주관식 모드 - 제출 핸들러
+  // Track submitted answers for display
   const [submittedAnswer, setSubmittedAnswer] = useState<string>('');
 
-  const handleSubmitSubjective = useCallback(async () => {
+  // 1. Descriptive Mode: 제목 보고 내용 작성 → AI 평가
+  const handleSubmitDescriptive = useCallback(async () => {
     if (!currentReview || descriptiveAnswer.length < 10) return;
 
     setIsSubmitting(true);
-    setSubmittedAnswer(descriptiveAnswer); // 제출한 답변 저장
+    setSubmittedAnswer(descriptiveAnswer);
 
     try {
-      // 주관식은 result를 보내지 않음 (AI가 자동 판단)
-      const response = await handleReviewComplete(null as any, descriptiveAnswer) as any;
+      const response = await handleReviewComplete(null as any, descriptiveAnswer, '', '') as any;
 
-      // AI 평가 결과 표시
       if (response && response.ai_evaluation) {
         setAiEvaluation(response.ai_evaluation);
         const resultText = response.ai_evaluation.auto_result === 'remembered' ? '기억함' : '모름';
@@ -87,32 +92,82 @@ const ReviewPage: React.FC = () => {
                   response.ai_evaluation.auto_result === 'remembered' ? 'success' : 'warning');
       }
 
-      // 카드 뒤집기
       setIsFlipped(true);
       setShowContent(true);
     } catch (error) {
       showToast('평가에 실패했습니다. 다시 시도해주세요.', 'error');
-      setSubmittedAnswer(''); // 에러 시 초기화
+      setSubmittedAnswer('');
     } finally {
       setIsSubmitting(false);
     }
   }, [currentReview, descriptiveAnswer, handleReviewComplete, showToast, setIsFlipped, setShowContent]);
 
-  // 주관식 평가 - 다음으로 넘어가기
-  const handleNextSubjective = useCallback(() => {
-    // AI 평가 결과에 따라 카드 이동/제거
-    if (aiEvaluation?.auto_result === 'remembered') {
-      setReviewsCompleted(prev => prev + 1);  // 기억함 → 완료 개수 증가
-      removeCurrentCard();  // 기억함 → 카드 제거
+  // 2. Multiple Choice Mode: 내용 보고 제목 선택
+  const handleSubmitMultipleChoice = useCallback(async () => {
+    if (!currentReview || !selectedChoice) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await handleReviewComplete(null as any, '', selectedChoice, '') as any;
+
+      // Use Backend's authoritative ai_evaluation
+      if (response && response.ai_evaluation) {
+        setAiEvaluation(response.ai_evaluation);
+        const isCorrect = response.ai_evaluation.score === 100;
+        showToast(response.ai_evaluation.feedback, isCorrect ? 'success' : 'error');
+      }
+
+      setIsFlipped(true);
+      setShowContent(true);
+    } catch (error) {
+      showToast('제출에 실패했습니다. 다시 시도해주세요.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [currentReview, selectedChoice, handleReviewComplete, showToast, setIsFlipped, setShowContent]);
+
+  // 3. Subjective Mode: 내용 보고 제목 유추 → AI 평가
+  const handleSubmitSubjective = useCallback(async () => {
+    if (!currentReview || (userTitle || '').length < 2) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await handleReviewComplete(null as any, '', '', userTitle) as any;
+
+      if (response && response.ai_evaluation) {
+        setAiEvaluation(response.ai_evaluation);
+        const resultText = response.ai_evaluation.auto_result === 'remembered' ? '기억함' : '모름';
+        showToast(`AI 평가: ${Math.round(response.ai_evaluation.score)}점 - ${resultText}`,
+                  response.ai_evaluation.auto_result === 'remembered' ? 'success' : 'warning');
+      }
+
+      setIsFlipped(true);
+      setShowContent(true);
+    } catch (error) {
+      showToast('평가에 실패했습니다. 다시 시도해주세요.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [currentReview, userTitle, handleReviewComplete, showToast, setIsFlipped, setShowContent]);
+
+  // 다음으로 넘어가기 (AI 평가 후)
+  const handleNextAfterEvaluation = useCallback(() => {
+    if (aiEvaluation?.auto_result === 'remembered' || aiEvaluation?.is_correct) {
+      setReviewsCompleted(prev => prev + 1);
+      removeCurrentCard();
       showToast('잘 기억하고 있어요!', 'success');
     } else {
-      moveCurrentCardToEnd();  // 모름 → 카드 맨 뒤로 (완료 개수 증가 안함)
+      moveCurrentCardToEnd();
       showToast('괜찮아요, 나중에 다시 시도해보세요!', 'info');
     }
 
     // 상태 초기화
     setAiEvaluation(null);
     setDescriptiveAnswer('');
+    setSelectedChoice('');
+    setUserTitle('');
     setSubmittedAnswer('');
   }, [aiEvaluation, removeCurrentCard, moveCurrentCardToEnd, showToast, setReviewsCompleted]);
 
@@ -174,9 +229,19 @@ const ReviewPage: React.FC = () => {
               setIsFlipped(prev => !prev);
               setShowContent(true);
             }}
+            // Descriptive mode
             descriptiveAnswer={descriptiveAnswer}
             onDescriptiveAnswerChange={setDescriptiveAnswer}
+            onSubmitDescriptive={handleSubmitDescriptive}
+            // Multiple choice mode
+            selectedChoice={selectedChoice}
+            onSelectChoice={setSelectedChoice}
+            onSubmitMultipleChoice={handleSubmitMultipleChoice}
+            // Subjective mode
+            userTitle={userTitle}
+            onUserTitleChange={setUserTitle}
             onSubmitSubjective={handleSubmitSubjective}
+            // Common
             isSubmitting={isSubmitting}
             submittedAnswer={submittedAnswer}
             aiEvaluation={aiEvaluation}
@@ -184,20 +249,21 @@ const ReviewPage: React.FC = () => {
 
           {/* ReviewControls 표시 */}
           {currentReview.content.review_mode === 'objective' ? (
+            // Objective mode: 사용자 선택 (remembered/partial/forgot)
             <ReviewControls
               showContent={showContent}
               onReviewComplete={handleReviewCompleteWithAI}
               isPending={completeReviewMutation.isPending}
             />
           ) : (
-            // 주관식 평가: AI 평가 완료 후 "다음으로" 버튼 표시
+            // AI 평가 모드 (descriptive, multiple_choice, subjective): AI 평가 완료 후 "다음으로" 버튼
             aiEvaluation && (
               <ReviewControls
                 showContent={showContent}
                 onReviewComplete={handleReviewCompleteWithAI}
                 isPending={false}
                 isSubjectiveMode={true}
-                onNext={handleNextSubjective}
+                onNext={handleNextAfterEvaluation}
               />
             )
           )}

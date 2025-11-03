@@ -2,25 +2,18 @@ import React, { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
-import { Category, ContentUsage } from '../types';
+import { Category, ContentUsage, ReviewMode, CreateContentData } from '../types';
 import { extractResults } from '../utils/helpers';
 import TipTapEditor from './TipTapEditor';
 import CategoryField from './contentform/CategoryField';
 import ValidationResultCard from './contentform/ValidationResultCard';
 import { useContentValidation } from '../hooks/useContentValidation';
 
-interface ContentFormData {
-  title: string;
-  content: string;
-  category?: number;
-  review_mode?: 'objective' | 'subjective';
-}
-
 interface CreateContentFormProps {
-  onSubmit: (data: ContentFormData) => void;
+  onSubmit: (data: CreateContentData) => void;
   onCancel: () => void;
   isLoading?: boolean;
-  initialData?: Partial<ContentFormData>;
+  initialData?: Partial<CreateContentData>;
 }
 
 const CreateContentForm: React.FC<CreateContentFormProps> = ({
@@ -35,14 +28,14 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
     formState: { errors },
     watch,
     setValue,
-  } = useForm<ContentFormData>({
+  } = useForm<CreateContentData>({
     mode: 'onChange',
     defaultValues: initialData
   });
 
   const [content, setContent] = useState<string>(initialData?.content || '');
   const [contentUsage, setContentUsage] = useState<ContentUsage | null>(null);
-  const [reviewMode, setReviewMode] = useState<'objective' | 'subjective'>(
+  const [reviewMode, setReviewMode] = useState<ReviewMode>(
     initialData?.review_mode || 'objective'
   );
 
@@ -50,8 +43,10 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
   const watchedTitle = watch('title');
 
   const contentLength = content.trim().length;
-  const isSubjectiveMode = reviewMode === 'subjective';
-  const minContentLength = isSubjectiveMode ? 200 : 1;
+  // All AI modes require 200+ chars (descriptive, multiple_choice, subjective)
+  // Only objective mode can be short
+  const needsLongContent = reviewMode !== 'objective';
+  const minContentLength = needsLongContent ? 200 : 1;
   const hasValidContentLength = contentLength >= minContentLength;
 
   const { data: categories = [] } = useQuery<Category[]>({
@@ -72,7 +67,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
 
   const canCreateContent = contentUsage ? contentUsage.can_create : true;
 
-  const onFormSubmit = useCallback((data: ContentFormData) => {
+  const onFormSubmit = useCallback((data: CreateContentData) => {
     onSubmit({
       ...data,
       content,
@@ -135,8 +130,8 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
               <label className="block text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
                 복습 방식
               </label>
-              <div className="flex gap-4">
-                <label className={`flex-1 flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+              <div className="grid grid-cols-2 gap-3">
+                <label className={`flex items-start p-3 border-2 rounded-lg cursor-pointer transition-all ${
                   reviewMode === 'objective'
                     ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -145,16 +140,52 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                     type="radio"
                     value="objective"
                     checked={reviewMode === 'objective'}
-                    onChange={(e) => setReviewMode(e.target.value as 'objective')}
-                    className="w-4 h-4 text-indigo-600"
+                    onChange={(e) => setReviewMode(e.target.value as ReviewMode)}
+                    className="w-4 h-4 text-indigo-600 mt-0.5"
                   />
-                  <div className="ml-3">
+                  <div className="ml-2">
                     <div className="font-medium text-gray-900 dark:text-gray-100">기억 확인</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">내용을 보고 기억함/모름 선택</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">제목만 보고 기억함/모름 선택</div>
                   </div>
                 </label>
 
-                <label className={`flex-1 flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                <label className={`flex items-start p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                  reviewMode === 'descriptive'
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }`}>
+                  <input
+                    type="radio"
+                    value="descriptive"
+                    checked={reviewMode === 'descriptive'}
+                    onChange={(e) => setReviewMode(e.target.value as ReviewMode)}
+                    className="w-4 h-4 text-indigo-600 mt-0.5"
+                  />
+                  <div className="ml-2">
+                    <div className="font-medium text-gray-900 dark:text-gray-100">서술형</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">제목 보고 내용 작성 → AI 평가 (200자+)</div>
+                  </div>
+                </label>
+
+                <label className={`flex items-start p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                  reviewMode === 'multiple_choice'
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                }`}>
+                  <input
+                    type="radio"
+                    value="multiple_choice"
+                    checked={reviewMode === 'multiple_choice'}
+                    onChange={(e) => setReviewMode(e.target.value as ReviewMode)}
+                    className="w-4 h-4 text-indigo-600 mt-0.5"
+                  />
+                  <div className="ml-2">
+                    <div className="font-medium text-gray-900 dark:text-gray-100">객관식</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">내용 보고 4지선다에서 제목 선택</div>
+                  </div>
+                </label>
+
+                <label className={`flex items-start p-3 border-2 rounded-lg cursor-pointer transition-all ${
                   reviewMode === 'subjective'
                     ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
                     : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
@@ -163,12 +194,12 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                     type="radio"
                     value="subjective"
                     checked={reviewMode === 'subjective'}
-                    onChange={(e) => setReviewMode(e.target.value as 'subjective')}
-                    className="w-4 h-4 text-indigo-600"
+                    onChange={(e) => setReviewMode(e.target.value as ReviewMode)}
+                    className="w-4 h-4 text-indigo-600 mt-0.5"
                   />
-                  <div className="ml-3">
-                    <div className="font-medium text-gray-900 dark:text-gray-100">주관식 평가</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">먼저 작성하고 AI가 자동 평가 (최소 200자)</div>
+                  <div className="ml-2">
+                    <div className="font-medium text-gray-900 dark:text-gray-100">주관식</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">내용 보고 제목 유추 → AI 평가 (200자+)</div>
                   </div>
                 </label>
               </div>
@@ -179,9 +210,9 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                 <label className="block text-lg font-semibold text-gray-900 dark:text-gray-100">
                   내용 <span className="text-red-500">*</span>
                 </label>
-                {isSubjectiveMode && (
+                {needsLongContent && (
                   <span className={`text-sm ${hasValidContentLength ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {contentLength}/200자 {hasValidContentLength ? '✓' : '(주관식 평가는 최소 200자)'}
+                    {contentLength}/200자 {hasValidContentLength ? '✓' : '(AI 평가 모드는 최소 200자)'}
                   </span>
                 )}
               </div>
@@ -191,9 +222,9 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                 placeholder="학습할 내용을 입력하세요. # 제목, **굵게**, *기울임*, 1. 목록 등이 바로 적용됩니다!"
                 className="w-full"
               />
-              {isSubjectiveMode && !hasValidContentLength && content.length > 0 && (
+              {needsLongContent && !hasValidContentLength && content.length > 0 && (
                 <p className="text-sm text-red-600 dark:text-red-400 mt-2">
-                  주관식 평가 모드는 AI가 판단할 수 있도록 최소 200자 이상의 콘텐츠가 필요합니다.
+                  AI 평가 모드는 정확한 판단을 위해 최소 200자 이상의 콘텐츠가 필요합니다.
                 </p>
               )}
 
@@ -235,8 +266,8 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                   title={
                     !canCreateContent
                       ? '콘텐츠 생성 제한에 도달했습니다'
-                      : !hasValidContentLength && isSubjectiveMode
-                      ? '주관식 평가는 최소 200자 이상 필요합니다'
+                      : !hasValidContentLength && needsLongContent
+                      ? 'AI 평가 모드는 최소 200자 이상 필요합니다'
                       : ''
                   }
                 >

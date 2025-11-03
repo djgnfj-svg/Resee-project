@@ -7,15 +7,26 @@ interface ReviewCardProps {
   isFlipped: boolean;
   showContent: boolean;
   onFlip: () => void;
+  // Descriptive mode (제목 → 내용 작성)
   descriptiveAnswer: string;
   onDescriptiveAnswerChange: (value: string) => void;
+  onSubmitDescriptive?: () => void;
+  // Multiple choice mode (내용 → 제목 선택)
+  selectedChoice?: string;
+  onSelectChoice?: (choice: string) => void;
+  onSubmitMultipleChoice?: () => void;
+  // Subjective mode (내용 → 제목 작성)
+  userTitle?: string;
+  onUserTitleChange?: (value: string) => void;
   onSubmitSubjective?: () => void;
+  // Common
   isSubmitting?: boolean;
   submittedAnswer?: string;
   aiEvaluation?: {
     score: number;
     feedback: string;
     auto_result?: string;
+    is_correct?: boolean;
   } | null;
 }
 
@@ -26,12 +37,22 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   onFlip,
   descriptiveAnswer,
   onDescriptiveAnswerChange,
+  onSubmitDescriptive,
+  selectedChoice,
+  onSelectChoice,
+  onSubmitMultipleChoice,
+  userTitle,
+  onUserTitleChange,
   onSubmitSubjective,
   isSubmitting = false,
   submittedAnswer,
   aiEvaluation,
 }) => {
-  const isSubjective = review.content.review_mode === 'subjective';
+  const reviewMode = review.content.review_mode;
+  const isDescriptive = reviewMode === 'descriptive';
+  const isMultipleChoice = reviewMode === 'multiple_choice';
+  const isSubjective = reviewMode === 'subjective';
+  const isObjective = reviewMode === 'objective';
 
   return (
     <div className="relative mb-8" style={{ minHeight: '600px' }}>
@@ -66,14 +87,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                     '첫 번째 복습'}
                 </span>
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
-                  {isSubjective ? (
-                    <>
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                      주관식 평가
-                    </>
-                  ) : (
+                  {isObjective && (
                     <>
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -81,12 +95,56 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                       기억 확인
                     </>
                   )}
+                  {isDescriptive && (
+                    <>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                      서술형 평가
+                    </>
+                  )}
+                  {isMultipleChoice && (
+                    <>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      </svg>
+                      객관식
+                    </>
+                  )}
+                  {isSubjective && (
+                    <>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      주관식 평가
+                    </>
+                  )}
                 </span>
               </div>
             </div>
 
-            {isSubjective ? (
-              // 주관식: 답변 먼저 작성
+            {/* === Mode-specific UI === */}
+
+            {/* 1. Objective Mode: 제목만 보고 기억함/모름 선택 */}
+            {isObjective && (
+              <>
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-8">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>이 내용을 얼마나 잘 기억하고 있나요?</span>
+                </div>
+                <button
+                  onClick={onFlip}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-500 text-white px-8 py-4 rounded-xl font-semibold hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-500 dark:hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow-lg dark:shadow-gray-900/40"
+                >
+                  내용 확인하기
+                </button>
+              </>
+            )}
+
+            {/* 2. Descriptive Mode: 제목 보고 내용 작성 */}
+            {isDescriptive && (
               <div className="w-full max-w-2xl flex flex-col">
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-3">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +168,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                   </span>
                 </div>
                 <button
-                  onClick={onSubmitSubjective}
+                  onClick={onSubmitDescriptive}
                   disabled={descriptiveAnswer.length < 10 || isSubmitting}
                   className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-500 dark:hover:to-purple-600 transition-all duration-300 shadow-lg dark:shadow-gray-900/40 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -124,23 +182,110 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                   )}
                 </button>
               </div>
-            ) : (
-              // 객관식: 기존 방식
-              <>
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-8">
+            )}
+
+            {/* 3. Multiple Choice Mode: 내용 보고 4지선다에서 제목 선택 */}
+            {isMultipleChoice && (
+              <div className="w-full max-w-2xl flex flex-col gap-4">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-3">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span>이 내용을 얼마나 잘 기억하고 있나요?</span>
+                  <span>다음 내용에 가장 적합한 제목을 선택하세요</span>
+                </div>
+
+                {/* 내용 표시 */}
+                <div className="prose prose-sm dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-800 p-4 rounded-lg max-h-48 overflow-y-auto">
+                  <ReactMarkdown>{review.content.content}</ReactMarkdown>
+                </div>
+
+                {/* 4지선다 보기 */}
+                {review.content.mc_choices?.choices && (
+                  <div className="space-y-2">
+                    {review.content.mc_choices.choices.map((choice, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => onSelectChoice?.(choice)}
+                        disabled={isSubmitting}
+                        className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all duration-200 ${
+                          selectedChoice === choice
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-700'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        <span className="font-medium">{idx + 1}. </span>
+                        <span>{choice}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={onSubmitMultipleChoice}
+                  disabled={!selectedChoice || isSubmitting}
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-500 dark:hover:to-purple-600 transition-all duration-300 shadow-lg dark:shadow-gray-900/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      제출 중...
+                    </div>
+                  ) : (
+                    '제출하기'
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* 4. Subjective Mode: 내용 보고 제목 유추 작성 */}
+            {isSubjective && (
+              <div className="w-full max-w-2xl flex flex-col gap-4">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  <span>다음 내용에 적합한 제목을 작성해주세요 (AI가 평가합니다)</span>
+                </div>
+
+                {/* 내용 표시 */}
+                <div className="prose prose-sm dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-800 p-4 rounded-lg max-h-48 overflow-y-auto">
+                  <ReactMarkdown>{review.content.content}</ReactMarkdown>
+                </div>
+
+                {/* 제목 입력란 */}
+                <div className="flex flex-col">
+                  <input
+                    type="text"
+                    value={userTitle || ''}
+                    onChange={(e) => onUserTitleChange?.(e.target.value)}
+                    placeholder="내용에 맞는 제목을 작성해주세요"
+                    className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    maxLength={100}
+                    disabled={isSubmitting}
+                  />
+                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    <span>{(userTitle || '').length}/100자</span>
+                    <span className={(userTitle || '').length >= 2 ? 'text-green-600 dark:text-green-400 font-medium' : ''}>
+                      {(userTitle || '').length >= 2 ? '✓ 제출 가능' : '(최소 2자)'}
+                    </span>
+                  </div>
                 </div>
 
                 <button
-                  onClick={onFlip}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-500 text-white px-8 py-4 rounded-xl font-semibold hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-500 dark:hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow-lg dark:shadow-gray-900/40"
+                  onClick={onSubmitSubjective}
+                  disabled={(userTitle || '').length < 2 || isSubmitting}
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-indigo-600 hover:to-purple-700 dark:hover:from-indigo-500 dark:hover:to-purple-600 transition-all duration-300 shadow-lg dark:shadow-gray-900/40 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  내용 확인하기
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      AI 평가 중...
+                    </div>
+                  ) : (
+                    '제출하고 AI 평가 받기'
+                  )}
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -165,8 +310,55 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
               </div>
             </div>
 
-            {/* 주관식 평가: AI 평가 결과 */}
-            {isSubjective && aiEvaluation && (
+            {/* 객관식: 선택한 답변 + 정답 표시 */}
+            {isMultipleChoice && selectedChoice && (
+              <div className="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                    <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">선택한 답변</h4>
+                </div>
+                <p className={`text-lg font-medium ${
+                  aiEvaluation?.is_correct
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {selectedChoice}
+                  {aiEvaluation?.is_correct !== undefined && (
+                    <span className="ml-2">{aiEvaluation.is_correct ? '✓ 정답' : '✗ 오답'}</span>
+                  )}
+                </p>
+                {!aiEvaluation?.is_correct && (
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    정답: <span className="font-medium text-green-600 dark:text-green-400">{review.content.title}</span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* 주관식: 유추한 제목 + AI 평가 */}
+            {isSubjective && userTitle && (
+              <div className="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                    <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">내가 작성한 제목</h4>
+                </div>
+                <p className="text-gray-800 dark:text-gray-200 font-medium">{userTitle}</p>
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  정답: <span className="font-medium text-green-600 dark:text-green-400">{review.content.title}</span>
+                </p>
+              </div>
+            )}
+
+            {/* AI 평가 결과 (Descriptive 또는 Subjective) */}
+            {(isDescriptive || isSubjective) && aiEvaluation && (
               <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-2 border-indigo-200 dark:border-indigo-700 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
@@ -195,8 +387,8 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
               </div>
             )}
 
-            {/* 주관식 평가: 제출한 답변 표시 */}
-            {isSubjective && submittedAnswer && (
+            {/* 서술형 평가: 제출한 답변 표시 */}
+            {isDescriptive && submittedAnswer && (
               <div className="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="p-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg">

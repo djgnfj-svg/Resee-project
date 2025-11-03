@@ -25,12 +25,12 @@ class ContentSerializer(serializers.ModelSerializer):
         model = Content
         fields = ('id', 'title', 'content', 'author', 'category',
                  'created_at', 'updated_at', 'review_count',
-                 'next_review_date', 'review_mode',
+                 'next_review_date', 'review_mode', 'mc_choices',
                  'is_ai_validated', 'ai_validation_score',
                  'ai_validation_result', 'ai_validated_at')
         read_only_fields = ('id', 'author', 'created_at', 'updated_at',
                            'is_ai_validated', 'ai_validation_score',
-                           'ai_validation_result', 'ai_validated_at')
+                           'ai_validation_result', 'ai_validated_at', 'mc_choices')
 
     def to_representation(self, instance):
         """Custom representation for category"""
@@ -66,7 +66,7 @@ class ContentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Category not found or doesn't belong to user")
 
     def create(self, validated_data):
-        """Create content with category"""
+        """Create content with category and generate MC options if needed"""
         category = validated_data.get('category')
 
         # Convert category ID to category instance if needed
@@ -77,10 +77,23 @@ class ContentSerializer(serializers.ModelSerializer):
             except Category.DoesNotExist:
                 raise serializers.ValidationError({"category": "Category not found or doesn't belong to user"})
 
-        return super().create(validated_data)
+        # Create content
+        content = super().create(validated_data)
+
+        # Generate multiple choice options for MC mode
+        if content.review_mode == 'multiple_choice':
+            from .ai_multiple_choice import generate_multiple_choice_options
+            mc_options = generate_multiple_choice_options(content.title, content.content)
+            if mc_options:
+                content.mc_choices = mc_options
+                content.save(update_fields=['mc_choices'])
+            else:
+                logger.warning(f"Failed to generate MC options for content {content.id}")
+
+        return content
 
     def update(self, instance, validated_data):
-        """Update content with category"""
+        """Update content with category and regenerate MC options if needed"""
         category = validated_data.get('category')
 
         # Convert category ID to category instance if needed
@@ -91,7 +104,24 @@ class ContentSerializer(serializers.ModelSerializer):
             except Category.DoesNotExist:
                 raise serializers.ValidationError({"category": "Category not found or doesn't belong to user"})
 
-        return super().update(instance, validated_data)
+        # Check if title or content changed
+        title_changed = 'title' in validated_data and validated_data['title'] != instance.title
+        content_changed = 'content' in validated_data and validated_data['content'] != instance.content
+
+        # Update content
+        content = super().update(instance, validated_data)
+
+        # Regenerate MC options if content changed and mode is MC
+        if content.review_mode == 'multiple_choice' and (title_changed or content_changed):
+            from .ai_multiple_choice import generate_multiple_choice_options
+            mc_options = generate_multiple_choice_options(content.title, content.content)
+            if mc_options:
+                content.mc_choices = mc_options
+                content.save(update_fields=['mc_choices'])
+            else:
+                logger.warning(f"Failed to regenerate MC options for content {content.id}")
+
+        return content
     
     def get_review_count(self, obj):
         """Get the number of completed reviews for this content"""

@@ -75,7 +75,7 @@ JSON만 반환하세요."""
 
     try:
         message = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-3-7-sonnet-20250219",
             max_tokens=2000,
             temperature=0.3,
             messages=[

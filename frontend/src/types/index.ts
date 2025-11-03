@@ -45,6 +45,13 @@ export interface Category {
   created_at: string;
 }
 
+export type ReviewMode = 'objective' | 'descriptive' | 'multiple_choice' | 'subjective';
+
+export interface MultipleChoiceOptions {
+  choices: string[];
+  correct_answer: string;
+}
+
 export interface Content {
   id: number;
   title: string;
@@ -55,7 +62,8 @@ export interface Content {
   updated_at: string;
   review_count: number;
   next_review_date?: string;
-  review_mode: 'objective' | 'subjective';
+  review_mode: ReviewMode;
+  mc_choices?: MultipleChoiceOptions;
   // AI 검증 관련 필드
   is_ai_validated: boolean;
   ai_validation_score?: number;
@@ -205,7 +213,7 @@ export interface CreateContentData {
   title: string;
   content: string;
   category?: number;
-  review_mode?: 'objective' | 'subjective';
+  review_mode?: ReviewMode;
 }
 
 export interface UpdateContentData extends Partial<CreateContentData> {}
@@ -218,10 +226,12 @@ export interface CreateCategoryData {
 // Review API types
 export interface CompleteReviewData {
   content_id: number;
-  result: 'remembered' | 'partial' | 'forgot';
+  result?: 'remembered' | 'partial' | 'forgot';  // Optional for AI-evaluated modes
   time_spent?: number;
   notes?: string;
-  descriptive_answer?: string;  // v0.4: AI 평가용 서술형 답변
+  descriptive_answer?: string;  // descriptive mode: 제목 보고 내용 작성
+  selected_choice?: string;  // multiple_choice mode: 선택한 답변
+  user_title?: string;  // subjective mode: 유추한 제목
 }
 
 export interface CreateReviewHistoryData extends CompleteReviewData {}

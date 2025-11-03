@@ -50,8 +50,10 @@ class Content(BaseModel):
     """Learning content"""
 
     REVIEW_MODE_CHOICES = [
-        ('objective', '객관식 (내용 보고 기억함/모름 선택)'),
-        ('subjective', '주관식 (먼저 작성 후 AI 자동 평가)'),
+        ('objective', '기억 확인 (제목만 보고 기억함/모름 선택)'),
+        ('descriptive', '서술형 (제목 보고 내용 작성 → AI 평가)'),
+        ('multiple_choice', '객관식 (내용 보고 4지선다에서 제목 맞추기)'),
+        ('subjective', '주관식 (내용 보고 제목 유추 작성 → AI 평가)'),
     ]
 
     title = models.CharField(max_length=30)  # 프론트엔드와 동기화
@@ -86,6 +88,13 @@ class Content(BaseModel):
         help_text='AI 검증 완료 시각'
     )
 
+    # 객관식 모드용 보기 저장
+    mc_choices = models.JSONField(
+        null=True,
+        blank=True,
+        help_text='Multiple choice options (AI generated): {"choices": [...], "correct_answer": "..."}'
+    )
+
     class Meta:
         ordering = ['-created_at']
         indexes = [
@@ -113,12 +122,18 @@ class Content(BaseModel):
         if not self.title or not self.title.strip():
             raise ValidationError({'title': 'Title cannot be empty.'})
 
-        # 서술 평가 모드일 때는 콘텐츠가 200자 이상이어야 함
-        if self.review_mode == 'subjective':
+        # AI 평가 모드(descriptive, multiple_choice, subjective)는 콘텐츠가 200자 이상이어야 함
+        if self.review_mode in ['descriptive', 'multiple_choice', 'subjective']:
             content_length = len(self.content.strip())
             if content_length < 200:
+                mode_names = {
+                    'descriptive': '서술형',
+                    'multiple_choice': '객관식',
+                    'subjective': '주관식'
+                }
+                mode_name = mode_names.get(self.review_mode, self.review_mode)
                 raise ValidationError({
-                    'content': f'서술 평가 모드는 콘텐츠가 최소 200자 이상이어야 합니다. (현재: {content_length}자)'
+                    'content': f'{mode_name} 모드는 AI 평가를 위해 콘텐츠가 최소 200자 이상이어야 합니다. (현재: {content_length}자)'
                 })
 
     def save(self, *args, **kwargs):
@@ -133,6 +148,9 @@ class Content(BaseModel):
                     self.ai_validation_score = None
                     self.ai_validation_result = None
                     self.ai_validated_at = None
+                    # 객관식 보기도 재생성 필요
+                    if self.review_mode == 'multiple_choice':
+                        self.mc_choices = None
             except Content.DoesNotExist:
                 pass  # 새 콘텐츠 생성 시
 
