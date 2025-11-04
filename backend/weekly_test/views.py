@@ -6,8 +6,11 @@ from django.utils import timezone
 from django.db.models import Q, Count
 from datetime import datetime, timedelta
 import random
+import logging
 
 from .models import WeeklyTest, WeeklyTestQuestion, WeeklyTestAnswer
+
+logger = logging.getLogger(__name__)
 from .serializers import (
     WeeklyTestSerializer, WeeklyTestListSerializer,
     WeeklyTestQuestionSerializer, SubmitAnswerSerializer,
@@ -42,8 +45,11 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
             weekly_test.status = 'preparing'
             weekly_test.save()
 
-        # 선택된 콘텐츠로 문제 생성
-        self._generate_questions_from_ids(weekly_test, content_ids)
+        # content_ids가 있으면 수동 선택, 없으면 자동 밸런싱
+        if content_ids:
+            self._generate_questions_from_ids(weekly_test, content_ids)
+        else:
+            self._generate_balanced_questions(weekly_test)
 
     def create(self, request, *args, **kwargs):
         """Create 메서드 오버라이드로 주간 제한 확인"""
@@ -114,6 +120,117 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
             weekly_test.status = 'pending'
 
         weekly_test.save()
+
+    def _generate_balanced_questions(self, weekly_test):
+        """
+        난이도 균형 맞춰 자동으로 콘텐츠 선택 및 문제 생성
+
+        LangGraph Balance Graph를 사용하여 30% Easy, 50% Medium, 20% Hard 비율로
+        콘텐츠를 자동 선택합니다.
+        """
+        from ai_services.graphs import select_balanced_contents_for_test
+
+        logger.info(f"[Balance] Starting balanced question generation for test {weekly_test.id}")
+
+        # 사용자의 AI 검증된 콘텐츠 조회
+        contents = Content.objects.filter(
+            author=self.request.user,
+            is_ai_validated=True
+        ).order_by('-created_at')
+
+        if not contents.exists():
+            logger.warning(f"[Balance] No AI-validated contents for user {self.request.user.id}")
+            weekly_test.status = 'pending'
+            weekly_test.save()
+            return
+
+        # Balance Graph용 데이터 준비
+        content_data = [
+            {
+                'id': content.id,
+                'title': content.title,
+                'content': content.content
+            }
+            for content in contents
+        ]
+
+        # 목표 문제 수 (7-10개, 콘텐츠 수에 따라 조정)
+        target_count = min(10, max(7, len(content_data)))
+
+        logger.info(
+            f"[Balance] Analyzing {len(content_data)} contents "
+            f"for {target_count} balanced questions"
+        )
+
+        try:
+            # LangGraph Balance Graph 실행
+            balance_result = select_balanced_contents_for_test(
+                contents=content_data,
+                target_count=target_count
+            )
+
+            selected_ids = balance_result['selected_content_ids']
+            balance_info = balance_result['balance']
+            difficulty_scores = balance_result['difficulty_scores']
+
+            logger.info(
+                f"[Balance] Selected {len(selected_ids)} contents - "
+                f"Easy: {balance_info.get('easy', 0)}, "
+                f"Medium: {balance_info.get('medium', 0)}, "
+                f"Hard: {balance_info.get('hard', 0)}"
+            )
+
+            # 선택된 콘텐츠로 문제 생성
+            selected_contents = Content.objects.filter(id__in=selected_ids)
+            content_dict = {c.id: c for c in selected_contents}
+            ordered_contents = [content_dict[cid] for cid in selected_ids]
+
+            # 각 콘텐츠당 1개 문제 생성
+            for order, content in enumerate(ordered_contents, start=1):
+                if self._is_ai_available():
+                    success = self._create_ai_question(weekly_test, content, order)
+                    if not success:
+                        self._create_simple_question(weekly_test, content, order)
+                else:
+                    self._create_simple_question(weekly_test, content, order)
+
+            # 밸런스 정보 저장 (메타데이터로)
+            weekly_test.total_questions = weekly_test.questions.count()
+            weekly_test.metadata = {
+                'balance': balance_info,
+                'difficulty_scores': {
+                    str(cid): score for cid, score in difficulty_scores.items()
+                },
+                'auto_balanced': True
+            }
+
+            # 문제 생성 완료 후 preparing 상태를 pending으로 변경
+            if weekly_test.status == 'preparing':
+                weekly_test.status = 'pending'
+
+            weekly_test.save()
+
+            logger.info(
+                f"[Balance] Successfully generated {weekly_test.total_questions} "
+                f"balanced questions for test {weekly_test.id}"
+            )
+
+        except Exception as e:
+            logger.error(
+                f"[Balance] Failed to generate balanced questions: {e}",
+                exc_info=True
+            )
+            # Fallback: 무작위 선택
+            fallback_contents = list(contents[:target_count])
+            for order, content in enumerate(fallback_contents, start=1):
+                if self._is_ai_available():
+                    self._create_ai_question(weekly_test, content, order)
+                else:
+                    self._create_simple_question(weekly_test, content, order)
+
+            weekly_test.total_questions = weekly_test.questions.count()
+            weekly_test.status = 'pending'
+            weekly_test.save()
 
     def _is_ai_available(self):
         """AI API 사용 가능 여부 확인"""

@@ -9,8 +9,15 @@ from .distractor_generation_graph import (
     create_distractor_generation_graph
 )
 
+from .weekly_test_balance_graph import (
+    select_balanced_contents_for_test,
+    create_weekly_test_balance_graph
+)
+
 __all__ = [
     'generate_quality_choices',
-    'create_distractor_generation_graph'
+    'create_distractor_generation_graph',
+    'select_balanced_contents_for_test',
+    'create_weekly_test_balance_graph'
 ]
 
