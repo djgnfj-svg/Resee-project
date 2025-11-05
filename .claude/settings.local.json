@@ -45,7 +45,10 @@
       "Bash(docker-compose exec:*)",
       "mcp__playwright__browser_handle_dialog",
       "mcp__playwright__browser_press_key",
-      "Bash(docker-compose up:*)"
+      "Bash(docker-compose up:*)",
+      "mcp__playwright__browser_resize",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose:*)"
     ],
     "deny": [],
     "ask": []
