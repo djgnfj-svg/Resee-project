@@ -14,6 +14,16 @@ const TestListItem: React.FC<TestListItemProps> = ({
   onStart,
   onViewResults,
 }) => {
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'completed':
@@ -76,7 +86,7 @@ const TestListItem: React.FC<TestListItemProps> = ({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span>{test.start_date} ~ {test.end_date}</span>
+            <span>{formatDate(test.start_date)} ~ {formatDate(test.end_date)}</span>
           </div>
 
           <div className="flex items-center flex-wrap gap-3 text-sm">

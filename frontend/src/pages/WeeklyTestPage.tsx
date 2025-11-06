@@ -19,12 +19,27 @@ const WeeklyTestPage: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [showContentSelector, setShowContentSelector] = useState(false);
   const [contents, setContents] = useState<Content[]>([]);
-  const [selectedContentIds, setSelectedContentIds] = useState<number[]>([]);
+  const [pollingTests, setPollingTests] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     loadTests();
     loadContents();
   }, []);
+
+  // 폴링: preparing 상태 시험 자동 갱신
+  useEffect(() => {
+    const preparingTests = tests.filter(test => test.status === 'preparing');
+
+    if (preparingTests.length === 0) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      loadTests();
+    }, 3000); // 3초마다 확인
+
+    return () => clearInterval(intervalId);
+  }, [tests]);
 
   const loadContents = async () => {
     try {
@@ -51,24 +66,17 @@ const WeeklyTestPage: React.FC = () => {
 
   const openContentSelector = () => {
     setShowContentSelector(true);
-    setSelectedContentIds([]);
     setError('');
   };
 
-  const createNewTest = async () => {
-    if (selectedContentIds.length < 7 || selectedContentIds.length > 10) {
-      setError('AI 검증된 콘텐츠를 7~10개 선택해주세요.');
-      return;
-    }
-
+  const createNewTest = async (categoryId: number | null) => {
     try {
       setIsLoading(true);
       setError('');
-      const testData = { content_ids: selectedContentIds };
+      const testData = categoryId ? { category_id: categoryId } : {};
       await weeklyTestAPI.createWeeklyTest(testData);
       await loadTests();
       setShowContentSelector(false);
-      setSelectedContentIds([]);
     } catch (error: any) {
       console.error('Failed to create test:', error);
 
@@ -77,13 +85,12 @@ const WeeklyTestPage: React.FC = () => {
 
       if (error.response?.data) {
         const data = error.response.data;
-        // ValidationError는 non_field_errors, detail, 또는 특정 필드로 올 수 있음
         if (data.non_field_errors && Array.isArray(data.non_field_errors)) {
           errorMessage = data.non_field_errors[0];
         } else if (data.detail) {
           errorMessage = data.detail;
-        } else if (data.content_ids && Array.isArray(data.content_ids)) {
-          errorMessage = data.content_ids[0];
+        } else if (data.category_id && Array.isArray(data.category_id)) {
+          errorMessage = data.category_id[0];
         } else if (typeof data === 'string') {
           errorMessage = data;
         }
@@ -93,22 +100,6 @@ const WeeklyTestPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleContentToggle = (contentId: number) => {
-    setSelectedContentIds(prev => {
-      if (prev.includes(contentId)) {
-        return prev.filter(id => id !== contentId);
-      } else {
-        // 최대 10개까지만 선택 가능
-        if (prev.length >= 10) {
-          setError('최대 10개까지만 선택할 수 있습니다.');
-          return prev;
-        }
-        setError('');
-        return [...prev, contentId];
-      }
-    });
   };
 
   const startTest = async (testId: number) => {
@@ -263,10 +254,8 @@ const WeeklyTestPage: React.FC = () => {
         <ContentSelectorModal
           show={showContentSelector}
           contents={contents}
-          selectedContentIds={selectedContentIds}
           error={error}
           isLoading={isLoading}
-          onToggleContent={handleContentToggle}
           onCreate={createNewTest}
           onClose={() => setShowContentSelector(false)}
         />

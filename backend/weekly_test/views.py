@@ -34,22 +34,32 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         return WeeklyTestListSerializer
 
     def perform_create(self, serializer):
-        """시험 생성 시 자동으로 문제 생성"""
-        # content_ids는 serializer의 validated_data에 있음
-        content_ids = serializer.validated_data.get('content_ids', [])
+        """
+        시험 생성 후 비동기로 문제 생성
 
-        weekly_test = serializer.save(user=self.request.user)
+        즉시 응답을 반환하고, Celery task로 문제 생성을 백그라운드에서 처리
+        """
+        from .tasks import generate_test_questions_async
 
-        # AI 사용 불가능하면 preparing 상태로 설정
-        if not self._is_ai_available():
-            weekly_test.status = 'preparing'
-            weekly_test.save()
+        # 시험 생성 (status: 'preparing')
+        weekly_test = serializer.save(user=self.request.user, status='preparing')
 
-        # content_ids가 있으면 수동 선택, 없으면 자동 밸런싱
-        if content_ids:
-            self._generate_questions_from_ids(weekly_test, content_ids)
-        else:
-            self._generate_balanced_questions(weekly_test)
+        # 저장된 임시 속성에서 가져오기
+        content_ids = getattr(weekly_test, '_selected_content_ids', None)
+        category_id = getattr(weekly_test, '_selected_category_id', None)
+
+        logger.info(
+            f"[Async] Test {weekly_test.id} created, "
+            f"dispatching question generation task "
+            f"(content_ids: {content_ids}, category_id: {category_id})"
+        )
+
+        # Celery task로 문제 생성 (비동기)
+        generate_test_questions_async.delay(
+            test_id=weekly_test.id,
+            content_ids=content_ids,
+            category_id=category_id
+        )
 
     def create(self, request, *args, **kwargs):
         """Create 메서드 오버라이드로 주간 제한 확인"""
@@ -85,13 +95,17 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
         return super().create(request, *args, **kwargs)
 
-    def _generate_questions_from_ids(self, weekly_test, content_ids):
+    def _generate_questions_from_ids(self, weekly_test, content_ids, user=None):
         """전달받은 콘텐츠 ID로 순서대로 문제 생성"""
+
+        # user가 전달되지 않으면 self.request.user 사용 (API 호출 시)
+        if user is None:
+            user = self.request.user
 
         # 콘텐츠 조회 (AI 검증된 콘텐츠만)
         contents = Content.objects.filter(
             id__in=content_ids,
-            author=self.request.user,
+            author=user,
             is_ai_validated=True
         )
 
@@ -102,6 +116,13 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         # 순서 유지를 위해 딕셔너리 생성 후 재정렬
         content_dict = {c.id: c for c in contents}
         ordered_contents = [content_dict[cid] for cid in content_ids]
+
+        # 선택된 콘텐츠 날짜 범위 설정
+        if ordered_contents:
+            # created_at 기준으로 정렬하여 날짜 범위 구하기
+            sorted_by_date = sorted(ordered_contents, key=lambda c: c.created_at)
+            weekly_test.start_date = sorted_by_date[0].created_at.date()
+            weekly_test.end_date = sorted_by_date[-1].created_at.date()
 
         # 각 콘텐츠당 1개 문제 생성 (7-10개)
         for order, content in enumerate(ordered_contents, start=1):
@@ -121,7 +142,77 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
         weekly_test.save()
 
-    def _generate_balanced_questions(self, weekly_test):
+    def _generate_questions_from_category(self, weekly_test, category_id, user=None):
+        """카테고리의 AI 검증된 콘텐츠로 자동 문제 생성"""
+        from content.models import Category
+
+        # user가 전달되지 않으면 self.request.user 사용 (API 호출 시)
+        if user is None:
+            user = self.request.user
+
+        try:
+            # 카테고리 확인
+            category = Category.objects.get(id=category_id, user=user)
+        except Category.DoesNotExist:
+            logger.error(f"Category {category_id} not found for user {user.id}")
+            weekly_test.status = 'pending'
+            weekly_test.save()
+            return
+
+        # 해당 카테고리의 AI 검증된 콘텐츠 조회
+        contents = Content.objects.filter(
+            author=user,
+            category=category,
+            is_ai_validated=True
+        ).order_by('-created_at')
+
+        if contents.count() < 7:
+            logger.warning(
+                f"Category {category.name} has only {contents.count()} validated contents. "
+                "Need at least 7 for test creation."
+            )
+            weekly_test.status = 'pending'
+            weekly_test.save()
+            return
+
+        # 7~10개 선택 (최신 순)
+        selected_contents = list(contents[:10])
+
+        logger.info(
+            f"[Category] Selected {len(selected_contents)} contents "
+            f"from category '{category.name}' for test {weekly_test.id}"
+        )
+
+        # 선택된 콘텐츠 날짜 범위 설정
+        if selected_contents:
+            # 최신 순 정렬이므로: 첫번째=최근, 마지막=가장 오래됨
+            weekly_test.start_date = selected_contents[-1].created_at.date()
+            weekly_test.end_date = selected_contents[0].created_at.date()
+
+        # 각 콘텐츠당 1개 문제 생성
+        for order, content in enumerate(selected_contents, start=1):
+            if self._is_ai_available():
+                success = self._create_ai_question(weekly_test, content, order)
+                if not success:
+                    self._create_simple_question(weekly_test, content, order)
+            else:
+                self._create_simple_question(weekly_test, content, order)
+
+        # 문제 수 업데이트
+        weekly_test.total_questions = weekly_test.questions.count()
+
+        # 문제 생성 완료 후 preparing 상태를 pending으로 변경
+        if weekly_test.status == 'preparing':
+            weekly_test.status = 'pending'
+
+        weekly_test.save()
+
+        logger.info(
+            f"[Category] Successfully generated {weekly_test.total_questions} "
+            f"questions from category '{category.name}'"
+        )
+
+    def _generate_balanced_questions(self, weekly_test, user=None):
         """
         난이도 균형 맞춰 자동으로 콘텐츠 선택 및 문제 생성
 
@@ -130,16 +221,20 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         """
         from ai_services.graphs import select_balanced_contents_for_test
 
+        # user가 전달되지 않으면 self.request.user 사용 (API 호출 시)
+        if user is None:
+            user = self.request.user
+
         logger.info(f"[Balance] Starting balanced question generation for test {weekly_test.id}")
 
         # 사용자의 AI 검증된 콘텐츠 조회
         contents = Content.objects.filter(
-            author=self.request.user,
+            author=user,
             is_ai_validated=True
         ).order_by('-created_at')
 
         if not contents.exists():
-            logger.warning(f"[Balance] No AI-validated contents for user {self.request.user.id}")
+            logger.warning(f"[Balance] No AI-validated contents for user {user.id}")
             weekly_test.status = 'pending'
             weekly_test.save()
             return
@@ -184,6 +279,13 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
             selected_contents = Content.objects.filter(id__in=selected_ids)
             content_dict = {c.id: c for c in selected_contents}
             ordered_contents = [content_dict[cid] for cid in selected_ids]
+
+            # 선택된 콘텐츠 날짜 범위 설정
+            if ordered_contents:
+                # created_at 기준으로 정렬하여 날짜 범위 구하기
+                sorted_by_date = sorted(ordered_contents, key=lambda c: c.created_at)
+                weekly_test.start_date = sorted_by_date[0].created_at.date()
+                weekly_test.end_date = sorted_by_date[-1].created_at.date()
 
             # 각 콘텐츠당 1개 문제 생성
             for order, content in enumerate(ordered_contents, start=1):

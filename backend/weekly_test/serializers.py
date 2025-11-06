@@ -43,10 +43,17 @@ class WeeklyTestSerializer(serializers.ModelSerializer):
     content_ids = serializers.ListField(
         child=serializers.IntegerField(),
         write_only=True,
-        required=True,
+        required=False,
+        allow_null=True,
         min_length=7,
         max_length=10,
         help_text="시험에 포함할 콘텐츠 ID 목록 (7~10개, AI 검증 완료 필수)"
+    )
+    category_id = serializers.IntegerField(
+        write_only=True,
+        required=False,
+        allow_null=True,
+        help_text="카테고리 ID (해당 카테고리의 AI 검증된 콘텐츠로 자동 생성)"
     )
 
     class Meta:
@@ -55,7 +62,7 @@ class WeeklyTestSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'start_date', 'end_date',
             'status', 'total_questions', 'correct_answers', 'score_percentage',
             'started_at', 'completed_at', 'time_spent', 'created_at', 'updated_at',
-            'questions', 'user_answers', 'content_ids'
+            'questions', 'user_answers', 'content_ids', 'category_id'
         ]
         read_only_fields = [
             'id', 'total_questions', 'correct_answers', 'score_percentage',
@@ -94,16 +101,15 @@ class WeeklyTestSerializer(serializers.ModelSerializer):
         """주간 시험 생성"""
         user = self.context['request'].user
         content_ids = validated_data.pop('content_ids', None)
+        category_id = validated_data.pop('category_id', None)  # category_id도 제거
         validated_data['user'] = user
 
-        # 생성 시각 기록
-        if 'created_at' not in validated_data:
-            validated_data['created_at'] = timezone.now()
-
+        # start_date, end_date는 콘텐츠 선택 후 설정됨 (tasks.py에서)
         weekly_test = super().create(validated_data)
 
         # 선택된 콘텐츠 ID를 임시로 저장 (문제 생성에서 사용)
         weekly_test._selected_content_ids = content_ids
+        weekly_test._selected_category_id = category_id  # category_id도 저장
 
         return weekly_test
 
