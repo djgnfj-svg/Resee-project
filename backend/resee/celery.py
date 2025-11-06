@@ -18,6 +18,9 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 
+# Explicitly import backup_tasks module
+app.autodiscover_tasks(['review'], related_name='backup_tasks')
+
 # Beat schedule configuration
 app.conf.beat_schedule = {
     'send-daily-review-reminders': {

@@ -57,21 +57,19 @@ export const useReviewLogic = (
   useEffect(() => {
     if (reviewData) {
       let reviews: ReviewSchedule[];
-      let totalCount = 0;
+      let todayCount = 0;
 
       if (isTodayReviewsResponse(reviewData)) {
         reviews = reviewData.results;
-        totalCount = reviewData.total_count || 0;
+        // Use 'count' (today's reviews) instead of 'total_count' (all active schedules)
+        todayCount = reviewData.count || reviews.length;
       } else {
         reviews = extractResults(reviewData) as ReviewSchedule[];
-        // Try to extract total_count if it exists in raw data
-        if (typeof reviewData === 'object' && 'total_count' in reviewData) {
-          totalCount = (reviewData as any).total_count || 0;
-        }
+        todayCount = reviews.length;
       }
 
       setLocalReviews([...reviews]);
-      setTotalSchedules(totalCount);
+      setTotalSchedules(todayCount);  // 오늘 복습할 총 개수
     }
   }, [reviewData, setTotalSchedules]);
 
@@ -120,10 +118,15 @@ export const useReviewLogic = (
   const completeReviewMutation = useMutation({
     mutationFn: reviewAPI.completeReview,
     onSuccess: async (data, variables) => {
-      // 주관식 평가 (descriptive_answer가 있음): 카드 이동 안함
+      // AI 평가 모드 (descriptive, subjective, multiple_choice): 카드 이동 안함
       // 사용자가 "다음으로" 버튼 눌렀을 때 이동
-      if (variables.descriptive_answer && variables.descriptive_answer.length > 0) {
-        // 주관식은 "다음으로" 버튼에서 reviewsCompleted 증가
+      const isAIMode =
+        (variables.descriptive_answer && variables.descriptive_answer.length > 0) ||
+        (variables.user_title && variables.user_title.length > 0) ||
+        (variables.selected_choice && variables.selected_choice.length > 0);
+
+      if (isAIMode) {
+        // AI 평가 모드는 "다음으로" 버튼에서 reviewsCompleted 증가
         // Invalidate dashboard to update stats
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
@@ -131,7 +134,7 @@ export const useReviewLogic = (
         return;
       }
 
-      // 객관식 평가: 기존 로직
+      // 기억 확인 모드 (objective): 기존 로직
       if (variables.result === 'remembered') {
         // "기억함": 완료 처리
         setReviewsCompleted(prev => prev + 1);

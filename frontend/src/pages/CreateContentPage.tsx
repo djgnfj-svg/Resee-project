@@ -37,6 +37,7 @@ const CreateContentPage: React.FC = () => {
       alert('Success: 콘텐츠가 성공적으로 생성되었습니다!');
       await queryClient.invalidateQueries({ queryKey: ['contents'] });
       await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      await queryClient.invalidateQueries({ queryKey: ['todayReviews'] });  // 복습 목록 캐시 무효화
       navigate('/content');
     },
     onError: (error: any) => {

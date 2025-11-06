@@ -14,6 +14,7 @@ def create_review_schedule_on_content_creation(sender, instance, created, **kwar
         # Import here to avoid circular imports
         from review.models import ReviewSchedule
         from django.utils import timezone
+        from utils.cache_utils import invalidate_cache
 
         # Create review schedule synchronously (available immediately, +1 second for DB constraint)
         next_review_date = timezone.now() + timezone.timedelta(seconds=1)
@@ -23,3 +24,10 @@ def create_review_schedule_on_content_creation(sender, instance, created, **kwar
             next_review_date=next_review_date,
             interval_index=0  # First interval
         )
+
+        # Invalidate review cache so new content appears immediately
+        cache_keys = [
+            f'review:today:{instance.author.id}:',  # All categories
+            f'analytics:stats:{instance.author.id}',
+        ]
+        invalidate_cache(*cache_keys)
