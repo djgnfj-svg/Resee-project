@@ -23,17 +23,9 @@ app.autodiscover_tasks(['review'], related_name='backup_tasks')
 
 # Beat schedule configuration
 app.conf.beat_schedule = {
-    'send-daily-review-reminders': {
-        'task': 'review.tasks.send_daily_review_reminders',
-        'schedule': crontab(hour=9, minute=0),  # 매일 오전 9시
-    },
-    'send-evening-review-reminders': {
-        'task': 'review.tasks.send_evening_review_reminders',
-        'schedule': crontab(hour=20, minute=0),  # 매일 오후 8시
-    },
-    'send-weekly-summary': {
-        'task': 'review.tasks.send_weekly_summary',
-        'schedule': crontab(hour=9, minute=0, day_of_week=1),  # 매주 월요일 오전 9시
+    'send-hourly-notifications': {
+        'task': 'review.tasks.send_hourly_notifications',
+        'schedule': crontab(minute=0),  # 매시간 정각
     },
     'backup-database': {
         'task': 'review.backup_tasks.backup_database',
