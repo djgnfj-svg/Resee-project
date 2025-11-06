@@ -47,10 +47,9 @@ jobs:
     - name: Run frontend tests
       run: |
         cd frontend
-        # Skip tests for now as no test files exist
-        echo "⚠️ No frontend tests found - skipping test execution"
-        echo "TODO: Add frontend tests in src/**/*.test.{js,jsx,ts,tsx}"
-        # npm run test:ci
+        npm run test:ci
+      env:
+        CI: true
     
     - name: Build frontend
       run: |
@@ -64,12 +63,37 @@ jobs:
   backend-tests:
     name: Backend Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres123
+          POSTGRES_DB: resee_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
@@ -86,18 +110,15 @@ jobs:
     - name: Run backend tests
       run: |
         cd backend
-        # Run known working tests with testing settings (uses SQLite in-memory)
-        echo "🧪 Running User Model Tests..."
-        python -m pytest accounts/tests/tests.py::UserModelTest::test_create_user accounts/tests/tests.py::UserModelTest::test_user_str_representation accounts/tests/tests.py::UserModelTest::test_create_superuser -v
-        echo "🧪 Running Analytics Tests..."
-        python -m pytest analytics/tests.py -v
-        # TODO: Fix other test modules with import and signal issues
-        # TODO: Add coverage when pytest-cov is available: --cov=accounts --cov-report=term-missing
+        echo "🧪 Running all backend tests..."
+        python -m pytest -v --tb=short
       env:
-        DJANGO_SETTINGS_MODULE: resee.settings.testing
+        DJANGO_SETTINGS_MODULE: resee.settings.development
         SECRET_KEY: test-secret-key-for-ci
         DEBUG: True
-        ANTHROPIC_API_KEY: test-key
+        DATABASE_URL: postgresql://postgres:postgres123@localhost:5432/resee_test
+        REDIS_URL: redis://localhost:6379/0
+        ANTHROPIC_API_KEY: test-key-for-ci
         ENFORCE_EMAIL_VERIFICATION: False
         FRONTEND_URL: http://localhost:3000
         ALLOWED_HOSTS: localhost,127.0.0.1

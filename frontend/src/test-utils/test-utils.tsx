@@ -1,10 +1,11 @@
 import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from '../contexts/AuthContext';
+import { MemoryRouter } from 'react-router-dom';
 
 // Create a custom render function that includes providers
+// Note: AuthProvider is not included to avoid circular dependencies in tests
+// Tests that need auth should mock the useAuth hook instead
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -17,11 +18,9 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
-      </BrowserRouter>
+      <MemoryRouter>
+        {children}
+      </MemoryRouter>
     </QueryClientProvider>
   );
 };
