@@ -68,7 +68,7 @@ const TierCard: React.FC<TierCardProps> = ({
 
           {tier.coming_soon && (
             <div className="inline-block bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-3 py-1 rounded-full text-sm font-medium mb-4">
-              출시 예정
+              12월 출시 예정
             </div>
           )}
         </div>
@@ -85,14 +85,16 @@ const TierCard: React.FC<TierCardProps> = ({
         </div>
 
         <div className="mt-auto">
-          {currentTier === tier.name ? (
-            <div className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-xl font-semibold text-center shadow-md">
-              현재 {tier.display_name} 플랜
-            </div>
-          ) : tier.coming_soon ? (
-            <div className="w-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 py-3 px-6 rounded-xl font-semibold text-center border-2 border-indigo-200 dark:border-indigo-700">
-              사용자 20명 후 오픈
-            </div>
+          {tier.coming_soon ? (
+            currentTier === tier.name ? (
+              <div className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-xl font-semibold text-center shadow-md">
+                현재 {tier.display_name} 플랜
+              </div>
+            ) : (
+              <div className="w-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 py-3 px-6 rounded-xl font-semibold text-center border-2 border-indigo-200 dark:border-indigo-700">
+                12월 오픈 예정
+              </div>
+            )
           ) : (
             <button
               onClick={() => onUpgrade?.(tier.name as SubscriptionTier, billingCycle)}

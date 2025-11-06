@@ -5,7 +5,6 @@ import { authAPI } from '../../utils/api';
 import { User } from '../../types';
 
 interface ProfileFormData {
-  email: string;
   username?: string;
 }
 
@@ -20,7 +19,6 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
   // Form setup
   const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm<ProfileFormData>({
     defaultValues: {
-      email: user.email,
       username: user.username || '',
     },
   });
@@ -28,7 +26,6 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
   // Update form when user data changes
   useEffect(() => {
     reset({
-      email: user.email,
       username: user.username || '',
     });
   }, [user, reset]);
@@ -52,7 +49,6 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
 
   const handleCancel = () => {
     reset({
-      email: user.email,
       username: user.username || '',
     });
     setIsEditing(false);
@@ -98,19 +94,14 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
           <input
             type="email"
             id="email"
-            {...register('email', {
-              required: '이메일은 필수입니다',
-              pattern: {
-                value: /^\S+@\S+$/i,
-                message: '유효한 이메일 주소를 입력해주세요'
-              }
-            })}
-            disabled={!isEditing}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-50 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            value={user.email}
+            disabled={true}
+            readOnly
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
           />
-          {errors.email && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
-          )}
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            이메일은 로그인 식별자로 사용되며 변경할 수 없습니다.
+          </p>
         </div>
 
         {/* Username */}

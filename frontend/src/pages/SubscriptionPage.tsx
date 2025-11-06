@@ -37,9 +37,9 @@ const SubscriptionPage: React.FC = () => {
       features: [
         '최대 3일 복습 간격',
         '기본 통계',
-        '20개 콘텐츠 생성',
-        '이메일 지원'
-      ]
+        '20개 콘텐츠 생성'
+      ],
+      coming_soon: true
     },
     {
       name: 'basic',
@@ -51,10 +51,9 @@ const SubscriptionPage: React.FC = () => {
         'AI 서술형 정답 지원',
         '무제한 콘텐츠 생성',
         '상세 통계 및 분석',
-        '우선 이메일 지원',
         ...(billingCycle === 'yearly' ? ['연간 결제 시 20% 할인!'] : [])
       ],
-      coming_soon: false
+      coming_soon: true
     },
     {
       name: 'pro',
@@ -67,10 +66,9 @@ const SubscriptionPage: React.FC = () => {
         'AI 주간 시험 생성',
         '무제한 콘텐츠 생성',
         '상세 통계 및 분석',
-        '우선 이메일 지원',
         ...(billingCycle === 'yearly' ? ['연간 결제 시 20% 할인!'] : [])
       ],
-      coming_soon: false
+      coming_soon: true
     }
   ];
 
@@ -104,9 +102,18 @@ const SubscriptionPage: React.FC = () => {
       return;
     }
 
-    // For FREE tier, use old password-based flow
-    if (tier === 'free') {
-      const confirmMessage = '무료 플랜으로 변경하시겠습니까?';
+    // Determine if upgrade or downgrade
+    const tierHierarchy = { 'free': 0, 'basic': 1, 'pro': 2 };
+    const currentTierLevel = tierHierarchy[currentSubscription?.tier as SubscriptionTier] || 0;
+    const targetTierLevel = tierHierarchy[tier] || 0;
+
+    const isDowngrade = targetTierLevel < currentTierLevel;
+
+    // For FREE tier or downgrade, use password-based flow
+    if (tier === 'free' || isDowngrade) {
+      const action = isDowngrade ? '다운그레이드' : '변경';
+      const tierName = subscriptionTiers.find(t => t.name === tier)?.display_name || tier;
+      const confirmMessage = `${tierName} 플랜으로 ${action}하시겠습니까?`;
 
       if (window.confirm(confirmMessage)) {
         const password = window.prompt('보안을 위해 비밀번호를 입력해주세요:');
@@ -123,7 +130,7 @@ const SubscriptionPage: React.FC = () => {
         });
       }
     } else {
-      // For paid tiers (BASIC/PRO), redirect to checkout page
+      // For upgrades to paid tiers (BASIC/PRO), redirect to checkout page
       const cycle = billingCycle === 'monthly' ? 'MONTHLY' : 'YEARLY';
       navigate(`/payment/checkout?tier=${tier}&cycle=${cycle}`);
     }

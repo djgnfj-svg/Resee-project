@@ -101,7 +101,7 @@ def subscription_upgrade(request):
         subscription = user.subscription
         logger.info(f"Current subscription: {subscription}, tier: {subscription.tier}")
 
-        # Verify admin password before allowing subscription change
+        # Verify user password before allowing subscription change
         password = request.data.get('password')
         if not password:
             return Response(
@@ -109,21 +109,13 @@ def subscription_upgrade(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        admin_password = getattr(settings, 'SUBSCRIPTION_ADMIN_PASSWORD', None)
-        if not admin_password:
-            logger.error("SUBSCRIPTION_ADMIN_PASSWORD not configured")
-            return Response(
-                {'error': '구독 변경이 일시적으로 비활성화되었습니다.'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
-
-        if password != admin_password:
+        if not user.check_password(password):
             return Response(
                 {'error': '비밀번호가 올바르지 않습니다.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        logger.info("Admin password verification passed")
+        logger.info("Password verification passed")
 
         serializer = SubscriptionUpgradeSerializer(
             data=request.data,
@@ -341,7 +333,7 @@ def subscription_downgrade(request):
             logger.error(f"User {user.email} has no subscription")
             return Response({'error': '구독 정보를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Verify admin password before allowing subscription change
+        # Verify user password before allowing subscription change
         password = request.data.get('password')
         if not password:
             return Response(
@@ -349,21 +341,13 @@ def subscription_downgrade(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        admin_password = getattr(settings, 'SUBSCRIPTION_ADMIN_PASSWORD', None)
-        if not admin_password:
-            logger.error("SUBSCRIPTION_ADMIN_PASSWORD not configured")
-            return Response(
-                {'error': '구독 변경이 일시적으로 비활성화되었습니다.'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
-
-        if password != admin_password:
+        if not user.check_password(password):
             return Response(
                 {'error': '비밀번호가 올바르지 않습니다.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        logger.info("Admin password verification passed")
+        logger.info("Password verification passed")
 
         # Get target tier and billing cycle from request
         target_tier = request.data.get('tier')
