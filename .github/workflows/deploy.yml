@@ -1,63 +1,242 @@
-name: Deploy to EC2
+name: Deploy to ECS
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:  # 수동 실행 가능
+  workflow_dispatch:  # Manual trigger option
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: resee-backend
+  ECS_CLUSTER: resee-cluster
+  ECS_SERVICE_BACKEND: resee-backend-service
+  ECS_SERVICE_CELERY_WORKER: resee-celery-worker-service
+  ECS_SERVICE_CELERY_BEAT: resee-celery-beat-service
+  TASK_DEFINITION_BACKEND: resee-backend-task
+  TASK_DEFINITION_CELERY_WORKER: resee-celery-worker-task
+  TASK_DEFINITION_CELERY_BEAT: resee-celery-beat-task
 
 jobs:
   deploy:
-    name: Deploy to Production
+    name: Deploy to Production (ECS)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          script: |
-            set -e
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-            echo "🚀 Starting deployment..."
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-            # Navigate to project directory
-            cd ${{ secrets.PROJECT_PATH }}
+      - name: Build, tag, and push Docker image to ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd backend
 
-            # Clean any local changes and sync with remote
-            echo "🧹 Cleaning local changes..."
-            git fetch origin
-            git reset --hard origin/main
-            git clean -fd
+          # Build Docker image
+          echo "🔨 Building Docker image..."
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-            # Pull latest changes (should be fast-forward now)
-            echo "📥 Pulling latest code..."
-            git pull origin main
+          # Push to ECR
+          echo "📤 Pushing image to ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-            # Run deployment script
-            echo "🔧 Running deployment script..."
-            ./deploy.sh
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "✅ Image pushed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-            echo "✅ Deployment completed successfully!"
-          script_stop: true  # 에러 발생 시 즉시 중단
-          command_timeout: 30m  # 타임아웃 30분 (배포 시간 고려)
+      - name: Update Backend Task Definition
+        id: backend-task-def
+        run: |
+          # Get current task definition
+          TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition ${{ env.TASK_DEFINITION_BACKEND }} \
+            --region ${{ env.AWS_REGION }})
 
-      - name: Notify deployment success
+          # Update image in task definition
+          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "${{ steps.build-image.outputs.image }}" \
+            '.taskDefinition | .containerDefinitions[0].image = $IMAGE |
+            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+
+          # Register new task definition
+          NEW_REVISION=$(aws ecs register-task-definition \
+            --region ${{ env.AWS_REGION }} \
+            --cli-input-json "$NEW_TASK_DEF" | jq -r '.taskDefinition.revision')
+
+          echo "revision=$NEW_REVISION" >> $GITHUB_OUTPUT
+          echo "✅ Backend task definition updated to revision $NEW_REVISION"
+
+      - name: Update Celery Worker Task Definition
+        id: worker-task-def
+        run: |
+          # Get current task definition
+          TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition ${{ env.TASK_DEFINITION_CELERY_WORKER }} \
+            --region ${{ env.AWS_REGION }})
+
+          # Update image in task definition
+          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "${{ steps.build-image.outputs.image }}" \
+            '.taskDefinition | .containerDefinitions[0].image = $IMAGE |
+            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+
+          # Register new task definition
+          NEW_REVISION=$(aws ecs register-task-definition \
+            --region ${{ env.AWS_REGION }} \
+            --cli-input-json "$NEW_TASK_DEF" | jq -r '.taskDefinition.revision')
+
+          echo "revision=$NEW_REVISION" >> $GITHUB_OUTPUT
+          echo "✅ Celery Worker task definition updated to revision $NEW_REVISION"
+
+      - name: Update Celery Beat Task Definition
+        id: beat-task-def
+        run: |
+          # Get current task definition
+          TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition ${{ env.TASK_DEFINITION_CELERY_BEAT }} \
+            --region ${{ env.AWS_REGION }})
+
+          # Update image in task definition
+          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "${{ steps.build-image.outputs.image }}" \
+            '.taskDefinition | .containerDefinitions[0].image = $IMAGE |
+            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+
+          # Register new task definition
+          NEW_REVISION=$(aws ecs register-task-definition \
+            --region ${{ env.AWS_REGION }} \
+            --cli-input-json "$NEW_TASK_DEF" | jq -r '.taskDefinition.revision')
+
+          echo "revision=$NEW_REVISION" >> $GITHUB_OUTPUT
+          echo "✅ Celery Beat task definition updated to revision $NEW_REVISION"
+
+      - name: Deploy Backend Service
+        run: |
+          echo "🚀 Deploying Backend service..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_BACKEND }} \
+            --task-definition ${{ env.TASK_DEFINITION_BACKEND }}:${{ steps.backend-task-def.outputs.revision }} \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+          echo "✅ Backend service deployment initiated"
+
+      - name: Deploy Celery Worker Service
+        run: |
+          echo "🚀 Deploying Celery Worker service..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_CELERY_WORKER }} \
+            --task-definition ${{ env.TASK_DEFINITION_CELERY_WORKER }}:${{ steps.worker-task-def.outputs.revision }} \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+          echo "✅ Celery Worker service deployment initiated"
+
+      - name: Deploy Celery Beat Service
+        run: |
+          echo "🚀 Deploying Celery Beat service..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE_CELERY_BEAT }} \
+            --task-definition ${{ env.TASK_DEFINITION_CELERY_BEAT }}:${{ steps.beat-task-def.outputs.revision }} \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+          echo "✅ Celery Beat service deployment initiated"
+
+      - name: Wait for Backend service to stabilize
+        run: |
+          echo "⏳ Waiting for Backend service to reach steady state..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_BACKEND }} \
+            --region ${{ env.AWS_REGION }}
+
+          echo "✅ Backend service is stable"
+
+      - name: Wait for Celery services to stabilize
+        run: |
+          echo "⏳ Waiting for Celery Worker service to reach steady state..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_CELERY_WORKER }} \
+            --region ${{ env.AWS_REGION }}
+
+          echo "⏳ Waiting for Celery Beat service to reach steady state..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_CELERY_BEAT }} \
+            --region ${{ env.AWS_REGION }}
+
+          echo "✅ All Celery services are stable"
+
+      - name: Verify deployment
+        run: |
+          echo "🔍 Verifying deployment..."
+
+          # Check service status
+          BACKEND_STATUS=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_BACKEND }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'services[0].deployments[0].rolloutState' \
+            --output text)
+
+          echo "Backend deployment status: $BACKEND_STATUS"
+
+          # Test health endpoint
+          HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" https://reseeall.com/api/health/ || echo "Failed")
+          echo "Health check status: $HEALTH_CHECK"
+
+          if [ "$HEALTH_CHECK" = "200" ]; then
+            echo "✅ Health check passed"
+          else
+            echo "⚠️ Health check returned: $HEALTH_CHECK"
+          fi
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "# 🚀 Deployment Summary"
+          echo ""
+          echo "## 📦 Docker Image"
+          echo "- **Image**: ${{ steps.build-image.outputs.image }}"
+          echo "- **Tag**: ${{ github.sha }}"
+          echo ""
+          echo "## 🔄 Task Definitions"
+          echo "- **Backend**: ${{ env.TASK_DEFINITION_BACKEND }}:${{ steps.backend-task-def.outputs.revision }}"
+          echo "- **Celery Worker**: ${{ env.TASK_DEFINITION_CELERY_WORKER }}:${{ steps.worker-task-def.outputs.revision }}"
+          echo "- **Celery Beat**: ${{ env.TASK_DEFINITION_CELERY_BEAT }}:${{ steps.beat-task-def.outputs.revision }}"
+          echo ""
+          echo "## 🌐 Endpoints"
+          echo "- **Production**: https://reseeall.com"
+          echo "- **API**: https://reseeall.com/api/"
+          echo "- **Health**: https://reseeall.com/api/health/"
+
+      - name: Notify success
         if: success()
         run: |
-          echo "✅ Deployment to production completed successfully!"
-          echo "🌐 Site: https://reseeall.com"
-          echo "📊 Health check: https://reseeall.com/api/health/"
+          echo "✅ Deployment to ECS completed successfully!"
+          echo "🎉 All services are running and healthy"
 
-      - name: Notify deployment failure
+      - name: Notify failure
         if: failure()
         run: |
           echo "❌ Deployment failed!"
           echo "Please check the logs above for details."
+          echo "💡 Check ECS service events and CloudWatch logs for more information"
           exit 1

@@ -18,13 +18,52 @@ DEBUG = False
 TEMPLATE_DEBUG = False
 
 # Security settings
+# Monkey-patch Django's validate_host to support VPC IP validation
+from django.http import request as django_request
+
+_original_validate_host = django_request.validate_host
+
+def validate_host_with_vpc(host, allowed_hosts):
+    """
+    Custom validate_host that allows:
+    1. All patterns supported by Django's original validate_host
+    2. VPC private IPs (172.31.0.0/16) for ALB health checks
+    3. localhost for local testing
+    """
+    # Check for VPC private IPs (172.31.0.0/16)
+    if host.startswith('172.31.'):
+        return True
+
+    # Check for localhost
+    if host in ['localhost', '127.0.0.1']:
+        return True
+
+    # Fall back to Django's original validation
+    return _original_validate_host(host, allowed_hosts)
+
+# Replace Django's validate_host with our custom version
+django_request.validate_host = validate_host_with_vpc
+
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
+
+# Add api subdomain to allowed hosts if not already present
+if 'api.reseeall.com' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('api.reseeall.com')
+
+# Add api subdomain to CSRF trusted origins
+if 'https://api.reseeall.com' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append('https://api.reseeall.com')
 
 # CORS settings for production
 CORS_ALLOWED_ORIGINS = [
     "https://reseeall.com",
     "https://www.reseeall.com",
+]
+
+# Allow Vercel preview deployments (for PR previews)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
 ]
 
 # Security headers
@@ -75,6 +114,22 @@ CACHES = {
         },
         'KEY_PREFIX': 'throttle',
         'TIMEOUT': 3600,  # 1 hour default
+    },
+    # Redis cache for API responses
+    'api': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.environ.get('REDIS_URL', 'redis://redis:6379/1'),  # Database 1
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_CLASS_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+            },
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+        },
+        'KEY_PREFIX': 'api',
+        'TIMEOUT': 300,  # 5 minutes default
     }
 }
 
@@ -164,6 +219,11 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'registration': '3/minute',
     'email': '10/hour',
 }
+
+# Disable DRF Browsable API in production (JSON only)
+REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [
+    'rest_framework.renderers.JSONRenderer',
+]
 
 # Monitoring removed - using logging + Slack alerts instead
 
