@@ -102,38 +102,38 @@ export const weeklyTestAPI = {
     return response.data;
   },
 
-  // 주간 시험 시작
+  // 주간 시험 시작 (RESTful)
   startTest: async (testId: number): Promise<{ message: string; test: WeeklyTest }> => {
-    const response = await api.post('/weekly-test/start/', { test_id: testId });
+    const response = await api.post('/weekly-test/test-sessions/', { test_id: testId });
     return response.data;
   },
 
-  // 답변 제출
-  submitAnswer: async (data: SubmitAnswerData): Promise<{
+  // 답변 제출 (RESTful)
+  submitAnswer: async (sessionId: number, data: SubmitAnswerData): Promise<{
     message: string;
     answer_id: number;
     is_correct: boolean;
     points_earned: number;
   }> => {
-    const response = await api.post('/weekly-test/submit-answer/', data);
+    const response = await api.post(`/weekly-test/test-sessions/${sessionId}/answers/`, data);
     return response.data;
   },
 
-  // 시험 완료
-  completeTest: async (testId: number): Promise<{
+  // 시험 완료 (RESTful)
+  completeTest: async (sessionId: number): Promise<{
     message: string;
     score_percentage: number;
     correct_answers: number;
     total_questions: number;
     time_spent?: string;
   }> => {
-    const response = await api.post('/weekly-test/complete/', { test_id: testId });
+    const response = await api.patch(`/weekly-test/test-sessions/${sessionId}/`);
     return response.data;
   },
 
-  // 시험 결과 조회
-  getTestResults: async (testId: number): Promise<TestResultData> => {
-    const response = await api.get(`/weekly-test/${testId}/results/`);
+  // 시험 결과 조회 (RESTful)
+  getTestResults: async (sessionId: number): Promise<TestResultData> => {
+    const response = await api.get(`/weekly-test/test-sessions/${sessionId}/results/`);
     return response.data;
   },
 

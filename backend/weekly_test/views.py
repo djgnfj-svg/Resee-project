@@ -1,5 +1,5 @@
-from rest_framework import generics, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import generics, status, viewsets
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
@@ -540,3 +540,104 @@ def test_results(request, test_id):
         return Response({
             'error': '존재하지 않는 시험입니다.'
         }, status=status.HTTP_404_NOT_FOUND)
+
+
+class TestSessionViewSet(viewsets.GenericViewSet):
+    """
+    RESTful Test Session ViewSet
+
+    Endpoints:
+    - POST /test-sessions/ - Start test session
+    - POST /test-sessions/{id}/answers/ - Submit answer to session
+    - PATCH /test-sessions/{id}/ - Complete test session
+    - GET /test-sessions/{id}/results/ - Get test results
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = WeeklyTestSerializer
+
+    def get_queryset(self):
+        return WeeklyTest.objects.filter(user=self.request.user)
+
+    def create(self, request):
+        """
+        POST /test-sessions/
+        Start a new test session
+
+        Request body:
+            - test_id (required): Weekly test ID to start
+
+        Response:
+            - message: Success message
+            - test: Test session data
+        """
+        # Delegate to existing start_test logic
+        return start_test(request)
+
+    @action(detail=True, methods=['post'], url_path='answers')
+    def submit_answer_action(self, request, pk=None):
+        """
+        POST /test-sessions/{id}/answers/
+        Submit an answer for a question in this test session
+
+        Request body:
+            - question_id (required): Question ID
+            - user_answer (required): User's answer
+
+        Response:
+            - message: Success message
+            - answer_id: Created answer ID
+            - is_correct: Whether answer is correct
+            - points_earned: Points earned for this answer
+        """
+        # Verify test session exists and belongs to user
+        try:
+            test_session = self.get_queryset().get(pk=pk)
+        except WeeklyTest.DoesNotExist:
+            return Response({
+                'error': '존재하지 않는 시험입니다.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Delegate to existing submit_answer logic
+        return submit_answer(request)
+
+    def partial_update(self, request, pk=None):
+        """
+        PATCH /test-sessions/{id}/
+        Complete the test session
+
+        Request body:
+            - test_id (optional): Test ID (uses pk from URL if not provided)
+
+        Response:
+            - message: Success message
+            - score_percentage: Final score percentage
+            - correct_answers: Number of correct answers
+            - total_questions: Total number of questions
+            - time_spent: Time spent on test
+        """
+        # Verify test session exists and belongs to user
+        try:
+            test_session = self.get_queryset().get(pk=pk)
+        except WeeklyTest.DoesNotExist:
+            return Response({
+                'error': '존재하지 않는 시험입니다.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Add test_id to request data for complete_test function
+        request.data['test_id'] = pk
+
+        # Delegate to existing complete_test logic
+        return complete_test(request)
+
+    @action(detail=True, methods=['get'], url_path='results')
+    def results(self, request, pk=None):
+        """
+        GET /test-sessions/{id}/results/
+        Get detailed test results
+
+        Response:
+            - test: Test session data
+            - answers: List of all answers with questions
+        """
+        # Delegate to existing test_results logic
+        return test_results(request, pk)
