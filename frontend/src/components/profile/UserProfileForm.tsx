@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { authAPI } from '../../utils/api';
 import { User } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ProfileFormData {
   email: string;
@@ -15,6 +16,7 @@ interface UserProfileFormProps {
 
 const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
   const queryClient = useQueryClient();
+  const { refreshUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
 
   // Form setup
@@ -36,9 +38,11 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: authAPI.updateProfile,
-    onSuccess: (updatedUser) => {
+    onSuccess: async (updatedUser) => {
       alert('Success: 프로필이 성공적으로 업데이트되었습니다!');
       queryClient.setQueryData(['profile'], updatedUser);
+      // Update AuthContext user to reflect changes in navbar immediately
+      await refreshUser();
       setIsEditing(false);
     },
     onError: () => {
