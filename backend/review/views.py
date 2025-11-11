@@ -46,6 +46,66 @@ class ReviewScheduleViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
+    @swagger_auto_schema(
+        operation_summary="오늘의 복습 목록 조회 (RESTful)",
+        operation_description="사용자의 구독 티어에 따라 복습할 콘텐츠를 반환합니다.",
+        manual_parameters=[
+            openapi.Parameter(
+                'category_slug',
+                openapi.IN_QUERY,
+                description="특정 카테고리만 필터링",
+                type=openapi.TYPE_STRING
+            ),
+        ],
+        responses={200: ReviewScheduleSerializer(many=True)}
+    )
+    @action(detail=False, methods=['get'], url_path='today')
+    def today(self, request):
+        """Get review items due today or overdue (RESTful endpoint)"""
+        # Delegate to existing TodayReviewView
+        from .views import TodayReviewView
+        view = TodayReviewView()
+        view.request = request
+        view.format_kwarg = None
+        return view.get(request)
+
+    @swagger_auto_schema(
+        operation_summary="복습 완료 처리 (RESTful)",
+        operation_description="복습 결과를 기록하고 다음 복습 일정을 계산합니다.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'result': openapi.Schema(type=openapi.TYPE_STRING, enum=['remembered', 'partial', 'forgot']),
+                'time_spent': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'notes': openapi.Schema(type=openapi.TYPE_STRING),
+                'descriptive_answer': openapi.Schema(type=openapi.TYPE_STRING),
+                'selected_choice': openapi.Schema(type=openapi.TYPE_STRING),
+                'user_title': openapi.Schema(type=openapi.TYPE_STRING),
+            }
+        ),
+        responses={200: "복습 완료 성공"}
+    )
+    @action(detail=True, methods=['post'], url_path='completions')
+    def completions(self, request, pk=None):
+        """Complete a review (RESTful endpoint)"""
+        # Get the schedule (ownership checked by UserOwnershipMixin)
+        schedule = self.get_object()
+
+        # Create new data dict with content_id added
+        data = dict(request.data)
+        data['content_id'] = schedule.content.id
+
+        # Replace request._full_data to inject content_id
+        request._full_data = data
+
+        # Delegate to existing CompleteReviewView
+        from .views import CompleteReviewView
+        view = CompleteReviewView()
+        view.request = request
+        view.format_kwarg = None
+
+        return view.post(request)
+
 
 class ReviewHistoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     """
