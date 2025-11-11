@@ -29,6 +29,33 @@
     <!-- Pretendard Variable Font -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
 
+    <!-- Google Analytics -->
+    <script>
+      (function() {
+        var GA_ID = '%REACT_APP_GA_MEASUREMENT_ID%';
+
+        // 환경 변수가 없거나 빈 문자열이면 실행 안 함 (로컬 개발 환경)
+        if (!GA_ID || GA_ID === '' || GA_ID === '%REACT_APP_GA_MEASUREMENT_ID%') {
+          console.log('GA disabled: No measurement ID');
+          return;
+        }
+
+        // GA 스크립트 로드
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+        document.head.appendChild(script);
+
+        // GA 초기화
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', GA_ID);
+
+        console.log('GA initialized:', GA_ID);
+      })();
+    </script>
+
     <title>Resee - 과학적 복습 플랫폼</title>
   </head>
   <body>
