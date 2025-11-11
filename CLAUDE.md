@@ -16,11 +16,22 @@ This file provides guidance to Claude Code when working with code in this reposi
 ## Quick Start
 
 ### Project Overview
-Resee is a focused spaced repetition learning platform implementing the Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend), managed via Docker Compose.
+Resee is a focused spaced repetition learning platform implementing the Ebbinghaus forgetting curve theory. Built with Django (backend) and React (frontend).
 
 **Key Philosophy**: Pure learning effectiveness over engagement metrics. No streaks, achievements, or gamification - just scientifically-proven spaced repetition for optimal knowledge retention.
 
+**Deployment**:
+- **Development**: Docker Compose (local development)
+- **Production**: AWS ECS (backend), Vercel (frontend)
+
 ### Access URLs
+
+**Production**:
+- Frontend: Vercel deployment
+- Backend API: AWS ALB (resee-alb-64869428.ap-northeast-2.elb.amazonaws.com)
+- Health Check: http://resee-alb-64869428.ap-northeast-2.elb.amazonaws.com/api/health/
+
+**Development (Local)**:
 ```bash
 # Nginx (Recommended - production-like)
 http://localhost
@@ -99,7 +110,7 @@ The system implements scientifically-proven intervals for optimal memory retenti
 
 ### Common Commands
 
-#### Start/Stop Services
+#### Start/Stop Services (Local Development)
 ```bash
 docker-compose up -d
 docker-compose down
@@ -107,6 +118,31 @@ docker-compose logs -f backend
 docker-compose logs -f frontend
 docker-compose logs -f celery
 docker-compose logs -f celery-beat
+```
+
+#### Production Commands (AWS)
+```bash
+# Check ECS cluster status
+aws ecs list-clusters
+aws ecs list-services --cluster resee-cluster
+
+# Check service status
+aws ecs describe-services --cluster resee-cluster --services resee-backend-service resee-celery-worker-service resee-celery-beat-service
+
+# Check task status
+aws ecs list-tasks --cluster resee-cluster --service-name resee-backend-service
+aws ecs describe-tasks --cluster resee-cluster --tasks <task-id>
+
+# Check service events
+aws ecs describe-services --cluster resee-cluster --services resee-backend-service --query 'services[0].events[:5]'
+
+# Check ALB status
+aws elbv2 describe-load-balancers --names resee-alb
+aws elbv2 describe-target-groups --target-group-arns <target-group-arn>
+
+# Test backend health
+curl http://resee-alb-64869428.ap-northeast-2.elb.amazonaws.com/api/health/
+curl http://resee-alb-64869428.ap-northeast-2.elb.amazonaws.com/api/health/detailed/
 ```
 
 #### Backend Development
@@ -262,13 +298,14 @@ frontend/src/
 
 #### Configuration
 ```
-docker-compose.yml                     # Development (runserver, npm start)
-docker-compose.prod.yml                # Production (gunicorn, nginx static)
+docker-compose.yml                     # Local development (runserver, npm start)
+docker-compose.prod.yml                # Local production-like (gunicorn, nginx)
 .env                                   # Development environment variables
-.env.prod                              # Production environment variables
+.env.prod                              # Production environment variables (AWS ECS)
 .env.example                           # Template for environment setup
 backend/resee/celery.py                # Celery config (broker, beat scheduler)
 frontend/package.json                  # Tree shaking (sideEffects), scripts
+.github/workflows/                     # GitHub Actions (CI/CD for AWS ECS)
 ```
 
 ### Feature Development Checklist
@@ -468,7 +505,9 @@ Implementation (not activated - FREE tier only):
 
 ### Infrastructure
 
-**Docker Compose Services**:
+#### Development Infrastructure (Docker Compose)
+
+**Docker Compose Services** (for local development):
 - `backend`: Django + runserver (dev) / Gunicorn (prod)
 - `frontend`: npm start (dev) / Nginx static (prod)
 - `postgres`: PostgreSQL 15 with healthcheck
@@ -477,17 +516,78 @@ Implementation (not activated - FREE tier only):
 - `celery-beat`: Scheduled tasks with DatabaseScheduler
 - `nginx`: Reverse proxy (port 80, production-like)
 
-**Database & Cache**:
-- PostgreSQL 15 (local Docker)
+**Database & Cache** (local):
+- PostgreSQL 15 (Docker)
   - Development: `resee_dev`
-  - Production: `resee_prod`
   - Healthcheck: pg_isready
 - Redis (Docker, port 6379)
   - Database 0: Celery broker + rate limiting cache
   - Healthcheck: redis-cli ping
-- Cache Configuration:
-  - **Default cache**: locmem (5000 max entries, cull frequency 4)
-  - **Throttle cache**: Redis (50 max connections, 5s timeout)
+
+#### Production Infrastructure (AWS Cloud)
+
+**AWS ECS (Elastic Container Service)**:
+- **Cluster**: `resee-cluster`
+- **Region**: ap-northeast-2 (Seoul)
+- **Services**:
+  - `resee-backend-service`: Django backend (Gunicorn, 2 workers, 2 threads)
+  - `resee-celery-worker-service`: Background task workers
+  - `resee-celery-beat-service`: Scheduled task manager
+- **Task Type**: Fargate (serverless containers)
+- **Deployment**: Rolling updates via GitHub Actions
+
+**Application Load Balancer (ALB)**:
+- **Name**: `resee-alb`
+- **DNS**: resee-alb-64869428.ap-northeast-2.elb.amazonaws.com
+- **Type**: Application Load Balancer
+- **Scheme**: Internet-facing
+- **Availability Zones**: ap-northeast-2a, ap-northeast-2c
+- **Listener**: Port 80 (HTTP) → resee-backend-tg
+- **Target Group**: resee-backend-tg (port 8000, IP targets)
+- **Health Check**:
+  - Path: `/api/health/`
+  - Interval: 30 seconds
+  - Timeout: 10 seconds
+  - Healthy threshold: 2 consecutive successes
+  - Unhealthy threshold: 3 consecutive failures
+
+**Security Group** (resee-alb-sg):
+- Inbound: Port 80 (HTTP) from 0.0.0.0/0
+- Inbound: Port 443 (HTTPS) from 0.0.0.0/0
+
+**Database** (AWS RDS):
+- PostgreSQL 15 (managed)
+- Production database: `resee_prod`
+- Response time: ~290ms
+- Automatic backups enabled
+
+**Cache & Message Broker** (Upstash Redis):
+- **Service**: Upstash Redis (managed)
+- **Host**: calm-jaybird-34425.upstash.io:6379
+- **Protocol**: rediss:// (TLS)
+- **Usage**: Celery broker + rate limiting cache
+- **Response time**: ~230ms
+
+**Frontend** (Vercel):
+- React application deployment
+- Automatic deployments from Git
+- Global CDN distribution
+- HTTPS enabled
+
+**Cache Configuration**:
+- **Default cache**: locmem (5000 max entries, cull frequency 4)
+- **Throttle cache**: Upstash Redis (50 max connections, 5s timeout)
+- **Celery broker**: Upstash Redis
+
+**Deployment Architecture**:
+```
+User → Vercel (Frontend)
+     → AWS ALB → ECS Backend (Django + Gunicorn)
+                → RDS PostgreSQL
+                → Upstash Redis
+     → ECS Celery Worker → Upstash Redis
+     → ECS Celery Beat → Upstash Redis
+```
 
 ---
 
@@ -680,20 +780,20 @@ SLACK_WEBHOOK_URL=your-slack-webhook
 GOOGLE_OAUTH2_CLIENT_ID=your-google-client-id
 ```
 
-**Production (`.env.prod`)**:
+**Production (`.env.prod` - AWS ECS)**:
 ```bash
 # Django Core
 SECRET_KEY=your-production-secret-key
 DEBUG=False
 DJANGO_SETTINGS_MODULE=resee.settings.production
-ALLOWED_HOSTS=yourdomain.com
+ALLOWED_HOSTS=resee-alb-64869428.ap-northeast-2.elb.amazonaws.com,yourdomain.com
 CSRF_TRUSTED_ORIGINS=https://yourdomain.com
 
-# Database
-DATABASE_URL=postgresql://postgres:secure_password@postgres:5432/resee_prod
+# Database (AWS RDS)
+DATABASE_URL=postgresql://username:password@rds-endpoint:5432/resee_prod
 
-# Redis (set in docker-compose.yml)
-# REDIS_URL=redis://redis:6379/0
+# Redis (Upstash Redis)
+REDIS_URL=rediss://default:password@calm-jaybird-34425.upstash.io:6379
 
 # Email Verification
 ENFORCE_EMAIL_VERIFICATION=True
@@ -716,6 +816,9 @@ EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=your-email@gmail.com
 EMAIL_HOST_PASSWORD=your-app-password
+
+# Frontend URL (Vercel)
+FRONTEND_URL=https://your-vercel-domain.vercel.app
 ```
 
 **Frontend (docker-compose.yml)**:
@@ -817,12 +920,14 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id (optional)
 - 21 pages with React.lazy() code splitting
 
 **Infrastructure**:
-- Docker Compose (development & production)
-- Nginx (reverse proxy, static files)
-- PostgreSQL (local Docker)
-- Redis (Celery broker, throttle cache)
-- GitHub Actions CI/CD
-- CloudFlare (HTTPS, CDN)
+- **Development**: Docker Compose (local containers)
+- **Production**:
+  - AWS ECS Fargate (containerized backend)
+  - AWS RDS PostgreSQL 15 (managed database)
+  - AWS ALB (load balancer)
+  - Upstash Redis (managed cache & broker)
+  - Vercel (frontend hosting)
+  - GitHub Actions CI/CD (automated deployment)
 
 **Database Optimization**:
 - **ReviewSchedule**: 3 indexes
@@ -880,6 +985,32 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id (optional)
 ---
 
 ## Recent Changes
+
+### Production Deployment (2025-11-11)
+
+**AWS Cloud Migration**:
+- ✅ Backend deployed to AWS ECS Fargate (3 services)
+- ✅ AWS Application Load Balancer configured
+- ✅ RDS PostgreSQL 15 (managed database)
+- ✅ Upstash Redis (managed cache & Celery broker)
+- ✅ Frontend deployed to Vercel
+- ✅ GitHub Actions CI/CD pipeline
+- ✅ Health checks operational (/api/health/, /api/health/detailed/)
+
+**Production Infrastructure**:
+- ECS Cluster: resee-cluster (ap-northeast-2)
+- ECS Services: backend, celery-worker, celery-beat (1 task each)
+- ALB DNS: resee-alb-64869428.ap-northeast-2.elb.amazonaws.com
+- Health Check: 30s interval, 10s timeout
+- Availability Zones: ap-northeast-2a, ap-northeast-2c
+- Security: ALB security group allows ports 80, 443
+
+**Service Health Status**:
+- ✅ Backend: healthy (200 OK, 0.16s response)
+- ✅ Database: healthy (~290ms response time)
+- ✅ Redis: healthy (~230ms response time)
+- ✅ Celery: 1 active worker, 79h uptime
+- ✅ Disk: 40% usage, 17.59GB free
 
 ### Latest Code Updates (2025-10-17)
 
@@ -949,9 +1080,13 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id (optional)
 - ✅ PWA features (service worker, install prompt, offline, updates)
 
 **Configuration**:
-- Local PostgreSQL for dev (resee_dev) and prod (resee_prod)
+- **Development**: Local PostgreSQL (resee_dev), Docker Compose
+- **Production**:
+  - AWS ECS Fargate: 3 services (backend, celery-worker, celery-beat)
+  - AWS RDS PostgreSQL 15 (resee_prod)
+  - Upstash Redis (Celery broker + rate limiting)
+  - Vercel (frontend deployment)
 - Gunicorn configuration: 2 workers, 2 threads (max-requests: 1000)
-- Simplified Docker networking
 - Celery Beat with DatabaseScheduler for scheduled tasks
 - Test coverage: 40/41 tests passing (1 security test failing: test_token_blacklisted_on_password_change)
 - Frontend bundle: 254 kB main + 27 lazy-loaded chunks
@@ -964,3 +1099,11 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id (optional)
 - Health check: `/api/health/` (basic), `/api/health/detailed/` (full system)
 - Metrics tracking: API performance, error rates, payment failures
 - **Status**: Fully operational & tested (2025-10-17)
+
+**Production Deployment Status** (2025-11-11):
+- ✅ AWS ECS: 3 services running (backend, celery-worker, celery-beat)
+- ✅ AWS ALB: Active, health checks passing
+- ✅ RDS PostgreSQL: Healthy, ~290ms response
+- ✅ Upstash Redis: Healthy, ~230ms response
+- ✅ Vercel Frontend: Deployed
+- ✅ Overall System: Operational
