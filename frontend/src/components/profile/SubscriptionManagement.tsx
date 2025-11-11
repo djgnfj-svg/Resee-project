@@ -14,7 +14,8 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
 
   // Toggle auto renewal mutation
   const toggleAutoRenewalMutation = useMutation({
-    mutationFn: subscriptionAPI.toggleAutoRenewal,
+    mutationFn: ({ password, autoRenewal }: { password: string; autoRenewal: boolean }) =>
+      subscriptionAPI.toggleAutoRenewal(password, autoRenewal),
     onSuccess: (updatedSubscription) => {
       const isEnabled = updatedSubscription.auto_renewal;
       alert(`Success: 자동갱신이 ${isEnabled ? '활성화' : '비활성화'}되었습니다.`);
@@ -34,7 +35,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
   });
 
   const cancelSubscriptionMutation = useMutation({
-    mutationFn: subscriptionAPI.cancelSubscription,
+    mutationFn: (password: string) => subscriptionAPI.cancelSubscription(password),
     onSuccess: (updatedSubscription) => {
       alert('Success: 구독이 성공적으로 취소되었습니다. 무료 플랜으로 변경되었습니다.');
       // Update user data with new subscription info
@@ -52,6 +53,14 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
     },
   });
 
+  const handleToggleAutoRenewal = () => {
+    const password = window.prompt('비밀번호를 입력해주세요:');
+    if (!password) return;
+
+    const newAutoRenewal = !user.subscription?.auto_renewal;
+    toggleAutoRenewalMutation.mutate({ password, autoRenewal: newAutoRenewal });
+  };
+
   const handleCancelSubscription = () => {
     if (window.confirm(
       '정말 구독을 취소하시겠습니까?\n\n' +
@@ -60,7 +69,10 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
       '• 복습 간격이 3일로 제한됩니다\n\n' +
       '이 작업은 즉시 적용되며 되돌릴 수 없습니다.'
     )) {
-      cancelSubscriptionMutation.mutate();
+      const password = window.prompt('비밀번호를 입력해주세요:');
+      if (!password) return;
+
+      cancelSubscriptionMutation.mutate(password);
     }
   };
 
@@ -104,7 +116,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600 dark:text-gray-400">자동갱신</span>
                 <button
-                  onClick={() => toggleAutoRenewalMutation.mutate()}
+                  onClick={handleToggleAutoRenewal}
                   disabled={toggleAutoRenewalMutation.isPending}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     user.subscription.auto_renewal

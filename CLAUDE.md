@@ -182,6 +182,31 @@ docker-compose exec frontend npm run build
 docker-compose exec frontend npm run analyze  # Bundle size analysis
 ```
 
+### Testing Requirements
+
+**CRITICAL: Always use MCP Playwright for end-to-end testing**
+
+When testing features, you MUST:
+- ✅ Use MCP Playwright browser testing to test through the actual UI
+- ✅ Verify user flows visually by navigating through the application
+- ✅ Check browser console for errors using MCP tools
+- ❌ DO NOT use curl for testing user-facing features
+- ❌ DO NOT use Django shell for testing API endpoints directly
+- ❌ DO NOT test APIs in isolation without UI verification
+
+**Why**: MCP Playwright testing ensures the entire stack (frontend + backend + database) works together correctly, catching integration issues that API-only tests miss.
+
+**Example Testing Flow**:
+```
+1. Start services: docker-compose up -d
+2. Use MCP Playwright to:
+   - Navigate to the page (e.g., /profile)
+   - Interact with UI elements (click buttons, fill forms)
+   - Verify changes visually
+   - Check console for errors
+3. Only use curl/shell for debugging specific backend issues
+```
+
 ### Key File Locations
 
 #### Backend Critical Files
