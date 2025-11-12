@@ -27,56 +27,15 @@ def subscription_detail(request):
 @permission_classes([IsAuthenticated])
 def subscription_tiers(request):
     """Get available subscription tiers"""
-    tiers = []
-    
-    tier_info = {
-        SubscriptionTier.FREE: {
-            'price': 0,
-            'features': [
-                '최대 7일까지 복습 지원',
-                '기본 학습 기능',
-                '무제한 콘텐츠 생성'
-            ]
-        },
-        SubscriptionTier.BASIC: {
-            'price': 5000,
-            'features': [
-                '최대 90일까지 복습 지원',
-                '향상된 통계 기능',
-                '우선 지원',
-                'AI 기능 사용 가능'
-            ]
-        },
-        SubscriptionTier.PRO: {
-            'price': 20000,
-            'features': [
-                '최대 180일까지 복습 지원',
-                '모든 고급 기능',
-                '팀 협업 기능',
-                '우선 고객 지원',
-                '커스텀 복습 주기'
-            ]
-        }
-    }
-    
-    # Ebbinghaus-optimized maximum intervals
-    tier_max_days = {
-        SubscriptionTier.FREE: 3,
-        SubscriptionTier.BASIC: 90,
-        SubscriptionTier.PRO: 180
-    }
-    
-    for tier_value, tier_label in SubscriptionTier.choices:
-        tier_data = {
-            'name': tier_value,
-            'display_name': tier_label,
-            'max_days': tier_max_days[tier_value],
-            'price': tier_info[tier_value]['price'],
-            'features': tier_info[tier_value]['features']
-        }
-        tiers.append(tier_data)
-    
-    serializer = SubscriptionTierSerializer(tiers, many=True)
+    from .tier_service import SubscriptionTierService
+
+    # Get billing cycle from query params (default: monthly)
+    billing_cycle = request.query_params.get('billing_cycle', 'monthly')
+
+    # Get all tiers info from service
+    tiers_info = SubscriptionTierService.get_all_tiers_info(billing_cycle=billing_cycle)
+
+    serializer = SubscriptionTierSerializer(tiers_info, many=True)
     return Response(serializer.data)
 
 
@@ -157,14 +116,10 @@ def subscription_upgrade(request):
             
             # 티어 순서 확인
             logger.info("Step 3: Checking tier hierarchy...")
-            tier_hierarchy = {
-                SubscriptionTier.FREE: 0,
-                SubscriptionTier.BASIC: 1,
-                SubscriptionTier.PRO: 2,
-            }
-            
-            current_tier_level = tier_hierarchy.get(subscription.tier, 0)
-            new_tier_level = tier_hierarchy.get(tier, 0)
+            from .tier_service import SubscriptionTierService
+
+            current_tier_level = SubscriptionTierService.get_tier_level(subscription.tier)
+            new_tier_level = SubscriptionTierService.get_tier_level(tier)
             logger.info(f"Step 3: current_tier_level={current_tier_level}, new_tier_level={new_tier_level}")
             
             # 동일한 티어로의 변경 방지
@@ -213,22 +168,7 @@ def subscription_upgrade(request):
             logger.info("Step 5f: subscription.save() completed")
             
             # Set payment amount based on tier and billing cycle
-            if tier == SubscriptionTier.BASIC:
-                monthly_price = 10000.0
-                if billing_cycle == 'yearly':
-                    subscription.amount_paid = monthly_price * 12 * 0.8  # 20% discount for yearly
-                else:
-                    subscription.amount_paid = monthly_price
-            elif tier == SubscriptionTier.PRO:
-                monthly_price = 25000.0
-                if billing_cycle == 'yearly':
-                    subscription.amount_paid = monthly_price * 12 * 0.8  # 20% discount for yearly
-                else:
-                    subscription.amount_paid = monthly_price
-            else:
-                subscription.amount_paid = 0
-                
-            # Set next billing amount for auto-renewal
+            subscription.amount_paid = SubscriptionTierService.calculate_price(tier, billing_cycle)
             subscription.next_billing_amount = subscription.amount_paid
             subscription.save()
             
@@ -325,14 +265,10 @@ def subscription_downgrade(request):
             return Response({'error': '다운그레이드할 티어를 지정해주세요.'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Validate tier hierarchy for downgrade
-        tier_hierarchy = {
-            SubscriptionTier.FREE: 0,
-            SubscriptionTier.BASIC: 1,
-            SubscriptionTier.PRO: 2,
-        }
-        
-        current_tier_level = tier_hierarchy.get(subscription.tier, 0)
-        target_tier_level = tier_hierarchy.get(target_tier, 0)
+        from .tier_service import SubscriptionTierService
+
+        current_tier_level = SubscriptionTierService.get_tier_level(subscription.tier)
+        target_tier_level = SubscriptionTierService.get_tier_level(target_tier)
         
         if target_tier_level >= current_tier_level:
             return Response(
@@ -343,19 +279,25 @@ def subscription_downgrade(request):
         # Calculate refund amount (simple pro-rata calculation)
         refund_amount = 0
         if subscription.end_date and subscription.amount_paid:
+            from ..constants import BILLING_CYCLE_DAYS
+            from decimal import Decimal
+
             remaining_days = subscription.days_remaining() or 0
-            total_days = 30  # Assuming monthly billing
+            total_days = BILLING_CYCLE_DAYS.get(subscription.billing_cycle, 30)
             if remaining_days > 0:
-                refund_amount = float(subscription.amount_paid) * (remaining_days / total_days)
-        
+                refund_amount = float(
+                    SubscriptionTierService.calculate_prorated_refund(
+                        Decimal(str(subscription.amount_paid)),
+                        remaining_days,
+                        total_days
+                    )
+                )
+
         # Get new pricing
-        tier_pricing = {
-            SubscriptionTier.FREE: 0,
-            SubscriptionTier.BASIC: 10000.0,
-            SubscriptionTier.PRO: 25000.0,
-        }
-        
-        new_amount = tier_pricing.get(target_tier, 0)
+        new_amount = float(SubscriptionTierService.calculate_price(
+            target_tier,
+            billing_cycle
+        ))
         
         # Update subscription
         from datetime import timedelta
@@ -668,14 +610,10 @@ class SubscriptionViewSet(viewsets.GenericViewSet):
                 )
 
             # Delegate to upgrade/downgrade logic
-            tier_hierarchy = {
-                SubscriptionTier.FREE: 0,
-                SubscriptionTier.BASIC: 1,
-                SubscriptionTier.PRO: 2,
-            }
+            from .tier_service import SubscriptionTierService
 
-            current_level = tier_hierarchy.get(subscription.tier, 0)
-            target_level = tier_hierarchy.get(target_tier, 0)
+            current_level = SubscriptionTierService.get_tier_level(subscription.tier)
+            target_level = SubscriptionTierService.get_tier_level(target_tier)
 
             if target_level == current_level:
                 return Response(
