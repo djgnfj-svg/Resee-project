@@ -80,7 +80,7 @@ class EmailTokenObtainPairView(TokenObtainPairView):
 
 class UserViewSet(viewsets.ModelViewSet):
     """User viewset"""
-    queryset = User.objects.all()
+    queryset = User.objects.select_related('subscription').all()
     serializer_class = UserSerializer
 
     def get_permissions(self):
