@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 
-from django.core.cache import caches
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -172,7 +172,6 @@ class TodayReviewView(APIView):
         cache_key = f'review:today:{request.user.id}:{category_slug}'
 
         # Try to get from cache
-        cache = caches['api']
         cached_data = cache.get(cache_key)
 
         if cached_data is not None:

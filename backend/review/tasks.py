@@ -196,15 +196,6 @@ def send_weekly_summaries_for_hour(hour: int):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def send_daily_review_reminders(self):
-    """
-    [DEPRECATED] 기존 고정 시간 일일 알림 태스크 (send_hourly_notifications으로 대체됨)
-    """
-    logger.warning("send_daily_review_reminders is deprecated. Use send_hourly_notifications instead.")
-    return "DEPRECATED: Use send_hourly_notifications"
-
-
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_individual_review_reminder(self, user_id: int, schedule_ids: List[int]):
     """
     개별 사용자에게 복습 알림 이메일 발송
@@ -266,15 +257,6 @@ def send_individual_review_reminder(self, user_id: int, schedule_ids: List[int])
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def send_evening_review_reminders(self):
-    """
-    [DEPRECATED] 기존 고정 시간 저녁 알림 태스크 (send_hourly_notifications으로 대체됨)
-    """
-    logger.warning("send_evening_review_reminders is deprecated. Use send_hourly_notifications instead.")
-    return "DEPRECATED: Use send_hourly_notifications"
-
-
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_individual_evening_reminder(self, user_id: int, schedule_ids: List[int]):
     """
     개별 사용자에게 저녁 리마인더 이메일 발송
@@ -326,15 +308,6 @@ def send_individual_evening_reminder(self, user_id: int, schedule_ids: List[int]
     except Exception as exc:
         logger.error(f"Error sending evening reminder to user {user_id}: {str(exc)}")
         raise self.retry(exc=exc)
-
-
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def send_weekly_summary(self):
-    """
-    [DEPRECATED] 기존 고정 시간 주간 요약 태스크 (send_hourly_notifications으로 대체됨)
-    """
-    logger.warning("send_weekly_summary is deprecated. Use send_hourly_notifications instead.")
-    return "DEPRECATED: Use send_hourly_notifications"
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
