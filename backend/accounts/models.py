@@ -532,15 +532,15 @@ class BillingSchedule(BaseModel):
 
 
 
-# Signal to create free subscription for new users
+# Signal to create basic subscription for new users
 @receiver(post_save, sender=User)
 def create_user_subscription(sender, instance, created, **kwargs):
-    """Create a free subscription for new users"""
+    """Create a basic subscription for new users"""
     if created and not hasattr(instance, 'subscription'):
         Subscription.objects.create(
             user=instance,
-            tier=SubscriptionTier.FREE,
-            max_interval_days=3
+            tier=SubscriptionTier.BASIC,
+            max_interval_days=90
         )
 
 

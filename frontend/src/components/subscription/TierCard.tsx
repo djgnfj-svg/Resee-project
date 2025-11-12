@@ -90,8 +90,8 @@ const TierCard: React.FC<TierCardProps> = ({
               현재 {tier.display_name} 플랜
             </div>
           ) : tier.coming_soon ? (
-            <div className="w-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 py-3 px-6 rounded-xl font-semibold text-center border-2 border-indigo-200 dark:border-indigo-700">
-              사용자 20명 후 오픈
+            <div className="w-full bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 py-3 px-6 rounded-xl font-semibold text-center border-2 border-amber-200 dark:border-amber-800">
+              12월 오픈 예정
             </div>
           ) : (
             <button

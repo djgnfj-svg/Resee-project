@@ -25,10 +25,6 @@ const WeeklyTestPage = lazy(() => import('./pages/WeeklyTestPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'));
-const PaymentHistoryPage = lazy(() => import('./pages/PaymentHistoryPage'));
-const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
-const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
-const PaymentFailPage = lazy(() => import('./pages/PaymentFailPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
@@ -130,34 +126,6 @@ function App() {
                     <SubscriptionPage />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/payment-history"
-                element={
-                  <ProtectedRoute>
-                    <PaymentHistoryPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/payment/checkout"
-                element={
-                  <ProtectedRoute>
-                    <CheckoutPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/payment/success"
-                element={
-                  <ProtectedRoute>
-                    <PaymentSuccessPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/payment/fail"
-                element={<PaymentFailPage />}
               />
                     {/* 404 페이지 - 모든 라우트의 맨 마지막에 위치 */}
                     <Route path="*" element={<NotFoundPage />} />

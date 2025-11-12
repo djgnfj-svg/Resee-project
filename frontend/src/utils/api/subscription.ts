@@ -2,8 +2,7 @@ import api from './index';
 import {
   Subscription,
   SubscriptionTierInfo,
-  SubscriptionUpgradeData,
-  PaymentHistoryResponse
+  SubscriptionUpgradeData
 } from '../../types';
 
 export const subscriptionAPI = {
@@ -32,21 +31,11 @@ export const subscriptionAPI = {
     return response.data;
   },
 
-  getPaymentHistory: async (): Promise<PaymentHistoryResponse> => {
-    const response = await api.get('/accounts/payment-history/');
-    return response.data;
-  },
-
   toggleAutoRenewal: async (password: string, autoRenewal: boolean): Promise<Subscription> => {
     const response = await api.patch('/accounts/subscriptions/me/', {
       auto_renewal: autoRenewal,
       password
     });
-    return response.data;
-  },
-
-  getBillingSchedule: async (): Promise<any> => {
-    const response = await api.get('/accounts/billing-schedule/');
     return response.data;
   },
 };

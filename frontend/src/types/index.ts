@@ -259,7 +259,6 @@ export interface Subscription {
   is_expired: boolean;
   auto_renewal?: boolean;
   next_billing_date?: string | null;
-  payment_method?: string;
 }
 
 export interface SubscriptionTierInfo {
@@ -281,28 +280,4 @@ export interface SubscriptionUpgradeError {
   error?: string;
   email_verified?: boolean;
   tier?: string[];
-}
-
-export interface PaymentHistory {
-  id: number;
-  payment_type: 'upgrade' | 'downgrade' | 'cancellation' | 'renewal' | 'initial' | 'refund';
-  payment_type_display: string;
-  from_tier?: string | null;
-  from_tier_display?: string;
-  to_tier: string;
-  to_tier_display: string;
-  tier_display: string;
-  amount: number;
-  refund_amount?: number;
-  billing_cycle: string;
-  billing_cycle_display: string;
-  payment_method_used: string;
-  description: string;
-  notes: string;
-  created_at: string;
-}
-
-export interface PaymentHistoryResponse {
-  count: number;
-  results: PaymentHistory[];
 }

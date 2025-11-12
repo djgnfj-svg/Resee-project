@@ -39,7 +39,8 @@ const SubscriptionPage: React.FC = () => {
         '기본 통계',
         '20개 콘텐츠 생성',
         '이메일 지원'
-      ]
+      ],
+      coming_soon: true
     },
     {
       name: 'basic',
@@ -54,7 +55,7 @@ const SubscriptionPage: React.FC = () => {
         '우선 이메일 지원',
         ...(billingCycle === 'yearly' ? ['연간 결제 시 20% 할인!'] : [])
       ],
-      coming_soon: false
+      coming_soon: true
     },
     {
       name: 'pro',
@@ -70,7 +71,7 @@ const SubscriptionPage: React.FC = () => {
         '우선 이메일 지원',
         ...(billingCycle === 'yearly' ? ['연간 결제 시 20% 할인!'] : [])
       ],
-      coming_soon: false
+      coming_soon: true
     }
   ];
 
@@ -104,7 +105,7 @@ const SubscriptionPage: React.FC = () => {
       return;
     }
 
-    // For FREE tier, use old password-based flow
+    // For FREE tier, use password-based flow
     if (tier === 'free') {
       const confirmMessage = '무료 플랜으로 변경하시겠습니까?';
 
@@ -123,9 +124,8 @@ const SubscriptionPage: React.FC = () => {
         });
       }
     } else {
-      // For paid tiers (BASIC/PRO), redirect to checkout page
-      const cycle = billingCycle === 'monthly' ? 'MONTHLY' : 'YEARLY';
-      navigate(`/payment/checkout?tier=${tier}&cycle=${cycle}`);
+      // Paid tiers (BASIC/PRO) are not available yet
+      toast.error('유료 플랜은 곧 출시될 예정입니다.');
     }
   };
 
@@ -173,29 +173,6 @@ const SubscriptionPage: React.FC = () => {
               에빙하우스 망각곡선을 활용한 스마트 복습 시스템
             </p>
           </div>
-        </div>
-
-        {/* Payment History Link */}
-        <div className="mb-8 text-center">
-          <a
-            href="/payment-history"
-            className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors font-medium"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            결제 내역 보기
-          </a>
         </div>
 
         {/* Subscription Tiers Preview */}

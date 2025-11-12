@@ -11,7 +11,6 @@ from rest_framework.response import Response
 from ..models import Subscription, SubscriptionTier, PaymentHistory, BillingSchedule
 from ..utils.serializers import (SubscriptionSerializer, SubscriptionTierSerializer,
                                 SubscriptionUpgradeSerializer, PaymentHistorySerializer)
-from .billing_service import BillingScheduleService
 
 
 @api_view(['GET'])
@@ -278,10 +277,8 @@ def subscription_upgrade(request):
                 notes=f"결제 주기: {billing_cycle}, 금액: {subscription.amount_paid}원"
             )
             
-            # Create billing schedule for future payments
-            if subscription.is_active and not subscription.is_expired:
-                BillingScheduleService.create_billing_schedule(subscription)
-                logger.info("Step 7: Created billing schedule for subscription")
+            # Billing schedule creation removed (payment system not active)
+            logger.info("Step 7: Skipped billing schedule (FREE tier only)")
             
             logger.info(f"Subscription {action_type}: {user.email} from {old_tier} to {tier}")
             
@@ -442,8 +439,8 @@ def subscription_downgrade(request):
         )
         
         # Update billing schedule for downgrade
-        BillingScheduleService.update_billing_schedules_on_change(subscription, old_tier)
-        logger.info("Updated billing schedules for subscription downgrade")
+        # Billing schedule update removed (payment system not active)
+        logger.info("Skipped billing schedule update (FREE tier only)")
         
         logger.info(f"Subscription downgraded: {user.email} from {old_tier} to {target_tier}, refund: {refund_amount}")
         
@@ -532,8 +529,8 @@ def subscription_cancel(request):
         )
         
         # Cancel all pending billing schedules
-        cancelled_count = BillingScheduleService.cancel_pending_schedules(subscription)
-        logger.info(f"Cancelled {cancelled_count} pending billing schedules for subscription cancellation")
+        # Billing schedule cancellation removed (payment system not active)
+        logger.info("Skipped billing schedule cancellation (FREE tier only)")
         
         logger.info(f"Subscription cancelled: {user.email} from {old_tier} to FREE")
         
@@ -550,34 +547,6 @@ def subscription_cancel(request):
         import traceback
         logger.error(traceback.format_exc())
         return Response({'error': f'구독 취소 중 오류가 발생했습니다: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def payment_history(request):
-    """Get user's payment and subscription history"""
-    try:
-        user = request.user
-        
-        # Get payment history ordered by most recent
-        histories = PaymentHistory.objects.filter(user=user).order_by('-created_at')
-        
-        # Serialize the data
-        from ..utils.serializers import PaymentHistorySerializer
-        serializer = PaymentHistorySerializer(histories, many=True)
-        
-        return Response({
-            'count': histories.count(),
-            'results': serializer.data
-        }, status=status.HTTP_200_OK)
-        
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error in payment history: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        return Response({'error': '결제 이력 조회 중 오류가 발생했습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -625,61 +594,6 @@ def toggle_auto_renewal(request):
         import traceback
         logger.error(traceback.format_exc())
         return Response({'error': '자동갱신 설정 변경 중 오류가 발생했습니다.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def billing_schedule(request):
-    """Get upcoming billing schedules for user's subscription"""
-    try:
-        user = request.user
-        subscription = getattr(user, 'subscription', None)
-        
-        if not subscription:
-            return Response(
-                {'results': [], 'message': '구독 정보를 찾을 수 없습니다.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        
-        # Get upcoming payments
-        upcoming_payments = BillingScheduleService.get_upcoming_payments(subscription)
-        
-        # Format response data
-        billing_data = []
-        for schedule in upcoming_payments:
-            billing_data.append({
-                'id': schedule.id,
-                'scheduled_date': schedule.scheduled_date.isoformat(),
-                'amount': float(schedule.amount),
-                'billing_cycle': schedule.billing_cycle,
-                'billing_cycle_display': schedule.get_billing_cycle_display(),
-                'status': schedule.status,
-                'status_display': schedule.get_status_display(),
-                'description': f"{subscription.get_tier_display()} 구독 갱신 ({schedule.get_billing_cycle_display()})"
-            })
-        
-        return Response({
-            'results': billing_data,
-            'count': len(billing_data),
-            'subscription_info': {
-                'tier': subscription.tier,
-                'tier_display': subscription.get_tier_display(),
-                'billing_cycle': subscription.billing_cycle,
-                'auto_renewal': subscription.auto_renewal,
-                'next_billing_date': subscription.next_billing_date.isoformat() if subscription.next_billing_date else None
-            }
-        })
-        
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error getting billing schedule: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        return Response(
-            {'error': '결제 일정 조회 중 오류가 발생했습니다.'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
 
 
 # ==================== RESTful ViewSet ====================

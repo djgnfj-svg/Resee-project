@@ -111,64 +111,20 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
               </span>
             </div>
           )}
-          {user.subscription.tier !== 'free' && (
-            <>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">자동갱신</span>
-                <button
-                  onClick={handleToggleAutoRenewal}
-                  disabled={toggleAutoRenewalMutation.isPending}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    user.subscription.auto_renewal
-                      ? 'bg-green-600'
-                      : 'bg-gray-300'
-                  } ${toggleAutoRenewalMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      user.subscription.auto_renewal ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-              {user.subscription.auto_renewal && user.subscription.next_billing_date && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">다음 결제일</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {new Date(user.subscription.next_billing_date).toLocaleDateString('ko-KR')}
-                  </span>
-                </div>
-              )}
-            </>
-          )}
           <div className="pt-3 border-t space-y-2">
             <Link
               to="/subscription"
               className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 border border-indigo-600 hover:border-indigo-700 rounded-lg transition-colors"
             >
               <CreditCardIcon className="w-4 h-4 mr-2" />
-              구독 관리
+              구독 플랜 보기
             </Link>
             {user.subscription.tier !== 'free' && (
-              <button
-                onClick={handleCancelSubscription}
-                disabled={cancelSubscriptionMutation.isPending}
-                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 border border-red-600 hover:border-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {cancelSubscriptionMutation.isPending ? (
-                  <>
-                    <div className="w-4 h-4 mr-2 animate-spin rounded-full border-b-2 border-red-600"></div>
-                    취소 중...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    구독 취소
-                  </>
-                )}
-              </button>
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <p className="text-xs text-amber-800 dark:text-amber-200 text-center">
+                  유료 플랜은 12월에 오픈 예정입니다
+                </p>
+              </div>
             )}
           </div>
         </div>

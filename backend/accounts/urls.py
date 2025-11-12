@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 # Subscription views
 from .subscription.subscription_views import (subscription_cancel, subscription_detail,
                                              subscription_tiers, subscription_upgrade, subscription_downgrade,
-                                             payment_history, toggle_auto_renewal, billing_schedule,
+                                             toggle_auto_renewal,
                                              SubscriptionViewSet)
 
 # Account management views (non-auth)
@@ -48,8 +48,6 @@ urlpatterns = [
     path('subscription/downgrade/', subscription_downgrade, name='subscription-downgrade'),
     path('subscription/cancel/', subscription_cancel, name='subscription-cancel'),
     path('subscription/toggle-auto-renewal/', toggle_auto_renewal, name='toggle-auto-renewal'),
-    path('payment-history/', payment_history, name='payment-history'),
-    path('billing-schedule/', billing_schedule, name='billing-schedule'),
     # Health checks
     path('health/', health_check, name='health-check'),
     path('health/detailed/', health_detailed, name='health-detailed'),
