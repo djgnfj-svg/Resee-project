@@ -13,8 +13,7 @@ from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
 from accounts.auth.views import EmailTokenObtainPairView
-from accounts.health.health_views import (health_detailed, health_check,
-                                         liveness_check, readiness_check)
+from .views import health_check
 
 # API documentation schema
 schema_view = get_schema_view(
@@ -32,11 +31,8 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin_site.urls),
 
-    # Health checks (for monitoring and load balancers)
+    # Health check (for Docker/AWS infrastructure monitoring)
     path('api/health/', health_check, name='health'),
-    path('api/health/detailed/', health_detailed, name='detailed_health'),
-    path('api/health/ready/', readiness_check, name='readiness'),
-    path('api/health/live/', liveness_check, name='liveness'),
 
     # API Documentation
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

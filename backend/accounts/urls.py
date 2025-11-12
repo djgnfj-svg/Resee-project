@@ -16,11 +16,6 @@ from .auth.views import (GoogleOAuthView, PasswordChangeView, UserViewSet)
 # Email views
 from .email.email_views import EmailVerificationView, ResendVerificationView
 
-# Health check views
-from .health.health_views import health_check, health_detailed, readiness_check, liveness_check
-from .health.log_views import log_summary, recent_errors, log_file_content, cleanup_old_logs, log_analytics
-from .health.monitoring_views import dashboard_data
-
 app_name = 'accounts'
 
 router = DefaultRouter()
@@ -48,17 +43,4 @@ urlpatterns = [
     path('subscription/downgrade/', subscription_downgrade, name='subscription-downgrade'),
     path('subscription/cancel/', subscription_cancel, name='subscription-cancel'),
     path('subscription/toggle-auto-renewal/', toggle_auto_renewal, name='toggle-auto-renewal'),
-    # Health checks
-    path('health/', health_check, name='health-check'),
-    path('health/detailed/', health_detailed, name='health-detailed'),
-    path('health/ready/', readiness_check, name='readiness-check'),
-    path('health/live/', liveness_check, name='liveness-check'),
-    # Log management (admin only)
-    path('logs/summary/', log_summary, name='log-summary'),
-    path('logs/errors/', recent_errors, name='recent-errors'),
-    path('logs/file/<str:filename>/', log_file_content, name='log-file-content'),
-    path('logs/cleanup/', cleanup_old_logs, name='cleanup-old-logs'),
-    path('logs/analytics/', log_analytics, name='log-analytics'),
-    # Monitoring dashboard API (개발 환경에서는 인증 불필요, 운영 환경에서는 관리자 권한 필요)
-    path('dashboard-data/', dashboard_data, name='dashboard-data'),
 ]
