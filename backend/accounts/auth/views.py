@@ -150,13 +150,13 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def _register_user(self, request):
         """Common registration logic"""
-        logger.info(f"회원가입 요청: {request.data.get('email', 'unknown')}")
+        logger.info(f"User registration request: {request.data.get('email', 'unknown')}")
 
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             try:
                 user = serializer.save()
-                logger.info(f"회원가입 성공: {user.email}")
+                logger.info(f"User registration successful: {user.email}")
 
                 # 이메일 인증 강제 설정 확인
                 enforce_email_verification = getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', False)
@@ -165,7 +165,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 if not enforce_email_verification:
                     user.is_email_verified = True
                     user.save()
-                    logger.info(f"개발 환경: {user.email} 자동 이메일 인증 완료")
+                    logger.info(f"Development environment: Email auto-verified for {user.email}")
 
                     return StandardAPIResponse.created(
                         data={
@@ -188,11 +188,11 @@ class UserViewSet(viewsets.ModelViewSet):
                         message='회원가입이 완료되었습니다. 이메일을 확인하여 인증을 완료해주세요.'
                     )
             except Exception as e:
-                logger.error(f"회원가입 실패: {str(e)}")
-                return APIErrorHandler.server_error('회원가입 중 오류가 발생했습니다.')
+                logger.error(f"User registration failed: {str(e)}")
+                return APIErrorHandler.server_error('An error occurred during registration.')
 
-        # 상세한 에러 정보 로깅
-        logger.error(f"회원가입 유효성 검사 실패: {serializer.errors}")
+        # Log detailed error information
+        logger.error(f"User registration validation failed: {serializer.errors}")
 
         return APIErrorHandler.validation_error(serializer.errors)
 
@@ -403,10 +403,10 @@ class GoogleOAuthView(APIView):
             refresh = RefreshToken.for_user(user)
             access_token = refresh.access_token
 
-            logger.info(f"Google OAuth 로그인 성공: {user.email} ({'신규' if is_new_user else '기존'} 사용자)")
+            logger.info(f"Google OAuth login successful: {user.email} ({'new' if is_new_user else 'existing'} user)")
 
             response_data = {
-                'message': f"Google 로그인 {'및 회원가입이' if is_new_user else ''}이 완료되었습니다.",
+                'message': f"Google login {'and registration' if is_new_user else ''} completed successfully.",
                 'access': str(access_token),
                 'refresh': str(refresh),
                 'user': UserSerializer(user).data,
