@@ -158,10 +158,8 @@ docker-compose exec backend python -m pytest --cov=. --cov-report=html
 # Shell
 docker-compose exec backend python manage.py shell_plus
 
-# Management Commands
-docker-compose exec backend python manage.py create_initial_users
+# Health Check
 docker-compose exec backend python manage.py health_check
-docker-compose exec backend python manage.py rate_limit_status
 
 # Formatting
 docker-compose exec backend black .
