@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 
 from resee.mixins import UserOwnershipMixin
 from resee.pagination import OptimizedPageNumberPagination, ReviewPagination
-from utils.cache_utils import invalidate_cache
+from resee.cache_utils import invalidate_cache
 
 from .models import ReviewHistory, ReviewSchedule
 from .serializers import ReviewHistorySerializer, ReviewScheduleSerializer

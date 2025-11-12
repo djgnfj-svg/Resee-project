@@ -58,43 +58,6 @@ class DevelopmentEmailBackend(ConsoleEmailBackend):
         return num_sent
 
 
-class DatabaseEmailBackend(BaseEmailBackend):
-    """
-    Database email backend that stores emails in database
-    Useful for testing and reviewing sent emails
-    """
-    
-    def send_messages(self, email_messages):
-        """Store email messages in database"""
-        if not email_messages:
-            return 0
-            
-        from django.utils import timezone
-
-        from accounts.email_service import EmailLog
-        
-        num_sent = 0
-        for message in email_messages:
-            try:
-                EmailLog.objects.create(
-                    to_email=', '.join(message.to),
-                    from_email=message.from_email,
-                    subject=message.subject,
-                    body=message.body,
-                    html_body=message.alternatives[0][0] if message.alternatives else '',
-                    sent_at=timezone.now(),
-                    status='sent'
-                )
-                num_sent += 1
-                
-                logger.info(f"Email stored in database: {message.subject} to {message.to}")
-                
-            except Exception as e:
-                logger.error(f"Failed to store email in database: {e}")
-                
-        return num_sent
-
-
 class MockSMTPBackend(BaseEmailBackend):
     """
     Mock SMTP backend that simulates email sending
