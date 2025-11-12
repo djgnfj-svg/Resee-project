@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -143,19 +145,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value
     
     def validate_password(self, value):
-        """Validate password strength"""
-        if len(value) < 8:
-            raise serializers.ValidationError("비밀번호는 최소 8글자 이상이어야 합니다.")
-        
-        # Check for at least one letter and one number
-        has_letter = any(c.isalpha() for c in value)
-        has_number = any(c.isdigit() for c in value)
-        
-        if not has_letter:
-            raise serializers.ValidationError("비밀번호에는 최소 하나의 문자가 포함되어야 합니다.")
-        if not has_number:
-            raise serializers.ValidationError("비밀번호에는 최소 하나의 숫자가 포함되어야 합니다.")
-        
+        """Validate password strength using Django's built-in validators"""
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
         return value
     
     def validate(self, attrs):

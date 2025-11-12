@@ -160,27 +160,3 @@ class EmailVerificationService:
         )
 
         return timezone.now() <= expiry_time
-
-    def get_token_expiry_time(self) -> Optional[timezone.datetime]:
-        """
-        Get the expiry time for the current verification token.
-
-        Returns:
-            Datetime when token expires, or None if no token
-        """
-        if not self.user.email_verification_sent_at:
-            return None
-
-        expiry_days = getattr(settings, 'EMAIL_VERIFICATION_TIMEOUT_DAYS', 1)
-        return self.user.email_verification_sent_at + timedelta(days=expiry_days)
-
-    @staticmethod
-    def is_verification_required() -> bool:
-        """
-        Check if email verification is required in current environment.
-
-        Returns:
-            True if verification is required (production),
-            False if not required (development)
-        """
-        return getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True)
