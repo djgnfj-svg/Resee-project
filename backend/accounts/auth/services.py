@@ -131,8 +131,13 @@ class AuthService:
         Returns:
             Tuple of (is_valid: bool, error_message: Optional[str])
         """
-        if len(password) < 8:
-            return False, "Password must be at least 8 characters long"
+        from ..constants import MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH
+
+        if len(password) < MIN_PASSWORD_LENGTH:
+            return False, f"Password must be at least {MIN_PASSWORD_LENGTH} characters long"
+
+        if len(password) > MAX_PASSWORD_LENGTH:
+            return False, f"Password must not exceed {MAX_PASSWORD_LENGTH} characters"
 
         # Add more validation rules as needed
         # - Must contain uppercase

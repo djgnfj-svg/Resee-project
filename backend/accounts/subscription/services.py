@@ -4,6 +4,7 @@ Permission and subscription services for user accounts.
 from django.conf import settings
 
 from ..constants import CATEGORY_LIMITS, CONTENT_LIMITS
+from ..models import SubscriptionTier
 from .tier_service import SubscriptionTierService
 
 
@@ -23,7 +24,7 @@ class PermissionService:
         if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not self.user.is_email_verified:
             return False
 
-        if hasattr(self.user, 'subscription') and self.user.subscription.tier == 'pro':
+        if hasattr(self.user, 'subscription') and self.user.subscription.tier == SubscriptionTier.PRO:
             return False
 
         return True
@@ -50,8 +51,6 @@ class PermissionService:
         """Get category creation limit based on subscription tier"""
         tier = self._get_user_tier()
         return CATEGORY_LIMITS.get(tier, 1)
-
-
 
     def get_content_usage(self):
         """Get content usage statistics for the user"""
