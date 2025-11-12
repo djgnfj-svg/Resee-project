@@ -1,6 +1,4 @@
-import hashlib
 import logging
-import secrets
 from datetime import timedelta
 
 from django.conf import settings
@@ -107,61 +105,31 @@ class User(AbstractUser):
     def generate_email_verification_token(self):
         """Generate a unique token for email verification.
 
-        Security: Token is hashed with SHA-256 before storage to prevent
-        unauthorized access if database is compromised.
+        Delegates to EmailVerificationService.
         """
-        # 32자 길이의 URL-safe 토큰 생성 (사용자에게 전송할 원본)
-        token = secrets.token_urlsafe(32)
+        from .email.verification_service import EmailVerificationService
+        service = EmailVerificationService(self)
+        return service.generate_verification_token()
 
-        # 🔒 보안: DB에는 해시만 저장 (SHA-256)
-        token_hash = hashlib.sha256(token.encode()).hexdigest()
-        self.email_verification_token = token_hash
-        self.email_verification_sent_at = timezone.now()
-        self.save()
-
-        # 원본 토큰만 반환 (이메일로 전송)
-        return token
-    
     def verify_email(self, token):
         """Verify email with the given token.
 
-        Security:
-        - Uses constant-time comparison to prevent timing attacks
-        - Validates token hash instead of plaintext
-        - Checks expiration before comparison
+        Delegates to EmailVerificationService.
         """
-        if not self.email_verification_token:
-            return False
+        from .email.verification_service import EmailVerificationService
+        service = EmailVerificationService(self)
+        success, _ = service.verify_email(token)
+        return success
 
-        # 🔒 보안: 입력받은 토큰을 해싱하여 저장된 해시와 비교
-        token_hash = hashlib.sha256(token.encode()).hexdigest()
-
-        # 🔒 보안: Constant-time 비교 (timing attack 방어)
-        if not secrets.compare_digest(self.email_verification_token, token_hash):
-            return False
-
-        # 토큰 유효기간 확인
-        if self.email_verification_sent_at:
-            expiry_time = self.email_verification_sent_at + timedelta(
-                days=settings.EMAIL_VERIFICATION_TIMEOUT_DAYS
-            )
-            if timezone.now() > expiry_time:
-                return False
-
-        # 이메일 인증 완료
-        self.is_email_verified = True
-        self.email_verification_token = None
-        self.email_verification_sent_at = None
-        self.save()
-        return True
-    
     def can_resend_verification_email(self):
-        """Check if verification email can be resent (5분 간격 제한)"""
-        if not self.email_verification_sent_at:
-            return True
-        
-        time_since_sent = timezone.now() - self.email_verification_sent_at
-        return time_since_sent > timedelta(minutes=5)
+        """Check if verification email can be resent.
+
+        Delegates to EmailVerificationService.
+        """
+        from .email.verification_service import EmailVerificationService
+        service = EmailVerificationService(self)
+        can_resend, _ = service.can_resend_verification()
+        return can_resend
     
     def get_max_review_interval(self):
         """Get maximum review interval based on subscription"""
@@ -313,32 +281,21 @@ class Subscription(BaseModel):
     
     def save(self, *args, **kwargs):
         """Override save to set max_interval_days based on tier using Ebbinghaus forgetting curve"""
-        # Ebbinghaus-optimized maximum intervals for each tier
-        tier_max_intervals = {
-            SubscriptionTier.FREE: 3,     # Basic spaced repetition
-            SubscriptionTier.BASIC: 90,   # Medium-term memory retention
-            SubscriptionTier.PRO: 180,    # Complete long-term retention (6 months)
-        }
+        from .constants import TIER_MAX_INTERVALS
+        from .subscription.tier_service import SubscriptionTierService
 
-        # Defensive code: Infer tier from max_interval_days if tier is invalid
-        valid_tiers = [choice[0] for choice in SubscriptionTier.choices]
-        if self.tier not in valid_tiers:
-            # Reverse mapping: max_interval_days -> tier
-            interval_to_tier = {v: k for k, v in tier_max_intervals.items()}
-            inferred_tier = interval_to_tier.get(self.max_interval_days)
-
-            if inferred_tier:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(
-                    f'Invalid tier "{self.tier}" for {self.user.email}. '
-                    f'Inferred tier "{inferred_tier}" from max_interval_days={self.max_interval_days}'
-                )
-                self.tier = inferred_tier
-
-        # Set max_interval_days based on tier
-        if self.tier in tier_max_intervals:
-            self.max_interval_days = tier_max_intervals[self.tier]
+        # Validate and set max_interval_days based on tier
+        if self.tier in TIER_MAX_INTERVALS:
+            self.max_interval_days = SubscriptionTierService.get_max_interval(self.tier)
+        else:
+            # Defensive: log warning for invalid tier
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f'Invalid tier "{self.tier}" for {self.user.email}. '
+                f'Using FREE tier defaults.'
+            )
+            self.tier = SubscriptionTier.FREE
+            self.max_interval_days = SubscriptionTierService.get_max_interval(SubscriptionTier.FREE)
 
         super().save(*args, **kwargs)
 
