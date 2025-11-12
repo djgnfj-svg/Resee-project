@@ -11,6 +11,8 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
+from ..constants import EMAIL_VERIFICATION_RESEND_LIMIT_MINUTES
+
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
@@ -121,7 +123,7 @@ class EmailVerificationService:
         """
         Check if verification email can be resent.
 
-        Rate limit: 5 minutes between resends
+        Rate limit defined in constants.EMAIL_VERIFICATION_RESEND_LIMIT_MINUTES
 
         Returns:
             Tuple of (can_resend: bool, error_message: Optional[str])
@@ -134,9 +136,9 @@ class EmailVerificationService:
         if not self.user.email_verification_sent_at:
             return True, None
 
-        # Check rate limit (5 minutes)
+        # Check rate limit from constants
         time_since_sent = timezone.now() - self.user.email_verification_sent_at
-        rate_limit = timedelta(minutes=5)
+        rate_limit = timedelta(minutes=EMAIL_VERIFICATION_RESEND_LIMIT_MINUTES)
 
         if time_since_sent <= rate_limit:
             remaining_seconds = (rate_limit - time_since_sent).seconds
