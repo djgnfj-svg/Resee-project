@@ -69,68 +69,6 @@ class ProfileView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class AccountDeleteView(APIView):
-    """Account deletion view"""
-    permission_classes = [IsAuthenticated]
-
-    @swagger_auto_schema(
-        operation_summary="계정 삭제",
-        operation_description="""현재 로그인된 사용자의 계정을 완전히 삭제합니다.
-
-        **주의:** 이 작업은 되돌릴 수 없으며, 모든 사용자 데이터가 영구적으로 삭제됩니다.
-
-        **요청 예시:**
-        ```json
-        {
-          "password": "current_password123",
-          "confirmation": "DELETE"
-        }
-        ```
-        """,
-        tags=['User Profile'],
-        request_body=AccountDeleteSerializer,
-        responses={
-            200: openapi.Response(
-                description="계정 삭제 성공",
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
-                    }
-                )
-            ),
-            400: "잘못된 요청 - 유효성 검사 실패",
-            401: "인증 필요",
-            500: "서버 오류",
-        }
-    )
-    def post(self, request):
-        """Delete user account"""
-        serializer = AccountDeleteSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            try:
-                user = request.user
-                email = user.email
-
-                # Log the deletion before deleting
-                logger.warning(f"Account deletion initiated for user {email}")
-
-                # Delete the account
-                serializer.save()
-
-                logger.warning(f"Account deleted for user {email}")
-
-                return Response(
-                    {'message': 'Account deleted successfully'},
-                    status=status.HTTP_200_OK
-                )
-            except Exception as e:
-                logger.error(f"Account deletion failed for user {request.user.email}: {str(e)}")
-                return Response(
-                    {'error': 'Account deletion failed'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class WeeklyGoalUpdateView(APIView):

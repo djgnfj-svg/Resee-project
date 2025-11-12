@@ -8,7 +8,7 @@ from .subscription.subscription_views import (subscription_cancel, subscription_
                                              SubscriptionViewSet)
 
 # Account management views (non-auth)
-from .views import (AccountDeleteView, ProfileView, WeeklyGoalUpdateView, NotificationPreferenceView)
+from .views import (ProfileView, WeeklyGoalUpdateView, NotificationPreferenceView)
 
 # Authentication views
 from .auth.views import (GoogleOAuthView, UserViewSet)
@@ -26,7 +26,6 @@ urlpatterns = [
     path('', include(router.urls)),
     # Profile and account management
     path('profile/', ProfileView.as_view(), name='profile'),
-    path('account/delete/', AccountDeleteView.as_view(), name='account-delete'),
     path('weekly-goal/', WeeklyGoalUpdateView.as_view(), name='weekly-goal-update'),
     # Notification preferences
     path('notification-preferences/', NotificationPreferenceView.as_view(), name='notification-preferences'),
