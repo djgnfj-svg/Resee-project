@@ -3,8 +3,8 @@ Subscription-related views
 """
 from django.conf import settings
 from django.shortcuts import get_object_or_404
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import status, viewsets
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -682,282 +682,195 @@ def billing_schedule(request):
         )
 
 
-# ==================== Toss Payments Integration ====================
+# ==================== RESTful ViewSet ====================
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def payment_checkout(request):
+class SubscriptionViewSet(viewsets.GenericViewSet):
     """
-    Create a payment checkout session with Toss Payments
+    RESTful Subscription ViewSet
 
-    Request body:
-    - tier: Target subscription tier (BASIC or PRO)
-    - billing_cycle: MONTHLY or YEARLY
+    Endpoints:
+    - PATCH /subscriptions/me - Update subscription (upgrade/downgrade/toggle auto-renewal)
+    - DELETE /subscriptions/me - Cancel subscription (downgrade to FREE)
     """
-    import logging
-    import uuid
-    from decimal import Decimal
-    from .toss_service import TossPaymentsService
+    permission_classes = [IsAuthenticated]
+    serializer_class = SubscriptionSerializer
 
-    logger = logging.getLogger(__name__)
+    @action(detail=False, methods=['patch', 'delete'], url_path='me')
+    def me(self, request):
+        """
+        PATCH /subscriptions/me - Update subscription
+        DELETE /subscriptions/me - Cancel subscription
 
-    try:
+        PATCH Handles:
+        - Upgrade: {"tier": "BASIC"} or {"tier": "PRO"}
+        - Downgrade: {"tier": "FREE"} or {"tier": "BASIC"}
+        - Toggle auto-renewal: {"auto_renewal": true/false}
+
+        Request body:
+            - tier (optional): Target subscription tier
+            - auto_renewal (optional): Auto-renewal status
+            - password (required): Admin password or user password
+            - billing_cycle (optional): MONTHLY or YEARLY
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
         user = request.user
-        target_tier = request.data.get('tier')
-        billing_cycle = request.data.get('billing_cycle', 'MONTHLY')
-
-        # Validate tier
-        if target_tier not in [SubscriptionTier.BASIC, SubscriptionTier.PRO]:
-            return Response(
-                {'error': 'FREE 티어는 결제가 필요하지 않습니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Get subscription
         subscription = getattr(user, 'subscription', None)
+
         if not subscription:
             return Response(
                 {'error': '구독 정보를 찾을 수 없습니다.'},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Calculate amount
-        tier_pricing = {
-            SubscriptionTier.BASIC: {'MONTHLY': 5000, 'YEARLY': 50000},
-            SubscriptionTier.PRO: {'MONTHLY': 20000, 'YEARLY': 200000}
-        }
+        # Handle DELETE request (subscription cancellation)
+        if request.method == 'DELETE':
+            if subscription.tier == SubscriptionTier.FREE:
+                return Response(
+                    {'error': '이미 무료 플랜을 사용중입니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        amount = tier_pricing.get(target_tier, {}).get(billing_cycle, 0)
+            # Verify password
+            password = request.data.get('password')
+            if not password:
+                return Response(
+                    {'error': '비밀번호를 입력해주세요.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        if amount == 0:
+            if not user.check_password(password):
+                return Response(
+                    {'error': '비밀번호가 올바르지 않습니다.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Cancel subscription by downgrading to FREE
+            from datetime import timedelta
+            from django.utils import timezone
+
+            old_tier = subscription.tier
+            subscription.tier = SubscriptionTier.FREE
+            subscription.is_active = True  # FREE tier is always active
+            subscription.start_date = timezone.now()
+            subscription.end_date = None  # FREE tier has no end date
+            subscription.amount_paid = 0.0
+            subscription.save()
+
+            # Create payment history record
+            PaymentHistory.objects.create(
+                user=user,
+                transaction_type='cancellation',
+                amount=-subscription.amount_paid if hasattr(subscription, 'amount_paid') else 0,
+                tier=SubscriptionTier.FREE,
+                description=f'구독 취소: {old_tier} → free'
+            )
+
+            logger.info(f"Subscription cancelled for {user.email}: {old_tier} → FREE")
+
+            # Return updated subscription
+            serializer = SubscriptionSerializer(subscription)
+            response_data = serializer.data
+            response_data['message'] = '구독이 취소되었습니다. 무료 플랜으로 변경되었습니다.'
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        # Handle PATCH request (subscription update)
+        # Get request data
+        target_tier = request.data.get('tier')
+        auto_renewal = request.data.get('auto_renewal')
+        password = request.data.get('password')
+        billing_cycle = request.data.get('billing_cycle', 'monthly')
+
+        # At least one field must be provided
+        if target_tier is None and auto_renewal is None:
             return Response(
-                {'error': '잘못된 요금제입니다.'},
+                {'error': 'tier 또는 auto_renewal 중 하나는 필수입니다.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Generate order ID
-        order_id = f"order_{user.id}_{uuid.uuid4().hex[:12]}"
-        order_name = f"Resee {target_tier} 구독 ({billing_cycle})"
-
-        # Create payment via Toss
-        toss_service = TossPaymentsService()
-        result = toss_service.create_payment(
-            amount=amount,
-            order_id=order_id,
-            order_name=order_name,
-            customer_email=user.email,
-            customer_name=user.email.split('@')[0]
-        )
-
-        if not result.get('success'):
-            logger.error(f"Payment creation failed: {result.get('error')}")
+        # Password verification
+        if not password:
             return Response(
-                {'error': result.get('error', '결제 생성에 실패했습니다.')},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-        # Create pending payment history record
-        PaymentHistory.objects.create(
-            user=user,
-            payment_type=PaymentHistory.PaymentType.UPGRADE if target_tier != subscription.tier else PaymentHistory.PaymentType.RENEWAL,
-            from_tier=subscription.tier,
-            to_tier=target_tier,
-            amount=Decimal(str(amount)),
-            billing_cycle=billing_cycle,
-            payment_method_used='toss_payments',
-            gateway_order_id=order_id,
-            gateway_payment_id=result.get('payment_key', ''),
-            description=f"결제 대기: {order_name}",
-            notes='Payment pending confirmation'
-        )
-
-        logger.info(f"Payment checkout created for user {user.email}: {order_id}")
-
-        return Response({
-            'success': True,
-            'order_id': order_id,
-            'amount': amount,
-            'tier': target_tier,
-            'billing_cycle': billing_cycle,
-            'checkout_url': result.get('checkout_url'),
-            'client_key': result.get('client_key'),
-            'payment_key': result.get('payment_key')
-        })
-
-    except Exception as e:
-        logger.error(f"Error creating payment checkout: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        return Response(
-            {'error': '결제 생성 중 오류가 발생했습니다.'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def payment_confirm(request):
-    """
-    Confirm payment after user completes checkout
-
-    Request body:
-    - payment_key: Payment key from Toss
-    - order_id: Order ID
-    - amount: Payment amount
-    """
-    import logging
-    from decimal import Decimal
-    from datetime import timedelta
-    from django.utils import timezone
-    from .toss_service import TossPaymentsService
-    from .billing_service import BillingScheduleService
-
-    logger = logging.getLogger(__name__)
-
-    try:
-        user = request.user
-        payment_key = request.data.get('payment_key')
-        order_id = request.data.get('order_id')
-        amount = request.data.get('amount')
-
-        # Validate inputs
-        if not all([payment_key, order_id, amount]):
-            return Response(
-                {'error': '필수 정보가 누락되었습니다.'},
+                {'error': '비밀번호를 입력해주세요.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Find payment history record
-        payment_record = PaymentHistory.objects.filter(
-            user=user,
-            gateway_order_id=order_id
-        ).first()
+        # Handle tier change (upgrade/downgrade)
+        if target_tier is not None:
+            # Verify admin password for tier changes
+            admin_password = getattr(settings, 'SUBSCRIPTION_ADMIN_PASSWORD', None)
+            if not admin_password:
+                return Response(
+                    {'error': '구독 변경이 일시적으로 비활성화되었습니다.'},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
 
-        if not payment_record:
-            return Response(
-                {'error': '결제 정보를 찾을 수 없습니다.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            if password != admin_password:
+                return Response(
+                    {'error': '비밀번호가 올바르지 않습니다.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
-        # Confirm payment with Toss
-        toss_service = TossPaymentsService()
-        result = toss_service.confirm_payment(
-            payment_key=payment_key,
-            order_id=order_id,
-            amount=int(amount)
-        )
-
-        if not result.get('success'):
-            logger.error(f"Payment confirmation failed: {result.get('error')}")
-            payment_record.notes = f"Payment failed: {result.get('error')}"
-            payment_record.save()
-            return Response(
-                {'error': result.get('error', '결제 승인에 실패했습니다.')},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Update subscription
-        subscription = user.subscription
-        target_tier = payment_record.to_tier
-        billing_cycle = payment_record.billing_cycle
-
-        subscription.tier = target_tier
-        subscription.billing_cycle = billing_cycle
-        subscription.auto_renewal = True
-
-        # Calculate next billing date
-        if billing_cycle == 'MONTHLY':
-            subscription.next_billing_date = timezone.now().date() + timedelta(days=30)
-        else:  # YEARLY
-            subscription.next_billing_date = timezone.now().date() + timedelta(days=365)
-
-        subscription.save()
-
-        # Update payment record
-        payment_record.gateway_payment_id = payment_key
-        payment_record.description = f"결제 완료: {payment_record.description}"
-        payment_record.notes = 'Payment confirmed successfully'
-        payment_record.save()
-
-        # Create billing schedule
-        BillingScheduleService.create_schedule(subscription)
-
-        logger.info(f"Payment confirmed for user {user.email}: {order_id}")
-
-        return Response({
-            'success': True,
-            'message': '결제가 완료되었습니다.',
-            'subscription': {
-                'tier': subscription.tier,
-                'tier_display': subscription.get_tier_display(),
-                'billing_cycle': subscription.billing_cycle,
-                'next_billing_date': subscription.next_billing_date.isoformat()
+            # Delegate to upgrade/downgrade logic
+            tier_hierarchy = {
+                SubscriptionTier.FREE: 0,
+                SubscriptionTier.BASIC: 1,
+                SubscriptionTier.PRO: 2,
             }
-        })
 
-    except Exception as e:
-        logger.error(f"Error confirming payment: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        return Response(
-            {'error': '결제 확인 중 오류가 발생했습니다.'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+            current_level = tier_hierarchy.get(subscription.tier, 0)
+            target_level = tier_hierarchy.get(target_tier, 0)
 
+            if target_level == current_level:
+                return Response(
+                    {'error': f'이미 {subscription.get_tier_display()} 티어입니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-@api_view(['POST'])
-def payment_webhook(request):
-    """
-    Webhook endpoint for Toss Payments notifications
+            # Create request data for existing views
+            data = {'tier': target_tier, 'password': password, 'billing_cycle': billing_cycle}
+            request._full_data = data
 
-    This endpoint receives payment status updates from Toss Payments.
-    It does not require authentication as it's called by Toss servers.
-    """
-    import logging
-    from django.views.decorators.csrf import csrf_exempt
+            if target_level > current_level:
+                # Upgrade
+                return subscription_upgrade(request)
+            else:
+                # Downgrade
+                return subscription_downgrade(request)
 
-    logger = logging.getLogger(__name__)
+        # Handle auto-renewal toggle only
+        if auto_renewal is not None:
+            # Verify user password for auto-renewal changes
+            if not user.check_password(password):
+                return Response(
+                    {'error': '비밀번호가 올바르지 않습니다.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
-    try:
-        # Log webhook data
-        logger.info(f"Received Toss webhook: {request.data}")
+            if subscription.tier == SubscriptionTier.FREE:
+                return Response(
+                    {'error': '무료 플랜은 자동갱신 설정이 필요하지 않습니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        # Extract webhook data
-        event_type = request.data.get('eventType')
-        payment_key = request.data.get('data', {}).get('paymentKey')
-        order_id = request.data.get('data', {}).get('orderId')
-        status_value = request.data.get('data', {}).get('status')
+            # Update auto-renewal
+            subscription.auto_renewal = auto_renewal
 
-        # Find payment record
-        payment_record = PaymentHistory.objects.filter(
-            gateway_order_id=order_id
-        ).first()
+            # Update next_billing_date
+            if subscription.auto_renewal and subscription.end_date:
+                subscription.next_billing_date = subscription.end_date
+            else:
+                subscription.next_billing_date = None
 
-        if not payment_record:
-            logger.warning(f"Payment record not found for webhook: {order_id}")
-            return Response({'status': 'received'})
+            subscription.save()
 
-        # Handle different event types
-        if event_type == 'PAYMENT_CONFIRMED':
-            payment_record.notes = 'Payment confirmed via webhook'
-            payment_record.save()
-            logger.info(f"Webhook confirmed payment: {order_id}")
+            logger.info(f"Auto-renewal {'enabled' if auto_renewal else 'disabled'} for {user.email}")
 
-        elif event_type == 'PAYMENT_CANCELED':
-            payment_record.notes = 'Payment canceled via webhook'
-            payment_record.save()
-            logger.info(f"Webhook canceled payment: {order_id}")
+            # Return updated subscription
+            serializer = SubscriptionSerializer(subscription)
+            response_data = serializer.data
+            response_data['message'] = f"자동갱신이 {'활성화' if auto_renewal else '비활성화'}되었습니다."
 
-        else:
-            logger.info(f"Webhook received for {order_id}: {event_type}")
-
-        return Response({'status': 'received'})
-
-    except Exception as e:
-        logger.error(f"Error processing webhook: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        return Response(
-            {'error': 'Webhook processing failed'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+            return Response(response_data, status=status.HTTP_200_OK)

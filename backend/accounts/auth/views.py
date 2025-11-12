@@ -83,13 +83,28 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+    def get_permissions(self):
+        """Override permissions based on action"""
+        if self.action in ['create', 'register']:
+            return []
+        elif self.action in ['me', 'update_password', 'destroy']:
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
+    def get_throttle_classes(self):
+        """Override throttle classes based on action"""
+        if self.action in ['create', 'register']:
+            return [RegistrationRateThrottle]
+        return super().get_throttle_classes()
+
     def get_serializer_class(self):
-        if self.action == 'create':
+        if self.action in ['create', 'register']:
             return UserRegistrationSerializer
+        elif self.action == 'update_password':
+            return PasswordChangeSerializer
         return UserSerializer
 
     @swagger_auto_schema(
-        method='post',
         operation_summary="회원가입",
         operation_description="""새로운 사용자 계정을 생성합니다.
 
@@ -124,9 +139,17 @@ class UserViewSet(viewsets.ModelViewSet):
             500: "서버 오류",
         }
     )
-    @action(detail=False, methods=['post'], permission_classes=[], throttle_classes=[RegistrationRateThrottle])
+    def create(self, request):
+        """RESTful user registration (POST /users/)"""
+        return self._register_user(request)
+
+    @action(detail=False, methods=['post'])
     def register(self, request):
-        """User registration endpoint"""
+        """Legacy registration endpoint (POST /users/register/) - 하위 호환성"""
+        return self._register_user(request)
+
+    def _register_user(self, request):
+        """Common registration logic"""
         logger.info(f"회원가입 요청: {request.data.get('email', 'unknown')}")
 
         serializer = UserRegistrationSerializer(data=request.data)
@@ -172,6 +195,180 @@ class UserViewSet(viewsets.ModelViewSet):
         logger.error(f"회원가입 유효성 검사 실패: {serializer.errors}")
 
         return APIErrorHandler.validation_error(serializer.errors)
+
+    @swagger_auto_schema(
+        method='get',
+        operation_summary="현재 사용자 정보 조회",
+        operation_description="현재 로그인된 사용자의 상세 정보를 조회합니다.",
+        tags=['Authentication'],
+        responses={
+            200: UserSerializer,
+            401: "인증 필요",
+        }
+    )
+    @swagger_auto_schema(
+        method='delete',
+        operation_summary="계정 삭제 (RESTful)",
+        operation_description="""현재 로그인된 사용자의 계정을 완전히 삭제합니다.
+
+        **주의:** 이 작업은 되돌릴 수 없으며, 모든 사용자 데이터가 영구적으로 삭제됩니다.
+
+        **요청 예시:**
+        ```json
+        {
+          "password": "current_password123",
+          "confirmation": "DELETE"
+        }
+        ```
+        """,
+        tags=['Authentication'],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description="현재 비밀번호"),
+                'confirmation': openapi.Schema(type=openapi.TYPE_STRING, description="'DELETE' 문자열"),
+            },
+            required=['password', 'confirmation']
+        ),
+        responses={
+            200: openapi.Response(
+                description="계정 삭제 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
+                    }
+                )
+            ),
+            400: "잘못된 요청 - 유효성 검사 실패",
+            401: "인증 필요",
+            500: "서버 오류",
+        }
+    )
+    @action(detail=False, methods=['get', 'delete'], url_path='me')
+    def me(self, request):
+        """Get or delete current user (GET/DELETE /users/me/)"""
+        if request.method == 'GET':
+            serializer = UserSerializer(request.user)
+            return Response(serializer.data)
+        elif request.method == 'DELETE':
+            from ..utils.serializers import AccountDeleteSerializer
+            serializer = AccountDeleteSerializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                try:
+                    user = request.user
+                    email = user.email
+
+                    # Log the deletion before deleting
+                    logger.warning(f"Account deletion initiated for user {email}")
+
+                    # Delete the account
+                    serializer.save()
+
+                    logger.warning(f"Account deleted for user {email}")
+
+                    return Response(
+                        {'message': 'Account deleted successfully'},
+                        status=status.HTTP_200_OK
+                    )
+                except Exception as e:
+                    logger.error(f"Account deletion failed for user {request.user.email}: {str(e)}")
+                    return Response(
+                        {'error': 'Account deletion failed'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        method='put',
+        operation_summary="비밀번호 변경 (RESTful)",
+        operation_description="""현재 로그인된 사용자의 비밀번호를 변경합니다.
+
+        **요청 예시:**
+        ```json
+        {
+          "current_password": "old_password123",
+          "new_password": "new_password123",
+          "new_password_confirm": "new_password123"
+        }
+        ```
+        """,
+        tags=['Authentication'],
+        request_body=PasswordChangeSerializer,
+        responses={
+            200: openapi.Response(
+                description="비밀번호 변경 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
+                        'action_required': openapi.Schema(type=openapi.TYPE_STRING, description="필요한 조치"),
+                    }
+                )
+            ),
+            400: "잘못된 요청 - 유효성 검사 실패",
+            401: "인증 필요",
+            500: "서버 오류",
+        }
+    )
+    @action(detail=False, methods=['put'], url_path='me/password')
+    @transaction.atomic
+    def update_password(self, request):
+        """Change user password (PUT /users/me/password/)"""
+        serializer = PasswordChangeSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+
+        if serializer.is_valid():
+            try:
+                # 비밀번호 변경
+                serializer.save()
+
+                # 🔒 보안: 모든 기존 JWT 토큰 무효화
+                try:
+                    from rest_framework_simplejwt.token_blacklist.models import (
+                        OutstandingToken,
+                        BlacklistedToken
+                    )
+
+                    # 사용자의 모든 토큰을 블랙리스트에 추가
+                    outstanding_tokens = OutstandingToken.objects.filter(
+                        user=request.user
+                    )
+
+                    for token in outstanding_tokens:
+                        # 이미 블랙리스트에 있지 않은 경우만 추가
+                        BlacklistedToken.objects.get_or_create(token=token)
+
+                    logger.info(
+                        f"Password changed and {outstanding_tokens.count()} tokens "
+                        f"blacklisted for user {request.user.email}"
+                    )
+
+                except ImportError:
+                    # token_blacklist가 없는 경우 경고만 로깅
+                    logger.warning(
+                        "token_blacklist not available. "
+                        "Old tokens will remain valid until expiration."
+                    )
+
+                return Response({
+                    'message': 'Password changed successfully. Please login again on all devices.',
+                    'action_required': 'relogin'
+                }, status=status.HTTP_200_OK)
+
+            except Exception as e:
+                logger.error(
+                    f"Password change failed for user {request.user.email}: {str(e)}",
+                    exc_info=True
+                )
+                return Response(
+                    {'error': 'Password change failed'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PasswordChangeView(APIView):

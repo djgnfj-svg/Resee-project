@@ -128,8 +128,10 @@ const WeeklyTestPage: React.FC = () => {
   };
 
   const submitAnswer = async (questionId: number, answer: string) => {
+    if (!currentTest) return;
+
     try {
-      await weeklyTestAPI.submitAnswer({
+      await weeklyTestAPI.submitAnswer(currentTest.id, {
         question_id: questionId,
         user_answer: answer
       });

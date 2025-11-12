@@ -18,17 +18,17 @@ export const subscriptionAPI = {
   },
 
   upgradeSubscription: async (data: SubscriptionUpgradeData): Promise<Subscription> => {
-    const response = await api.post('/accounts/subscription/upgrade/', data);
+    const response = await api.patch('/accounts/subscriptions/me/', data);
     return response.data;
   },
 
   downgradeSubscription: async (data: SubscriptionUpgradeData): Promise<Subscription> => {
-    const response = await api.post('/accounts/subscription/downgrade/', data);
+    const response = await api.patch('/accounts/subscriptions/me/', data);
     return response.data;
   },
 
-  cancelSubscription: async (): Promise<Subscription> => {
-    const response = await api.post('/accounts/subscription/cancel/');
+  cancelSubscription: async (password: string): Promise<Subscription> => {
+    const response = await api.delete('/accounts/subscriptions/me/', { data: { password } });
     return response.data;
   },
 
@@ -37,8 +37,11 @@ export const subscriptionAPI = {
     return response.data;
   },
 
-  toggleAutoRenewal: async (): Promise<Subscription> => {
-    const response = await api.post('/accounts/subscription/toggle-auto-renewal/');
+  toggleAutoRenewal: async (password: string, autoRenewal: boolean): Promise<Subscription> => {
+    const response = await api.patch('/accounts/subscriptions/me/', {
+      auto_renewal: autoRenewal,
+      password
+    });
     return response.data;
   },
 

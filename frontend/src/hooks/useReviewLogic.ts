@@ -118,11 +118,12 @@ export const useReviewLogic = (
 
   // Complete review mutation
   const completeReviewMutation = useMutation({
-    mutationFn: reviewAPI.completeReview,
-    onSuccess: async (data, variables) => {
+    mutationFn: ({ scheduleId, data }: { scheduleId: number; data: Omit<import('../types').CompleteReviewData, 'content_id'> }) =>
+      reviewAPI.completeReview(scheduleId, data),
+    onSuccess: async (responseData, variables) => {
       // 주관식 평가 (descriptive_answer가 있음): 카드 이동 안함
       // 사용자가 "다음으로" 버튼 눌렀을 때 이동
-      if (variables.descriptive_answer && variables.descriptive_answer.length > 0) {
+      if (variables.data.descriptive_answer && variables.data.descriptive_answer.length > 0) {
         // 주관식은 "다음으로" 버튼에서 reviewsCompleted 증가
         // Invalidate dashboard to update stats
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -132,7 +133,7 @@ export const useReviewLogic = (
       }
 
       // 객관식 평가: 기존 로직
-      if (variables.result === 'remembered') {
+      if (variables.data.result === 'remembered') {
         // "기억함": 완료 처리
         setReviewsCompleted(prev => prev + 1);
         removeCurrentCard();
@@ -166,13 +167,16 @@ export const useReviewLogic = (
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
 
       return new Promise((resolve, reject) => {
+        // RESTful: Pass scheduleId and data without content_id
         completeReviewMutation.mutate({
-          content_id: currentReview.content.id,
-          result: result || undefined,
-          time_spent: timeSpent,
-          descriptive_answer: descriptiveAnswer || '',
-          selected_choice: selectedChoice || '',
-          user_title: userTitle || '',
+          scheduleId: currentReview.id,
+          data: {
+            result: result || undefined,
+            time_spent: timeSpent,
+            descriptive_answer: descriptiveAnswer || '',
+            selected_choice: selectedChoice || '',
+            user_title: userTitle || '',
+          }
         }, {
           onSuccess: (data) => {
             resolve(data);

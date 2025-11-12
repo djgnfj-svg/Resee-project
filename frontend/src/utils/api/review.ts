@@ -9,7 +9,7 @@ import {
 
 export const reviewAPI = {
   getTodayReviews: async (params?: string): Promise<ReviewSchedule[]> => {
-    const url = params ? `/review/today/${params}` : '/review/today/';
+    const url = params ? `/review/schedules/today/${params}` : '/review/schedules/today/';
     const response = await api.get(url);
     return response.data;
   },
@@ -29,7 +29,7 @@ export const reviewAPI = {
     return response.data;
   },
 
-  completeReview: async (data: CompleteReviewData): Promise<{
+  completeReview: async (scheduleId: number, data: Omit<CompleteReviewData, 'content_id'>): Promise<{
     message: string;
     next_review_date?: string;
     ai_evaluation?: {
@@ -37,7 +37,7 @@ export const reviewAPI = {
       feedback: string;
     };
   }> => {
-    const response = await api.post('/review/complete/', data);
+    const response = await api.post(`/review/schedules/${scheduleId}/completions/`, data);
     return response.data;
   },
 

@@ -32,7 +32,7 @@ export const authAPI = {
     new_password: string;
     new_password_confirm: string;
   }): Promise<{ message: string }> => {
-    const response = await api.post('/accounts/password/change/', data);
+    const response = await api.put('/accounts/users/me/password/', data);
     return response.data;
   },
 
@@ -40,7 +40,7 @@ export const authAPI = {
     password: string;
     confirmation: string;
   }): Promise<{ message: string }> => {
-    const response = await api.post('/accounts/account/delete/', data);
+    const response = await api.delete('/accounts/users/me/', { data });
     return response.data;
   },
 
