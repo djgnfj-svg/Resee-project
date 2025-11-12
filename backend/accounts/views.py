@@ -66,7 +66,7 @@ class ProfileView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return APIErrorHandler.validation_error(serializer.errors)
 
 
 
@@ -96,23 +96,16 @@ class WeeklyGoalUpdateView(APIView):
         weekly_goal = request.data.get('weekly_goal')
 
         if weekly_goal is None:
-            return Response(
-                {'error': '주간 목표를 입력해주세요.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return APIErrorHandler.validation_error({'weekly_goal': ['Weekly goal is required']})
 
         try:
             weekly_goal = int(weekly_goal)
             if weekly_goal < 1 or weekly_goal > 100:
-                return Response(
-                    {'error': '주간 목표는 1회 이상 100회 이하로 설정해주세요.'},
-                    status=status.HTTP_400_BAD_REQUEST
+                return APIErrorHandler.validation_error(
+                    {'weekly_goal': ['Weekly goal must be between 1 and 100']}
                 )
         except ValueError:
-            return Response(
-                {'error': '올바른 숫자를 입력해주세요.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return APIErrorHandler.validation_error({'weekly_goal': ['Must be a valid number']})
 
         user.weekly_goal = weekly_goal
         user.save()
@@ -149,10 +142,7 @@ class NotificationPreferenceView(APIView):
             return Response(serializer.data)
         except Exception as e:
             logger.error(f"Failed to get notification preferences for {request.user.email}: {str(e)}")
-            return Response(
-                {'error': '알림 설정을 가져오는데 실패했습니다.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return APIErrorHandler.server_error('Failed to get notification preferences')
 
     @swagger_auto_schema(
         operation_summary="알림 설정 수정",
@@ -200,10 +190,7 @@ class NotificationPreferenceView(APIView):
 
         except Exception as e:
             logger.error(f"Failed to update notification preferences for {request.user.email}: {str(e)}")
-            return Response(
-                {'error': '알림 설정 저장에 실패했습니다.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return APIErrorHandler.server_error('Failed to save notification preferences')
 
 
 # Views are imported directly in urls.py to avoid circular imports
