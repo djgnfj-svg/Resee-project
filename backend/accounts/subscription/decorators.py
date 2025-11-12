@@ -3,6 +3,7 @@ Decorators for subscription-related operations.
 """
 import functools
 import logging
+import secrets
 
 from django.conf import settings
 from rest_framework import status
@@ -51,8 +52,8 @@ def require_admin_password(view_func):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
 
-        # Verify password
-        if password != admin_password:
+        # Verify password using constant-time comparison to prevent timing attacks
+        if not secrets.compare_digest(password, admin_password):
             logger.warning(
                 f"Failed admin password verification attempt for user {request.user.email}"
             )
