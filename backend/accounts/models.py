@@ -11,6 +11,9 @@ from django.utils.crypto import get_random_string
 
 from resee.models import BaseModel, TimestampMixin
 
+# Import services at module level - no circular import issues
+from accounts.subscription.services import PermissionService, SubscriptionService
+
 # Legal models removed - using static pages in frontend instead
 
 
@@ -126,48 +129,38 @@ class User(AbstractUser):
     
     def get_max_review_interval(self):
         """Get maximum review interval based on subscription"""
-        from .subscription.services import SubscriptionService
         return SubscriptionService(self).get_max_review_interval()
 
     def has_active_subscription(self):
         """Check if user has an active subscription"""
-        from .subscription.services import SubscriptionService
         return SubscriptionService(self).has_active_subscription()
-    
+
     def can_upgrade_subscription(self):
         """Check if user can upgrade subscription"""
-        from .subscription.services import PermissionService
         return PermissionService(self).can_upgrade_subscription()
-
 
     def get_content_limit(self):
         """Get content creation limit based on subscription tier"""
-        from .subscription.services import PermissionService
         return PermissionService(self).get_content_limit()
 
     def can_create_content(self):
         """Check if user can create more content based on subscription limit"""
-        from .subscription.services import PermissionService
         return PermissionService(self).can_create_content()
 
     def get_content_usage(self):
         """Get content usage statistics for the user"""
-        from .subscription.services import PermissionService
         return PermissionService(self).get_content_usage()
 
     def get_category_limit(self):
         """Get category creation limit based on subscription tier"""
-        from .subscription.services import PermissionService
         return PermissionService(self).get_category_limit()
 
     def can_create_category(self):
         """Check if user can create more categories based on subscription limit"""
-        from .subscription.services import PermissionService
         return PermissionService(self).can_create_category()
 
     def get_category_usage(self):
         """Get category usage statistics for the user"""
-        from .subscription.services import PermissionService
         return PermissionService(self).get_category_usage()
 
 
