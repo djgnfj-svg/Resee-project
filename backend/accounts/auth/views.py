@@ -315,57 +315,33 @@ class UserViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def update_password(self, request):
         """Change user password (PUT /users/me/password/)"""
+        from .services import AuthService
+
         serializer = PasswordChangeSerializer(
             data=request.data,
             context={'request': request}
         )
 
         if serializer.is_valid():
-            try:
-                # 비밀번호 변경
-                serializer.save()
+            current_password = serializer.validated_data['current_password']
+            new_password = serializer.validated_data['new_password']
 
-                # 🔒 보안: 모든 기존 JWT 토큰 무효화
-                try:
-                    from rest_framework_simplejwt.token_blacklist.models import (
-                        OutstandingToken,
-                        BlacklistedToken
-                    )
+            # Use AuthService for password change
+            auth_service = AuthService(request.user)
+            success, error_message = auth_service.change_password(
+                current_password=current_password,
+                new_password=new_password
+            )
 
-                    # 사용자의 모든 토큰을 블랙리스트에 추가
-                    outstanding_tokens = OutstandingToken.objects.filter(
-                        user=request.user
-                    )
-
-                    for token in outstanding_tokens:
-                        # 이미 블랙리스트에 있지 않은 경우만 추가
-                        BlacklistedToken.objects.get_or_create(token=token)
-
-                    logger.info(
-                        f"Password changed and {outstanding_tokens.count()} tokens "
-                        f"blacklisted for user {request.user.email}"
-                    )
-
-                except ImportError:
-                    # token_blacklist가 없는 경우 경고만 로깅
-                    logger.warning(
-                        "token_blacklist not available. "
-                        "Old tokens will remain valid until expiration."
-                    )
-
+            if success:
                 return Response({
                     'message': 'Password changed successfully. Please login again on all devices.',
                     'action_required': 'relogin'
                 }, status=status.HTTP_200_OK)
-
-            except Exception as e:
-                logger.error(
-                    f"Password change failed for user {request.user.email}: {str(e)}",
-                    exc_info=True
-                )
+            else:
                 return Response(
-                    {'error': 'Password change failed'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {'error': error_message or 'Password change failed'},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -412,57 +388,33 @@ class PasswordChangeView(APIView):
         Security: All JWT tokens are blacklisted to prevent unauthorized
         access with old tokens after password change.
         """
+        from .services import AuthService
+
         serializer = PasswordChangeSerializer(
             data=request.data,
             context={'request': request}
         )
 
         if serializer.is_valid():
-            try:
-                # 비밀번호 변경
-                serializer.save()
+            current_password = serializer.validated_data['current_password']
+            new_password = serializer.validated_data['new_password']
 
-                # 🔒 보안: 모든 기존 JWT 토큰 무효화
-                try:
-                    from rest_framework_simplejwt.token_blacklist.models import (
-                        OutstandingToken,
-                        BlacklistedToken
-                    )
+            # Use AuthService for password change
+            auth_service = AuthService(request.user)
+            success, error_message = auth_service.change_password(
+                current_password=current_password,
+                new_password=new_password
+            )
 
-                    # 사용자의 모든 토큰을 블랙리스트에 추가
-                    outstanding_tokens = OutstandingToken.objects.filter(
-                        user=request.user
-                    )
-
-                    for token in outstanding_tokens:
-                        # 이미 블랙리스트에 있지 않은 경우만 추가
-                        BlacklistedToken.objects.get_or_create(token=token)
-
-                    logger.info(
-                        f"Password changed and {outstanding_tokens.count()} tokens "
-                        f"blacklisted for user {request.user.email}"
-                    )
-
-                except ImportError:
-                    # token_blacklist가 없는 경우 경고만 로깅
-                    logger.warning(
-                        "token_blacklist not available. "
-                        "Old tokens will remain valid until expiration."
-                    )
-
+            if success:
                 return Response({
                     'message': 'Password changed successfully. Please login again on all devices.',
                     'action_required': 'relogin'
                 }, status=status.HTTP_200_OK)
-
-            except Exception as e:
-                logger.error(
-                    f"Password change failed for user {request.user.email}: {str(e)}",
-                    exc_info=True
-                )
+            else:
                 return Response(
-                    {'error': 'Password change failed'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {'error': error_message or 'Password change failed'},
+                    status=status.HTTP_400_BAD_REQUEST if 'incorrect' in (error_message or '') else status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
