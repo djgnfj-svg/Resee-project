@@ -40,7 +40,7 @@ class WeeklyTest(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        app_label = 'weekly_test'  # Keep database table name
+        db_table = 'weekly_test_weeklytest'  # Keep database table name
         ordering = ['-created_at']
         unique_together = ['user', 'start_date', 'end_date']
 
@@ -82,7 +82,7 @@ class WeeklyTestQuestion(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        app_label = 'weekly_test'  # Keep database table name
+        db_table = 'weekly_test_weeklytestquestion'  # Keep database table name
         ordering = ['order']
         unique_together = ['weekly_test', 'order']
 
@@ -107,7 +107,7 @@ class WeeklyTestAnswer(models.Model):
     answered_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        app_label = 'weekly_test'  # Keep database table name
+        db_table = 'weekly_test_weeklytestanswer'  # Keep database table name
         unique_together = ['question', 'user']
 
     def __str__(self):

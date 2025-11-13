@@ -35,6 +35,7 @@ class Migration(migrations.Migration):
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='weekly_tests', to=settings.AUTH_USER_MODEL)),
             ],
             options={
+                'db_table': 'weekly_test_weeklytest',
                 'ordering': ['-created_at'],
                 'unique_together': {('user', 'start_date', 'end_date')},
             },
@@ -52,9 +53,10 @@ class Migration(migrations.Migration):
                 ('points', models.PositiveIntegerField(default=1)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('content', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='test_questions', to='content.content')),
-                ('weekly_test', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='questions', to='weekly_test.weeklytest')),
+                ('weekly_test', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='questions', to='exams.weeklytest')),
             ],
             options={
+                'db_table': 'weekly_test_weeklytestquestion',
                 'ordering': ['order'],
                 'unique_together': {('weekly_test', 'order')},
             },
@@ -69,10 +71,11 @@ class Migration(migrations.Migration):
                 ('ai_score', models.FloatField(blank=True, null=True)),
                 ('ai_feedback', models.TextField(blank=True)),
                 ('answered_at', models.DateTimeField(auto_now_add=True)),
-                ('question', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='answers', to='weekly_test.weeklytestquestion')),
+                ('question', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='answers', to='exams.weeklytestquestion')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
             options={
+                'db_table': 'weekly_test_weeklytestanswer',
                 'unique_together': {('question', 'user')},
             },
         ),
