@@ -155,46 +155,6 @@ def send_evening_reminders_for_hour(hour: int):
         return 0
 
 
-def send_weekly_summaries_for_hour(hour: int):
-    """지정된 시간에 주간 요약을 받을 사용자들에게 발송 (월요일만)"""
-    try:
-        # 해당 시간에 주간 요약을 받을 사용자들
-        users_for_summary = User.objects.filter(
-            notification_preference__email_notifications_enabled=True,
-            notification_preference__weekly_summary_enabled=True,
-            notification_preference__weekly_summary_time__hour=hour
-        ).select_related('notification_preference')
-
-        # 지난주/이번주 기간 계산
-        today = timezone.now().date()
-        last_week_end = today - timedelta(days=today.weekday() + 1)
-        last_week_start = last_week_end - timedelta(days=6)
-        this_week_start = today
-        this_week_end = today + timedelta(days=6)
-
-        sent_count = 0
-        for user in users_for_summary:
-            try:
-                send_individual_weekly_summary.delay(
-                    user.id,
-                    last_week_start.isoformat(),
-                    last_week_end.isoformat(),
-                    this_week_start.isoformat(),
-                    this_week_end.isoformat()
-                )
-                sent_count += 1
-            except Exception as e:
-                logger.error(f"Failed to queue weekly summary for user {user.email}: {str(e)}")
-
-        if sent_count > 0:
-            logger.info(f"주간 요약 {sent_count}개 큐잉 완료 - {hour}시")
-        return sent_count
-
-    except Exception as e:
-        logger.error(f"Error in send_weekly_summaries_for_hour({hour}): {str(e)}")
-        return 0
-
-
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_individual_review_reminder(self, user_id: int, schedule_ids: List[int]):
     """
@@ -307,79 +267,6 @@ def send_individual_evening_reminder(self, user_id: int, schedule_ids: List[int]
         return f"User with id {user_id} does not exist"
     except Exception as exc:
         logger.error(f"Error sending evening reminder to user {user_id}: {str(exc)}")
-        raise self.retry(exc=exc)
-
-
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def send_individual_weekly_summary(self, user_id: int, last_week_start: str, last_week_end: str,
-                                 this_week_start: str, this_week_end: str):
-    """개별 사용자 주간 요약 이메일 발송"""
-    try:
-        from datetime import datetime
-        user = User.objects.get(id=user_id)
-
-        last_week_start_date = datetime.fromisoformat(last_week_start).date()
-        last_week_end_date = datetime.fromisoformat(last_week_end).date()
-        this_week_start_date = datetime.fromisoformat(this_week_start).date()
-        this_week_end_date = datetime.fromisoformat(this_week_end).date()
-
-        # 지난주 복습 통계
-        last_week_reviews = ReviewHistory.objects.filter(
-            user=user,
-            review_date__date__range=[last_week_start_date, last_week_end_date]
-        )
-
-        last_week_total = last_week_reviews.count()
-        last_week_success = last_week_reviews.filter(result='remembered').count()
-        last_week_success_rate = (last_week_success / last_week_total * 100) if last_week_total > 0 else 0
-
-        # 이번주 예정 복습
-        this_week_schedules = ReviewSchedule.objects.filter(
-            user=user,
-            next_review_date__date__range=[this_week_start_date, this_week_end_date],
-            is_active=True
-        ).select_related('content').prefetch_related('content__category')
-
-        # 이메일 컨텍스트
-        context = {
-            'user': user,
-            'last_week_total': last_week_total,
-            'last_week_success': last_week_success,
-            'last_week_success_rate': round(last_week_success_rate, 1),
-            'this_week_schedules': this_week_schedules,
-            'this_week_total': this_week_schedules.count(),
-            'review_url': f"{settings.FRONTEND_URL}/review",
-            'dashboard_url': f"{settings.FRONTEND_URL}/dashboard",
-            'unsubscribe_url': user.notification_preference.generate_unsubscribe_url(),
-            'company_name': getattr(settings, 'COMPANY_NAME', 'Resee'),
-            'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@resee.com'),
-        }
-
-        subject = f"[{context['company_name']}] 주간 학습 요약 - 지난주 {last_week_success}/{last_week_total}개 완료"
-
-        # 주간 요약 템플릿이 없으면 기본 템플릿 사용
-        template_name = 'weekly_summary'
-
-        email_service = EmailService()
-        success = email_service.send_template_email(
-            template_name=template_name,
-            context=context,
-            subject=subject,
-            recipient_email=user.email
-        )
-
-        if success:
-            result_message = f"Weekly summary sent to {user.email}"
-            logger.info(result_message)
-            return result_message
-        else:
-            raise Exception("Email sending failed")
-
-    except User.DoesNotExist:
-        logger.error(f"User with id {user_id} does not exist")
-        return f"User with id {user_id} does not exist"
-    except Exception as exc:
-        logger.error(f"Error sending weekly summary to user {user_id}: {str(exc)}")
         raise self.retry(exc=exc)
 
 

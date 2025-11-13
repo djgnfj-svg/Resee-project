@@ -83,8 +83,8 @@ class ReviewNotificationService:
 
         # 오늘 이미 복습 완료한 콘텐츠 확인
         today_completed_content_ids = ReviewHistory.objects.filter(
-            review_date__date=target_date
-        ).values_list('content_id', flat=True)
+            reviewed_at__date=target_date
+        ).values_list('schedule__content_id', flat=True)
 
         # 아직 완료하지 않은 스케줄만 필터링
         pending_schedules = pending_schedules.exclude(
