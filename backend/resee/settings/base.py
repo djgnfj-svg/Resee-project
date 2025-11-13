@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'content',
     'review',
     'analytics',  # includes business intelligence
-    'weekly_test',  # weekly test functionality
+    'exams',  # exam functionality (previously weekly_test)
 ]
 
 MIDDLEWARE = [
@@ -427,22 +427,22 @@ SUBSCRIPTION_SETTINGS = {
     'FREE_TIER_LIMITS': {
         'max_content': 50,
         'review_interval_days': 7,
-        'max_weekly_tests_per_week': 1,
+        'max_exams_per_week': 1,
     },
     'BASIC_TIER_LIMITS': {
         'max_content': 200,
         'review_interval_days': 30,
-        'max_weekly_tests_per_week': 1,
+        'max_exams_per_week': 1,
     },
     'PREMIUM_TIER_LIMITS': {
         'max_content': 1000,
         'review_interval_days': 60,
-        'max_weekly_tests_per_week': 1,
+        'max_exams_per_week': 1,
     },
     'PRO_TIER_LIMITS': {
         'max_content': -1,  # Unlimited
         'review_interval_days': 180,
-        'max_weekly_tests_per_week': 1,
+        'max_exams_per_week': 1,
     },
 }
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { weeklyTestAPI, WeeklyTest } from '../utils/api/weeklyTest';
+import { weeklyTestAPI, WeeklyTest } from '../utils/api/exams';
 import { contentAPI } from '../utils/api/content';
 import { Content } from '../types';
 import TestResultsView from '../components/weeklytest/TestResultsView';
@@ -8,7 +8,7 @@ import TestQuestionView from '../components/weeklytest/TestQuestionView';
 import ContentSelectorModal from '../components/weeklytest/ContentSelectorModal';
 import TestListItem from '../components/weeklytest/TestListItem';
 
-const WeeklyTestPage: React.FC = () => {
+const ExamsPage: React.FC = () => {
   const navigate = useNavigate();
   const [tests, setTests] = useState<WeeklyTest[]>([]);
   const [currentTest, setCurrentTest] = useState<WeeklyTest | null>(null);
@@ -38,7 +38,7 @@ const WeeklyTestPage: React.FC = () => {
   const loadTests = async () => {
     try {
       setIsLoading(true);
-      const testList = await weeklyTestAPI.getWeeklyTests();
+      const testList = await weeklyTestAPI.getExams();
       setTests(Array.isArray(testList) ? testList : []);
     } catch (error) {
       console.error('Failed to load tests:', error);
@@ -65,7 +65,7 @@ const WeeklyTestPage: React.FC = () => {
       setIsLoading(true);
       setError('');
       const testData = { content_ids: selectedContentIds };
-      await weeklyTestAPI.createWeeklyTest(testData);
+      await weeklyTestAPI.createExam(testData);
       await loadTests();
       setShowContentSelector(false);
       setSelectedContentIds([]);
@@ -336,4 +336,4 @@ const WeeklyTestPage: React.FC = () => {
   );
 };
 
-export default WeeklyTestPage;
+export default ExamsPage;

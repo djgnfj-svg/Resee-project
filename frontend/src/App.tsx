@@ -21,7 +21,7 @@ const ContentPage = lazy(() => import('./pages/ContentPage'));
 const CreateContentPage = lazy(() => import('./pages/CreateContentPage'));
 const EditContentPage = lazy(() => import('./pages/EditContentPage'));
 const ReviewPage = lazy(() => import('./pages/ReviewPage'));
-const WeeklyTestPage = lazy(() => import('./pages/WeeklyTestPage'));
+const ExamsPage = lazy(() => import('./pages/ExamsPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'));
@@ -96,10 +96,10 @@ function App() {
                 }
               />
               <Route
-                path="/weekly-test"
+                path="/exams"
                 element={
                   <ProtectedRoute>
-                    <WeeklyTestPage />
+                    <ExamsPage />
                   </ProtectedRoute>
                 }
               />

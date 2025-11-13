@@ -83,28 +83,34 @@ export interface TestResultData {
   }>;
 }
 
-export const weeklyTestAPI = {
-  // 주간 시험 목록 조회
-  getWeeklyTests: async (): Promise<WeeklyTest[]> => {
-    const response = await api.get('/weekly-test/');
+// Backward compatibility: keep type names
+export type Exam = WeeklyTest;
+export type ExamQuestion = WeeklyTestQuestion;
+export type ExamAnswer = WeeklyTestAnswer;
+export type CreateExamData = CreateWeeklyTestData;
+
+export const examsAPI = {
+  // 시험 목록 조회
+  getExams: async (): Promise<Exam[]> => {
+    const response = await api.get('/exams/');
     return response.data.results || [];
   },
 
-  // 주간 시험 생성
-  createWeeklyTest: async (data: CreateWeeklyTestData = {}): Promise<WeeklyTest> => {
-    const response = await api.post('/weekly-test/', data);
+  // 시험 생성
+  createExam: async (data: CreateExamData = {}): Promise<Exam> => {
+    const response = await api.post('/exams/', data);
     return response.data;
   },
 
-  // 주간 시험 상세 조회
-  getWeeklyTest: async (id: number): Promise<WeeklyTest> => {
-    const response = await api.get(`/weekly-test/${id}/`);
+  // 시험 상세 조회
+  getExam: async (id: number): Promise<Exam> => {
+    const response = await api.get(`/exams/${id}/`);
     return response.data;
   },
 
-  // 주간 시험 시작 (RESTful)
-  startTest: async (testId: number): Promise<{ message: string; test: WeeklyTest }> => {
-    const response = await api.post('/weekly-test/test-sessions/', { test_id: testId });
+  // 시험 시작 (RESTful)
+  startTest: async (testId: number): Promise<{ message: string; test: Exam }> => {
+    const response = await api.post('/exams/test-sessions/', { test_id: testId });
     return response.data;
   },
 
@@ -115,7 +121,7 @@ export const weeklyTestAPI = {
     is_correct: boolean;
     points_earned: number;
   }> => {
-    const response = await api.post(`/weekly-test/test-sessions/${sessionId}/answers/`, data);
+    const response = await api.post(`/exams/test-sessions/${sessionId}/answers/`, data);
     return response.data;
   },
 
@@ -127,18 +133,21 @@ export const weeklyTestAPI = {
     total_questions: number;
     time_spent?: string;
   }> => {
-    const response = await api.patch(`/weekly-test/test-sessions/${sessionId}/`);
+    const response = await api.patch(`/exams/test-sessions/${sessionId}/`);
     return response.data;
   },
 
   // 시험 결과 조회 (RESTful)
   getTestResults: async (sessionId: number): Promise<TestResultData> => {
-    const response = await api.get(`/weekly-test/test-sessions/${sessionId}/results/`);
+    const response = await api.get(`/exams/test-sessions/${sessionId}/results/`);
     return response.data;
   },
 
-  // 주간 시험 삭제
-  deleteWeeklyTest: async (id: number): Promise<void> => {
-    await api.delete(`/weekly-test/${id}/`);
+  // 시험 삭제
+  deleteExam: async (id: number): Promise<void> => {
+    await api.delete(`/exams/${id}/`);
   }
 };
+
+// Backward compatibility
+export const weeklyTestAPI = examsAPI;

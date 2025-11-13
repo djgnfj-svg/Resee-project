@@ -8,7 +8,7 @@ import pytest
 from django.test import TestCase
 from content.models import Content, Category
 from accounts.models import User
-from weekly_test.ai_service import ai_question_generator
+from ai_services import ai_question_generator
 
 
 @pytest.mark.django_db

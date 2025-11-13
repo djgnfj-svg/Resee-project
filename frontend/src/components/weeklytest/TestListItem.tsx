@@ -1,5 +1,5 @@
 import React from 'react';
-import { WeeklyTest } from '../../utils/api/weeklyTest';
+import { WeeklyTest } from '../../utils/api/exams';
 
 interface TestListItemProps {
   test: WeeklyTest;

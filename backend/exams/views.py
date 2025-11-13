@@ -76,7 +76,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         subscription_settings = settings.SUBSCRIPTION_SETTINGS
         user_tier = getattr(user, 'subscription_tier', 'FREE')
         tier_limits = subscription_settings.get(f'{user_tier}_TIER_LIMITS', subscription_settings['FREE_TIER_LIMITS'])
-        max_weekly_tests = tier_limits.get('max_weekly_tests_per_week', 1)
+        max_weekly_tests = tier_limits.get('max_exams_per_week', 1)
 
         if tests_this_week >= max_weekly_tests:
             raise ValidationError({
@@ -234,7 +234,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
     def _is_ai_available(self):
         """AI API 사용 가능 여부 확인"""
-        from .ai_service import ai_question_generator
+        from ai_services.generators.question_generator import ai_question_generator
         return ai_question_generator.is_available()
 
     def _create_ai_question(self, weekly_test, content, order):
@@ -243,7 +243,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
         LangGraph 기반 고품질 Distractor 생성 시스템 사용
         """
-        from .ai_service import ai_question_generator
+        from ai_services.generators.question_generator import ai_question_generator
 
         try:
             question_data = ai_question_generator.generate_question(content)
@@ -570,8 +570,29 @@ class TestSessionViewSet(viewsets.GenericViewSet):
             - message: Success message
             - test: Test session data
         """
-        # Delegate to existing start_test logic
-        return start_test(request)
+        serializer = StartTestSerializer(data=request.data, context={'request': request})
+
+        if serializer.is_valid():
+            test_id = serializer.validated_data['test_id']
+            weekly_test = WeeklyTest.objects.get(id=test_id)
+
+            # 시험 상태 업데이트 (pending인 경우에만)
+            if weekly_test.status == 'pending':
+                weekly_test.status = 'in_progress'
+                weekly_test.started_at = timezone.now()
+                weekly_test.save()
+                message = '시험이 시작되었습니다.'
+            else:
+                message = '시험을 계속합니다.'
+
+            # 시험 정보 반환
+            test_serializer = WeeklyTestSerializer(weekly_test)
+            return Response({
+                'message': message,
+                'test': test_serializer.data
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'], url_path='answers')
     def submit_answer_action(self, request, pk=None):

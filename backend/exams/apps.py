@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class WeeklyTestConfig(AppConfig):
+class ExamsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'weekly_test'
+    name = 'exams'
