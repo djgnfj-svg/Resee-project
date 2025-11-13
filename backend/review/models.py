@@ -83,39 +83,33 @@ class ReviewSchedule(BaseUserModel):
         """Advance to next review interval with subscription tier limits"""
         from .utils import get_review_intervals
         intervals = get_review_intervals(self.user)
-        
-        # Handle case where current index exceeds new subscription limits
-        if self.interval_index >= len(intervals):
-            self.interval_index = len(intervals) - 1
-        elif self.interval_index < len(intervals) - 1:
-            self.interval_index += 1
-        
-        # Ensure we don't exceed subscription limits
-        max_allowed_index = len(intervals) - 1
-        if self.interval_index > max_allowed_index:
-            self.interval_index = max_allowed_index
-        
-        next_interval = intervals[self.interval_index]
-        
-        # Additional safety check: ensure interval doesn't exceed user's max allowed
         user_max_interval = SubscriptionService(self.user).get_max_review_interval()
+
+        # Step 1: Advance interval index (if not at max)
+        if self.interval_index < len(intervals) - 1:
+            self.interval_index += 1
+
+        # Step 2: Cap interval index to subscription limits
+        max_allowed_index = len(intervals) - 1
+        self.interval_index = min(self.interval_index, max_allowed_index)
+
+        # Step 3: Get interval and ensure it respects subscription tier
+        next_interval = intervals[self.interval_index]
         if next_interval > user_max_interval:
-            # Find the highest allowed interval for this user
+            # Find highest allowed interval within user's subscription
             allowed_intervals = [i for i in intervals if i <= user_max_interval]
             if allowed_intervals:
                 next_interval = max(allowed_intervals)
-                # Update interval_index to match the corrected interval
                 try:
                     self.interval_index = intervals.index(next_interval)
                 except ValueError:
-                    # Fallback to the last allowed interval
                     self.interval_index = len(allowed_intervals) - 1
                     next_interval = allowed_intervals[-1]
             else:
-                # Fallback to minimum interval if no intervals are allowed (shouldn't happen)
+                # Fallback to first interval (shouldn't happen)
                 next_interval = intervals[0]
                 self.interval_index = 0
-        
+
         self.next_review_date = timezone.now() + timedelta(days=next_interval)
         self.save()
     

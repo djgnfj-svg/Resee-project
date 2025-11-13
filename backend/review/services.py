@@ -83,8 +83,8 @@ class ReviewNotificationService:
 
         # 오늘 이미 복습 완료한 콘텐츠 확인
         today_completed_content_ids = ReviewHistory.objects.filter(
-            reviewed_at__date=target_date
-        ).values_list('schedule__content_id', flat=True)
+            review_date__date=target_date
+        ).values_list('content_id', flat=True)
 
         # 아직 완료하지 않은 스케줄만 필터링
         pending_schedules = pending_schedules.exclude(
@@ -119,18 +119,18 @@ class ReviewNotificationService:
         """
         # 해당 주의 복습 히스토리
         week_reviews = ReviewHistory.objects.filter(
-            schedule__user=user,
-            reviewed_at__date__range=[week_start, week_end]
-        ).select_related('schedule__content')
+            user=user,
+            review_date__date__range=[week_start, week_end]
+        ).select_related('content')
 
         # 카테고리별 통계
         category_stats = {}
         for review in week_reviews:
-            category_name = review.schedule.content.category.name if review.schedule.content.category else '기타'
+            category_name = review.content.category.name if review.content.category else '기타'
             if category_name not in category_stats:
                 category_stats[category_name] = {'total': 0, 'success': 0}
             category_stats[category_name]['total'] += 1
-            if review.success:
+            if review.result == 'remembered':
                 category_stats[category_name]['success'] += 1
 
         # 카테고리별 성공률 계산
@@ -138,7 +138,7 @@ class ReviewNotificationService:
             stats['success_rate'] = (stats['success'] / stats['total'] * 100) if stats['total'] > 0 else 0
 
         total_reviews = week_reviews.count()
-        successful_reviews = week_reviews.filter(success=True).count()
+        successful_reviews = week_reviews.filter(result='remembered').count()
         success_rate = (successful_reviews / total_reviews * 100) if total_reviews > 0 else 0
 
         return {
@@ -156,12 +156,12 @@ class ReviewNotificationService:
         current_date = week_start
 
         while current_date <= week_end:
-            day_reviews = reviews.filter(reviewed_at__date=current_date)
+            day_reviews = reviews.filter(review_date__date=current_date)
             daily_data.append({
                 'date': current_date,
                 'day_name': current_date.strftime('%A'),
                 'total': day_reviews.count(),
-                'success': day_reviews.filter(success=True).count()
+                'success': day_reviews.filter(result='remembered').count()
             })
             current_date += timedelta(days=1)
 

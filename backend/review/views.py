@@ -63,8 +63,7 @@ class ReviewScheduleViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='today')
     def today(self, request):
         """Get review items due today or overdue (RESTful endpoint)"""
-        # Delegate to existing TodayReviewView
-        from .views import TodayReviewView
+        # Delegate to existing TodayReviewView logic
         view = TodayReviewView()
         view.request = request
         view.format_kwarg = None
@@ -99,8 +98,7 @@ class ReviewScheduleViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
         # Replace request._full_data to inject content_id
         request._full_data = data
 
-        # Delegate to existing CompleteReviewView
-        from .views import CompleteReviewView
+        # Delegate to existing CompleteReviewView logic
         view = CompleteReviewView()
         view.request = request
         view.format_kwarg = None
@@ -537,7 +535,7 @@ class CompleteReviewView(APIView):
                             current_interval = intervals[0]
                             schedule.interval_index = 0
                     
-                    schedule.next_review_date = timezone.now() + timezone.timedelta(days=current_interval)
+                    schedule.next_review_date = timezone.now() + timedelta(days=current_interval)
                     schedule.save()
                 else:  # 'forgot'
                     # Mark initial review as completed if it's the first review
