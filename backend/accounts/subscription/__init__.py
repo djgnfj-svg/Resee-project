@@ -1,3 +1,2 @@
 # Subscription module exports
-from .subscription_views import *
-from .services import *
+from .services import PermissionService, SubscriptionService

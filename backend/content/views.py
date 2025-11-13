@@ -18,7 +18,8 @@ from resee.structured_logging import (log_api_call, log_performance,
 
 from .models import Category, Content
 from .serializers import CategorySerializer, ContentSerializer
-from .ai_validation import validate_content
+from ai_services import validate_content
+from accounts.subscription.services import PermissionService
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class CategoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
         if hasattr(response, 'data'):
             response.data = {
                 'results': response.data.get('results', response.data),
-                'usage': request.user.get_category_usage(),
+                'usage': PermissionService(request.user).get_category_usage(),
                 'count': response.data.get('count') if isinstance(response.data, dict) else len(response.data),
                 'next': response.data.get('next') if isinstance(response.data, dict) else None,
                 'previous': response.data.get('previous') if isinstance(response.data, dict) else None,
@@ -76,8 +77,8 @@ class CategoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         # Check category creation limit
         user = request.user
-        if not user.can_create_category():
-            usage = user.get_category_usage()
+        if not PermissionService(user).can_create_category():
+            usage = PermissionService(user).get_category_usage()
             return Response({
                 'error': '카테고리 생성 제한에 도달했습니다',
                 'usage': usage,
@@ -135,7 +136,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         if hasattr(response, 'data'):
             response.data = {
                 'results': response.data.get('results', response.data),
-                'usage': request.user.get_content_usage(),
+                'usage': PermissionService(request.user).get_content_usage(),
                 'count': response.data.get('count') if isinstance(response.data, dict) else len(response.data),
                 'next': response.data.get('next') if isinstance(response.data, dict) else None,
                 'previous': response.data.get('previous') if isinstance(response.data, dict) else None,
@@ -167,8 +168,8 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         # Check content creation limit
         user = request.user
-        if not user.can_create_content():
-            usage = user.get_content_usage()
+        if not PermissionService(user).can_create_content():
+            usage = PermissionService(user).get_content_usage()
             return Response({
                 'error': '콘텐츠 생성 제한에 도달했습니다',
                 'usage': usage,

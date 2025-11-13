@@ -20,6 +20,7 @@ from .models import ReviewHistory, ReviewSchedule
 from .serializers import ReviewHistorySerializer, ReviewScheduleSerializer
 from .utils import (calculate_success_rate, get_review_intervals,
                     get_today_reviews_count)
+from accounts.subscription.services import SubscriptionService
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +184,7 @@ class TodayReviewView(APIView):
         today = timezone.now().date()
         
         # Get user's subscription tier and determine overdue limit
-        max_overdue_days = request.user.get_max_review_interval()
+        max_overdue_days = SubscriptionService(request.user).get_max_review_interval()
         if not max_overdue_days:
             max_overdue_days = 7  # Default to FREE tier
         
@@ -231,7 +232,7 @@ class TodayReviewView(APIView):
             'count': len(serializer.data),  # Today's reviews count
             'total_count': total_schedules,  # Total active schedules
             'subscription_tier': request.user.subscription.tier,
-            'max_interval_days': request.user.get_max_review_interval()
+            'max_interval_days': SubscriptionService(request.user).get_max_review_interval()
         }
 
         # Cache the response (TTL: 1 hour)
@@ -407,7 +408,7 @@ class CompleteReviewView(APIView):
                         )
 
                     # AI evaluation
-                    from .ai_title_evaluation import ai_title_evaluator
+                    from ai_services import ai_title_evaluator
                     if not ai_title_evaluator.is_available():
                         return Response(
                             {'error': 'AI 평가 서비스를 사용할 수 없습니다.'},
@@ -441,7 +442,7 @@ class CompleteReviewView(APIView):
                         )
 
                     # AI evaluation
-                    from .ai_evaluation import ai_answer_evaluator
+                    from ai_services import ai_answer_evaluator
                     if not ai_answer_evaluator.is_available():
                         return Response(
                             {'error': 'AI 평가 서비스를 사용할 수 없습니다.'},
@@ -513,7 +514,7 @@ class CompleteReviewView(APIView):
                         schedule.save()
                     # Stay at current interval but reset date with subscription validation
                     intervals = get_review_intervals(request.user)
-                    user_max_interval = request.user.get_max_review_interval()
+                    user_max_interval = SubscriptionService(request.user).get_max_review_interval()
                     
                     # Ensure current interval doesn't exceed subscription limits
                     if schedule.interval_index >= len(intervals):

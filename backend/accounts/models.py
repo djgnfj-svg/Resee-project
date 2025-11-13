@@ -11,9 +11,6 @@ from django.utils.crypto import get_random_string
 
 from resee.models import BaseModel, TimestampMixin
 
-# Import services at module level - no circular import issues
-from accounts.subscription.services import PermissionService, SubscriptionService
-
 # Legal models removed - using static pages in frontend instead
 
 
@@ -127,41 +124,6 @@ class User(AbstractUser):
         can_resend, _ = service.can_resend_verification()
         return can_resend
     
-    def get_max_review_interval(self):
-        """Get maximum review interval based on subscription"""
-        return SubscriptionService(self).get_max_review_interval()
-
-    def has_active_subscription(self):
-        """Check if user has an active subscription"""
-        return SubscriptionService(self).has_active_subscription()
-
-    def can_upgrade_subscription(self):
-        """Check if user can upgrade subscription"""
-        return PermissionService(self).can_upgrade_subscription()
-
-    def get_content_limit(self):
-        """Get content creation limit based on subscription tier"""
-        return PermissionService(self).get_content_limit()
-
-    def can_create_content(self):
-        """Check if user can create more content based on subscription limit"""
-        return PermissionService(self).can_create_content()
-
-    def get_content_usage(self):
-        """Get content usage statistics for the user"""
-        return PermissionService(self).get_content_usage()
-
-    def get_category_limit(self):
-        """Get category creation limit based on subscription tier"""
-        return PermissionService(self).get_category_limit()
-
-    def can_create_category(self):
-        """Check if user can create more categories based on subscription limit"""
-        return PermissionService(self).can_create_category()
-
-    def get_category_usage(self):
-        """Get category usage statistics for the user"""
-        return PermissionService(self).get_category_usage()
 
 
 class SubscriptionTier(models.TextChoices):
