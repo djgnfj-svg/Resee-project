@@ -208,7 +208,7 @@ const ReviewPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
         <ReviewHeader
           remainingReviews={remainingReviews}
         />

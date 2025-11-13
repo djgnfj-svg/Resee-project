@@ -160,12 +160,12 @@ class TitleEvaluator(BaseAIService):
 - 내용과 전혀 무관
 
 **응답 형식 (JSON)**:
-{{{{
-  "score": 0-100 사이의 점수,
-  "is_correct": true (70점 이상) 또는 false (70점 미만),
-  "feedback": "구체적이고 건설적인 피드백 (2-3문장, 한국어)",
-  "auto_result": "remembered" (70점 이상) 또는 "forgot" (70점 미만)
-}}}}
+{{
+  "score": 0-100,
+  "is_correct": true or false,
+  "feedback": "피드백 메시지",
+  "auto_result": "remembered" or "forgot"
+}}
 
 **중요**:
 - 반드시 유효한 JSON 형식으로만 응답

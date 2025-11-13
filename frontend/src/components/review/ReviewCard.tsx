@@ -60,7 +60,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 break-words">
             {review.content.title}
           </h2>
           <div className="flex items-center gap-2">
@@ -100,7 +100,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 break-words">
             {review.content.title}
           </h2>
           <div className="flex items-center gap-2">
@@ -144,7 +144,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
             {/* User Answer */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">내 답변</h4>
-              <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{submittedAnswer}</p>
+              <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{submittedAnswer}</p>
             </div>
 
             {/* AI Evaluation */}
@@ -155,13 +155,13 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                   {Math.round(aiEvaluation.score)}점
                 </div>
               </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300">{aiEvaluation.feedback}</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{aiEvaluation.feedback}</p>
             </div>
 
             {/* Correct Answer */}
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">정답</h4>
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="prose prose-sm dark:prose-invert max-w-none break-words">
                 <ReactMarkdown>{review.content.content}</ReactMarkdown>
               </div>
             </div>
@@ -198,7 +198,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
           <div className="space-y-6">
             {/* Content */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="prose prose-sm dark:prose-invert max-w-none break-words">
                 <ReactMarkdown>{review.content.content}</ReactMarkdown>
               </div>
             </div>
@@ -211,7 +211,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                     key={idx}
                     onClick={() => onSelectChoice?.(choice)}
                     disabled={isSubmitting}
-                    className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${
+                    className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all break-words ${
                       selectedChoice === choice
                         ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-gray-900 dark:text-gray-100'
                         : 'border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-600 text-gray-700 dark:text-gray-300'
@@ -259,14 +259,14 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                   {aiEvaluation.is_correct ? '✓ 정답' : '✗ 오답'}
                 </span>
               </div>
-              <p className="text-gray-800 dark:text-gray-200 font-medium">{selectedChoice}</p>
+              <p className="text-gray-800 dark:text-gray-200 font-medium break-words">{selectedChoice}</p>
             </div>
 
             {/* Correct Answer */}
             {!aiEvaluation.is_correct && (
               <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">정답</h4>
-                <p className="text-green-700 dark:text-green-300 font-medium">{review.content.title}</p>
+                <p className="text-green-700 dark:text-green-300 font-medium break-words">{review.content.title}</p>
               </div>
             )}
           </div>
@@ -302,7 +302,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
           <div className="space-y-6">
             {/* Content */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="prose prose-sm dark:prose-invert max-w-none break-words">
                 <ReactMarkdown>{review.content.content}</ReactMarkdown>
               </div>
             </div>
@@ -336,7 +336,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
             {/* Content */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">내용</h4>
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="prose prose-sm dark:prose-invert max-w-none break-words">
                 <ReactMarkdown>{review.content.content}</ReactMarkdown>
               </div>
             </div>
@@ -344,7 +344,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
             {/* User Answer */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">내가 작성한 제목</h4>
-              <p className="text-gray-800 dark:text-gray-200 font-medium">{userTitle}</p>
+              <p className="text-gray-800 dark:text-gray-200 font-medium break-words">{userTitle}</p>
             </div>
 
             {/* AI Evaluation */}
@@ -355,7 +355,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                   {Math.round(aiEvaluation.score)}점
                 </div>
               </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300">{aiEvaluation.feedback}</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{aiEvaluation.feedback}</p>
             </div>
 
             {/* Correct Answer */}

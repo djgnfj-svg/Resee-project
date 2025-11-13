@@ -134,7 +134,7 @@ class BaseAIService(ABC):
 
         except json.JSONDecodeError as e:
             logger.error(f"{self.__class__.__name__}: JSON parsing failed: {e}")
-            logger.debug(f"Raw response: {response_text[:500]}...")
+            logger.error(f"Raw AI response: {response_text[:1000]}")
             return None
         except Exception as e:
             logger.error(f"{self.__class__.__name__}: Response parsing failed: {e}", exc_info=True)
