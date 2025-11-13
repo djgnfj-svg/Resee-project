@@ -2,6 +2,7 @@ import logging
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Count, Prefetch
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -104,18 +105,31 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'updated_at', 'title']
     ordering = ['-created_at']
     
-    # Query optimization configuration
-    select_related_fields = ['category', 'author']
-    prefetch_related_fields = ['review_history', 'review_schedules']
-    
     def get_queryset(self):
         queryset = super().get_queryset()
-        
+
+        # Import here to avoid circular imports
+        from review.models import ReviewSchedule
+
+        # Optimize queries with select_related and prefetch_related
+        queryset = queryset.select_related('category', 'author')
+
+        # Annotate review count to avoid N+1 queries
+        queryset = queryset.annotate(
+            review_count_annotated=Count('review_history', distinct=True)
+        )
+
+        # Prefetch review schedules filtered by current user
+        user_schedules = ReviewSchedule.objects.filter(user=self.request.user)
+        queryset = queryset.prefetch_related(
+            Prefetch('review_schedules', queryset=user_schedules, to_attr='user_review_schedules')
+        )
+
         # Category filter
         category_slug = self.request.query_params.get('category_slug', None)
         if category_slug:
             queryset = queryset.filter(category__slug=category_slug)
-            
+
         return queryset
     
     @swagger_auto_schema(
