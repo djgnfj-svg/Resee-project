@@ -21,6 +21,7 @@ const ExamsPage: React.FC = () => {
   const [showContentSelector, setShowContentSelector] = useState(false);
   const [contents, setContents] = useState<Content[]>([]);
   const [selectedContentIds, setSelectedContentIds] = useState<number[]>([]);
+  const [creatingTestMessage, setCreatingTestMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadTests();
@@ -70,11 +71,26 @@ const ExamsPage: React.FC = () => {
     try {
       setIsLoading(true);
       setError('');
+      setCreatingTestMessage('시험을 생성하고 있습니다...');
+
       const testData = { content_ids: selectedContentIds };
-      await weeklyTestAPI.createExam(testData);
-      await loadTests();
+
+      // 시험 생성 (preparing 상태로 생성됨)
+      const createdTest = await weeklyTestAPI.createExam(testData);
+
       setShowContentSelector(false);
       setSelectedContentIds([]);
+
+      // 문제 생성 완료까지 폴링
+      setCreatingTestMessage('AI가 문제를 생성하고 있습니다... (최대 1분 소요)');
+      await pollTestStatus(createdTest.id);
+
+      // 완료 후 목록 새로고침
+      setCreatingTestMessage('시험 생성이 완료되었습니다!');
+      await loadTests();
+
+      // 2초 후 메시지 제거
+      setTimeout(() => setCreatingTestMessage(null), 2000);
     } catch (error: any) {
       console.error('Failed to create test:', error);
 
@@ -96,9 +112,35 @@ const ExamsPage: React.FC = () => {
       }
 
       setError(errorMessage);
+      setCreatingTestMessage(null);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const pollTestStatus = async (testId: number) => {
+    const maxAttempts = 60; // 최대 60초 대기
+    const pollInterval = 1000; // 1초마다 확인
+
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        const test = await weeklyTestAPI.getExam(testId);
+
+        // preparing 상태가 아니면 완료
+        if (test.status !== 'preparing') {
+          return;
+        }
+
+        // 1초 대기
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+      } catch (error) {
+        console.error('Polling error:', error);
+        // 에러 발생 시 계속 시도
+      }
+    }
+
+    // 타임아웃 - 에러는 발생시키지 않고 그냥 진행
+    console.warn('Test creation polling timeout');
   };
 
   const handleContentToggle = (contentId: number) => {
@@ -261,6 +303,18 @@ const ExamsPage: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {creatingTestMessage && (
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-lg shadow-sm">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p className="text-blue-800 dark:text-blue-200">{creatingTestMessage}</p>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg shadow-sm">

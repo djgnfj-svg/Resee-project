@@ -35,27 +35,25 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         return WeeklyTestListSerializer
 
     def perform_create(self, serializer):
-        """시험 생성 시 자동으로 문제 생성"""
+        """시험 생성 시 자동으로 문제 생성 (비동기)"""
+        from .tasks import generate_exam_questions
+
         # content_ids는 serializer의 validated_data에 있음
         content_ids = serializer.validated_data.get('content_ids', [])
 
-        weekly_test = serializer.save(user=self.request.user)
+        # 시험 생성 (preparing 상태)
+        weekly_test = serializer.save(user=self.request.user, status='preparing')
 
         # 이미 문제가 생성되어 있으면 추가 생성하지 않음
         if weekly_test.questions.exists():
             logger.info(f"Test {weekly_test.id} already has questions, skipping generation")
+            weekly_test.status = 'pending'
+            weekly_test.save()
             return
 
-        # AI 사용 불가능하면 preparing 상태로 설정
-        if not self._is_ai_available():
-            weekly_test.status = 'preparing'
-            weekly_test.save()
-
-        # content_ids가 있으면 수동 선택, 없으면 자동 밸런싱
-        if content_ids:
-            self._generate_questions_from_ids(weekly_test, content_ids)
-        else:
-            self._generate_balanced_questions(weekly_test)
+        # Celery task로 비동기 문제 생성
+        logger.info(f"Queuing question generation task for test {weekly_test.id}")
+        generate_exam_questions.delay(weekly_test.id, content_ids if content_ids else None)
 
     def create(self, request, *args, **kwargs):
         """Create 메서드 오버라이드로 주간 제한 확인"""
@@ -80,7 +78,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
         # 구독 설정에서 주간 제한 확인
         subscription_settings = settings.SUBSCRIPTION_SETTINGS
-        user_tier = getattr(user, 'subscription_tier', 'FREE')
+        user_tier = user.subscription.tier.upper() if hasattr(user, 'subscription') else 'FREE'
         tier_limits = subscription_settings.get(f'{user_tier}_TIER_LIMITS', subscription_settings['FREE_TIER_LIMITS'])
         max_weekly_tests = tier_limits.get('max_exams_per_week', 1)
 

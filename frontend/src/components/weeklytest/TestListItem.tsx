@@ -61,6 +61,29 @@ const TestListItem: React.FC<TestListItemProps> = ({
 
   const statusConfig = getStatusConfig(test.status);
 
+  const getDisplayDate = () => {
+    let dateString = '';
+    let label = '';
+
+    if (test.status === 'completed' && test.completed_at) {
+      dateString = test.completed_at;
+      label = '완료일';
+    } else if (test.status === 'in_progress' && test.started_at) {
+      dateString = test.started_at;
+      label = '시작일';
+    } else {
+      dateString = test.created_at;
+      label = '생성일';
+    }
+
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${label}: ${year}.${month}.${day}`;
+  };
+
   return (
     <div className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700 p-6 hover:shadow-xl transition-all duration-200">
       {/* Top accent line */}
@@ -76,7 +99,7 @@ const TestListItem: React.FC<TestListItemProps> = ({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span>{test.start_date} ~ {test.end_date}</span>
+            <span>{getDisplayDate()}</span>
           </div>
 
           <div className="flex items-center flex-wrap gap-3 text-sm">
