@@ -2,13 +2,12 @@
 Production security and monitoring middleware for Resee
 """
 import logging
-import re
 import time
 
 from django.conf import settings
 from django.core.cache import cache
 from django.db import connection
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)
@@ -72,45 +71,3 @@ class RequestLoggingMiddleware(MiddlewareMixin):
                 )
         
         return response
-
-
-class SQLInjectionDetectionMiddleware(MiddlewareMixin):
-    """Detect potential SQL injection attempts"""
-    
-    SQL_INJECTION_PATTERNS = [
-        r"(\bunion\b.*\bselect\b)|(\bselect\b.*\bunion\b)",
-        r"(\bdrop\b.*\btable\b)|(\btable\b.*\bdrop\b)",
-        r"(\binsert\b.*\binto\b)|(\binto\b.*\binsert\b)",
-        r"(\bdelete\b.*\bfrom\b)|(\bfrom\b.*\bdelete\b)",
-        r"(\bupdate\b.*\bset\b)|(\bset\b.*\bupdate\b)",
-        r"(\bexec\b.*\bsp_\b)|(\bsp_\b.*\bexec\b)",
-        r"(\bor\b.*1.*=.*1)|(\band\b.*1.*=.*1)",
-        r"(\bor\b.*'.*'.*=.*'.*')|(\band\b.*'.*'.*=.*'.*')",
-        r"(\b--)|(\b#)|(\b/\*.*\*/)",
-        r"(\bxp_cmdshell\b)|(\bsp_executesql\b)",
-    ]
-    
-    def process_request(self, request):
-        # Check query parameters
-        for key, value in request.GET.items():
-            if self._is_sql_injection(value):
-                logger.critical(f"SQL injection attempt detected in GET param '{key}': {value}")
-                return HttpResponseForbidden("잘못된 요청입니다.")
-        
-        # Check POST data
-        if hasattr(request, 'POST'):
-            for key, value in request.POST.items():
-                if self._is_sql_injection(str(value)):
-                    logger.critical(f"SQL injection attempt detected in POST param '{key}': {value}")
-                    return HttpResponseForbidden("잘못된 요청입니다.")
-        
-        return None
-    
-    def _is_sql_injection(self, value):
-        value_lower = str(value).lower()
-        for pattern in self.SQL_INJECTION_PATTERNS:
-            if re.search(pattern, value_lower, re.IGNORECASE):
-                return True
-        return False
-
-

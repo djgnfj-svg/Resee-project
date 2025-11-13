@@ -8,7 +8,6 @@ from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
-# Celery removed - using synchronous processing
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -204,7 +203,10 @@ COMPANY_NAME = os.environ.get('COMPANY_NAME', 'Resee')
 SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@localhost')
 
 # Email verification settings
-EMAIL_VERIFICATION_TIMEOUT_DAYS = int(os.environ.get('EMAIL_VERIFICATION_TIMEOUT_DAYS', 1))
+try:
+    EMAIL_VERIFICATION_TIMEOUT_DAYS = int(os.environ.get('EMAIL_VERIFICATION_TIMEOUT_DAYS', 1))
+except (ValueError, TypeError):
+    EMAIL_VERIFICATION_TIMEOUT_DAYS = 1
 
 # Subscription settings
 SUBSCRIPTION_ADMIN_PASSWORD = os.environ.get('SUBSCRIPTION_ADMIN_PASSWORD')
@@ -254,22 +256,6 @@ CACHES = {
         },
         'KEY_PREFIX': 'throttle',
         'TIMEOUT': 3600,  # 1 hour default
-    },
-    # Redis cache for API responses
-    'api': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get('REDIS_URL', 'redis://redis:6379/1'),  # Database 1
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_CLASS_KWARGS': {
-                'max_connections': 50,
-                'retry_on_timeout': True,
-            },
-            'SOCKET_CONNECT_TIMEOUT': 5,
-            'SOCKET_TIMEOUT': 5,
-        },
-        'KEY_PREFIX': 'api',
-        'TIMEOUT': 300,  # 5 minutes default
     }
 }
 
@@ -389,11 +375,6 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        'analytics': {
-            'handlers': ['console', 'file_django'],
-            'level': 'INFO',
-            'propagate': False,
-        },
     },
     'root': {
         'handlers': ['console', 'file_django'],
@@ -415,7 +396,7 @@ HEALTH_CHECK = {
 
 # Feature Flags
 FEATURE_FLAGS = {
-    'ENABLE_WEEKLY_TESTS': True,
+    'ENABLE_EXAMS': True,
     'ENABLE_ANALYTICS': True,
     'ENABLE_PAYMENT_SYSTEM': True,
 }
@@ -431,11 +412,6 @@ SUBSCRIPTION_SETTINGS = {
     'BASIC_TIER_LIMITS': {
         'max_content': 200,
         'review_interval_days': 30,
-        'max_exams_per_week': 1,
-    },
-    'PREMIUM_TIER_LIMITS': {
-        'max_content': 1000,
-        'review_interval_days': 60,
         'max_exams_per_week': 1,
     },
     'PRO_TIER_LIMITS': {
