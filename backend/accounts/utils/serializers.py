@@ -345,21 +345,8 @@ class NotificationPreferenceSerializer(serializers.ModelSerializer):
             'email_notifications_enabled',
             'daily_reminder_enabled',
             'daily_reminder_time',
-            'evening_reminder_enabled',
-            'evening_reminder_time',
-            'weekly_summary_enabled',
-            'weekly_summary_day',
-            'weekly_summary_time',
         ]
 
     def validate_daily_reminder_time(self, value):
         """Validate daily reminder time format"""
-        return value
-
-    def validate_evening_reminder_time(self, value):
-        """Validate evening reminder time format"""
-        return value
-
-    def validate_weekly_summary_time(self, value):
-        """Validate weekly summary time format"""
         return value
