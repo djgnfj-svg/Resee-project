@@ -18,22 +18,9 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 
-# Beat schedule configuration
-app.conf.beat_schedule = {
-    'send-daily-review-reminders': {
-        'task': 'review.tasks.send_daily_review_reminders',
-        'schedule': crontab(hour=9, minute=0),  # 매일 오전 9시
-    },
-    'send-evening-review-reminders': {
-        'task': 'review.tasks.send_evening_review_reminders',
-        'schedule': crontab(hour=20, minute=0),  # 매일 오후 8시
-    },
-    'backup-database': {
-        'task': 'review.backup_tasks.backup_database',
-        'schedule': crontab(hour=3, minute=0),  # 매일 새벽 3시
-        'kwargs': {'environment': os.environ.get('ENVIRONMENT', 'production')},
-    },
-}
+# Note: Using DatabaseScheduler (django-celery-beat) for dynamic task scheduling
+# All periodic tasks are managed through Django admin or PeriodicTask model
+# app.conf.beat_schedule is not used
 
 app.conf.timezone = 'Asia/Seoul'
 

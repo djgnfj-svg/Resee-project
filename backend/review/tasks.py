@@ -22,28 +22,19 @@ logger = logging.getLogger(__name__)
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_hourly_notifications(self):
     """
-    매시간 0분에 실행되는 통합 알림 태스크
+    매시간 0분에 실행되는 알림 태스크
     현재 시간에 맞춰 사용자별 설정된 시간에 알림 발송
     """
     try:
         current_time = timezone.now()
         current_hour = current_time.hour
-        current_weekday = current_time.weekday()  # 0=월요일, 6=일요일
 
-        logger.info(f"시간별 알림 처리 시작 - 현재 시간: {current_hour}시")
+        logger.info(f"일일 알림 처리 시작 - 현재 시간: {current_hour}시")
 
-        # 1. 일일 복습 알림 처리
+        # 일일 복습 알림 처리
         daily_count = send_daily_reminders_for_hour(current_hour)
 
-        # 2. 저녁 알림 처리
-        evening_count = send_evening_reminders_for_hour(current_hour)
-
-        # 3. 주간 요약 처리 (월요일에만)
-        weekly_count = 0
-        if current_weekday == 0:  # 월요일
-            weekly_count = send_weekly_summaries_for_hour(current_hour)
-
-        result_message = f"시간별 알림 완료 - 일일: {daily_count}, 저녁: {evening_count}, 주간: {weekly_count}"
+        result_message = f"일일 알림 완료 - 발송: {daily_count}건"
         logger.info(result_message)
         return result_message
 
@@ -97,61 +88,6 @@ def send_daily_reminders_for_hour(hour: int):
 
     except Exception as e:
         logger.error(f"Error in send_daily_reminders_for_hour({hour}): {str(e)}")
-        return 0
-
-
-def send_evening_reminders_for_hour(hour: int):
-    """지정된 시간에 저녁 알림을 받을 사용자들에게 발송"""
-    try:
-        today = timezone.now().date()
-
-        # 해당 시간에 저녁 알림을 받을 사용자들의 미완료 스케줄 조회
-        pending_schedules = ReviewSchedule.objects.filter(
-            next_review_date__date=today,
-            is_active=True,
-            user__notification_preference__email_notifications_enabled=True,
-            user__notification_preference__evening_reminder_enabled=True,
-            user__notification_preference__evening_reminder_time__hour=hour
-        ).select_related(
-            'user', 'content', 'user__notification_preference'
-        ).prefetch_related('content__category')
-
-        # 오늘 이미 복습 완료한 콘텐츠 확인
-        today_completed_content_ids = ReviewHistory.objects.filter(
-            review_date__date=today
-        ).values_list('content_id', flat=True)
-
-        # 아직 완료하지 않은 스케줄만 필터링
-        pending_schedules = pending_schedules.exclude(
-            content_id__in=today_completed_content_ids
-        )
-
-        # 사용자별로 그룹화
-        user_schedules = {}
-        for schedule in pending_schedules:
-            user_id = schedule.user.id
-            if user_id not in user_schedules:
-                user_schedules[user_id] = []
-            user_schedules[user_id].append(schedule)
-
-        sent_count = 0
-        # 각 사용자에게 저녁 리마인더 발송
-        for user_id, schedules in user_schedules.items():
-            try:
-                send_individual_evening_reminder.delay(
-                    user_id,
-                    [s.id for s in schedules]
-                )
-                sent_count += 1
-            except Exception as e:
-                logger.error(f"Failed to queue evening reminder for user {user_id}: {str(e)}")
-
-        if sent_count > 0:
-            logger.info(f"저녁 알림 {sent_count}개 큐잉 완료 - {hour}시")
-        return sent_count
-
-    except Exception as e:
-        logger.error(f"Error in send_evening_reminders_for_hour({hour}): {str(e)}")
         return 0
 
 
@@ -213,60 +149,6 @@ def send_individual_review_reminder(self, user_id: int, schedule_ids: List[int])
         return f"User with id {user_id} does not exist"
     except Exception as exc:
         logger.error(f"Error sending reminder to user {user_id}: {str(exc)}")
-        raise self.retry(exc=exc)
-
-
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def send_individual_evening_reminder(self, user_id: int, schedule_ids: List[int]):
-    """
-    개별 사용자에게 저녁 리마인더 이메일 발송
-    """
-    try:
-        user = User.objects.get(id=user_id)
-        schedules = ReviewSchedule.objects.filter(
-            id__in=schedule_ids,
-            user=user
-        ).select_related('content').prefetch_related('content__category')
-
-        if not schedules.exists():
-            return f"No pending schedules for user {user.email}"
-
-        # 이메일 컨텍스트 준비
-        context = {
-            'user': user,
-            'schedules': schedules,
-            'total_reviews': schedules.count(),
-            'review_url': f"{settings.FRONTEND_URL}/review",
-            'unsubscribe_url': user.notification_preference.generate_unsubscribe_url(),
-            'company_name': getattr(settings, 'COMPANY_NAME', 'Resee'),
-            'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@resee.com'),
-            'is_evening_reminder': True,
-        }
-
-        # 이메일 제목
-        subject = f"[{context['company_name']}] 오늘의 복습을 잊지 마세요! ({schedules.count()}개 남음)"
-
-        # 이메일 발송
-        email_service = EmailService()
-        success = email_service.send_template_email(
-            template_name='daily_review_notification',  # 같은 템플릿 사용, is_evening_reminder로 구분
-            context=context,
-            subject=subject,
-            recipient_email=user.email
-        )
-
-        if success:
-            result_message = f"Evening reminder sent to {user.email} for {schedules.count()} items"
-            logger.info(result_message)
-            return result_message
-        else:
-            raise Exception("Email sending failed")
-
-    except User.DoesNotExist:
-        logger.error(f"User with id {user_id} does not exist")
-        return f"User with id {user_id} does not exist"
-    except Exception as exc:
-        logger.error(f"Error sending evening reminder to user {user_id}: {str(exc)}")
         raise self.retry(exc=exc)
 
 
