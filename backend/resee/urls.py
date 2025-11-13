@@ -53,8 +53,7 @@ urlpatterns = [
     # API endpoints
     path('api/accounts/', include('accounts.urls')),  # includes legal endpoints
     path('api/', include('content.urls')),  # contents/, categories/ at root level
-    path('api/review/', include('review.urls')),
-    path('api/analytics/', include('analytics.urls')),  # includes BI endpoints
+    path('api/review/', include('review.urls')),  # includes dashboard stats
     path('api/exams/', include('exams.urls')),  # exam functionality (previously weekly-test)
 ]
 

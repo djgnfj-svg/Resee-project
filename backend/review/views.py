@@ -19,7 +19,7 @@ from resee.cache_utils import invalidate_cache
 from .models import ReviewHistory, ReviewSchedule
 from .serializers import ReviewHistorySerializer, ReviewScheduleSerializer
 from .utils import (calculate_success_rate, get_review_intervals,
-                    get_today_reviews_count)
+                    get_today_reviews_count, get_pending_reviews_count)
 from accounts.subscription.services import SubscriptionService
 
 logger = logging.getLogger(__name__)
@@ -696,5 +696,60 @@ class CategoryReviewStatsView(APIView):
                     'success_rate': success_rate,
                     'total_reviews_30_days': total_reviews_30_days,
                 }
-        
+
         return Response(result)
+
+
+class DashboardStatsView(APIView):
+    """
+    대시보드 통계
+
+    대시보드에 표시할 기본 학습 통계를 제공합니다.
+    """
+
+    @swagger_auto_schema(
+        operation_summary="대시보드 통계 조회",
+        operation_description="""
+        대시보드에 표시할 기본 통계를 제공합니다.
+
+        **포함 정보:**
+        - today_reviews: 오늘 완료한 복습 수
+        - pending_reviews: 대기 중인 복습 수
+        - total_content: 총 콘텐츠 수
+        - success_rate: 30일 성공률 (%)
+        - total_reviews_30_days: 최근 30일간 총 복습 수
+        """,
+        responses={200: openapi.Response(
+            description="대시보드 통계",
+            examples={
+                "application/json": {
+                    "today_reviews": 5,
+                    "pending_reviews": 12,
+                    "total_content": 45,
+                    "success_rate": 87.5,
+                    "total_reviews_30_days": 120
+                }
+            }
+        )}
+    )
+    def get(self, request):
+        """Get basic dashboard statistics"""
+        from content.models import Content
+
+        user = request.user
+
+        # Basic counts
+        today_reviews = get_today_reviews_count(user)
+        pending_reviews = get_pending_reviews_count(user)
+        total_content = Content.objects.filter(author=user).count()
+
+        # 30-day success rate
+        success_rate, total_reviews_30_days, _ = calculate_success_rate(user, days=30)
+
+        return Response({
+            'today_reviews': today_reviews,
+            'pending_reviews': pending_reviews,
+            'total_content': total_content,
+            'success_rate': success_rate,
+            'total_reviews_30_days': total_reviews_30_days,
+        })

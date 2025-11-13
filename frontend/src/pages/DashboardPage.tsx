@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { analyticsAPI, contentAPI } from '../utils/api';
+import { reviewAPI, contentAPI } from '../utils/api';
 import { DashboardData, ContentUsage, CategoryUsage } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyDashboard from '../components/dashboard/EmptyDashboard';
@@ -14,7 +14,7 @@ const SimpleDashboard: React.FC = () => {
 
   const { data: dashboardData, isLoading, error, refetch } = useQuery<DashboardData>({
     queryKey: ['dashboard', user?.id],
-    queryFn: analyticsAPI.getDashboard,
+    queryFn: reviewAPI.getDashboard,
     enabled: !!user,
   });
 

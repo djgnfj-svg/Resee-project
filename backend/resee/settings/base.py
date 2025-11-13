@@ -35,8 +35,7 @@ INSTALLED_APPS = [
     # Local apps
     'accounts',  # includes legal functionality
     'content',
-    'review',
-    'analytics',  # includes business intelligence
+    'review',  # includes review scheduling and dashboard analytics
     'exams',  # exam functionality (previously weekly_test)
 ]
 

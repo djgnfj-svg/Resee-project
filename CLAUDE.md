@@ -84,7 +84,6 @@ The system implements scientifically-proven intervals for optimal memory retenti
    → Update interval_index
    → Calculate next review date (Ebbinghaus curve)
    → Store review history
-   → Update analytics
 
 3. Subscription Check
    Review submission
@@ -210,15 +209,26 @@ When testing features, you MUST:
 #### Backend Critical Files
 ```
 backend/
+├── ai_services/                       # Centralized AI services (v2.0.0)
+│   ├── base.py                        # BaseAIService (common logic)
+│   ├── validators/
+│   │   └── content_validator.py       # Content validation (claude-3-7-sonnet)
+│   ├── evaluators/
+│   │   ├── answer_evaluator.py        # Answer evaluation (claude-3-haiku)
+│   │   └── title_evaluator.py         # Title evaluation (claude-3-haiku)
+│   ├── generators/
+│   │   ├── mc_generator.py            # MC generation (claude-3-haiku)
+│   │   └── question_generator.py      # Question generation (LangChain + LangGraph)
+│   └── graphs/
+│       ├── distractor_generation_graph.py  # High-quality distractor generation
+│       └── weekly_test_balance_graph.py    # Test content balancing
 ├── review/
 │   ├── utils.py                       # Ebbinghaus algorithm, interval calculations
-│   ├── ai_evaluation.py               # AI answer evaluation (claude-3-haiku)
 │   ├── tasks.py                       # Email reminder tasks
 │   ├── backup_tasks.py                # Automated database backups
 │   └── services.py                    # Review business logic
 ├── content/
-│   ├── signals.py                     # ReviewSchedule auto-creation
-│   └── ai_validation.py               # AI content validation (claude-3-5-sonnet)
+│   └── signals.py                     # ReviewSchedule auto-creation
 ├── accounts/
 │   ├── models.py                      # User, Subscription, PaymentHistory, BillingSchedule
 │   ├── auth/
@@ -239,8 +249,8 @@ backend/
 │   │   └── log_views.py               # Log viewing endpoints
 │   └── legal/
 │       └── legal_views.py             # Terms, privacy, GDPR compliance
-├── weekly_test/
-│   └── ai_service.py                  # AI question generation (claude-3-haiku)
+├── exams/
+│   └── views.py                       # Exam management (previously weekly_test)
 ├── utils/
 │   ├── slack_notifications.py         # Slack alert integration
 │   └── monitoring.py                  # Metrics tracking utilities
@@ -266,10 +276,9 @@ frontend/src/
 │   ├── api/
 │   │   ├── auth.ts                    # Authentication API
 │   │   ├── content.ts                 # Content API
-│   │   ├── review.ts                  # Review API
+│   │   ├── review.ts                  # Review API (includes dashboard analytics)
 │   │   ├── subscription.ts            # Subscription API
-│   │   ├── analytics.ts               # Analytics API
-│   │   └── weeklyTest.ts              # Weekly test API
+│   │   └── exams.ts                   # Exam API (previously weeklyTest.ts)
 │   ├── sw-registration.ts             # PWA service worker setup
 │   ├── logger.ts                      # Client-side logging
 │   └── permissions.ts                 # Permission checks
@@ -287,7 +296,7 @@ frontend/src/
 │   ├── CreateContentPage.tsx          # Content creation
 │   ├── EditContentPage.tsx            # Content editing
 │   ├── ReviewPage.tsx                 # Review interface
-│   ├── WeeklyTestPage.tsx             # Weekly tests
+│   ├── ExamsPage.tsx                  # Exams (previously WeeklyTestPage.tsx)
 │   ├── ProfilePage.tsx                # User profile
 │   ├── SettingsPage.tsx               # User settings
 │   ├── SubscriptionPage.tsx           # Subscription tiers, pricing
@@ -380,9 +389,8 @@ accounts/
 └── health/                  # Health checks (/api/health/, /api/health/detailed/)
 
 content/                     # Learning material CRUD, AI validation
-review/                      # Review system, scheduling, AI evaluation, backups
-analytics/                   # Performance metrics, progress tracking
-weekly_test/                 # AI-generated tests, question generation
+review/                      # Review system, scheduling, AI evaluation, backups, dashboard analytics
+exams/                       # AI-generated tests, question generation (previously weekly_test)
 utils/                       # Slack notifications, monitoring utilities
 ```
 
@@ -465,7 +473,6 @@ Frontend (ReviewPage.tsx)
 → Backend updates interval_index
 → calculate_next_review_date()
 → Create ReviewHistory record
-→ Update analytics
 → Return next review date
 ```
 
@@ -618,18 +625,43 @@ User → Vercel (Frontend)
 
 ### Overview
 
-All AI features use **Anthropic Claude API** with different models optimized for specific tasks:
+All AI features use **Anthropic Claude API** with centralized architecture in `backend/ai_services/`:
+
+**Centralized Structure** (v2.0.0):
+```
+backend/ai_services/
+├── base.py                        # BaseAIService (common logic)
+├── validators/
+│   └── content_validator.py       # Content validation (Claude 3.7 Sonnet)
+├── evaluators/
+│   ├── answer_evaluator.py        # Answer evaluation (Claude 3 Haiku)
+│   └── title_evaluator.py         # Title evaluation (Claude 3 Haiku)
+├── generators/
+│   ├── mc_generator.py            # Multiple choice generation (Claude 3 Haiku)
+│   └── question_generator.py      # Question generation (LangChain + LangGraph)
+└── graphs/
+    ├── distractor_generation_graph.py  # High-quality distractor generation
+    └── weekly_test_balance_graph.py    # Test content balancing
+```
+
+**Key Features**:
+- **Unified Architecture**: All services inherit from `BaseAIService`
+- **LangChain Integration**: Consistent API across all services
+- **Common Utilities**: Shared JSON parsing, error handling, logging
+- **LangGraph Workflows**: Advanced multi-step AI processes
 
 **Models Used**:
-1. **Content Validation**: `claude-3-5-sonnet-20241022` (high accuracy)
+1. **Content Validation**: `claude-3-7-sonnet-20250219` (high accuracy)
 2. **Answer Evaluation**: `claude-3-haiku-20240307` (cost-efficient)
-3. **Question Generation**: `claude-3-haiku-20240307` (cost-efficient)
+3. **Title Evaluation**: `claude-3-haiku-20240307` (cost-efficient)
+4. **MC Generation**: `claude-3-haiku-20240307` (cost-efficient, creative)
+5. **Question Generation**: `claude-3-haiku-20240307` + LangGraph (high quality)
 
 ### 1. Content Validation
 
-**File**: `backend/content/ai_validation.py`
+**File**: `backend/ai_services/validators/content_validator.py`
 
-**Model**: `claude-3-5-sonnet-20241022` (temperature: 0.3, max_tokens: 2000)
+**Model**: `claude-3-7-sonnet-20250219` (temperature: 0.3, max_tokens: 2000)
 
 **Validation Checks**:
 - **Factual Accuracy** (0-100): Objective correctness, misinformation detection
@@ -658,16 +690,21 @@ All AI features use **Anthropic Claude API** with different models optimized for
 
 **Usage**:
 ```python
-from content.ai_validation import validate_content
+from ai_services import validate_content, content_validator
 
+# Function interface (backward compatible)
 result = validate_content(title="Python Basics", content="...")
 if result["is_valid"]:
     # Proceed with content creation
+
+# Class interface (recommended)
+if content_validator.is_available():
+    result = content_validator.validate_content(title="...", content="...")
 ```
 
 ### 2. Answer Evaluation
 
-**File**: `backend/review/ai_evaluation.py`
+**File**: `backend/ai_services/evaluators/answer_evaluator.py`
 
 **Model**: `claude-3-haiku-20240307` (temperature: 0.3, max_tokens: 500)
 
@@ -690,9 +727,9 @@ if result["is_valid"]:
 }
 ```
 
-**Singleton Instance**:
+**Usage**:
 ```python
-from review.ai_evaluation import ai_answer_evaluator
+from ai_services import ai_answer_evaluator
 
 if ai_answer_evaluator.is_available():
     result = ai_answer_evaluator.evaluate_answer(
@@ -702,15 +739,64 @@ if ai_answer_evaluator.is_available():
     )
 ```
 
-### 3. Question Generation
+### 3. Title Evaluation
 
-**File**: `backend/weekly_test/ai_service.py`
+**File**: `backend/ai_services/evaluators/title_evaluator.py`
 
-**Model**: `claude-3-haiku-20240307` (temperature: 0.3, max_tokens: 1000)
+**Model**: `claude-3-haiku-20240307` (temperature: 0.3, max_tokens: 500)
+
+**Features**:
+- **Semantic Similarity**: Compares user's guessed title with actual title
+- **Content Alignment**: Checks if title matches content
+- **Scoring**: 0-100 based on understanding and similarity
+
+**Usage**:
+```python
+from ai_services import ai_title_evaluator
+
+if ai_title_evaluator.is_available():
+    result = ai_title_evaluator.evaluate_title(
+        content="Content body...",
+        user_title="User's guess",
+        actual_title="Actual title"
+    )
+```
+
+### 4. Multiple Choice Generation
+
+**File**: `backend/ai_services/generators/mc_generator.py`
+
+**Model**: `claude-3-haiku-20240307` (temperature: 0.7, max_tokens: 500)
+
+**Features**:
+- Generates 4-choice quiz from content
+- User sees content and chooses correct title
+- Creative distractors (higher temperature)
+
+**Usage**:
+```python
+from ai_services import mc_generator, generate_multiple_choice_options
+
+# Function interface
+result = generate_multiple_choice_options(title="...", content="...")
+
+# Class interface
+if mc_generator.is_available():
+    result = mc_generator.generate_multiple_choice_options(title="...", content="...")
+```
+
+### 5. Question Generation (LangChain + LangGraph)
+
+**File**: `backend/ai_services/generators/question_generator.py`
+
+**Model**: `claude-3-haiku-20240307` (temperature: 0.3, max_tokens: 800)
+
+**Architecture**:
+- **LangChain**: Generates correct answer and question text
+- **LangGraph**: Generates high-quality distractors with iterative improvement
 
 **Question Types**:
-- **Multiple Choice**: 4 options, one correct answer
-- **True/False**: O/X format
+- **Multiple Choice**: 4 options with pedagogically meaningful distractors
 
 **Response Format**:
 ```python
@@ -728,9 +814,9 @@ if ai_answer_evaluator.is_available():
 - Multiple choice: Must have 4 choices, answer in choices
 - True/false: Answer normalized to O/X
 
-**Singleton Instance**:
+**Usage**:
 ```python
-from weekly_test.ai_service import ai_question_generator
+from ai_services import ai_question_generator
 
 if ai_question_generator.is_available():
     question = ai_question_generator.generate_question(content)
@@ -738,6 +824,23 @@ if ai_question_generator.is_available():
     # Batch generation
     questions = ai_question_generator.generate_batch_questions(content_list)
 ```
+
+### BaseAIService
+
+**File**: `backend/ai_services/base.py`
+
+**Common Functionality**:
+- API key validation and initialization
+- LangChain/Anthropic SDK client setup
+- JSON response parsing (brace counting method)
+- Error handling and logging
+- Required field validation
+
+**Benefits**:
+- Eliminates code duplication across services
+- Consistent error handling and logging
+- Unified initialization pattern
+- Easy to extend with new AI services
 
 ### AI Service Configuration
 
@@ -761,7 +864,10 @@ ANTHROPIC_API_KEY=sk-ant-api...  # Required
 **Requirements**:
 ```python
 anthropic==0.39.0
-httpx==0.27.0  # For Toss Payments, compatible with Anthropic
+langchain-anthropic  # LangChain integration
+langchain-core       # Core LangChain functionality
+langgraph           # Multi-step AI workflows
+httpx==0.27.0       # For Toss Payments, compatible with Anthropic
 ```
 
 ---
@@ -886,9 +992,8 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id (optional)
 - `GET /api/health/` - Basic health check
 - `GET /api/health/detailed/` - Detailed system health (DB, Redis, Celery)
 
-**Analytics**:
-- `GET /api/analytics/stats/` - User learning stats
-- `GET /api/analytics/progress/` - Progress over time
+**Dashboard Analytics**:
+- `GET /api/review/dashboard/` - Dashboard statistics (today_reviews, pending_reviews, total_content, success_rate)
 
 ### Security Configuration
 
@@ -1009,6 +1114,25 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id (optional)
 
 ## Recent Changes
 
+### App Rename: weekly_test → exams (2025-11-13)
+
+**Comprehensive Refactoring**:
+- ✅ Backend: Renamed Django app from `weekly_test` to `exams`
+- ✅ Backend: Updated `INSTALLED_APPS` configuration
+- ✅ Backend: Updated URL patterns (`/api/weekly-test/` → `/api/exams/`)
+- ✅ Backend: Updated subscription settings (`max_weekly_tests_per_week` → `max_exams_per_week`)
+- ✅ Backend: Preserved database tables using `app_label = 'weekly_test'` (no migrations required)
+- ✅ Frontend: Renamed page component (`WeeklyTestPage.tsx` → `ExamsPage.tsx`)
+- ✅ Frontend: Renamed API module (`weeklyTest.ts` → `exams.ts`)
+- ✅ Frontend: Updated routing (`/weekly-test` → `/exams`)
+- ✅ Frontend: Updated all navigation links in Layout, DashboardPage, NotFoundPage
+- ✅ Documentation: Updated CLAUDE.md references
+
+**Backward Compatibility**:
+- Type aliases maintained (`WeeklyTest`, `weeklyTestAPI` still available)
+- Database tables unchanged (using `app_label` meta option)
+- API endpoints fully migrated to new naming
+
 ### Production Deployment (2025-11-11)
 
 **AWS Cloud Migration**:
@@ -1053,7 +1177,7 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id (optional)
 **AI Enhancements**:
 - Added invalid answer detection (spam → 0 points)
 - Fixed AI service initialization (httpx compatibility)
-- Improved weekly test question generation
+- Improved exam question generation
 - Documented AI models: claude-3-5-sonnet (validation), claude-3-haiku (evaluation, questions)
 
 **Bug Fixes**:

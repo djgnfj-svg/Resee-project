@@ -4,7 +4,8 @@ import {
   ReviewHistory,
   CompleteReviewData,
   CreateReviewHistoryData,
-  PaginatedResponse
+  PaginatedResponse,
+  DashboardData
 } from '../../types';
 
 export const reviewAPI = {
@@ -43,6 +44,11 @@ export const reviewAPI = {
 
   getCategoryStats: async (): Promise<Record<string, any>> => {
     const response = await api.get('/review/category-stats/');
+    return response.data;
+  },
+
+  getDashboard: async (): Promise<DashboardData> => {
+    const response = await api.get('/review/dashboard/');
     return response.data;
   },
 };
