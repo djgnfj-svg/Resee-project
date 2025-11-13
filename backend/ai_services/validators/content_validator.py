@@ -124,22 +124,22 @@ class ContentValidator(BaseAIService):
    - 점수: 0-100 (100점 만점)
 
 **응답 형식 (JSON만 반환, 다른 텍스트 없이):**
-{{{{
+{{
   "is_valid": true/false (모든 점수가 70점 이상이면 true),
-  "factual_accuracy": {{{{
+  "factual_accuracy": {{
     "score": 0-100,
     "issues": ["문제점1", "문제점2", ...] (없으면 빈 배열)
-  }}}},
-  "logical_consistency": {{{{
+  }},
+  "logical_consistency": {{
     "score": 0-100,
     "issues": ["문제점1", "문제점2", ...] (없으면 빈 배열)
-  }}}},
-  "title_relevance": {{{{
+  }},
+  "title_relevance": {{
     "score": 0-100,
     "issues": ["문제점1", "문제점2", ...] (없으면 빈 배열)
-  }}}},
+  }},
   "overall_feedback": "전체 평가 요약 (2-3문장)"
-}}}}
+}}
 
 **평가 기준:**
 - 90-100점: 매우 우수, 문제 없음

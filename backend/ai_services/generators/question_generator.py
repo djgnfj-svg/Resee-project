@@ -162,18 +162,18 @@ class QuestionGenerator(BaseAIService):
 4. 정답은 완전하고 정확하게
 
 **응답 형식 (JSON만, 다른 텍스트 없이):**
-{{{{
+{{
   "question": "명확한 질문 또는 빈칸 완성 문장",
   "answer": "완전하고 정확한 정답 (문장 형태)",
   "explanation": "정답 근거와 핵심 개념 설명 (2-3문장)"
-}}}}
+}}
 
 예시:
-{{{{
+{{
   "question": "Python 리스트의 핵심 특징으로 가장 적절한 것은?",
   "answer": "리스트는 mutable하여 생성 후에도 요소를 자유롭게 추가, 삭제, 수정할 수 있다",
   "explanation": "리스트는 가변(mutable) 자료구조로, 생성 후에도 내용을 변경할 수 있습니다. 이는 튜플(immutable)과 구분되는 핵심 특징입니다."
-}}}}
+}}
 """)
 
     def generate_batch_questions(self, contents: List) -> List[Dict]:

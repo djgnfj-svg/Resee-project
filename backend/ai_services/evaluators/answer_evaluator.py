@@ -162,12 +162,12 @@ class AnswerEvaluator(BaseAIService):
 - 90-100점: 핵심 개념을 완벽히 이해하고 세부사항까지 정확하게 설명
 
 **응답 형식 (JSON만, 다른 텍스트 없이):**
-{{{{
+{{
   "score": 0-100 사이의 점수,
   "evaluation": "excellent" (90-100점), "good" (70-89점), "fair" (50-69점), "poor" (0-49점) 중 하나,
   "feedback": "구체적이고 건설적인 피드백 (2-3문장, 한국어)",
   "auto_result": "remembered" (70점 이상) 또는 "forgot" (70점 미만)
-}}}}
+}}
 
 **중요:**
 - 반드시 유효한 JSON 형식으로만 응답
