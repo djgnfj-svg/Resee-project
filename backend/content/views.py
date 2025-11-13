@@ -114,9 +114,9 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         # Optimize queries with select_related and prefetch_related
         queryset = queryset.select_related('category', 'author')
 
-        # Annotate review count to avoid N+1 queries
+        # Annotate review count to avoid N+1 queries (성공한 복습만 카운트)
         queryset = queryset.annotate(
-            review_count_annotated=Count('review_history', distinct=True)
+            review_count_annotated=Count('review_history', filter=models.Q(review_history__result='remembered'), distinct=True)
         )
 
         # Prefetch review schedules filtered by current user
@@ -189,7 +189,10 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
                 'message': '더 많은 콘텐츠를 생성하려면 구독을 업그레이드하세요'
             }, status=status.HTTP_402_PAYMENT_REQUIRED)
 
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        logger.info(f"Content created for user {user.id}")
+
+        return response
     
     @swagger_auto_schema(
         operation_summary="콘텐츠 상세 조회",
@@ -206,7 +209,9 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         responses={200: ContentSerializer()}
     )
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+        response = super().update(request, *args, **kwargs)
+        logger.info(f"Content updated for user {request.user.id}")
+        return response
     
     @swagger_auto_schema(
         operation_summary="콘텐츠 삭제",
@@ -214,7 +219,9 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         responses={204: "삭제 완료"}
     )
     def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
+        response = super().destroy(request, *args, **kwargs)
+        logger.info(f"Content deleted for user {request.user.id}")
+        return response
 
     @swagger_auto_schema(
         operation_summary="콘텐츠 AI 검증",

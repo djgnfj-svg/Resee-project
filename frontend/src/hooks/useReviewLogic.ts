@@ -72,8 +72,9 @@ export const useReviewLogic = (
 
       setLocalReviews([...reviews]);
       setTotalSchedules(totalCount);
+      setReviewsCompleted(0); // 세션 시작 시 0으로 초기화
     }
-  }, [reviewData, setTotalSchedules]);
+  }, [reviewData, setTotalSchedules, setReviewsCompleted]);
 
   // Move current card to end of array (for "forgot" case)
   const moveCurrentCardToEnd = useCallback(() => {
@@ -121,25 +122,22 @@ export const useReviewLogic = (
     mutationFn: ({ scheduleId, data }: { scheduleId: number; data: Omit<import('../types').CompleteReviewData, 'content_id'> }) =>
       reviewAPI.completeReview(scheduleId, data),
     onSuccess: async (responseData, variables) => {
-      // 주관식 평가 (descriptive_answer가 있음): 카드 이동 안함
-      // 사용자가 "다음으로" 버튼 눌렀을 때 이동
-      if (variables.data.descriptive_answer && variables.data.descriptive_answer.length > 0) {
-        // 주관식은 "다음으로" 버튼에서 reviewsCompleted 증가
-        // Invalidate dashboard to update stats
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      // AI 평가 모드(descriptive, multiple_choice, subjective): handleNextAfterEvaluation에서 처리
+      // 카드 이동 및 카운트는 사용자가 "다음으로" 버튼 눌렀을 때
+      const hasDescriptiveAnswer = variables.data.descriptive_answer && variables.data.descriptive_answer.length > 0;
+      const hasSelectedChoice = variables.data.selected_choice && variables.data.selected_choice.length > 0;
+      const hasUserTitle = variables.data.user_title && variables.data.user_title.length > 0;
 
-        // 토스트는 ReviewPage에서 처리
+      if (hasDescriptiveAnswer || hasSelectedChoice || hasUserTitle) {
+        // AI 평가 모드: ReviewPage의 handleNextAfterEvaluation에서 카운트 처리
         return;
       }
 
-      // 객관식 평가: 기존 로직
+      // Objective 모드(기억 확인): 여기서 바로 처리
       if (variables.data.result === 'remembered') {
         // "기억함": 완료 처리
         setReviewsCompleted(prev => prev + 1);
         removeCurrentCard();
-
-        // Invalidate dashboard to update stats
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
         if (onShowToast) {
           onShowToast('잘 기억하고 있어요!', 'success');
@@ -197,6 +195,9 @@ export const useReviewLogic = (
   // Calculate progress based on total reviews for today
   const progress = totalSchedules > 0 ? (reviewsCompleted / totalSchedules) * 100 : 0;
 
+  // Calculate remaining reviews (current cards left to review)
+  const remainingReviews = reviews.length;
+
   return {
     reviews,
     currentReview,
@@ -207,6 +208,7 @@ export const useReviewLogic = (
     reviewsCompleted,
     setReviewsCompleted,
     totalSchedules,
+    remainingReviews,
     removeCurrentCard,
     moveCurrentCardToEnd,
   };

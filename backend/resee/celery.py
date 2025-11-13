@@ -20,7 +20,14 @@ app.autodiscover_tasks()
 
 # Note: Using DatabaseScheduler (django-celery-beat) for dynamic task scheduling
 # All periodic tasks are managed through Django admin or PeriodicTask model
-# app.conf.beat_schedule is not used
+
+# Static beat schedule for critical tasks
+app.conf.beat_schedule = {
+    'hourly-review-notifications': {
+        'task': 'review.tasks.send_hourly_notifications',
+        'schedule': crontab(minute=0, hour='*'),
+    },
+}
 
 app.conf.timezone = 'Asia/Seoul'
 

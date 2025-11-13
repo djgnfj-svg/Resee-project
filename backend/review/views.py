@@ -168,44 +168,33 @@ class TodayReviewView(APIView):
     )
     def get(self, request):
         """Get review items due today or overdue (within subscription limits)"""
-        # Generate cache key
-        category_slug = request.query_params.get('category_slug', '')
-        cache_key = f'review:today:{request.user.id}:{category_slug}'
-
-        # Try to get from cache
-        cached_data = cache.get(cache_key)
-
-        if cached_data is not None:
-            logger.info(f"Cache HIT: {cache_key}")
-            return Response(cached_data)
-
-        logger.info(f"Cache MISS: {cache_key}")
-
         today = timezone.now().date()
-        
+
         # Get user's subscription tier and determine overdue limit
         max_overdue_days = SubscriptionService(request.user).get_max_review_interval()
         if not max_overdue_days:
             max_overdue_days = 7  # Default to FREE tier
-        
+
         # Calculate cutoff date for overdue reviews based on subscription
         # Don't show reviews older than the subscription allows
         cutoff_date = timezone.now() - timedelta(days=max_overdue_days)
-        
+
         schedules = ReviewSchedule.objects.filter(
             user=request.user,
             is_active=True
         ).filter(
             # Only include reviews that are due TODAY or overdue (but within subscription range)
             # OR initial reviews not yet completed
-            Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date) | 
+            Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date) |
             Q(initial_review_completed=False)
-        ).select_related(
+        )
+
+        schedules = schedules.select_related(
             'content',
             'content__category',
             'user'
         ).order_by('next_review_date')
-        
+
         # Category filter
         category_slug = request.query_params.get('category_slug', None)
         if category_slug:
@@ -229,14 +218,11 @@ class TodayReviewView(APIView):
 
         response_data = {
             'results': serializer.data,
-            'count': len(serializer.data),  # Today's reviews count
-            'total_count': total_schedules,  # Total active schedules
+            'count': len(serializer.data),  # 남은 복습 개수
+            'total_count': total_schedules,  # 전체 활성 스케줄
             'subscription_tier': request.user.subscription.tier,
             'max_interval_days': SubscriptionService(request.user).get_max_review_interval()
         }
-
-        # Cache the response (TTL: 1 hour)
-        cache.set(cache_key, response_data, timeout=3600)
 
         return Response(response_data)
 
@@ -289,6 +275,9 @@ class CompleteReviewView(APIView):
     )
     def post(self, request):
         """Complete a review and update schedule with improved error handling"""
+        from django.utils import timezone
+        import json
+
         content_id = request.data.get('content_id')
         result = request.data.get('result')  # 'remembered', 'partial', 'forgot'
         time_spent = request.data.get('time_spent')
@@ -485,20 +474,20 @@ class CompleteReviewView(APIView):
 
                     logger.info(f"기억 확인 모드: 사용자 선택 -> {result}")
 
-                # Create review history with mode-specific data
-                history = ReviewHistory.objects.create(
-                    content=schedule.content,
+                # === 즉시 DB 저장 (ReviewHistory) ===
+                ReviewHistory.objects.create(
+                    content_id=content_id,
                     user=request.user,
                     result=result,
-                    time_spent=time_spent,
+                    time_spent=time_spent or 0,
                     notes=notes,
-                    descriptive_answer=descriptive_answer,  # descriptive mode
-                    selected_choice=selected_choice,  # multiple_choice mode
-                    user_title=user_title,  # subjective mode
-                    ai_score=ai_score,
-                    ai_feedback=ai_feedback
+                    descriptive_answer=descriptive_answer,
+                    selected_choice=selected_choice,
+                    user_title=user_title,
+                    ai_score=float(ai_score) if ai_score is not None else None,
+                    ai_feedback=ai_feedback,
                 )
-                
+
                 # Update schedule based on result with subscription limits
                 if result == 'remembered':
                     # Mark initial review as completed if it's the first review
@@ -563,14 +552,6 @@ class CompleteReviewView(APIView):
                         'feedback': ai_feedback,
                         'auto_result': ai_auto_result if ai_auto_result else result
                     }
-
-                # Invalidate related caches
-                cache_keys = [
-                    f'review:today:{request.user.id}:',  # All categories
-                    f'analytics:stats:{request.user.id}',
-                ]
-                invalidate_cache(*cache_keys)
-                logger.info(f"Cache invalidated for user {request.user.id} after review completion")
 
                 return Response(response_data)
 
