@@ -9,7 +9,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 
-from resee.models import BaseModel, TimestampMixin
+from resee.models import TimestampMixin
 
 # Legal models removed - using static pages in frontend instead
 
@@ -139,7 +139,7 @@ class BillingCycle(models.TextChoices):
     YEARLY = 'yearly', '연간'
 
 
-class Subscription(BaseModel):
+class Subscription(TimestampMixin):
     """User subscription model"""
     user = models.OneToOneField(
         User, 
@@ -230,11 +230,11 @@ class Subscription(BaseModel):
     def save(self, *args, **kwargs):
         """Override save to set max_interval_days based on tier using Ebbinghaus forgetting curve"""
         from .constants import TIER_MAX_INTERVALS
-        from .subscription.tier_service import SubscriptionTierService
+        from .subscription import tier_utils
 
         # Validate and set max_interval_days based on tier
         if self.tier in TIER_MAX_INTERVALS:
-            self.max_interval_days = SubscriptionTierService.get_max_interval(self.tier)
+            self.max_interval_days = tier_utils.get_max_interval(self.tier)
         else:
             # Defensive: log warning for invalid tier
             logger = logging.getLogger(__name__)
@@ -243,7 +243,7 @@ class Subscription(BaseModel):
                 f'Using FREE tier defaults.'
             )
             self.tier = SubscriptionTier.FREE
-            self.max_interval_days = SubscriptionTierService.get_max_interval(SubscriptionTier.FREE)
+            self.max_interval_days = tier_utils.get_max_interval(SubscriptionTier.FREE)
 
         super().save(*args, **kwargs)
 
@@ -353,7 +353,7 @@ class PaymentHistory(models.Model):
 
 
 
-class BillingSchedule(BaseModel):
+class BillingSchedule(TimestampMixin):
     """Track future billing schedules and payments"""
     
     class ScheduleStatus(models.TextChoices):

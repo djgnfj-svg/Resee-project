@@ -12,6 +12,7 @@ from ..models import Subscription, SubscriptionTier, PaymentHistory, BillingSche
 from ..utils.serializers import (SubscriptionSerializer, SubscriptionTierSerializer,
                                 SubscriptionUpgradeSerializer, PaymentHistorySerializer)
 from .decorators import require_admin_password, require_user_password
+from . import tier_utils
 
 
 @api_view(['GET'])
@@ -27,13 +28,11 @@ def subscription_detail(request):
 @permission_classes([IsAuthenticated])
 def subscription_tiers(request):
     """Get available subscription tiers"""
-    from .tier_service import SubscriptionTierService
-
     # Get billing cycle from query params (default: monthly)
     billing_cycle = request.query_params.get('billing_cycle', 'monthly')
 
     # Get all tiers info from service
-    tiers_info = SubscriptionTierService.get_all_tiers_info(billing_cycle=billing_cycle)
+    tiers_info = tier_utils.get_all_tiers_info(billing_cycle=billing_cycle)
 
     serializer = SubscriptionTierSerializer(tiers_info, many=True)
     return Response(serializer.data)
@@ -116,10 +115,9 @@ def subscription_upgrade(request):
             
             # 티어 순서 확인
             logger.info("Step 3: Checking tier hierarchy...")
-            from .tier_service import SubscriptionTierService
 
-            current_tier_level = SubscriptionTierService.get_tier_level(subscription.tier)
-            new_tier_level = SubscriptionTierService.get_tier_level(tier)
+            current_tier_level = tier_utils.get_tier_level(subscription.tier)
+            new_tier_level = tier_utils.get_tier_level(tier)
             logger.info(f"Step 3: current_tier_level={current_tier_level}, new_tier_level={new_tier_level}")
             
             # 동일한 티어로의 변경 방지
@@ -162,13 +160,13 @@ def subscription_upgrade(request):
                 subscription.next_billing_date = subscription.end_date
                 
             logger.info("Step 5e: Set end_date and next_billing_date")
-            
+
             logger.info("Step 5f: About to call subscription.save()...")
             subscription.save()  # save() 메서드에서 max_interval_days가 자동 설정됨
             logger.info("Step 5f: subscription.save() completed")
-            
+
             # Set payment amount based on tier and billing cycle
-            subscription.amount_paid = SubscriptionTierService.calculate_price(tier, billing_cycle)
+            subscription.amount_paid = tier_utils.calculate_price(tier, billing_cycle)
             subscription.next_billing_amount = subscription.amount_paid
             subscription.save()
             
@@ -265,10 +263,8 @@ def subscription_downgrade(request):
             return Response({'error': '다운그레이드할 티어를 지정해주세요.'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Validate tier hierarchy for downgrade
-        from .tier_service import SubscriptionTierService
-
-        current_tier_level = SubscriptionTierService.get_tier_level(subscription.tier)
-        target_tier_level = SubscriptionTierService.get_tier_level(target_tier)
+        current_tier_level = tier_utils.get_tier_level(subscription.tier)
+        target_tier_level = tier_utils.get_tier_level(target_tier)
         
         if target_tier_level >= current_tier_level:
             return Response(
@@ -286,7 +282,7 @@ def subscription_downgrade(request):
             total_days = BILLING_CYCLE_DAYS.get(subscription.billing_cycle, 30)
             if remaining_days > 0:
                 refund_amount = float(
-                    SubscriptionTierService.calculate_prorated_refund(
+                    tier_utils.calculate_prorated_refund(
                         Decimal(str(subscription.amount_paid)),
                         remaining_days,
                         total_days
@@ -294,7 +290,7 @@ def subscription_downgrade(request):
                 )
 
         # Get new pricing
-        new_amount = float(SubscriptionTierService.calculate_price(
+        new_amount = float(tier_utils.calculate_price(
             target_tier,
             billing_cycle
         ))
@@ -610,10 +606,8 @@ class SubscriptionViewSet(viewsets.GenericViewSet):
                 )
 
             # Delegate to upgrade/downgrade logic
-            from .tier_service import SubscriptionTierService
-
-            current_level = SubscriptionTierService.get_tier_level(subscription.tier)
-            target_level = SubscriptionTierService.get_tier_level(target_tier)
+            current_level = tier_utils.get_tier_level(subscription.tier)
+            target_level = tier_utils.get_tier_level(target_tier)
 
             if target_level == current_level:
                 return Response(

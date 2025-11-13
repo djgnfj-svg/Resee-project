@@ -25,20 +25,3 @@ class UserOwnedMixin(models.Model):
 
     class Meta:
         abstract = True
-
-
-class BaseModel(TimestampMixin):
-    """
-    Base model that includes timestamps.
-    Use this for models that don't need user ownership.
-    """
-    class Meta:
-        abstract = True
-
-
-class BaseUserModel(TimestampMixin, UserOwnedMixin):
-    """
-    Base model for user-owned entities with timestamps.
-    """
-    class Meta:
-        abstract = True

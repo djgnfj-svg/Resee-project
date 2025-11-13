@@ -5,7 +5,6 @@ from django.conf import settings
 
 from ..constants import CATEGORY_LIMITS, CONTENT_LIMITS
 from ..models import SubscriptionTier
-from .tier_service import SubscriptionTierService
 
 
 class PermissionService:

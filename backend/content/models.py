@@ -2,13 +2,13 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.text import slugify
-from resee.models import BaseModel, BaseUserModel
+from resee.models import TimestampMixin
 from resee.validators import validate_content_length, validate_category_name
 
 User = get_user_model()
 
 
-class Category(BaseModel):
+class Category(TimestampMixin):
     """Content category"""
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, blank=True)
@@ -46,7 +46,7 @@ class Category(BaseModel):
         return self.name
 
 
-class Content(BaseModel):
+class Content(TimestampMixin):
     """Learning content"""
 
     REVIEW_MODE_CHOICES = [
