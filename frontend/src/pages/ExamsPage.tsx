@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { weeklyTestAPI, WeeklyTest } from '../utils/api/exams';
 import { contentAPI } from '../utils/api/content';
 import { Content } from '../types';
@@ -10,6 +10,7 @@ import TestListItem from '../components/weeklytest/TestListItem';
 
 const ExamsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [tests, setTests] = useState<WeeklyTest[]>([]);
   const [currentTest, setCurrentTest] = useState<WeeklyTest | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -24,7 +25,12 @@ const ExamsPage: React.FC = () => {
   useEffect(() => {
     loadTests();
     loadContents();
-  }, []);
+
+    // URL에 시험 ID가 있으면 해당 시험 로드
+    if (id) {
+      startTest(parseInt(id));
+    }
+  }, [id]);
 
   const loadContents = async () => {
     try {
@@ -119,6 +125,10 @@ const ExamsPage: React.FC = () => {
       setCurrentQuestionIndex(0);
       setAnswers({});
       setError('');
+      // URL을 /exams/:id로 변경
+      if (!id) {
+        navigate(`/exams/${testId}`);
+      }
     } catch (error: any) {
       console.error('Failed to start test:', error);
       setError(error.response?.data?.detail || '시험 시작에 실패했습니다.');
@@ -189,6 +199,7 @@ const ExamsPage: React.FC = () => {
     setAnswers({});
     setTestResults(null);
     setError('');
+    navigate('/exams');
   };
 
   const viewTestResults = async (testId: number) => {

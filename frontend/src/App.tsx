@@ -104,6 +104,14 @@ function App() {
                 }
               />
               <Route
+                path="/exams/:id"
+                element={
+                  <ProtectedRoute>
+                    <ExamsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/profile"
                 element={
                   <ProtectedRoute>
