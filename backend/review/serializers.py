@@ -25,6 +25,5 @@ class ReviewHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewHistory
         fields = ('id', 'content', 'user', 'review_date', 'result',
-                 'time_spent', 'notes', 'descriptive_answer', 'ai_score', 'ai_feedback',
-                 'selected_choice', 'user_title')
+                 'time_spent', 'notes', 'descriptive_answer', 'ai_score', 'ai_feedback')
         read_only_fields = ('id', 'user', 'review_date', 'ai_score', 'ai_feedback')

@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from django.core.cache import cache
 from django.db import transaction
-from django.db.models import Prefetch, Q
+from django.db.models import Q
 from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -63,7 +63,8 @@ class ReviewScheduleViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='today')
     def today(self, request):
         """Get review items due today or overdue (RESTful endpoint)"""
-        # Delegate to existing TodayReviewView logic
+        # Delegate to existing TodayReviewView
+        from .views import TodayReviewView
         view = TodayReviewView()
         view.request = request
         view.format_kwarg = None
@@ -98,7 +99,8 @@ class ReviewScheduleViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
         # Replace request._full_data to inject content_id
         request._full_data = data
 
-        # Delegate to existing CompleteReviewView logic
+        # Delegate to existing CompleteReviewView
+        from .views import CompleteReviewView
         view = CompleteReviewView()
         view.request = request
         view.format_kwarg = None
@@ -196,40 +198,34 @@ class TodayReviewView(APIView):
         ).filter(
             # Only include reviews that are due TODAY or overdue (but within subscription range)
             # OR initial reviews not yet completed
-            Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date) |
+            Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date) | 
             Q(initial_review_completed=False)
         ).select_related(
             'content',
             'content__category',
-            'content__author',
             'user'
-        ).prefetch_related(
-            Prefetch(
-                'content__review_history',
-                queryset=ReviewHistory.objects.filter(user=request.user),
-                to_attr='user_review_history'
-            )
         ).order_by('next_review_date')
         
         # Category filter
         category_slug = request.query_params.get('category_slug', None)
         if category_slug:
             schedules = schedules.filter(content__category__slug=category_slug)
-
-        # Evaluate queryset to get results (force DB query)
-        schedules_list = list(schedules)
-
-        # Get total active schedules for progress display (without re-querying)
-        # Use separate query with same filters to get total count
-        total_query = ReviewSchedule.objects.filter(
+        
+        # Get total active schedules for progress display
+        total_schedules = ReviewSchedule.objects.filter(
             user=request.user,
             is_active=True
-        )
+        ).count()
+        
+        # Apply category filter to total count if specified
         if category_slug:
-            total_query = total_query.filter(content__category__slug=category_slug)
-        total_schedules = total_query.count()
-
-        serializer = ReviewScheduleSerializer(schedules_list, many=True)
+            total_schedules = ReviewSchedule.objects.filter(
+                user=request.user,
+                is_active=True,
+                content__category__slug=category_slug
+            ).count()
+        
+        serializer = ReviewScheduleSerializer(schedules, many=True)
 
         response_data = {
             'results': serializer.data,
@@ -541,7 +537,7 @@ class CompleteReviewView(APIView):
                             current_interval = intervals[0]
                             schedule.interval_index = 0
                     
-                    schedule.next_review_date = timezone.now() + timedelta(days=current_interval)
+                    schedule.next_review_date = timezone.now() + timezone.timedelta(days=current_interval)
                     schedule.save()
                 else:  # 'forgot'
                     # Mark initial review as completed if it's the first review
@@ -569,17 +565,11 @@ class CompleteReviewView(APIView):
                     }
 
                 # Invalidate related caches
-                # Clear all category variants (including empty string for "all categories")
-                from content.models import Category
-                categories = Category.objects.filter(
-                    Q(user=None) | Q(user=request.user)
-                ).values_list('slug', flat=True)
-
-                cache_keys = [f'review:today:{request.user.id}:']  # Empty category (all)
-                cache_keys.extend([f'review:today:{request.user.id}:{slug}' for slug in categories])
-                cache_keys.append(f'analytics:stats:{request.user.id}')
-
-                cache.delete_many(cache_keys)
+                cache_keys = [
+                    f'review:today:{request.user.id}:',  # All categories
+                    f'analytics:stats:{request.user.id}',
+                ]
+                invalidate_cache(*cache_keys)
                 logger.info(f"Cache invalidated for user {request.user.id} after review completion")
 
                 return Response(response_data)
