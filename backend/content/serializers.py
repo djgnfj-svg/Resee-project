@@ -82,7 +82,7 @@ class ContentSerializer(serializers.ModelSerializer):
 
         # Generate multiple choice options for MC mode
         if content.review_mode == 'multiple_choice':
-            from .ai_multiple_choice import generate_multiple_choice_options
+            from ai_services import generate_multiple_choice_options
             mc_options = generate_multiple_choice_options(content.title, content.content)
             if mc_options:
                 content.mc_choices = mc_options
@@ -113,7 +113,7 @@ class ContentSerializer(serializers.ModelSerializer):
 
         # Regenerate MC options if content changed and mode is MC
         if content.review_mode == 'multiple_choice' and (title_changed or content_changed):
-            from .ai_multiple_choice import generate_multiple_choice_options
+            from ai_services import generate_multiple_choice_options
             mc_options = generate_multiple_choice_options(content.title, content.content)
             if mc_options:
                 content.mc_choices = mc_options

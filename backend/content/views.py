@@ -9,7 +9,6 @@ from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from resee.cache_utils import CacheManager, cached_method
 from resee.mixins import AuthorViewSetMixin, UserOwnershipMixin
 from resee.pagination import ContentPagination, OptimizedPageNumberPagination
 # Performance monitoring removed for production
@@ -202,87 +201,6 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
-    
-    
-    @swagger_auto_schema(
-        operation_summary="카테고리별 콘텐츠 조회",
-        operation_description="콘텐츠를 카테고리별로 그룹화하여 반환합니다.",
-        responses={200: openapi.Response(
-            description="카테고리별로 그룹화된 콘텐츠",
-            examples={
-                "application/json": {
-                    "english": {
-                        "category": {"id": 1, "name": "영어", "slug": "english"},
-                        "contents": [{"id": 1, "title": "영어 단어"}],
-                        "count": 1
-                    }
-                }
-            }
-        )}
-    )
-    @action(detail=False, methods=['get'])
-    @cached_method(timeout=600, key_prefix='content_by_category')
-    def by_category(self, request):
-        """Get contents grouped by category - optimized version with error handling"""
-        try:
-            # Import at method level to avoid circular imports
-            from django.conf import settings
-            from django.db import connection
-
-            # Log query count in development
-            if settings.DEBUG:
-                initial_queries = len(connection.queries)
-            # Optimize: Get user's custom categories only
-            user_categories = Category.objects.filter(
-                user=self.request.user
-            ).only('id', 'name', 'slug', 'user')  # Only select needed fields
-            
-            # Optimize: Get all user's contents with category data prefetched
-            user_contents = self.get_queryset()
-            
-            result = {}
-            
-            # Group contents by category efficiently using in-memory grouping
-            contents_by_category = {}
-            for content in user_contents:
-                category_id = content.category_id if content.category else None
-                if category_id not in contents_by_category:
-                    contents_by_category[category_id] = []
-                contents_by_category[category_id].append(content)
-            
-            # Build result for each category
-            for category in user_categories:
-                category_contents = contents_by_category.get(category.id, [])
-                # Include all user's custom categories (even if empty)
-                result[category.slug] = {
-                    'category': CategorySerializer(category).data,
-                    'contents': ContentSerializer(category_contents, many=True).data,
-                    'count': len(category_contents)
-                }
-            
-            # Add uncategorized content
-            uncategorized_contents = contents_by_category.get(None, [])
-            if uncategorized_contents:
-                result['uncategorized'] = {
-                    'category': {'name': '미분류', 'slug': 'uncategorized'},
-                    'contents': ContentSerializer(uncategorized_contents, many=True).data,
-                    'count': len(uncategorized_contents)
-                }
-            
-            # Log performance metrics in development
-            if settings.DEBUG:
-                final_queries = len(connection.queries)
-                query_count = final_queries - initial_queries
-                logger.info(f"by_category API - Query count: {query_count}, Categories: {len(user_categories)}, Contents: {len(user_contents)}")
-            
-            return Response(result)
-            
-        except Exception as e:
-            logger.error(f"Error in by_category view: {str(e)}", exc_info=True)
-            return Response(
-                {'error': '카테고리별 콘텐츠 조회 중 오류가 발생했습니다.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
 
     @swagger_auto_schema(
         operation_summary="콘텐츠 AI 검증",
