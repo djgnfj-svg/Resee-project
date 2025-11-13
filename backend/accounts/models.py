@@ -464,6 +464,7 @@ def adjust_review_schedules_on_subscription_change(sender, instance, created, **
         # Queue the adjustment task asynchronously
         adjust_task.delay(instance.id)
 
+        logger = logging.getLogger(__name__)
         logger.info(
             f"Queued review schedule adjustment for user {instance.user.email} "
             f"subscription change to {instance.tier}"
