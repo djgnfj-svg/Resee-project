@@ -64,8 +64,15 @@ class ReviewSchedule(BaseUserModel):
             })
 
     def save(self, *args, **kwargs):
-        """Override save to run validation"""
-        self.full_clean()
+        """
+        Override save to run validation
+
+        Use skip_validation=True to bypass validation for bulk operations:
+        schedule.save(skip_validation=True)
+        """
+        skip_validation = kwargs.pop('skip_validation', False)
+        if not skip_validation:
+            self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -208,8 +215,15 @@ class ReviewHistory(BaseUserModel):
             })
 
     def save(self, *args, **kwargs):
-        """Override save to run validation"""
-        self.full_clean()
+        """
+        Override save to run validation
+
+        Use skip_validation=True to bypass validation for bulk operations:
+        history.save(skip_validation=True)
+        """
+        skip_validation = kwargs.pop('skip_validation', False)
+        if not skip_validation:
+            self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -128,6 +128,9 @@ class ContentSerializer(serializers.ModelSerializer):
         # Use annotated value if available (from optimized queryset)
         if hasattr(obj, 'review_count_annotated'):
             return obj.review_count_annotated
+        # Use prefetched value if available
+        if hasattr(obj, 'user_review_history'):
+            return len(obj.user_review_history)
         # Fallback to direct count (e.g., during tests or direct serialization)
         return obj.review_history.count()
 
