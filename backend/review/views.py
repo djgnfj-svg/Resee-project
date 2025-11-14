@@ -550,7 +550,8 @@ class CompleteReviewView(APIView):
                     response_data['ai_evaluation'] = {
                         'score': ai_score,
                         'feedback': ai_feedback,
-                        'auto_result': ai_auto_result if ai_auto_result else result
+                        'auto_result': ai_auto_result if ai_auto_result else result,
+                        'is_correct': ai_score == 100.0  # 객관식용 정답 여부
                     }
 
                 return Response(response_data)

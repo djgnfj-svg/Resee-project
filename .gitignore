@@ -95,4 +95,4 @@ README-DEPLOYMENT.md
 image.png
 scripts
 scripts/*
-temp/
+temp/.claude/settings.local.json

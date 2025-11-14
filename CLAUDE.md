@@ -45,9 +45,14 @@ http://localhost:8000/admin
 ### Test Accounts
 
 **Development**:
-- Admin: `admin@resee.com` / `admin123!` (PRO, 180-day intervals)
+- Interview: `interview@resee.com` / `interview2025!` (PRO, for demo/interview)
+- Admin: `admin@resee.com` / `admin123!` (BASIC, staff access)
 - Email Test: `djgnfj8923@naver.com` / `testpassword123` (BASIC, 90-day)
 - MCP Test: `mcptest@example.com` / `mcptest123!` (FREE, 3-day)
+
+**API Documentation** (No authentication required):
+- Swagger UI: `http://localhost/api/docs/`
+- ReDoc UI: `http://localhost/api/docs/redoc/`
 
 ### Start Development
 ```bash
