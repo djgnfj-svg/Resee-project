@@ -81,7 +81,7 @@ jobs:
       run: |
         cd backend
         pip install -r requirements.txt
-        pip install pytest pytest-django pytest-cov black flake8
+        pip install black flake8
 
     - name: Run backend tests with coverage
       run: |
