@@ -83,16 +83,12 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-django pytest-cov black flake8
 
-    - name: Run backend tests
+    - name: Run backend tests with coverage
       run: |
         cd backend
-        # Run known working tests with testing settings (uses SQLite in-memory)
-        echo "🧪 Running User Model Tests..."
-        python -m pytest accounts/tests/tests.py::UserModelTest::test_create_user accounts/tests/tests.py::UserModelTest::test_user_str_representation accounts/tests/tests.py::UserModelTest::test_create_superuser -v
-        echo "🧪 Running Analytics Tests..."
-        python -m pytest analytics/tests.py -v
-        # TODO: Fix other test modules with import and signal issues
-        # TODO: Add coverage when pytest-cov is available: --cov=accounts --cov-report=term-missing
+        # Run all tests with 80% coverage requirement
+        echo "🧪 Running all backend tests with coverage..."
+        python -m pytest --cov=. --cov-report=term-missing --cov-report=json --cov-fail-under=80 -v
       env:
         DJANGO_SETTINGS_MODULE: resee.settings.testing
         SECRET_KEY: test-secret-key-for-ci
@@ -101,6 +97,13 @@ jobs:
         ENFORCE_EMAIL_VERIFICATION: False
         FRONTEND_URL: http://localhost:3000
         ALLOWED_HOSTS: localhost,127.0.0.1
+
+    - name: Upload coverage report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: backend-coverage-report
+        path: backend/coverage.json
 
     - name: Code quality checks
       run: |
