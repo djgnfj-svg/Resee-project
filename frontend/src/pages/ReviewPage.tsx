@@ -68,6 +68,7 @@ const ReviewPage: React.FC = () => {
     reviewsCompleted,
     setReviewsCompleted,
     totalSchedules,
+    remainingReviews,
     removeCurrentCard,
     moveCurrentCardToEnd,
   } = useReviewLogic(showToast, resetReviewState);
@@ -200,12 +201,6 @@ const ReviewPage: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             오늘 예정된 모든 복습을 완료했습니다!
           </p>
-          <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-            <p>완료된 복습: {reviewsCompleted}개</p>
-            {totalSchedules > 0 && (
-              <p>전체 예정: {totalSchedules}개</p>
-            )}
-          </div>
         </div>
       </div>
     );
@@ -213,11 +208,9 @@ const ReviewPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
         <ReviewHeader
-          reviewsCompleted={reviewsCompleted}
-          totalSchedules={totalSchedules}
-          progress={progress}
+          remainingReviews={remainingReviews}
         />
 
         <div className="space-y-6">

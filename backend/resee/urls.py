@@ -6,15 +6,13 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, re_path
 
-from .admin_site import admin_site
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
 from accounts.auth.views import EmailTokenObtainPairView
-from accounts.health.health_views import (health_detailed, health_check,
-                                         liveness_check, readiness_check)
+from .views import health_check
 
 # API documentation schema
 schema_view = get_schema_view(
@@ -30,13 +28,10 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path('admin/', admin_site.urls),
+    path('admin/', admin.site.urls),
 
-    # Health checks (for monitoring and load balancers)
+    # Health check (for Docker/AWS infrastructure monitoring)
     path('api/health/', health_check, name='health'),
-    path('api/health/detailed/', health_detailed, name='detailed_health'),
-    path('api/health/ready/', readiness_check, name='readiness'),
-    path('api/health/live/', liveness_check, name='liveness'),
 
     # API Documentation
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
@@ -58,9 +53,8 @@ urlpatterns = [
     # API endpoints
     path('api/accounts/', include('accounts.urls')),  # includes legal endpoints
     path('api/', include('content.urls')),  # contents/, categories/ at root level
-    path('api/review/', include('review.urls')),
-    path('api/analytics/', include('analytics.urls')),  # includes BI endpoints
-    path('api/weekly-test/', include('weekly_test.urls')),  # weekly test functionality
+    path('api/review/', include('review.urls')),  # includes dashboard stats
+    path('api/exams/', include('exams.urls')),  # exam functionality (previously weekly-test)
 ]
 
 if settings.DEBUG:

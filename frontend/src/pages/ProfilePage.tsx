@@ -4,7 +4,6 @@ import { authAPI } from '../utils/api';
 import { User } from '../types';
 import UserProfileForm from '../components/profile/UserProfileForm';
 import SubscriptionManagement from '../components/profile/SubscriptionManagement';
-import PaymentHistory from '../components/profile/PaymentHistory';
 import AccountStats from '../components/profile/AccountStats';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -91,11 +90,6 @@ const ProfilePage: React.FC = () => {
         {/* Profile Form and Additional Info */}
         <div className="lg:col-span-2">
           <UserProfileForm user={user} />
-
-          {/* Payment History */}
-          <div className="mt-8">
-            <PaymentHistory />
-          </div>
 
           {/* Account Statistics */}
           <div className="mt-8">

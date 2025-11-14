@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CreditCardIcon } from '@heroicons/react/24/outline';
+import { subscriptionAPI } from '../../utils/api';
 import { User } from '../../types';
 
 interface SubscriptionManagementProps {
@@ -8,8 +10,70 @@ interface SubscriptionManagementProps {
 }
 
 const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user }) => {
-  const handleComingSoon = () => {
-    alert('결제 시스템은 12월에 오픈 예정입니다.\n\n현재는 모든 기능을 무료로 이용하실 수 있습니다.');
+  const queryClient = useQueryClient();
+
+  // Toggle auto renewal mutation
+  const toggleAutoRenewalMutation = useMutation({
+    mutationFn: ({ password, autoRenewal }: { password: string; autoRenewal: boolean }) =>
+      subscriptionAPI.toggleAutoRenewal(password, autoRenewal),
+    onSuccess: (updatedSubscription) => {
+      const isEnabled = updatedSubscription.auto_renewal;
+      alert(`Success: 자동갱신이 ${isEnabled ? '활성화' : '비활성화'}되었습니다.`);
+      // Update user data with new subscription info
+      queryClient.setQueryData(['profile'], (oldData: User | undefined) => {
+        if (oldData) {
+          return { ...oldData, subscription: updatedSubscription };
+        }
+        return oldData;
+      });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (error: any) => {
+      const errorMessage = error.userMessage || '자동갱신 설정 변경에 실패했습니다.';
+      alert(`Error: ${errorMessage}`);
+    },
+  });
+
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: (password: string) => subscriptionAPI.cancelSubscription(password),
+    onSuccess: (updatedSubscription) => {
+      alert('Success: 구독이 성공적으로 취소되었습니다. 무료 플랜으로 변경되었습니다.');
+      // Update user data with new subscription info
+      queryClient.setQueryData(['profile'], (oldData: User | undefined) => {
+        if (oldData) {
+          return { ...oldData, subscription: updatedSubscription };
+        }
+        return oldData;
+      });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (error: any) => {
+      const errorMessage = error.userMessage || '구독 취소에 실패했습니다.';
+      alert(`Error: ${errorMessage}`);
+    },
+  });
+
+  const handleToggleAutoRenewal = () => {
+    const password = window.prompt('비밀번호를 입력해주세요:');
+    if (!password) return;
+
+    const newAutoRenewal = !user.subscription?.auto_renewal;
+    toggleAutoRenewalMutation.mutate({ password, autoRenewal: newAutoRenewal });
+  };
+
+  const handleCancelSubscription = () => {
+    if (window.confirm(
+      '정말 구독을 취소하시겠습니까?\n\n' +
+      '구독을 취소하면:\n' +
+      '• 무료 플랜으로 변경됩니다\n' +
+      '• 복습 간격이 3일로 제한됩니다\n\n' +
+      '이 작업은 즉시 적용되며 되돌릴 수 없습니다.'
+    )) {
+      const password = window.prompt('비밀번호를 입력해주세요:');
+      if (!password) return;
+
+      cancelSubscriptionMutation.mutate(password);
+    }
   };
 
   return (
@@ -53,18 +117,14 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user })
               className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 border border-indigo-600 hover:border-indigo-700 rounded-lg transition-colors"
             >
               <CreditCardIcon className="w-4 h-4 mr-2" />
-              구독 관리
+              구독 플랜 보기
             </Link>
             {user.subscription.tier !== 'free' && (
-              <button
-                onClick={handleComingSoon}
-                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 rounded-lg transition-colors"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                구독 취소 (12월 오픈)
-              </button>
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <p className="text-xs text-amber-800 dark:text-amber-200 text-center">
+                  유료 플랜은 12월에 오픈 예정입니다
+                </p>
+              </div>
             )}
           </div>
         </div>

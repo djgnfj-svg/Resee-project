@@ -1,6 +1,4 @@
-import hashlib
 import logging
-import secrets
 from datetime import timedelta
 
 from django.conf import settings
@@ -11,16 +9,9 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 
-from resee.models import BaseModel, TimestampMixin
+from resee.models import TimestampMixin
 
-# Import legal models to make them discoverable by Django migrations
-from .legal.legal_models import (
-    LegalDocument,
-    UserConsent,
-    DataDeletionRequest,
-    DataExportRequest,
-    CookieConsent,
-)
+# Legal models removed - using static pages in frontend instead
 
 
 class UserManager(BaseUserManager):
@@ -107,114 +98,39 @@ class User(AbstractUser):
     def generate_email_verification_token(self):
         """Generate a unique token for email verification.
 
-        Security: Token is hashed with SHA-256 before storage to prevent
-        unauthorized access if database is compromised.
+        Delegates to EmailVerificationService.
         """
-        # 32자 길이의 URL-safe 토큰 생성 (사용자에게 전송할 원본)
-        token = secrets.token_urlsafe(32)
+        from .email.verification_service import EmailVerificationService
+        service = EmailVerificationService(self)
+        return service.generate_verification_token()
 
-        # 🔒 보안: DB에는 해시만 저장 (SHA-256)
-        token_hash = hashlib.sha256(token.encode()).hexdigest()
-        self.email_verification_token = token_hash
-        self.email_verification_sent_at = timezone.now()
-        self.save()
-
-        # 원본 토큰만 반환 (이메일로 전송)
-        return token
-    
     def verify_email(self, token):
         """Verify email with the given token.
 
-        Security:
-        - Uses constant-time comparison to prevent timing attacks
-        - Validates token hash instead of plaintext
-        - Checks expiration before comparison
+        Delegates to EmailVerificationService.
         """
-        if not self.email_verification_token:
-            return False
+        from .email.verification_service import EmailVerificationService
+        service = EmailVerificationService(self)
+        success, _ = service.verify_email(token)
+        return success
 
-        # 🔒 보안: 입력받은 토큰을 해싱하여 저장된 해시와 비교
-        token_hash = hashlib.sha256(token.encode()).hexdigest()
-
-        # 🔒 보안: Constant-time 비교 (timing attack 방어)
-        if not secrets.compare_digest(self.email_verification_token, token_hash):
-            return False
-
-        # 토큰 유효기간 확인
-        if self.email_verification_sent_at:
-            expiry_time = self.email_verification_sent_at + timedelta(
-                days=settings.EMAIL_VERIFICATION_TIMEOUT_DAYS
-            )
-            if timezone.now() > expiry_time:
-                return False
-
-        # 이메일 인증 완료
-        self.is_email_verified = True
-        self.email_verification_token = None
-        self.email_verification_sent_at = None
-        self.save()
-        return True
-    
     def can_resend_verification_email(self):
-        """Check if verification email can be resent (5분 간격 제한)"""
-        if not self.email_verification_sent_at:
-            return True
-        
-        time_since_sent = timezone.now() - self.email_verification_sent_at
-        return time_since_sent > timedelta(minutes=5)
+        """Check if verification email can be resent.
+
+        Delegates to EmailVerificationService.
+        """
+        from .email.verification_service import EmailVerificationService
+        service = EmailVerificationService(self)
+        can_resend, _ = service.can_resend_verification()
+        return can_resend
     
-    def get_max_review_interval(self):
-        """Get maximum review interval based on subscription"""
-        from .subscription.services import SubscriptionService
-        return SubscriptionService(self).get_max_review_interval()
-
-    def has_active_subscription(self):
-        """Check if user has an active subscription"""
-        from .subscription.services import SubscriptionService
-        return SubscriptionService(self).has_active_subscription()
-    
-    def can_upgrade_subscription(self):
-        """Check if user can upgrade subscription"""
-        from .subscription.services import PermissionService
-        return PermissionService(self).can_upgrade_subscription()
-
-
-    def get_content_limit(self):
-        """Get content creation limit based on subscription tier"""
-        from .subscription.services import PermissionService
-        return PermissionService(self).get_content_limit()
-
-    def can_create_content(self):
-        """Check if user can create more content based on subscription limit"""
-        from .subscription.services import PermissionService
-        return PermissionService(self).can_create_content()
-
-    def get_content_usage(self):
-        """Get content usage statistics for the user"""
-        from .subscription.services import PermissionService
-        return PermissionService(self).get_content_usage()
-
-    def get_category_limit(self):
-        """Get category creation limit based on subscription tier"""
-        from .subscription.services import PermissionService
-        return PermissionService(self).get_category_limit()
-
-    def can_create_category(self):
-        """Check if user can create more categories based on subscription limit"""
-        from .subscription.services import PermissionService
-        return PermissionService(self).can_create_category()
-
-    def get_category_usage(self):
-        """Get category usage statistics for the user"""
-        from .subscription.services import PermissionService
-        return PermissionService(self).get_category_usage()
 
 
 class SubscriptionTier(models.TextChoices):
     """Subscription tier choices with Ebbinghaus-optimized intervals"""
-    FREE = 'free', 'FREE'
-    BASIC = 'basic', 'BASIC'
-    PRO = 'pro', 'PRO'
+    FREE = 'free', 'Free (3일)'
+    BASIC = 'basic', 'Basic (90일)'
+    PRO = 'pro', 'Pro (180일)'
 
 
 class BillingCycle(models.TextChoices):
@@ -223,7 +139,7 @@ class BillingCycle(models.TextChoices):
     YEARLY = 'yearly', '연간'
 
 
-class Subscription(BaseModel):
+class Subscription(TimestampMixin):
     """User subscription model"""
     user = models.OneToOneField(
         User, 
@@ -313,32 +229,21 @@ class Subscription(BaseModel):
     
     def save(self, *args, **kwargs):
         """Override save to set max_interval_days based on tier using Ebbinghaus forgetting curve"""
-        # Ebbinghaus-optimized maximum intervals for each tier
-        tier_max_intervals = {
-            SubscriptionTier.FREE: 3,     # Basic spaced repetition
-            SubscriptionTier.BASIC: 90,   # Medium-term memory retention
-            SubscriptionTier.PRO: 180,    # Complete long-term retention (6 months)
-        }
+        from .constants import TIER_MAX_INTERVALS
+        from .subscription import tier_utils
 
-        # Defensive code: Infer tier from max_interval_days if tier is invalid
-        valid_tiers = [choice[0] for choice in SubscriptionTier.choices]
-        if self.tier not in valid_tiers:
-            # Reverse mapping: max_interval_days -> tier
-            interval_to_tier = {v: k for k, v in tier_max_intervals.items()}
-            inferred_tier = interval_to_tier.get(self.max_interval_days)
-
-            if inferred_tier:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(
-                    f'Invalid tier "{self.tier}" for {self.user.email}. '
-                    f'Inferred tier "{inferred_tier}" from max_interval_days={self.max_interval_days}'
-                )
-                self.tier = inferred_tier
-
-        # Set max_interval_days based on tier
-        if self.tier in tier_max_intervals:
-            self.max_interval_days = tier_max_intervals[self.tier]
+        # Validate and set max_interval_days based on tier
+        if self.tier in TIER_MAX_INTERVALS:
+            self.max_interval_days = tier_utils.get_max_interval(self.tier)
+        else:
+            # Defensive: log warning for invalid tier
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f'Invalid tier "{self.tier}" for {self.user.email}. '
+                f'Using FREE tier defaults.'
+            )
+            self.tier = SubscriptionTier.FREE
+            self.max_interval_days = tier_utils.get_max_interval(SubscriptionTier.FREE)
 
         super().save(*args, **kwargs)
 
@@ -448,7 +353,7 @@ class PaymentHistory(models.Model):
 
 
 
-class BillingSchedule(BaseModel):
+class BillingSchedule(TimestampMixin):
     """Track future billing schedules and payments"""
     
     class ScheduleStatus(models.TextChoices):
@@ -532,10 +437,10 @@ class BillingSchedule(BaseModel):
 
 
 
-# Signal to create free subscription for new users
+# Signal to create basic subscription for new users
 @receiver(post_save, sender=User)
 def create_user_subscription(sender, instance, created, **kwargs):
-    """Create a BASIC subscription for new users"""
+    """Create a basic subscription for new users"""
     if created and not hasattr(instance, 'subscription'):
         Subscription.objects.create(
             user=instance,
@@ -546,77 +451,24 @@ def create_user_subscription(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Subscription)
 def adjust_review_schedules_on_subscription_change(sender, instance, created, **kwargs):
-    """Adjust existing review schedules when subscription tier changes"""
+    """
+    Trigger async task to adjust review schedules when subscription tier changes.
+
+    This signal delegates the heavy lifting to a Celery task to prevent
+    blocking the API response when subscription is updated.
+    """
     if not created:  # Only for updates, not new subscriptions
-        from datetime import timedelta
+        # Import task lazily to avoid circular imports
+        from review.tasks import adjust_review_schedules_on_subscription_change as adjust_task
 
-        from django.utils import timezone
+        # Queue the adjustment task asynchronously
+        adjust_task.delay(instance.id)
 
-        from review.models import ReviewSchedule
-        from review.utils import get_review_intervals
-
-        # Get new intervals for the updated subscription
-        new_intervals = get_review_intervals(instance.user)
-        new_max_interval = instance.max_interval_days
-        
-        # Get all active review schedules for this user
-        schedules = ReviewSchedule.objects.filter(
-            user=instance.user,
-            is_active=True
-        )
-        
-        for schedule in schedules:
-            schedule_changed = False
-            
-            # Check if current interval_index exceeds new tier limits
-            if schedule.interval_index >= len(new_intervals):
-                schedule.interval_index = len(new_intervals) - 1
-                schedule_changed = True
-            
-            # Get the current interval for this schedule
-            current_interval = new_intervals[schedule.interval_index]
-            
-            # Check if current interval exceeds new max interval
-            if current_interval > new_max_interval:
-                # Find the highest allowed interval
-                allowed_intervals = [i for i in new_intervals if i <= new_max_interval]
-                if allowed_intervals:
-                    max_allowed_interval = max(allowed_intervals)
-                    try:
-                        schedule.interval_index = new_intervals.index(max_allowed_interval)
-                        current_interval = max_allowed_interval
-                        schedule_changed = True
-                    except ValueError:
-                        # Fallback to the last allowed interval
-                        schedule.interval_index = len(allowed_intervals) - 1
-                        current_interval = allowed_intervals[-1]
-                        schedule_changed = True
-            
-            # If schedule was changed, update the next_review_date
-            if schedule_changed:
-                # Keep the review due soon if it was already due
-                if schedule.next_review_date <= timezone.now():
-                    # Keep it due today/now
-                    pass
-                else:
-                    # Recalculate next review date with new interval
-                    # Use a reasonable base date (either creation date or now minus interval)
-                    base_date = timezone.now()
-                    if schedule.created_at:
-                        # Calculate how far we should be from creation based on new interval
-                        days_since_creation = (timezone.now() - schedule.created_at).days
-                        if days_since_creation < current_interval:
-                            base_date = schedule.created_at
-                    
-                    schedule.next_review_date = base_date + timedelta(days=current_interval)
-                
-                schedule.save()
-        
-        # Log the adjustment for debugging
-        import logging
         logger = logging.getLogger(__name__)
-        logger.info(f"Adjusted {schedules.count()} review schedules for user {instance.user.email} "
-                   f"due to subscription change to {instance.tier} (max: {new_max_interval} days)")
+        logger.info(
+            f"Queued review schedule adjustment for user {instance.user.email} "
+            f"subscription change to {instance.tier}"
+        )
 
 
 class NotificationPreference(TimestampMixin):

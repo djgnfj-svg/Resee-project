@@ -37,7 +37,8 @@ const SubscriptionPage: React.FC = () => {
       features: [
         '최대 3일 복습 간격',
         '기본 통계',
-        '20개 콘텐츠 생성'
+        '20개 콘텐츠 생성',
+        '이메일 지원'
       ],
       coming_soon: true
     },
@@ -51,6 +52,7 @@ const SubscriptionPage: React.FC = () => {
         'AI 서술형 정답 지원',
         '무제한 콘텐츠 생성',
         '상세 통계 및 분석',
+        '우선 이메일 지원',
         ...(billingCycle === 'yearly' ? ['연간 결제 시 20% 할인!'] : [])
       ],
       coming_soon: true
@@ -66,6 +68,7 @@ const SubscriptionPage: React.FC = () => {
         'AI 주간 시험 생성',
         '무제한 콘텐츠 생성',
         '상세 통계 및 분석',
+        '우선 이메일 지원',
         ...(billingCycle === 'yearly' ? ['연간 결제 시 20% 할인!'] : [])
       ],
       coming_soon: true
@@ -102,18 +105,9 @@ const SubscriptionPage: React.FC = () => {
       return;
     }
 
-    // Determine if upgrade or downgrade
-    const tierHierarchy = { 'free': 0, 'basic': 1, 'pro': 2 };
-    const currentTierLevel = tierHierarchy[currentSubscription?.tier as SubscriptionTier] || 0;
-    const targetTierLevel = tierHierarchy[tier] || 0;
-
-    const isDowngrade = targetTierLevel < currentTierLevel;
-
-    // For FREE tier or downgrade, use password-based flow
-    if (tier === 'free' || isDowngrade) {
-      const action = isDowngrade ? '다운그레이드' : '변경';
-      const tierName = subscriptionTiers.find(t => t.name === tier)?.display_name || tier;
-      const confirmMessage = `${tierName} 플랜으로 ${action}하시겠습니까?`;
+    // For FREE tier, use password-based flow
+    if (tier === 'free') {
+      const confirmMessage = '무료 플랜으로 변경하시겠습니까?';
 
       if (window.confirm(confirmMessage)) {
         const password = window.prompt('보안을 위해 비밀번호를 입력해주세요:');
@@ -130,9 +124,8 @@ const SubscriptionPage: React.FC = () => {
         });
       }
     } else {
-      // For upgrades to paid tiers (BASIC/PRO), redirect to checkout page
-      const cycle = billingCycle === 'monthly' ? 'MONTHLY' : 'YEARLY';
-      navigate(`/payment/checkout?tier=${tier}&cycle=${cycle}`);
+      // Paid tiers (BASIC/PRO) are not available yet
+      toast.error('유료 플랜은 곧 출시될 예정입니다.');
     }
   };
 
@@ -180,29 +173,6 @@ const SubscriptionPage: React.FC = () => {
               에빙하우스 망각곡선을 활용한 스마트 복습 시스템
             </p>
           </div>
-        </div>
-
-        {/* Payment History Link */}
-        <div className="mb-8 text-center">
-          <a
-            href="/payment-history"
-            className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors font-medium"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            결제 내역 보기
-          </a>
         </div>
 
         {/* Subscription Tiers Preview */}

@@ -3,9 +3,12 @@ Django testing settings for resee project.
 Settings specific to testing environment.
 """
 
+import logging
 import os
 
 from .base import *
+
+logger = logging.getLogger(__name__)
 
 # Use a fast secret key for testing
 SECRET_KEY = 'test-secret-key-not-for-production'
@@ -86,7 +89,7 @@ CSRF_COOKIE_SECURE = False
 
 # Testing feature flags
 FEATURE_FLAGS.update({
-    'ENABLE_WEEKLY_TESTS': True,
+    'ENABLE_EXAMS': True,
     'ENABLE_ANALYTICS': True,
     'ENABLE_PAYMENT_SYSTEM': False,  # Disable payments in tests
     'ENABLE_DEBUG_TOOLBAR': False,
@@ -96,14 +99,6 @@ FEATURE_FLAGS.update({
 # Mock OAuth settings for testing
 GOOGLE_OAUTH2_CLIENT_ID = 'test-google-client-id'
 GOOGLE_OAUTH2_CLIENT_SECRET = 'test-google-client-secret'
-
-# Mock Stripe settings for testing
-STRIPE_PUBLIC_KEY = 'pk_test_mock'
-STRIPE_SECRET_KEY = 'sk_test_mock'
-STRIPE_WEBHOOK_SECRET = 'whsec_test_mock'
-STRIPE_PRICE_ID_BASIC = 'price_test_basic'
-STRIPE_PRICE_ID_PREMIUM = 'price_test_premium'
-STRIPE_PRICE_ID_PRO = 'price_test_pro'
 
 # Testing-specific monitoring (disabled)
 # Note: MONITORING system was removed with monitoring app cleanup
@@ -129,11 +124,7 @@ MIGRATION_MODULES = {
     'content': None,
     'accounts': None,
     'review': None,
-    'analytics': None,
-    'monitoring': None,
-    'payments': None,
-    'legal': None,
-    'weekly_test': None,  # Add weekly_test to avoid dependency errors
+    'exams': None,
 }
 
 # Test-specific cache timeouts (very short)
@@ -151,14 +142,10 @@ SUBSCRIPTION_SETTINGS = {
         'max_content': 10,
         'review_interval_days': 30,
     },
-    'PREMIUM_TIER_LIMITS': {
-        'max_content': 20,
-        'review_interval_days': 60,
-    },
     'PRO_TIER_LIMITS': {
         'max_content': -1,  # Unlimited
         'review_interval_days': 180,
     },
 }
 
-print("Testing environment loaded.")
+logger.info("Testing environment loaded.")

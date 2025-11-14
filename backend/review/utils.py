@@ -7,6 +7,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from .models import ReviewHistory
+from accounts.subscription.services import SubscriptionService
 
 
 def get_review_intervals(user=None):
@@ -145,7 +146,7 @@ def get_today_reviews_count(user, category=None):
     today = timezone.now().date()
 
     # Get user's subscription tier and determine overdue limit (same as TodayReviewView)
-    max_overdue_days = user.get_max_review_interval()
+    max_overdue_days = SubscriptionService(user).get_max_review_interval()
     if not max_overdue_days:
         max_overdue_days = 7  # Default to FREE tier
 

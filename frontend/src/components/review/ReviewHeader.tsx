@@ -1,17 +1,12 @@
 import React from 'react';
 
 interface ReviewHeaderProps {
-  reviewsCompleted: number;
-  totalSchedules: number;
-  progress: number;
+  remainingReviews: number;
 }
 
 const ReviewHeader: React.FC<ReviewHeaderProps> = ({
-  reviewsCompleted,
-  totalSchedules,
-  progress,
+  remainingReviews,
 }) => {
-  const remainingReviews = totalSchedules - reviewsCompleted;
 
   return (
     <div className="mb-8">
@@ -36,49 +31,18 @@ const ReviewHeader: React.FC<ReviewHeaderProps> = ({
           </div>
 
           {/* Stats Section */}
-          {totalSchedules > 0 && (
-            <div className="flex gap-4">
-              {/* Remaining Card */}
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 min-w-[140px] border border-white/30">
-                <div className="flex items-center gap-2 mb-1">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-xs font-medium text-white/90">남은 복습</span>
-                </div>
-                <div className="text-3xl font-bold text-white">{remainingReviews}</div>
+          {remainingReviews > 0 && (
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 min-w-[140px] border border-white/30">
+              <div className="flex items-center gap-2 mb-1">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-xs font-medium text-white/90">남은 복습</span>
               </div>
-
-              {/* Completed Card */}
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 min-w-[140px] border border-white/30">
-                <div className="flex items-center gap-2 mb-1">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-xs font-medium text-white/90">완료</span>
-                </div>
-                <div className="text-3xl font-bold text-white">{reviewsCompleted}</div>
-                <div className="text-xs text-white/70 mt-1">/ {totalSchedules}개</div>
-              </div>
+              <div className="text-3xl font-bold text-white">{remainingReviews}</div>
             </div>
           )}
         </div>
-
-        {/* Progress Bar */}
-        {totalSchedules > 0 && (
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-white/90">전체 진행률</span>
-              <span className="text-sm font-bold text-white">{Math.round(progress)}%</span>
-            </div>
-            <div className="w-full bg-white/30 rounded-full h-3 overflow-hidden">
-              <div
-                className="bg-white h-3 rounded-full transition-all duration-500 ease-out shadow-lg"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

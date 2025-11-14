@@ -1,5 +1,5 @@
 import React from 'react';
-import { WeeklyTest } from '../../utils/api/weeklyTest';
+import { WeeklyTest } from '../../utils/api/exams';
 import { renderTextWithCode } from '../../utils/textFormatters';
 
 interface TestQuestionViewProps {

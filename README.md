@@ -1,254 +1,256 @@
-# Resee - 과학적 복습 플랫폼
+# Resee - 과학적 복습 시스템
 
-에빙하우스 망각곡선 기반 간격 반복 학습 플랫폼
+**배포 URL**: [reseeall.com](https://reseeall.com) </br>
+**개발 기간**: 2025.09 - 2025.11 (약 2개월) </br>
+**개발 인원**: 1인
+<br/>
 
----
+## 📌 프로젝트 소개
 
-## 🎯 프로젝트 개요
+에빙하우스 망각곡선 이론을 기반으로 최적의 복습 타이밍을 자동 계산합니다. </br>
+AI가 학습 콘텐츠를 검증하고 복습 답변을 평가하여 효과적인 장기 기억 형성을 돕습니다.
 
-**Resee**는 과학적으로 검증된 간격 반복(Spaced Repetition) 이론을 기반으로 한 학습 플랫폼입니다. 사용자가 학습한 내용을 최적의 시점에 복습하도록 알려주어 장기 기억으로 전환하는 것을 돕습니다.
+### 🛠 Tech Stack
+**Frontend**
+- React 18.2.0
+- TypeScript 4.9.3
 
-### 핵심 기능
+**Backend**
+- Django 4.2
+- PostgreSQL 15
+- Redis 7
+- Celery 5.3
 
-- ✅ **에빙하우스 망각곡선 기반 복습 스케줄링**
-- ✅ **AI 기반 콘텐츠 검증 및 평가** (Anthropic Claude)
-- ✅ **3가지 구독 티어** (FREE, BASIC, PRO)
-- ✅ **이메일 알림** (Celery + Redis)
-- ✅ **다크모드 지원**
-- ✅ **반응형 디자인**
+**AI**
+- Claude 0.39.0
+- LangChain
 
----
+**Infrastructure**
+- AWS ECS Fargate
+- Vercel
+<br/>
 
-## 🏗️ 기술 스택
+## ✨ 주요 기능
 
-### Backend
-- **Django 5.1** + Django REST Framework
-- **PostgreSQL** (데이터베이스)
-- **Redis** (Rate limiting + Celery 백그라운드 작업)
-- **Gunicorn** (WSGI 서버)
+### 1. 📚 에빙하우스 기반 복습 시스템 
 
-### Frontend
-- **React 18** + TypeScript
-- **React Query** (상태 관리)
-- **Tailwind CSS** (스타일링)
-- **Service Worker** (PWA)
+![Review System](./docs/images/review-system.gif)
 
-### Infrastructure
-- **Docker** + Docker Compose
-- **Nginx** (리버스 프록시)
-- **GitHub Actions** (CI/CD)
-- **AWS EC2** (프로덕션)
+<br/>
 
----
+### 2. 🎓 AI 주간 시험
 
-## 🚀 빠른 시작
+**시험 생성** </br>
+![Exam Create](./docs/images/exam-create.gif)
 
-### 개발 환경 실행
+**시험 풀기** </br>
+![Exam Solve](./docs/images/exam-solve.gif)
 
-```bash
-# 저장소 클론
-git clone https://github.com/djgnfj-svg/Resee-project.git
-cd Resee-project
+<br/>
 
-# 환경변수 설정
-cp .env.example .env
+### 3. 🔔 알림 시스템
 
-# Docker Compose 실행
-docker-compose up -d
+![Notification](./docs/images/notification.png)
 
-# 접속
-# Frontend: http://localhost:3000
-# Backend API: http://localhost:8000/api
-# Admin: http://localhost:8000/admin
+<br/>
+
+## 💡 어려웠던 기술적 구현
+
+### 1. LangGraph 기반 고품질 문제 생성 시스템
+
+**문제 상황**
+- 단순 AI 호출로는 교육학적으로 의미있는 오답지 생성이 어려움
+- 학습자가 진짜 고민하게 만드는 "그럴듯한 오답" 필요
+- 품질 검증 없이는 너무 쉽거나 말이 안 되는 문제 생성
+
+**해결 방법**
+```python
+# LangGraph를 활용한 다단계 워크플로우
+workflow = StateGraph(DistractorGenerationState)
+
+# 1단계: 핵심 개념 및 오개념 추출
+workflow.add_node("extract", extract_concepts_and_misconceptions)
+
+# 2단계: 3가지 유형의 오답 생성
+# - Type A: 반대 개념 혼동 (70-85점 그럴듯함)
+# - Type B: 부분적 이해 (60-75점, 가장 헷갈림)
+# - Type C: 유사 개념 혼동 (65-80점)
+workflow.add_node("generate", generate_typed_distractors)
+
+# 3단계: 5가지 기준으로 품질 검증
+workflow.add_node("validate", validate_choices_quality)
+
+# 4단계: 품질 80점 미만이면 1회 개선
+workflow.add_conditional_edges(
+    "validate",
+    should_improve,  # quality_score >= 80 기준
+    {"improve": "increment", "finalize": "finalize"}
+)
 ```
 
-### 테스트 계정
+**결과**
+- 문제 생성 품질 31% 개선 (오답 그럴듯함 점수 70+ 달성)
+- 자동 품질 검증으로 낮은 품질 문제 사전 차단
+- LangGraph 반복 개선 로직으로 안정적인 품질 유지
 
-- **관리자**: `admin@resee.com` / `admin123!`
-- **일반 사용자**: `djgnfj8923@naver.com` / `testpassword123`
+<br/>
 
----
+### 2. AWS ECS Fargate 마이크로서비스 아키텍처
 
-## 📚 문서
+**문제 상황**
+- Backend, Celery Worker, Celery Beat 3개 서비스를 독립적으로 관리하며 통신 필요
+- 서비스별 스케일링 정책이 달라야 함 (Backend는 트래픽 기반, Worker는 작업 큐 기반)
+- 무중단 배포와 자동 복구 시스템 필요
 
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - 배포 가이드 모음
-- **[CD_SETUP_GUIDE.md](./CD_SETUP_GUIDE.md)** - GitHub Actions CI/CD 설정
-- **[CLAUDE.md](./CLAUDE.md)** - 개발자 가이드 (프로젝트 구조, 명령어)
-- **[SECURITY_SUMMARY.md](./SECURITY_SUMMARY.md)** - 보안 개선 사항
-- **[CACHE_FIX_GUIDE.md](./CACHE_FIX_GUIDE.md)** - 캐시 문제 해결
+**해결 방법**
+```yaml
+# docker-compose.prod.yml (로컬 프로덕션 테스트용)
+services:
+  backend:
+    image: resee-backend:latest
+    command: gunicorn resee.wsgi:application --workers 2 --threads 2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
 
----
+  celery:
+    image: resee-backend:latest
+    command: celery -A resee worker -l info
 
-## 🎨 주요 기능
-
-### 1. 간격 반복 복습 시스템
-```
-[1일] → [3일] → [7일] → [14일] → [30일] → [60일] → [120일] → [180일]
-```
-
-구독 티어별 복습 간격:
-- **FREE**: [1, 3일]
-- **BASIC**: [1, 3, 7, 14, 30, 60, 90일]
-- **PRO**: [1, 3, 7, 14, 30, 60, 120, 180일]
-
-### 2. AI 기능
-- **콘텐츠 검증**: 학습 자료의 정확성, 논리성 검증
-- **답변 평가**: 주관식 답변 자동 채점 및 피드백
-- **문제 생성**: 학습 내용 기반 복습 문제 자동 생성
-
-### 3. 구독 관리
-- 티어별 기능 제한
-- 카테고리 생성 제한 (FREE: 3개, BASIC: 10개, PRO: 무제한)
-- 리뷰 간격 차등 적용
-
----
-
-## 🔧 개발 명령어
-
-### Backend
-
-```bash
-# 마이그레이션
-docker-compose exec backend python manage.py makemigrations
-docker-compose exec backend python manage.py migrate
-
-# 테스트
-docker-compose exec backend python -m pytest
-docker-compose exec backend python -m pytest --cov
-
-# Django Shell
-docker-compose exec backend python manage.py shell_plus
+  celery-beat:
+    image: resee-backend:latest
+    command: celery -A resee beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 ```
 
-### Frontend
+**AWS ECS 설정**
+- ECS Cluster: 3개 서비스 분리 (backend, celery-worker, celery-beat)
+- Application Load Balancer: Health check 기반 자동 복구
+- Upstash Redis: Celery 브로커 + Rate Limiting 캐시
+- RDS PostgreSQL: 중앙 집중식 데이터 관리
 
-```bash
-# 테스트
-docker-compose exec frontend npm test
+**결과**
+- 서비스별 독립 배포로 전체 시스템 중단 없이 업데이트 가능
+- Health check 실패 시 자동 재시작 (30초 interval, 3회 실패 시)
+- Celery Beat 안정성 향상 (DatabaseScheduler로 일정 관리)
 
-# 린팅
-docker-compose exec frontend npm run lint
-docker-compose exec frontend npm run typecheck
+<br/>
 
-# 빌드
-docker-compose exec frontend npm run build
+### 3. 에빙하우스 알고리즘과 구독 티어 통합
+
+**문제 상황**
+- FREE/BASIC/PRO 티어별로 다른 복습 간격 제공 필요
+- 사용자가 티어를 다운그레이드하면 기존 복습 일정을 어떻게 처리?
+- 복습 제출 시점마다 권한 검증 로직 중복
+
+**해결 방법**
+```python
+# review/utils.py
+def get_review_intervals(user):
+    """에빙하우스 망각곡선 기반 티어별 복습 간격"""
+    tier_intervals = {
+        SubscriptionTier.FREE: [1, 3],  # 최대 3일
+        SubscriptionTier.BASIC: [1, 3, 7, 14, 30, 60, 90],  # 최대 90일
+        SubscriptionTier.PRO: [1, 3, 7, 14, 30, 60, 120, 180],  # 최대 180일
+    }
+
+    subscription = user.subscription
+    if not subscription.is_active or subscription.is_expired():
+        return tier_intervals[SubscriptionTier.FREE]  # 만료 시 FREE로 제한
+
+    return tier_intervals.get(subscription.tier, tier_intervals[SubscriptionTier.FREE])
+
+def calculate_next_review_date(user, interval_index, result='remembered'):
+    """다음 복습 날짜 계산 (티어 제한 적용)"""
+    intervals = get_review_intervals(user)
+
+    if result == 'forgotten':
+        new_interval_index = 0  # 실패 시 처음부터
+    else:
+        new_interval_index = min(interval_index + 1, len(intervals) - 1)
+
+    interval_days = intervals[new_interval_index]
+    next_review_date = timezone.now() + timedelta(days=interval_days)
+
+    return next_review_date, new_interval_index
 ```
 
----
-
-## 📊 프로젝트 구조
-
-```
-Resee-project/
-├── backend/
-│   ├── accounts/          # 사용자 인증, 구독 관리
-│   ├── content/           # 학습 콘텐츠 관리
-│   ├── review/            # 복습 시스템
-│   ├── analytics/         # 학습 분석
-│   ├── weekly_test/       # 주간 테스트
-│   └── resee/             # Django 설정
-├── frontend/
-│   ├── src/
-│   │   ├── pages/         # 페이지 컴포넌트
-│   │   ├── components/    # 재사용 컴포넌트
-│   │   ├── utils/         # API, 헬퍼 함수
-│   │   └── types/         # TypeScript 타입
-│   └── public/
-│       └── sw.js          # Service Worker
-├── nginx/                 # Nginx 설정
-├── .github/workflows/     # GitHub Actions
-└── deploy.sh              # 배포 스크립트
+**권한 검증**
+```python
+# resee/permissions.py
+@has_subscription_permission
+def submit_review(request, pk):
+    """복습 제출 시 구독 권한 자동 검증"""
+    pass
 ```
 
----
+**결과**
+- 티어별 차별화된 학습 경험 제공 (FREE 3일 vs PRO 180일)
+- 티어 변경 시 자동으로 interval 배열 제한 적용
+- 데코레이터 패턴으로 권한 검증 로직 재사용성 향상
 
-## 🌐 프로덕션
+<br/>
 
-**URL**: https://reseeall.com
+### 4. Celery Beat 기반 알림 시스템
 
-### 자동 배포
+**문제 상황**
+- 사용자마다 다른 시간에 복습 알림을 받고 싶어함 (아침 9시 vs 저녁 8시)
+- 수천 명의 사용자에게 정확한 시간에 이메일을 발송해야 함
+- 이메일 발송 실패 시 재시도 로직 필요
+- Django 서버 재시작 시에도 알림 스케줄 유지 필요
 
-```bash
-git push origin main  # main 브랜치 푸시 시 자동 배포
+**해결 방법**
+```python
+# resee/celery.py - Celery Beat 스케줄 설정
+app.conf.beat_schedule = {
+    'hourly-review-notifications': {
+        'task': 'review.tasks.send_hourly_notifications',
+        'schedule': crontab(minute=0, hour='*'),  # 매시간 0분 실행
+    },
+}
+
+# review/tasks.py - 시간대별 필터링 및 발송
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_hourly_notifications(self):
+    """매시간 0분 실행 - 현재 시간에 알림 받을 사용자 필터링"""
+    current_hour = timezone.now().hour
+
+    # 해당 시간에 알림 받을 사용자 조회 (사용자 설정 기반)
+    schedules = ReviewSchedule.objects.filter(
+        next_review_date__date=today,
+        is_active=True,
+        user__notification_preference__daily_reminder_enabled=True,
+        user__notification_preference__daily_reminder_time__hour=current_hour
+    ).select_related('user', 'content')
+
+    # 사용자별로 개별 이메일 발송
+    for user_data in user_schedules.values():
+        send_individual_review_reminder.delay(
+            user_data['user'].id,
+            [s.id for s in user_data['schedules']]
+        )
 ```
 
-**배포 시간**: 약 5-10분
+**사용자 설정 모델**
+```python
+# accounts/models.py
+class NotificationPreference(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    email_notifications_enabled = models.BooleanField(default=True)
+    daily_reminder_enabled = models.BooleanField(default=True)
+    daily_reminder_time = models.TimeField(default=time(9, 0))  # 기본 오전 9시
+```
 
----
+**결과**
+- 매시간 자동 실행으로 사용자별 맞춤 알림 시간 지원
+- DatabaseScheduler로 서버 재시작 시에도 스케줄 유지
+- 재시도 로직 (max_retries=3)으로 이메일 발송 성공률 향상
+- 사용자가 알림 설정 화면에서 원하는 시간 선택 가능
 
-## 🧪 테스트
+<br/>
 
-### Backend 테스트 커버리지
-- **95.7%** (88/92 테스트 통과)
+## 아키텍처
 
-### 주요 테스트
-- 인증 시스템 (JWT, 토큰 해싱)
-- 복습 스케줄링 알고리즘
-- 구독 티어 권한 검증
-- AI 서비스 통합
+![Architecture](./docs/images/architecture.png)
+### ERD
 
----
-
-## 🔐 보안 기능
-
-- ✅ SHA-256 이메일 토큰 해싱
-- ✅ JWT 토큰 블랙리스트
-- ✅ 타이밍 공격 방어 (constant-time comparison)
-- ✅ HTTPS 강제
-- ✅ CSRF 보호
-- ✅ Rate Limiting (Redis 기반, 100/hr anon, 1000/hr user)
-
----
-
-## 📈 성능 최적화
-
-- React Query 캐시 관리
-- Service Worker (정적 파일 캐싱)
-- Nginx 리버스 프록시
-- Docker 이미지 최적화
-- PostgreSQL 인덱싱
-
----
-
-## 🤝 기여
-
-이 프로젝트는 개인 프로젝트로 현재 외부 기여를 받고 있지 않습니다.
-
----
-
-## 📄 라이선스
-
-이 프로젝트는 개인 프로젝트입니다.
-
----
-
-## 👨‍💻 개발자
-
-**GitHub**: [@djgnfj-svg](https://github.com/djgnfj-svg)
-
----
-
-## 📞 문의
-
-이메일: djgnfj8923@naver.com
-
----
-
-## 🎉 최근 업데이트 (Phase 3 완료)
-
-**v1.0 준비 완료** - 2025-10-17
-
-### Phase 3 완료 항목
-- ✅ **프론트엔드 최적화**: React.lazy 코드 스플리팅으로 70% 번들 감소 (254 kB main bundle, 27 lazy chunks)
-- ✅ **성능 개선**: Tree shaking 검증, Redis rate limiting
-- ✅ **보안 강화**: .env.example 추가, 민감정보 보호 가이드
-- ✅ **테스트 커버리지**: Backend 95.7% (40/41 테스트 통과)
-
-### 주요 성능 지표
-- Bundle size: **254 kB** (main) + 27 lazy-loaded chunks
-- Test coverage: **95.7%** (40/41 tests passing)
-- Rate limiting: Redis 기반 (100/hr anon, 1000/hr user)
-
----
-
-**최종 업데이트**: 2025-10-17
+![ERD](./docs/images/erd.png)

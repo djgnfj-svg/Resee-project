@@ -1,12 +1,12 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { analyticsAPI } from '../../utils/api';
+import { reviewAPI } from '../../utils/api';
 
 const AccountStats: React.FC = () => {
   // Fetch dashboard statistics
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard'],
-    queryFn: analyticsAPI.getDashboard,
+    queryFn: reviewAPI.getDashboard,
   });
 
   return (

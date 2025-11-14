@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { analyticsAPI, contentAPI } from '../utils/api';
+import { reviewAPI, contentAPI } from '../utils/api';
 import { DashboardData, ContentUsage, CategoryUsage } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import EmptyDashboard from '../components/dashboard/EmptyDashboard';
@@ -14,7 +14,7 @@ const SimpleDashboard: React.FC = () => {
 
   const { data: dashboardData, isLoading, error, refetch } = useQuery<DashboardData>({
     queryKey: ['dashboard', user?.id],
-    queryFn: analyticsAPI.getDashboard,
+    queryFn: reviewAPI.getDashboard,
     enabled: !!user,
   });
 
@@ -243,7 +243,7 @@ const SimpleDashboard: React.FC = () => {
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">콘텐츠</span>
           </a>
           <a
-            href="/weekly-test"
+            href="/exams"
             className="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
           >
             <svg className="w-8 h-8 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

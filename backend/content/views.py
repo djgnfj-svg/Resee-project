@@ -2,6 +2,7 @@ import logging
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Count, Prefetch
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -9,7 +10,6 @@ from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from resee.cache_utils import CacheManager, cached_method
 from resee.mixins import AuthorViewSetMixin, UserOwnershipMixin
 from resee.pagination import ContentPagination, OptimizedPageNumberPagination
 # Performance monitoring removed for production
@@ -18,7 +18,8 @@ from resee.structured_logging import (log_api_call, log_performance,
 
 from .models import Category, Content
 from .serializers import CategorySerializer, ContentSerializer
-from .ai_validation import validate_content
+from ai_services import validate_content
+from accounts.subscription.services import PermissionService
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class CategoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
         if hasattr(response, 'data'):
             response.data = {
                 'results': response.data.get('results', response.data),
-                'usage': request.user.get_category_usage(),
+                'usage': PermissionService(request.user).get_category_usage(),
                 'count': response.data.get('count') if isinstance(response.data, dict) else len(response.data),
                 'next': response.data.get('next') if isinstance(response.data, dict) else None,
                 'previous': response.data.get('previous') if isinstance(response.data, dict) else None,
@@ -76,8 +77,8 @@ class CategoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         # Check category creation limit
         user = request.user
-        if not user.can_create_category():
-            usage = user.get_category_usage()
+        if not PermissionService(user).can_create_category():
+            usage = PermissionService(user).get_category_usage()
             return Response({
                 'error': '카테고리 생성 제한에 도달했습니다',
                 'usage': usage,
@@ -104,18 +105,31 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'updated_at', 'title']
     ordering = ['-created_at']
     
-    # Query optimization configuration
-    select_related_fields = ['category', 'author']
-    prefetch_related_fields = ['review_history', 'review_schedules']
-    
     def get_queryset(self):
         queryset = super().get_queryset()
-        
+
+        # Import here to avoid circular imports
+        from review.models import ReviewSchedule
+
+        # Optimize queries with select_related and prefetch_related
+        queryset = queryset.select_related('category', 'author')
+
+        # Annotate review count to avoid N+1 queries (성공한 복습만 카운트)
+        queryset = queryset.annotate(
+            review_count_annotated=Count('review_history', filter=models.Q(review_history__result='remembered'), distinct=True)
+        )
+
+        # Prefetch review schedules filtered by current user
+        user_schedules = ReviewSchedule.objects.filter(user=self.request.user)
+        queryset = queryset.prefetch_related(
+            Prefetch('review_schedules', queryset=user_schedules, to_attr='user_review_schedules')
+        )
+
         # Category filter
         category_slug = self.request.query_params.get('category_slug', None)
         if category_slug:
             queryset = queryset.filter(category__slug=category_slug)
-            
+
         return queryset
     
     @swagger_auto_schema(
@@ -135,7 +149,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         if hasattr(response, 'data'):
             response.data = {
                 'results': response.data.get('results', response.data),
-                'usage': request.user.get_content_usage(),
+                'usage': PermissionService(request.user).get_content_usage(),
                 'count': response.data.get('count') if isinstance(response.data, dict) else len(response.data),
                 'next': response.data.get('next') if isinstance(response.data, dict) else None,
                 'previous': response.data.get('previous') if isinstance(response.data, dict) else None,
@@ -167,15 +181,18 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         # Check content creation limit
         user = request.user
-        if not user.can_create_content():
-            usage = user.get_content_usage()
+        if not PermissionService(user).can_create_content():
+            usage = PermissionService(user).get_content_usage()
             return Response({
                 'error': '콘텐츠 생성 제한에 도달했습니다',
                 'usage': usage,
                 'message': '더 많은 콘텐츠를 생성하려면 구독을 업그레이드하세요'
             }, status=status.HTTP_402_PAYMENT_REQUIRED)
 
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        logger.info(f"Content created for user {user.id}")
+
+        return response
     
     @swagger_auto_schema(
         operation_summary="콘텐츠 상세 조회",
@@ -192,7 +209,9 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         responses={200: ContentSerializer()}
     )
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+        response = super().update(request, *args, **kwargs)
+        logger.info(f"Content updated for user {request.user.id}")
+        return response
     
     @swagger_auto_schema(
         operation_summary="콘텐츠 삭제",
@@ -200,88 +219,9 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         responses={204: "삭제 완료"}
     )
     def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
-    
-    
-    @swagger_auto_schema(
-        operation_summary="카테고리별 콘텐츠 조회",
-        operation_description="콘텐츠를 카테고리별로 그룹화하여 반환합니다.",
-        responses={200: openapi.Response(
-            description="카테고리별로 그룹화된 콘텐츠",
-            examples={
-                "application/json": {
-                    "english": {
-                        "category": {"id": 1, "name": "영어", "slug": "english"},
-                        "contents": [{"id": 1, "title": "영어 단어"}],
-                        "count": 1
-                    }
-                }
-            }
-        )}
-    )
-    @action(detail=False, methods=['get'])
-    @cached_method(timeout=600, key_prefix='content_by_category')
-    def by_category(self, request):
-        """Get contents grouped by category - optimized version with error handling"""
-        try:
-            # Import at method level to avoid circular imports
-            from django.conf import settings
-            from django.db import connection
-
-            # Log query count in development
-            if settings.DEBUG:
-                initial_queries = len(connection.queries)
-            # Optimize: Get user's custom categories only
-            user_categories = Category.objects.filter(
-                user=self.request.user
-            ).only('id', 'name', 'slug', 'user')  # Only select needed fields
-            
-            # Optimize: Get all user's contents with category data prefetched
-            user_contents = self.get_queryset()
-            
-            result = {}
-            
-            # Group contents by category efficiently using in-memory grouping
-            contents_by_category = {}
-            for content in user_contents:
-                category_id = content.category_id if content.category else None
-                if category_id not in contents_by_category:
-                    contents_by_category[category_id] = []
-                contents_by_category[category_id].append(content)
-            
-            # Build result for each category
-            for category in user_categories:
-                category_contents = contents_by_category.get(category.id, [])
-                # Include all user's custom categories (even if empty)
-                result[category.slug] = {
-                    'category': CategorySerializer(category).data,
-                    'contents': ContentSerializer(category_contents, many=True).data,
-                    'count': len(category_contents)
-                }
-            
-            # Add uncategorized content
-            uncategorized_contents = contents_by_category.get(None, [])
-            if uncategorized_contents:
-                result['uncategorized'] = {
-                    'category': {'name': '미분류', 'slug': 'uncategorized'},
-                    'contents': ContentSerializer(uncategorized_contents, many=True).data,
-                    'count': len(uncategorized_contents)
-                }
-            
-            # Log performance metrics in development
-            if settings.DEBUG:
-                final_queries = len(connection.queries)
-                query_count = final_queries - initial_queries
-                logger.info(f"by_category API - Query count: {query_count}, Categories: {len(user_categories)}, Contents: {len(user_contents)}")
-            
-            return Response(result)
-            
-        except Exception as e:
-            logger.error(f"Error in by_category view: {str(e)}", exc_info=True)
-            return Response(
-                {'error': '카테고리별 콘텐츠 조회 중 오류가 발생했습니다.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        response = super().destroy(request, *args, **kwargs)
+        logger.info(f"Content deleted for user {request.user.id}")
+        return response
 
     @swagger_auto_schema(
         operation_summary="콘텐츠 AI 검증",

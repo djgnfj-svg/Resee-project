@@ -3,8 +3,11 @@ Django settings package for resee project.
 Automatically loads the appropriate settings based on the DJANGO_SETTINGS_MODULE environment variable.
 """
 
+import logging
 import os
 import sys
+
+logger = logging.getLogger(__name__)
 
 # Get the environment from DJANGO_SETTINGS_MODULE or ENVIRONMENT variable
 settings_module = os.environ.get('DJANGO_SETTINGS_MODULE', '')
@@ -22,8 +25,8 @@ elif environment == 'staging' or 'staging' in settings_module:
     # Staging-specific overrides
     DEBUG = os.environ.get('DEBUG', 'False') == 'True'
     ALLOWED_HOSTS.extend(['staging.resee.com', 'resee-staging.herokuapp.com'])
-    
-    print("Staging environment loaded (based on development settings).")
+
+    logger.info("Staging environment loaded (based on development settings).")
 else:
     # Default to development
     from .development import *
@@ -65,7 +68,7 @@ def validate_environment():
 # Run validation
 validation_warnings = validate_environment()
 for warning in validation_warnings:
-    print(f"⚠️  {warning}")
+    logger.warning(warning)
 
 # Export current environment info
 CURRENT_ENVIRONMENT = environment

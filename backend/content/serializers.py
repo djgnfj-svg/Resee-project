@@ -82,7 +82,7 @@ class ContentSerializer(serializers.ModelSerializer):
 
         # Generate multiple choice options for MC mode
         if content.review_mode == 'multiple_choice':
-            from .ai_multiple_choice import generate_multiple_choice_options
+            from ai_services import generate_multiple_choice_options
             mc_options = generate_multiple_choice_options(content.title, content.content)
             if mc_options:
                 content.mc_choices = mc_options
@@ -113,7 +113,7 @@ class ContentSerializer(serializers.ModelSerializer):
 
         # Regenerate MC options if content changed and mode is MC
         if content.review_mode == 'multiple_choice' and (title_changed or content_changed):
-            from .ai_multiple_choice import generate_multiple_choice_options
+            from ai_services import generate_multiple_choice_options
             mc_options = generate_multiple_choice_options(content.title, content.content)
             if mc_options:
                 content.mc_choices = mc_options
@@ -125,11 +125,21 @@ class ContentSerializer(serializers.ModelSerializer):
     
     def get_review_count(self, obj):
         """Get the number of completed reviews for this content"""
+        # Use annotated value if available (from optimized queryset)
+        if hasattr(obj, 'review_count_annotated'):
+            return obj.review_count_annotated
+        # Fallback to direct count (e.g., during tests or direct serialization)
         return obj.review_history.count()
-    
+
     def get_next_review_date(self, obj):
         """Get next review date"""
         try:
+            # Use prefetched value if available (from optimized queryset)
+            if hasattr(obj, 'user_review_schedules'):
+                schedules = obj.user_review_schedules
+                return schedules[0].next_review_date if schedules else None
+
+            # Fallback to query (e.g., during tests or direct serialization)
             schedule = obj.review_schedules.filter(user=self.context['request'].user).first()
             return schedule.next_review_date if schedule else None
         except (KeyError, AttributeError) as e:

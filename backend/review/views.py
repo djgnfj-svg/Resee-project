@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 
-from django.core.cache import caches
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -14,12 +14,13 @@ from rest_framework.views import APIView
 
 from resee.mixins import UserOwnershipMixin
 from resee.pagination import OptimizedPageNumberPagination, ReviewPagination
-from utils.cache_utils import invalidate_cache
+from resee.cache_utils import invalidate_cache
 
 from .models import ReviewHistory, ReviewSchedule
 from .serializers import ReviewHistorySerializer, ReviewScheduleSerializer
 from .utils import (calculate_success_rate, get_review_intervals,
-                    get_today_reviews_count)
+                    get_today_reviews_count, get_pending_reviews_count)
+from accounts.subscription.services import SubscriptionService
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,66 @@ class ReviewScheduleViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_summary="오늘의 복습 목록 조회 (RESTful)",
+        operation_description="사용자의 구독 티어에 따라 복습할 콘텐츠를 반환합니다.",
+        manual_parameters=[
+            openapi.Parameter(
+                'category_slug',
+                openapi.IN_QUERY,
+                description="특정 카테고리만 필터링",
+                type=openapi.TYPE_STRING
+            ),
+        ],
+        responses={200: ReviewScheduleSerializer(many=True)}
+    )
+    @action(detail=False, methods=['get'], url_path='today')
+    def today(self, request):
+        """Get review items due today or overdue (RESTful endpoint)"""
+        # Delegate to existing TodayReviewView
+        from .views import TodayReviewView
+        view = TodayReviewView()
+        view.request = request
+        view.format_kwarg = None
+        return view.get(request)
+
+    @swagger_auto_schema(
+        operation_summary="복습 완료 처리 (RESTful)",
+        operation_description="복습 결과를 기록하고 다음 복습 일정을 계산합니다.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'result': openapi.Schema(type=openapi.TYPE_STRING, enum=['remembered', 'partial', 'forgot']),
+                'time_spent': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'notes': openapi.Schema(type=openapi.TYPE_STRING),
+                'descriptive_answer': openapi.Schema(type=openapi.TYPE_STRING),
+                'selected_choice': openapi.Schema(type=openapi.TYPE_STRING),
+                'user_title': openapi.Schema(type=openapi.TYPE_STRING),
+            }
+        ),
+        responses={200: "복습 완료 성공"}
+    )
+    @action(detail=True, methods=['post'], url_path='completions')
+    def completions(self, request, pk=None):
+        """Complete a review (RESTful endpoint)"""
+        # Get the schedule (ownership checked by UserOwnershipMixin)
+        schedule = self.get_object()
+
+        # Create new data dict with content_id added
+        data = dict(request.data)
+        data['content_id'] = schedule.content.id
+
+        # Replace request._full_data to inject content_id
+        request._full_data = data
+
+        # Delegate to existing CompleteReviewView
+        from .views import CompleteReviewView
+        view = CompleteReviewView()
+        view.request = request
+        view.format_kwarg = None
+
+        return view.post(request)
 
 
 class ReviewHistoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
@@ -107,45 +168,33 @@ class TodayReviewView(APIView):
     )
     def get(self, request):
         """Get review items due today or overdue (within subscription limits)"""
-        # Generate cache key
-        category_slug = request.query_params.get('category_slug', '')
-        cache_key = f'review:today:{request.user.id}:{category_slug}'
-
-        # Try to get from cache
-        cache = caches['api']
-        cached_data = cache.get(cache_key)
-
-        if cached_data is not None:
-            logger.info(f"Cache HIT: {cache_key}")
-            return Response(cached_data)
-
-        logger.info(f"Cache MISS: {cache_key}")
-
         today = timezone.now().date()
-        
+
         # Get user's subscription tier and determine overdue limit
-        max_overdue_days = request.user.get_max_review_interval()
+        max_overdue_days = SubscriptionService(request.user).get_max_review_interval()
         if not max_overdue_days:
             max_overdue_days = 7  # Default to FREE tier
-        
+
         # Calculate cutoff date for overdue reviews based on subscription
         # Don't show reviews older than the subscription allows
         cutoff_date = timezone.now() - timedelta(days=max_overdue_days)
-        
+
         schedules = ReviewSchedule.objects.filter(
             user=request.user,
             is_active=True
         ).filter(
             # Only include reviews that are due TODAY or overdue (but within subscription range)
             # OR initial reviews not yet completed
-            Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date) | 
+            Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date) |
             Q(initial_review_completed=False)
-        ).select_related(
+        )
+
+        schedules = schedules.select_related(
             'content',
             'content__category',
             'user'
         ).order_by('next_review_date')
-        
+
         # Category filter
         category_slug = request.query_params.get('category_slug', None)
         if category_slug:
@@ -169,14 +218,11 @@ class TodayReviewView(APIView):
 
         response_data = {
             'results': serializer.data,
-            'count': len(serializer.data),  # Today's reviews count
-            'total_count': total_schedules,  # Total active schedules
+            'count': len(serializer.data),  # 남은 복습 개수
+            'total_count': total_schedules,  # 전체 활성 스케줄
             'subscription_tier': request.user.subscription.tier,
-            'max_interval_days': request.user.get_max_review_interval()
+            'max_interval_days': SubscriptionService(request.user).get_max_review_interval()
         }
-
-        # Cache the response (TTL: 1 hour)
-        cache.set(cache_key, response_data, timeout=3600)
 
         return Response(response_data)
 
@@ -229,6 +275,9 @@ class CompleteReviewView(APIView):
     )
     def post(self, request):
         """Complete a review and update schedule with improved error handling"""
+        from django.utils import timezone
+        import json
+
         content_id = request.data.get('content_id')
         result = request.data.get('result')  # 'remembered', 'partial', 'forgot'
         time_spent = request.data.get('time_spent')
@@ -348,7 +397,7 @@ class CompleteReviewView(APIView):
                         )
 
                     # AI evaluation
-                    from .ai_title_evaluation import ai_title_evaluator
+                    from ai_services import ai_title_evaluator
                     if not ai_title_evaluator.is_available():
                         return Response(
                             {'error': 'AI 평가 서비스를 사용할 수 없습니다.'},
@@ -382,7 +431,7 @@ class CompleteReviewView(APIView):
                         )
 
                     # AI evaluation
-                    from .ai_evaluation import ai_answer_evaluator
+                    from ai_services import ai_answer_evaluator
                     if not ai_answer_evaluator.is_available():
                         return Response(
                             {'error': 'AI 평가 서비스를 사용할 수 없습니다.'},
@@ -425,20 +474,20 @@ class CompleteReviewView(APIView):
 
                     logger.info(f"기억 확인 모드: 사용자 선택 -> {result}")
 
-                # Create review history with mode-specific data
-                history = ReviewHistory.objects.create(
-                    content=schedule.content,
+                # === 즉시 DB 저장 (ReviewHistory) ===
+                ReviewHistory.objects.create(
+                    content_id=content_id,
                     user=request.user,
                     result=result,
-                    time_spent=time_spent,
+                    time_spent=time_spent or 0,
                     notes=notes,
-                    descriptive_answer=descriptive_answer,  # descriptive mode
-                    selected_choice=selected_choice,  # multiple_choice mode
-                    user_title=user_title,  # subjective mode
-                    ai_score=ai_score,
-                    ai_feedback=ai_feedback
+                    descriptive_answer=descriptive_answer,
+                    selected_choice=selected_choice,
+                    user_title=user_title,
+                    ai_score=float(ai_score) if ai_score is not None else None,
+                    ai_feedback=ai_feedback,
                 )
-                
+
                 # Update schedule based on result with subscription limits
                 if result == 'remembered':
                     # Mark initial review as completed if it's the first review
@@ -454,7 +503,7 @@ class CompleteReviewView(APIView):
                         schedule.save()
                     # Stay at current interval but reset date with subscription validation
                     intervals = get_review_intervals(request.user)
-                    user_max_interval = request.user.get_max_review_interval()
+                    user_max_interval = SubscriptionService(request.user).get_max_review_interval()
                     
                     # Ensure current interval doesn't exceed subscription limits
                     if schedule.interval_index >= len(intervals):
@@ -501,16 +550,9 @@ class CompleteReviewView(APIView):
                     response_data['ai_evaluation'] = {
                         'score': ai_score,
                         'feedback': ai_feedback,
-                        'auto_result': ai_auto_result if ai_auto_result else result
+                        'auto_result': ai_auto_result if ai_auto_result else result,
+                        'is_correct': ai_score == 100.0  # 객관식용 정답 여부
                     }
-
-                # Invalidate related caches
-                cache_keys = [
-                    f'review:today:{request.user.id}:',  # All categories
-                    f'analytics:stats:{request.user.id}',
-                ]
-                invalidate_cache(*cache_keys)
-                logger.info(f"Cache invalidated for user {request.user.id} after review completion")
 
                 return Response(response_data)
 
@@ -636,5 +678,60 @@ class CategoryReviewStatsView(APIView):
                     'success_rate': success_rate,
                     'total_reviews_30_days': total_reviews_30_days,
                 }
-        
+
         return Response(result)
+
+
+class DashboardStatsView(APIView):
+    """
+    대시보드 통계
+
+    대시보드에 표시할 기본 학습 통계를 제공합니다.
+    """
+
+    @swagger_auto_schema(
+        operation_summary="대시보드 통계 조회",
+        operation_description="""
+        대시보드에 표시할 기본 통계를 제공합니다.
+
+        **포함 정보:**
+        - today_reviews: 오늘 완료한 복습 수
+        - pending_reviews: 대기 중인 복습 수
+        - total_content: 총 콘텐츠 수
+        - success_rate: 30일 성공률 (%)
+        - total_reviews_30_days: 최근 30일간 총 복습 수
+        """,
+        responses={200: openapi.Response(
+            description="대시보드 통계",
+            examples={
+                "application/json": {
+                    "today_reviews": 5,
+                    "pending_reviews": 12,
+                    "total_content": 45,
+                    "success_rate": 87.5,
+                    "total_reviews_30_days": 120
+                }
+            }
+        )}
+    )
+    def get(self, request):
+        """Get basic dashboard statistics"""
+        from content.models import Content
+
+        user = request.user
+
+        # Basic counts
+        today_reviews = get_today_reviews_count(user)
+        pending_reviews = get_pending_reviews_count(user)
+        total_content = Content.objects.filter(author=user).count()
+
+        # 30-day success rate
+        success_rate, total_reviews_30_days, _ = calculate_success_rate(user, days=30)
+
+        return Response({
+            'today_reviews': today_reviews,
+            'pending_reviews': pending_reviews,
+            'total_content': total_content,
+            'success_rate': success_rate,
+            'total_reviews_30_days': total_reviews_30_days,
+        })

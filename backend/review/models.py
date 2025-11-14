@@ -4,13 +4,14 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-from resee.models import BaseUserModel
+from resee.models import TimestampMixin, UserOwnedMixin
 from resee.validators import validate_review_interval_index
+from accounts.subscription.services import SubscriptionService
 
 User = get_user_model()
 
 
-class ReviewSchedule(BaseUserModel):
+class ReviewSchedule(TimestampMixin, UserOwnedMixin):
     """Review schedule for content"""
     content = models.ForeignKey(
         'content.Content',
@@ -97,7 +98,7 @@ class ReviewSchedule(BaseUserModel):
         next_interval = intervals[self.interval_index]
         
         # Additional safety check: ensure interval doesn't exceed user's max allowed
-        user_max_interval = self.user.get_max_review_interval()
+        user_max_interval = SubscriptionService(self.user).get_max_review_interval()
         if next_interval > user_max_interval:
             # Find the highest allowed interval for this user
             allowed_intervals = [i for i in intervals if i <= user_max_interval]
@@ -127,7 +128,7 @@ class ReviewSchedule(BaseUserModel):
         self.save()
 
 
-class ReviewHistory(BaseUserModel):
+class ReviewHistory(TimestampMixin, UserOwnedMixin):
     """History of review sessions"""
     RESULT_CHOICES = [
         ('remembered', '기억함'),

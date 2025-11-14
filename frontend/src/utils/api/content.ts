@@ -69,11 +69,6 @@ export const contentAPI = {
     invalidateContentCache(); // 캐시 무효화
   },
 
-  getContentsByCategory: async (): Promise<Record<string, Content[]>> => {
-    const response = await api.get('/contents/by_category/');
-    return response.data;
-  },
-
   validateContent: async (title: string, content: string): Promise<{
     is_valid: boolean;
     factual_accuracy: { score: number; issues: string[] };

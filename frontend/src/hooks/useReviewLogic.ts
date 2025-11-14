@@ -57,21 +57,24 @@ export const useReviewLogic = (
   useEffect(() => {
     if (reviewData) {
       let reviews: ReviewSchedule[];
-      let todayCount = 0;
+      let totalCount = 0;
 
       if (isTodayReviewsResponse(reviewData)) {
         reviews = reviewData.results;
-        // Use 'count' (today's reviews) instead of 'total_count' (all active schedules)
-        todayCount = reviewData.count || reviews.length;
+        totalCount = reviewData.total_count || 0;
       } else {
         reviews = extractResults(reviewData) as ReviewSchedule[];
-        todayCount = reviews.length;
+        // Try to extract total_count if it exists in raw data
+        if (typeof reviewData === 'object' && 'total_count' in reviewData) {
+          totalCount = (reviewData as any).total_count || 0;
+        }
       }
 
       setLocalReviews([...reviews]);
-      setTotalSchedules(todayCount);  // 오늘 복습할 총 개수
+      setTotalSchedules(totalCount);
+      setReviewsCompleted(0); // 세션 시작 시 0으로 초기화
     }
-  }, [reviewData, setTotalSchedules]);
+  }, [reviewData, setTotalSchedules, setReviewsCompleted]);
 
   // Move current card to end of array (for "forgot" case)
   const moveCurrentCardToEnd = useCallback(() => {
@@ -116,32 +119,25 @@ export const useReviewLogic = (
 
   // Complete review mutation
   const completeReviewMutation = useMutation({
-    mutationFn: reviewAPI.completeReview,
-    onSuccess: async (data, variables) => {
-      // AI 평가 모드 (descriptive, subjective, multiple_choice): 카드 이동 안함
-      // 사용자가 "다음으로" 버튼 눌렀을 때 이동
-      const isAIMode =
-        (variables.descriptive_answer && variables.descriptive_answer.length > 0) ||
-        (variables.user_title && variables.user_title.length > 0) ||
-        (variables.selected_choice && variables.selected_choice.length > 0);
+    mutationFn: ({ scheduleId, data }: { scheduleId: number; data: Omit<import('../types').CompleteReviewData, 'content_id'> }) =>
+      reviewAPI.completeReview(scheduleId, data),
+    onSuccess: async (responseData, variables) => {
+      // AI 평가 모드(descriptive, multiple_choice, subjective): handleNextAfterEvaluation에서 처리
+      // 카드 이동 및 카운트는 사용자가 "다음으로" 버튼 눌렀을 때
+      const hasDescriptiveAnswer = variables.data.descriptive_answer && variables.data.descriptive_answer.length > 0;
+      const hasSelectedChoice = variables.data.selected_choice && variables.data.selected_choice.length > 0;
+      const hasUserTitle = variables.data.user_title && variables.data.user_title.length > 0;
 
-      if (isAIMode) {
-        // AI 평가 모드는 "다음으로" 버튼에서 reviewsCompleted 증가
-        // Invalidate dashboard to update stats
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-
-        // 토스트는 ReviewPage에서 처리
+      if (hasDescriptiveAnswer || hasSelectedChoice || hasUserTitle) {
+        // AI 평가 모드: ReviewPage의 handleNextAfterEvaluation에서 카운트 처리
         return;
       }
 
-      // 기억 확인 모드 (objective): 기존 로직
-      if (variables.result === 'remembered') {
+      // Objective 모드(기억 확인): 여기서 바로 처리
+      if (variables.data.result === 'remembered') {
         // "기억함": 완료 처리
         setReviewsCompleted(prev => prev + 1);
         removeCurrentCard();
-
-        // Invalidate dashboard to update stats
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
         if (onShowToast) {
           onShowToast('잘 기억하고 있어요!', 'success');
@@ -169,13 +165,16 @@ export const useReviewLogic = (
       const timeSpent = Math.floor((Date.now() - startTime) / 1000);
 
       return new Promise((resolve, reject) => {
+        // RESTful: Pass scheduleId and data without content_id
         completeReviewMutation.mutate({
-          content_id: currentReview.content.id,
-          result: result || undefined,
-          time_spent: timeSpent,
-          descriptive_answer: descriptiveAnswer || '',
-          selected_choice: selectedChoice || '',
-          user_title: userTitle || '',
+          scheduleId: currentReview.id,
+          data: {
+            result: result || undefined,
+            time_spent: timeSpent,
+            descriptive_answer: descriptiveAnswer || '',
+            selected_choice: selectedChoice || '',
+            user_title: userTitle || '',
+          }
         }, {
           onSuccess: (data) => {
             resolve(data);
@@ -196,6 +195,9 @@ export const useReviewLogic = (
   // Calculate progress based on total reviews for today
   const progress = totalSchedules > 0 ? (reviewsCompleted / totalSchedules) * 100 : 0;
 
+  // Calculate remaining reviews (current cards left to review)
+  const remainingReviews = reviews.length;
+
   return {
     reviews,
     currentReview,
@@ -206,6 +208,7 @@ export const useReviewLogic = (
     reviewsCompleted,
     setReviewsCompleted,
     totalSchedules,
+    remainingReviews,
     removeCurrentCard,
     moveCurrentCardToEnd,
   };

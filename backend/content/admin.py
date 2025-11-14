@@ -11,6 +11,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Content)
 class ContentAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'category', 'created_at')
-    list_filter = ('category', 'created_at')
+    list_display = ('title', 'author', 'category', 'review_mode', 'is_ai_validated', 'ai_validation_score', 'created_at')
+    list_filter = ('category', 'review_mode', 'is_ai_validated', 'created_at')
     search_fields = ('title', 'content')
+    readonly_fields = ('ai_validation_score', 'ai_validation_result', 'ai_validated_at', 'created_at', 'updated_at')

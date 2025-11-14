@@ -2,13 +2,13 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.text import slugify
-from resee.models import BaseModel, BaseUserModel
+from resee.models import TimestampMixin
 from resee.validators import validate_content_length, validate_category_name
 
 User = get_user_model()
 
 
-class Category(BaseModel):
+class Category(TimestampMixin):
     """Content category"""
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, blank=True)
@@ -46,7 +46,7 @@ class Category(BaseModel):
         return self.name
 
 
-class Content(BaseModel):
+class Content(TimestampMixin):
     """Learning content"""
 
     REVIEW_MODE_CHOICES = [
@@ -66,6 +66,13 @@ class Content(BaseModel):
         default='objective',
         help_text='Review test mode: objective or subjective with AI auto-evaluation'
     )
+
+    def __init__(self, *args, **kwargs):
+        """Store original values to detect changes without additional DB query"""
+        super().__init__(*args, **kwargs)
+        # Store original values for change detection
+        self._original_title = self.title
+        self._original_content = self.content
 
     # AI 검증 관련 필드
     is_ai_validated = models.BooleanField(
@@ -138,24 +145,23 @@ class Content(BaseModel):
 
     def save(self, *args, **kwargs):
         """Override save to run validation and handle AI validation reset"""
-        # 기존 콘텐츠 수정 시 내용이 변경되었으면 AI 검증 상태 리셋
-        if self.pk:
-            try:
-                old_content = Content.objects.get(pk=self.pk)
-                # 제목 또는 내용이 변경되었으면 재검증 필요
-                if old_content.content != self.content or old_content.title != self.title:
-                    self.is_ai_validated = False
-                    self.ai_validation_score = None
-                    self.ai_validation_result = None
-                    self.ai_validated_at = None
-                    # 객관식 보기도 재생성 필요
-                    if self.review_mode == 'multiple_choice':
-                        self.mc_choices = None
-            except Content.DoesNotExist:
-                pass  # 새 콘텐츠 생성 시
+        # Check if title or content changed (no DB query needed)
+        if self.pk and (self._original_content != self.content or self._original_title != self.title):
+            # Content changed, reset AI validation
+            self.is_ai_validated = False
+            self.ai_validation_score = None
+            self.ai_validation_result = None
+            self.ai_validated_at = None
+            # Reset MC choices if in multiple choice mode
+            if self.review_mode == 'multiple_choice':
+                self.mc_choices = None
 
         self.full_clean()
         super().save(*args, **kwargs)
+
+        # Update original values after save
+        self._original_title = self.title
+        self._original_content = self.content
 
     def __str__(self):
         return self.title

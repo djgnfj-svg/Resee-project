@@ -18,19 +18,14 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 
-# Explicitly import backup_tasks module
-app.autodiscover_tasks(['review'], related_name='backup_tasks')
+# Note: Using DatabaseScheduler (django-celery-beat) for dynamic task scheduling
+# All periodic tasks are managed through Django admin or PeriodicTask model
 
-# Beat schedule configuration
+# Static beat schedule for critical tasks
 app.conf.beat_schedule = {
-    'send-hourly-notifications': {
+    'hourly-review-notifications': {
         'task': 'review.tasks.send_hourly_notifications',
-        'schedule': crontab(minute=0),  # 매시간 정각
-    },
-    'backup-database': {
-        'task': 'review.backup_tasks.backup_database',
-        'schedule': crontab(hour=3, minute=0),  # 매일 새벽 3시
-        'kwargs': {'environment': 'production'},
+        'schedule': crontab(minute=0, hour='*'),
     },
 }
 

@@ -3,6 +3,9 @@ Permission and subscription services for user accounts.
 """
 from django.conf import settings
 
+from ..constants import CATEGORY_LIMITS, CONTENT_LIMITS
+from ..models import SubscriptionTier
+
 
 class PermissionService:
     """
@@ -20,7 +23,7 @@ class PermissionService:
         if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not self.user.is_email_verified:
             return False
 
-        if hasattr(self.user, 'subscription') and self.user.subscription.tier == 'pro':
+        if hasattr(self.user, 'subscription') and self.user.subscription.tier == SubscriptionTier.PRO:
             return False
 
         return True
@@ -41,28 +44,12 @@ class PermissionService:
     def get_content_limit(self):
         """Get content creation limit based on subscription tier"""
         tier = self._get_user_tier()
-
-        tier_limits = {
-            'free': 20,        # 20 contents for free users
-            'basic': 999999,   # Unlimited contents for basic users
-            'pro': 999999,     # Unlimited contents for pro users
-        }
-
-        return tier_limits.get(tier, 20)
+        return CONTENT_LIMITS.get(tier, 20)
 
     def get_category_limit(self):
         """Get category creation limit based on subscription tier"""
         tier = self._get_user_tier()
-
-        tier_limits = {
-            'free': 1,       # 1 category for free users
-            'basic': 3,      # 3 categories for basic users
-            'pro': 999999,   # Unlimited categories for pro users
-        }
-
-        return tier_limits.get(tier, 1)
-
-
+        return CATEGORY_LIMITS.get(tier, 1)
 
     def get_content_usage(self):
         """Get content usage statistics for the user"""
