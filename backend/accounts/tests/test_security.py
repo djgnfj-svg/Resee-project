@@ -204,7 +204,7 @@ class SecurityRegressionTest(TestCase):
         # Microsecond-level operations can have high variance in virtualized environments
         if min(existing_user_time, nonexisting_user_time) > 0:
             time_ratio = max(existing_user_time, nonexisting_user_time) / \
-                         min(existing_user_time, nonexisting_user_time)
+                min(existing_user_time, nonexisting_user_time)
 
             self.assertLess(
                 time_ratio,

@@ -13,7 +13,7 @@ performance_logger = logging.getLogger('resee.performance')
 
 class SecurityHeadersMiddleware(MiddlewareMixin):
     """Add security headers for production environments"""
-    
+
     def process_response(self, request, response):
         if getattr(settings, 'ENVIRONMENT', 'development') in ['staging', 'production']:
             # Security headers
@@ -30,34 +30,33 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
                 "connect-src 'self' https:; "
                 "frame-ancestors 'none'"
             )
-            
+
             # Remove server info
             if 'Server' in response:
                 del response['Server']
-            
-            response['Server'] = 'Resee'
-            
-        return response
 
+            response['Server'] = 'Resee'
+
+        return response
 
 
 class RequestLoggingMiddleware(MiddlewareMixin):
     """Log requests for monitoring and debugging"""
-    
+
     def process_request(self, request):
         request.start_time = time.time()
-        
+
     def process_response(self, request, response):
         if hasattr(request, 'start_time'):
             duration = time.time() - request.start_time
-            
+
             # Log slow requests (> 1 second)
             if duration > 1.0:
                 logger.warning(
                     f"Slow request: {request.method} {request.path} "
                     f"took {duration:.2f}s - Status: {response.status_code}"
                 )
-            
+
             # Log API errors
             if request.path.startswith('/api/') and response.status_code >= 400:
                 logger.error(
@@ -66,5 +65,5 @@ class RequestLoggingMiddleware(MiddlewareMixin):
                     f"User: {getattr(request.user, 'email', 'anonymous')} - "
                     f"Duration: {duration:.2f}s"
                 )
-        
+
         return response

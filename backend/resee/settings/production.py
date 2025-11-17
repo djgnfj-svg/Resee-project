@@ -1,6 +1,7 @@
 """
 Production settings for Resee
 """
+from django.http import request as django_request
 import os
 
 import dj_database_url
@@ -21,9 +22,9 @@ TEMPLATE_DEBUG = False
 
 # Security settings
 # Monkey-patch Django's validate_host to support VPC IP validation
-from django.http import request as django_request
 
 _original_validate_host = django_request.validate_host
+
 
 def validate_host_with_vpc(host, allowed_hosts):
     """
@@ -42,6 +43,7 @@ def validate_host_with_vpc(host, allowed_hosts):
 
     # Fall back to Django's original validation
     return _original_validate_host(host, allowed_hosts)
+
 
 # Replace Django's validate_host with our custom version
 django_request.validate_host = validate_host_with_vpc

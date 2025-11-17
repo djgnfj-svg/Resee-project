@@ -26,7 +26,7 @@ class Category(TimestampMixin):
                 name='category_name_not_empty'
             ),
         ]
-    
+
     def clean(self):
         """Validate model data"""
         super().clean()
@@ -121,7 +121,7 @@ class Content(TimestampMixin):
                 name='content_body_not_empty'
             ),
         ]
-    
+
     def clean(self):
         """Validate model data"""
         super().clean()

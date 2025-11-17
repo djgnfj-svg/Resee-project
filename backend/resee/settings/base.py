@@ -193,8 +193,6 @@ SIMPLE_JWT = {
 }
 
 
-
-
 # Email Configuration (base settings)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@localhost')
@@ -217,7 +215,8 @@ SUBSCRIPTION_ADMIN_PASSWORD = os.environ.get('SUBSCRIPTION_ADMIN_PASSWORD')
 SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL')
 SLACK_DEFAULT_CHANNEL = os.environ.get('SLACK_DEFAULT_CHANNEL', '#alerts')
 SLACK_BOT_NAME = os.environ.get('SLACK_BOT_NAME', 'Resee Alert Bot')
-ALERT_SUMMARY_RECIPIENTS = os.environ.get('ALERT_SUMMARY_RECIPIENTS', '').split(',') if os.environ.get('ALERT_SUMMARY_RECIPIENTS') else []
+ALERT_SUMMARY_RECIPIENTS = os.environ.get('ALERT_SUMMARY_RECIPIENTS', '').split(
+    ',') if os.environ.get('ALERT_SUMMARY_RECIPIENTS') else []
 
 
 # AI Services Configuration
@@ -270,8 +269,6 @@ SESSION_COOKIE_AGE = 86400  # 1 day
 CORS_ALLOWED_ORIGINS = []  # Will be set in environment-specific settings
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False  # Will be overridden in development
-
-
 
 
 # File Upload Configuration

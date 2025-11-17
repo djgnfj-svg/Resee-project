@@ -66,8 +66,6 @@ class ProfileView(APIView):
         return APIErrorHandler.validation_error(serializer.errors)
 
 
-
-
 class WeeklyGoalUpdateView(APIView):
     """주간 목표 설정 API"""
     permission_classes = [IsAuthenticated]

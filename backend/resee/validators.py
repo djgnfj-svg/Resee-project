@@ -12,11 +12,11 @@ from rest_framework.response import Response
 def validate_required_fields(data, required_fields):
     """
     Validate that all required fields are present in data
-    
+
     Args:
         data (dict): Data to validate
         required_fields (list): List of required field names
-        
+
     Raises:
         ValidationError: If any required field is missing
     """
@@ -24,7 +24,7 @@ def validate_required_fields(data, required_fields):
     for field in required_fields:
         if field not in data or data[field] is None or data[field] == '':
             missing_fields.append(field)
-    
+
     if missing_fields:
         raise ValidationError(
             f"Required fields missing: {', '.join(missing_fields)}"
@@ -34,17 +34,17 @@ def validate_required_fields(data, required_fields):
 def validate_choice_field(value, choices, field_name=None):
     """
     Validate that value is in allowed choices
-    
+
     Args:
         value: Value to validate
         choices: List or tuple of valid choices
         field_name: Name of the field (for error message)
-        
+
     Raises:
         ValidationError: If value is not in choices
     """
     valid_choices = [choice[0] if isinstance(choice, tuple) else choice for choice in choices]
-    
+
     if value not in valid_choices:
         field_part = f" for {field_name}" if field_name else ""
         raise ValidationError(
@@ -55,11 +55,11 @@ def validate_choice_field(value, choices, field_name=None):
 def validate_positive_integer(value, field_name=None):
     """
     Validate that value is a positive integer
-    
+
     Args:
         value: Value to validate
         field_name: Name of the field (for error message)
-        
+
     Raises:
         ValidationError: If value is not a positive integer
     """
@@ -75,7 +75,7 @@ def validate_positive_integer(value, field_name=None):
 def handle_validation_error(func):
     """
     Decorator to handle ValidationError and return proper API response
-    
+
     Usage:
         @handle_validation_error
         def create(self, request, *args, **kwargs):

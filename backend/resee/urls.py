@@ -37,19 +37,19 @@ urlpatterns = [
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-    
+
     # Convenient API docs shortcuts
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='api-docs-swagger'),
     path('api/docs/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='api-docs-redoc'),
-    
+
     # Authentication
     path('api/auth/token/', EmailTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
-    
+
     # Health check endpoints (root level for load balancers)
     # Note: monitoring app removed, basic health checks handled by resee.health
-    
+
     # API endpoints
     path('api/accounts/', include('accounts.urls')),  # includes legal endpoints
     path('api/', include('content.urls')),  # contents/, categories/ at root level

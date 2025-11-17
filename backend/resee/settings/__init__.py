@@ -32,23 +32,25 @@ else:
     from .development import *
 
 # Environment validation warnings
+
+
 def validate_environment():
     """Validate critical environment variables"""
     warnings = []
-    
+
     # Try to get SECRET_KEY from globals, skip validation if not available
     try:
         secret_key = globals().get('SECRET_KEY', '')
     except Exception as e:
         warnings.append(f"WARNING: Failed to get SECRET_KEY for validation: {e}")
         return warnings
-    
+
     if not secret_key or secret_key == 'django-insecure-development-key-change-this-in-production':
         if environment == 'production':
             warnings.append("CRITICAL: SECRET_KEY not set or using default in production!")
         elif len(secret_key) < 50:
             warnings.append("WARNING: SECRET_KEY should be at least 50 characters long")
-    
+
     if environment == 'production':
         try:
             if globals().get('DEBUG'):
@@ -61,9 +63,9 @@ def validate_environment():
                 warnings.append("CRITICAL: CORS_ALLOW_ALL_ORIGINS=True in production!")
         except Exception as e:
             warnings.append(f"WARNING: Failed to validate production settings: {e}")
-    
-    
+
     return warnings
+
 
 # Run validation
 validation_warnings = validate_environment()

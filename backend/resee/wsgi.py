@@ -20,7 +20,7 @@ if not settings_module:
         settings_module = 'resee.settings.production'
     else:
         settings_module = 'resee.settings.development'
-    
+
     os.environ['DJANGO_SETTINGS_MODULE'] = settings_module
 
 application = get_wsgi_application()

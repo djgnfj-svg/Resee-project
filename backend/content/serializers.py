@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class CategorySerializer(serializers.ModelSerializer):
     """Category serializer"""
-    
+
     class Meta:
         model = Category
         fields = ('id', 'name', 'slug', 'description', 'created_at', 'user')
@@ -25,13 +25,13 @@ class ContentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Content
         fields = ('id', 'title', 'content', 'author', 'category',
-                 'created_at', 'updated_at', 'review_count',
-                 'next_review_date', 'review_mode', 'mc_choices',
-                 'is_ai_validated', 'ai_validation_score',
-                 'ai_validation_result', 'ai_validated_at')
+                  'created_at', 'updated_at', 'review_count',
+                  'next_review_date', 'review_mode', 'mc_choices',
+                  'is_ai_validated', 'ai_validation_score',
+                  'ai_validation_result', 'ai_validated_at')
         read_only_fields = ('id', 'author', 'created_at', 'updated_at',
-                           'is_ai_validated', 'ai_validation_score',
-                           'ai_validation_result', 'ai_validated_at', 'mc_choices')
+                            'is_ai_validated', 'ai_validation_score',
+                            'ai_validation_result', 'ai_validated_at', 'mc_choices')
 
     def to_representation(self, instance):
         """Custom representation for category"""
@@ -123,7 +123,7 @@ class ContentSerializer(serializers.ModelSerializer):
                 logger.warning(f"Failed to regenerate MC options for content {content.id}")
 
         return content
-    
+
     def get_review_count(self, obj):
         """Get the number of completed reviews for this content"""
         # Use annotated value if available (from optimized queryset)

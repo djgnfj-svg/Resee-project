@@ -221,5 +221,3 @@ class ResendVerificationView(APIView):
                 {'error': '인증 이메일 재발송 중 오류가 발생했습니다.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-

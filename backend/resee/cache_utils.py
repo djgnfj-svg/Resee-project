@@ -9,27 +9,27 @@ from django.core.cache import cache
 
 class CacheManager:
     """Cache management utility class"""
-    
+
     DEFAULT_TIMEOUT = 300  # 5 minutes
-    
+
     @staticmethod
     def get_cache_key(prefix, *args, **kwargs):
         """Generate cache key from arguments"""
         key_data = f"{prefix}:{args}:{sorted(kwargs.items())}"
         return hashlib.md5(key_data.encode()).hexdigest()
-    
+
     @staticmethod
     def set_cache(key, value, timeout=None):
         """Set cache value"""
         if timeout is None:
             timeout = CacheManager.DEFAULT_TIMEOUT
-        
+
         try:
             cache.set(key, value, timeout)
             return True
         except Exception:
             return False
-    
+
     @staticmethod
     def get_cache(key, default=None):
         """Get cache value"""
@@ -37,7 +37,7 @@ class CacheManager:
             return cache.get(key, default)
         except Exception:
             return default
-    
+
     @staticmethod
     def delete_cache(key):
         """Delete cache value"""
@@ -46,7 +46,7 @@ class CacheManager:
             return True
         except Exception:
             return False
-    
+
     @staticmethod
     def clear_pattern(pattern):
         """Clear cache entries matching pattern"""
@@ -70,16 +70,16 @@ def cached_method(timeout=None, key_prefix=''):
                 self.pk if hasattr(self, 'pk') else str(self),
                 *args, **kwargs
             )
-            
+
             # Try to get from cache
             result = CacheManager.get_cache(cache_key)
             if result is not None:
                 return result
-            
+
             # Execute function and cache result
             result = func(self, *args, **kwargs)
             CacheManager.set_cache(cache_key, result, timeout)
-            
+
             return result
         return wrapper
     return decorator
@@ -97,16 +97,16 @@ def cached_function(timeout=None, key_prefix=''):
                 f"{key_prefix}{func.__name__}",
                 *args, **kwargs
             )
-            
+
             # Try to get from cache
             result = CacheManager.get_cache(cache_key)
             if result is not None:
                 return result
-            
+
             # Execute function and cache result
             result = func(*args, **kwargs)
             CacheManager.set_cache(cache_key, result, timeout)
-            
+
             return result
         return wrapper
     return decorator

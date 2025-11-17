@@ -28,7 +28,6 @@ class PermissionService:
 
         return True
 
-
     def can_create_content(self):
         """Check if user can create more content based on subscription limit"""
         from content.models import Content

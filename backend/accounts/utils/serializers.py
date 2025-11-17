@@ -27,7 +27,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Use email for authentication
         email = attrs.get('email')
         password = attrs.get('password')
-        
+
         if email and password:
             user = authenticate(
                 request=self.context.get('request'),
@@ -67,12 +67,13 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """User serializer"""
     subscription = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'is_email_verified', 'is_staff', 'is_superuser', 'weekly_goal', 'date_joined', 'subscription')
+        fields = ('id', 'email', 'username', 'is_email_verified', 'is_staff',
+                  'is_superuser', 'weekly_goal', 'date_joined', 'subscription')
         read_only_fields = ('id', 'date_joined', 'is_email_verified', 'is_staff', 'is_superuser', 'subscription')
-    
+
     def get_subscription(self, obj):
         """Get subscription data"""
         if hasattr(obj, 'subscription'):
@@ -92,12 +93,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     """Profile serializer for user profile updates"""
-    
+
     class Meta:
         model = User
         fields = ('email', 'username', 'is_email_verified', 'weekly_goal')
         read_only_fields = ('email', 'is_email_verified')
-    
+
     def validate_username(self, value):
         """Validate username"""
         if value:  # Only validate if username is provided
@@ -106,7 +107,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             if User.objects.filter(username=value).exclude(id=user.id).exists():
                 raise serializers.ValidationError("이미 사용 중인 사용자명입니다.")
         return value
-    
+
     def validate_weekly_goal(self, value):
         """Validate weekly goal"""
         if value is not None:
@@ -145,7 +146,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("이미 사용 중인 이메일 주소입니다.")
         return value
-    
+
     def validate_password(self, value):
         """Validate password strength using Django's built-in validators"""
         try:
@@ -153,7 +154,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         except DjangoValidationError as e:
             raise serializers.ValidationError(list(e.messages))
         return value
-    
+
     def validate(self, attrs):
         """Validate form data"""
         if attrs['password'] != attrs['password_confirm']:
@@ -172,7 +173,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             })
 
         return attrs
-    
+
     def create(self, validated_data):
         """Create new user"""
         from django.db import IntegrityError
@@ -210,18 +211,18 @@ class PasswordChangeSerializer(serializers.Serializer):
     current_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True, min_length=8)
     new_password_confirm = serializers.CharField(required=True)
-    
+
     def validate_current_password(self, value):
         user = self.context['request'].user
         if not authenticate(username=user.email, password=value):
             raise serializers.ValidationError("현재 비밀번호가 올바르지 않습니다.")
         return value
-    
+
     def validate(self, attrs):
         if attrs['new_password'] != attrs['new_password_confirm']:
             raise serializers.ValidationError("새 비밀번호가 일치하지 않습니다.")
         return attrs
-    
+
     def save(self):
         user = self.context['request'].user
         user.set_password(self.validated_data['new_password'])
@@ -233,18 +234,18 @@ class AccountDeleteSerializer(serializers.Serializer):
     """Account deletion serializer"""
     password = serializers.CharField(required=True)
     confirmation = serializers.CharField(required=True)
-    
+
     def validate_password(self, value):
         user = self.context['request'].user
         if not authenticate(username=user.email, password=value):
             raise serializers.ValidationError("비밀번호가 올바르지 않습니다.")
         return value
-    
+
     def validate_confirmation(self, value):
         if value != 'DELETE':
             raise serializers.ValidationError("계정 삭제를 확인하려면 'DELETE'를 입력해주세요.")
         return value
-    
+
     def save(self):
         user = self.context['request'].user
         user.delete()
@@ -256,7 +257,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     tier_display = serializers.CharField(source='get_tier_display', read_only=True)
     days_remaining = serializers.SerializerMethodField()
     is_expired = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Subscription
         fields = [
@@ -266,11 +267,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'next_billing_date', 'payment_method'
         ]
         read_only_fields = ['id', 'start_date']
-    
+
     def get_days_remaining(self, obj):
         """Get days remaining in subscription"""
         return obj.days_remaining()
-    
+
     def get_is_expired(self, obj):
         """Check if subscription is expired"""
         return obj.is_expired()
@@ -288,18 +289,18 @@ class SubscriptionTierSerializer(serializers.Serializer):
 class SubscriptionUpgradeSerializer(serializers.Serializer):
     """Serializer for subscription upgrade request"""
     tier = serializers.ChoiceField(choices=SubscriptionTier.choices)
-    
+
     def validate_tier(self, value):
         """Validate tier selection"""
         user = self.context['request'].user
-        
+
         if not user.is_email_verified:
             raise serializers.ValidationError('이메일 인증이 필요합니다.')
-        
+
         if hasattr(user, 'subscription') and user.subscription.tier == SubscriptionTier.PRO:
             if value == SubscriptionTier.PRO:
                 raise serializers.ValidationError('이미 최고 구독 등급입니다.')
-        
+
         return value
 
 
@@ -309,7 +310,7 @@ class PaymentHistorySerializer(serializers.ModelSerializer):
     tier_display = serializers.CharField(read_only=True)
     from_tier_display = serializers.SerializerMethodField()
     to_tier_display = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = PaymentHistory
         fields = [
@@ -326,13 +327,13 @@ class PaymentHistorySerializer(serializers.ModelSerializer):
             'created_at'
         ]
         read_only_fields = fields
-    
+
     def get_from_tier_display(self, obj):
         """Get display text for from_tier"""
         if obj.from_tier:
             return dict(SubscriptionTier.choices).get(obj.from_tier, obj.from_tier)
         return None
-    
+
     def get_to_tier_display(self, obj):
         """Get display text for to_tier"""
         return dict(SubscriptionTier.choices).get(obj.to_tier, obj.to_tier)

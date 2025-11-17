@@ -26,13 +26,13 @@ logger = logging.getLogger(__name__)
 class CategoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     """
     카테고리 관리
-    
+
     학습 콘텐츠를 분류하기 위한 카테고리를 관리합니다.
     전역 카테고리와 사용자별 커스텀 카테고리를 지원합니다.
     """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    
+
     @swagger_auto_schema(
         operation_summary="카테고리 목록 조회",
         operation_description="사용자의 개인 커스텀 카테고리 목록을 반환합니다.",
@@ -50,7 +50,7 @@ class CategoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
                 'previous': response.data.get('previous') if isinstance(response.data, dict) else None,
             }
         return response
-    
+
     @swagger_auto_schema(
         operation_summary="새 카테고리 생성",
         operation_description="새로운 개인 커스텀 카테고리를 생성합니다. 이모지나 색상은 name 필드에 포함 가능합니다.",
@@ -87,11 +87,10 @@ class CategoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
 
-
 class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     """
     학습 콘텐츠 관리
-    
+
     사용자의 학습 콘텐츠를 생성, 수정, 삭제, 조회할 수 있습니다.
     필터링, 정렬 기능을 지원합니다.
     """
@@ -103,7 +102,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     search_fields = ['title', 'content']
     ordering_fields = ['created_at', 'updated_at', 'title']
     ordering = ['-created_at']
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
 
@@ -115,7 +114,8 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
 
         # Annotate review count to avoid N+1 queries (성공한 복습만 카운트)
         queryset = queryset.annotate(
-            review_count_annotated=Count('review_history', filter=models.Q(review_history__result='remembered'), distinct=True)
+            review_count_annotated=Count('review_history', filter=models.Q(
+                review_history__result='remembered'), distinct=True)
         )
 
         # Prefetch review schedules filtered by current user
@@ -130,7 +130,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
             queryset = queryset.filter(category__slug=category_slug)
 
         return queryset
-    
+
     @swagger_auto_schema(
         operation_summary="콘텐츠 목록 조회",
         operation_description="사용자의 모든 학습 콘텐츠를 조회합니다. 필터링, 정렬이 가능합니다.",
@@ -138,7 +138,8 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
             openapi.Parameter('category', openapi.IN_QUERY, description="카테고리로 필터링", type=openapi.TYPE_INTEGER),
             openapi.Parameter('category_slug', openapi.IN_QUERY, description="카테고리 슬러그로 필터링", type=openapi.TYPE_STRING),
             openapi.Parameter('search', openapi.IN_QUERY, description="제목 및 내용에서 검색", type=openapi.TYPE_STRING),
-            openapi.Parameter('ordering', openapi.IN_QUERY, description="정렬 (-created_at, title, updated_at)", type=openapi.TYPE_STRING),
+            openapi.Parameter('ordering', openapi.IN_QUERY,
+                              description="정렬 (-created_at, title, updated_at)", type=openapi.TYPE_STRING),
         ],
         responses={200: ContentSerializer(many=True)}
     )
@@ -154,7 +155,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
                 'previous': response.data.get('previous') if isinstance(response.data, dict) else None,
             }
         return response
-    
+
     @swagger_auto_schema(
         operation_summary="새 콘텐츠 생성",
         operation_description="새로운 학습 콘텐츠를 생성합니다. 자동으로 복습 스케줄이 생성됩니다.",
@@ -192,7 +193,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         logger.info(f"Content created for user {user.id}")
 
         return response
-    
+
     @swagger_auto_schema(
         operation_summary="콘텐츠 상세 조회",
         operation_description="특정 콘텐츠의 상세 정보를 조회합니다.",
@@ -200,7 +201,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     )
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
-    
+
     @swagger_auto_schema(
         operation_summary="콘텐츠 수정",
         operation_description="기존 콘텐츠를 수정합니다.",
@@ -211,7 +212,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         response = super().update(request, *args, **kwargs)
         logger.info(f"Content updated for user {request.user.id}")
         return response
-    
+
     @swagger_auto_schema(
         operation_summary="콘텐츠 삭제",
         operation_description="콘텐츠를 삭제합니다. 관련된 복습 스케줄도 함께 삭제됩니다.",

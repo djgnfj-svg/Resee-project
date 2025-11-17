@@ -1,3 +1,9 @@
+from .serializers import (
+    CompleteTestSerializer, StartTestSerializer, SubmitAnswerSerializer,
+    WeeklyTestListSerializer, WeeklyTestSerializer,
+)
+from resee.mixins import UserOwnershipMixin
+from content.models import Content
 import logging
 import random
 
@@ -11,13 +17,6 @@ from rest_framework.response import Response
 from .models import WeeklyTest, WeeklyTestAnswer, WeeklyTestQuestion
 
 logger = logging.getLogger(__name__)
-from content.models import Content
-from resee.mixins import UserOwnershipMixin
-
-from .serializers import (
-    CompleteTestSerializer, StartTestSerializer, SubmitAnswerSerializer,
-    WeeklyTestListSerializer, WeeklyTestSerializer,
-)
 
 
 class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):

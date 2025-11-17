@@ -474,7 +474,8 @@ class CompleteReviewDescriptiveTest(TestCase):
         ).first()
         self.assertIsNotNone(history)
         self.assertEqual(history.result, 'remembered')
-        self.assertEqual(history.descriptive_answer, 'Django ORM provides an abstraction layer for database operations...')
+        self.assertEqual(history.descriptive_answer,
+                         'Django ORM provides an abstraction layer for database operations...')
         self.assertEqual(history.ai_score, 90.0)
 
     @patch('ai_services.ai_answer_evaluator')

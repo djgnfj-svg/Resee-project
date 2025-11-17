@@ -55,8 +55,8 @@ class CustomUserAdmin(UserAdmin):
     subscription_tier.short_description = 'Subscription'
     subscription_tier.admin_order_field = 'subscription__tier'
 
-
     # Bulk Actions Implementation
+
     def bulk_verify_email(self, request, queryset):
         """Bulk verify user emails"""
         with transaction.atomic():
@@ -148,7 +148,6 @@ The Resee Team
 
     bulk_send_welcome_email.short_description = "Send welcome email to selected users"
 
-
     def export_users_csv(self, request, queryset):
         """Export selected users to CSV"""
         import csv
@@ -187,14 +186,13 @@ The Resee Team
     export_users_csv.short_description = "Export selected users to CSV"
 
 
-
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ('user', 'tier', 'max_interval_days', 'is_active', 'start_date', 'end_date')
     list_filter = ('tier', 'is_active', 'start_date')
     search_fields = ('user__email', 'user__username')
     readonly_fields = ('created_at', 'updated_at')
-    
+
     fieldsets = (
         (None, {
             'fields': ('user', 'tier', 'max_interval_days')
@@ -207,5 +205,3 @@ class SubscriptionAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-
-

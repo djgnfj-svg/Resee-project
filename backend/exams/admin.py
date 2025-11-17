@@ -5,7 +5,8 @@ from .models import WeeklyTest, WeeklyTestAnswer, WeeklyTestQuestion
 
 @admin.register(WeeklyTest)
 class WeeklyTestAdmin(admin.ModelAdmin):
-    list_display = ['title', 'user', 'start_date', 'end_date', 'status', 'total_questions', 'score_percentage', 'created_at']
+    list_display = ['title', 'user', 'start_date', 'end_date',
+                    'status', 'total_questions', 'score_percentage', 'created_at']
     list_filter = ['status', 'created_at', 'start_date']
     search_fields = ['title', 'user__email']
     readonly_fields = ['total_questions', 'correct_answers', 'score_percentage', 'created_at', 'updated_at']

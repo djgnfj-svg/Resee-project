@@ -17,4 +17,3 @@ __all__ = [
     'select_balanced_contents_for_test',
     'create_weekly_test_balance_graph'
 ]
-

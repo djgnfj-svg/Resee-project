@@ -29,7 +29,7 @@ class ReviewSchedule(TimestampMixin, UserOwnedMixin):
         default=False,
         help_text='Whether the initial review has been completed'
     )
-    
+
     class Meta:
         unique_together = ['content', 'user']
         ordering = ['next_review_date']
@@ -49,7 +49,7 @@ class ReviewSchedule(TimestampMixin, UserOwnedMixin):
                 violation_error_message='Next review date must be after creation date'
             ),
         ]
-    
+
     def clean(self):
         """Validate model data"""
         super().clean()
@@ -71,7 +71,7 @@ class ReviewSchedule(TimestampMixin, UserOwnedMixin):
 
     def __str__(self):
         return f"{self.content.title} - {self.user.email} (interval: {self.interval_index})"
-    
+
     def get_next_interval(self):
         """Get next review interval in days"""
         from .utils import get_review_intervals
@@ -79,25 +79,25 @@ class ReviewSchedule(TimestampMixin, UserOwnedMixin):
         if self.interval_index < len(intervals) - 1:
             return intervals[self.interval_index + 1]
         return intervals[-1]  # Stay at the longest interval
-    
+
     def advance_schedule(self):
         """Advance to next review interval with subscription tier limits"""
         from .utils import get_review_intervals
         intervals = get_review_intervals(self.user)
-        
+
         # Handle case where current index exceeds new subscription limits
         if self.interval_index >= len(intervals):
             self.interval_index = len(intervals) - 1
         elif self.interval_index < len(intervals) - 1:
             self.interval_index += 1
-        
+
         # Ensure we don't exceed subscription limits
         max_allowed_index = len(intervals) - 1
         if self.interval_index > max_allowed_index:
             self.interval_index = max_allowed_index
-        
+
         next_interval = intervals[self.interval_index]
-        
+
         # Additional safety check: ensure interval doesn't exceed user's max allowed
         user_max_interval = SubscriptionService(self.user).get_max_review_interval()
         if next_interval > user_max_interval:
@@ -116,10 +116,10 @@ class ReviewSchedule(TimestampMixin, UserOwnedMixin):
                 # Fallback to minimum interval if no intervals are allowed (shouldn't happen)
                 next_interval = intervals[0]
                 self.interval_index = 0
-        
+
         self.next_review_date = timezone.now() + timedelta(days=next_interval)
         self.save()
-    
+
     def reset_schedule(self):
         """Reset to first interval (for failed reviews)"""
         from .utils import get_review_intervals
@@ -181,7 +181,7 @@ class ReviewHistory(TimestampMixin, UserOwnedMixin):
         blank=True,
         help_text='User guessed title for subjective mode'
     )
-    
+
     class Meta:
         ordering = ['-review_date']
         verbose_name_plural = 'Review histories'
@@ -197,7 +197,7 @@ class ReviewHistory(TimestampMixin, UserOwnedMixin):
                 name='review_history_time_spent_non_negative'
             ),
         ]
-    
+
     def clean(self):
         """Validate model data"""
         super().clean()

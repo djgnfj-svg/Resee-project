@@ -180,7 +180,7 @@ class BaseAIService(ABC):
             return None
 
     def call_anthropic(self, prompt: str, temperature: Optional[float] = None,
-                      max_tokens: Optional[int] = None) -> Optional[str]:
+                       max_tokens: Optional[int] = None) -> Optional[str]:
         """
         Call Anthropic SDK with prompt.
 

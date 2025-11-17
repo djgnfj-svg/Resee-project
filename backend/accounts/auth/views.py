@@ -344,8 +344,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
 class GoogleOAuthView(APIView):
     """Google OAuth 로그인 뷰"""
     permission_classes = [AllowAny]

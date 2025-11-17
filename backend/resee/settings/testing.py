@@ -111,12 +111,15 @@ PASSWORD_HASHERS = [
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Disable migrations for faster tests
+
+
 class DisableMigrations:
     def __contains__(self, item):
         return True
-    
+
     def __getitem__(self, item):
         return None
+
 
 # Disable problematic migrations in tests
 MIGRATION_MODULES = {

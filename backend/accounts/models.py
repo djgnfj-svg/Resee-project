@@ -14,7 +14,7 @@ from resee.models import TimestampMixin
 
 class UserManager(BaseUserManager):
     """Custom user manager for email-only authentication."""
-    
+
     def create_user(self, email, password=None, **extra_fields):
         """Create and return a regular user with email and password."""
         if not email:
@@ -24,18 +24,18 @@ class UserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
-    
+
     def create_superuser(self, email, password=None, **extra_fields):
         """Create and return a superuser with email and password."""
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_email_verified', True)  # Superuser는 자동으로 인증됨
-        
+
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
-        
+
         return self.create_user(email, password, **extra_fields)
 
 
@@ -48,7 +48,7 @@ class User(AbstractUser):
         null=True,
         help_text='Optional username field'
     )
-    
+
     # 이메일 인증 관련 필드
     is_email_verified = models.BooleanField(
         default=False,
@@ -65,7 +65,7 @@ class User(AbstractUser):
         null=True,
         help_text='When the verification email was sent'
     )
-    
+
     # 학습 목표 설정
     weekly_goal = models.IntegerField(
         default=7,
@@ -84,15 +84,14 @@ class User(AbstractUser):
         help_text='개인정보처리방침 동의 일시'
     )
 
-
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []  # No additional required fields for email-only auth
-    
+
     objects = UserManager()
-    
+
     def __str__(self):
         return self.email
-    
+
     def generate_email_verification_token(self):
         """Generate a unique token for email verification.
 
@@ -121,7 +120,6 @@ class User(AbstractUser):
         service = EmailVerificationService(self)
         can_resend, _ = service.can_resend_verification()
         return can_resend
-    
 
 
 class SubscriptionTier(models.TextChoices):
@@ -140,7 +138,7 @@ class BillingCycle(models.TextChoices):
 class Subscription(TimestampMixin):
     """User subscription model"""
     user = models.OneToOneField(
-        User, 
+        User,
         on_delete=models.CASCADE,
         related_name='subscription'
     )
@@ -202,29 +200,29 @@ class Subscription(TimestampMixin):
         blank=True,
         help_text='Next billing amount'
     )
-    
+
     class Meta:
         db_table = 'accounts_subscription'
         verbose_name = 'Subscription'
         verbose_name_plural = 'Subscriptions'
-    
+
     def __str__(self):
         return f"{self.user.email} - {self.get_tier_display()}"
-    
+
     def is_expired(self):
         """Check if subscription is expired"""
         if not self.end_date:
             return False
         return timezone.now() > self.end_date
-    
+
     def days_remaining(self):
         """Calculate days remaining in subscription"""
         if not self.end_date:
             return None
-        
+
         remaining = (self.end_date - timezone.now()).days
         return max(0, remaining)
-    
+
     def save(self, *args, **kwargs):
         """Override save to set max_interval_days based on tier using Ebbinghaus forgetting curve"""
         from .constants import TIER_MAX_INTERVALS
@@ -248,7 +246,7 @@ class Subscription(TimestampMixin):
 
 class PaymentHistory(models.Model):
     """Track subscription payment and change history"""
-    
+
     class PaymentType(models.TextChoices):
         UPGRADE = 'upgrade', '업그레이드'
         DOWNGRADE = 'downgrade', '다운그레이드'
@@ -256,7 +254,7 @@ class PaymentHistory(models.Model):
         RENEWAL = 'renewal', '갱신'
         INITIAL = 'initial', '최초 구독'
         REFUND = 'refund', '환불'
-    
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -326,7 +324,7 @@ class PaymentHistory(models.Model):
         auto_now_add=True,
         help_text='Transaction date and time'
     )
-    
+
     class Meta:
         db_table = 'accounts_payment_history'
         verbose_name = 'Payment History'
@@ -335,10 +333,10 @@ class PaymentHistory(models.Model):
         indexes = [
             models.Index(fields=['user', '-created_at']),
         ]
-    
+
     def __str__(self):
         return f"{self.user.email} - {self.get_payment_type_display()} - {self.created_at}"
-    
+
     @property
     def tier_display(self):
         """Get display text for tier change"""
@@ -350,17 +348,16 @@ class PaymentHistory(models.Model):
             return dict(SubscriptionTier.choices).get(self.to_tier, self.to_tier)
 
 
-
 class BillingSchedule(TimestampMixin):
     """Track future billing schedules and payments"""
-    
+
     class ScheduleStatus(models.TextChoices):
         PENDING = 'pending', '대기'
         COMPLETED = 'completed', '완료'
         FAILED = 'failed', '실패'
         CANCELLED = 'cancelled', '취소'
         PREPAID = 'prepaid', '선불'
-    
+
     subscription = models.ForeignKey(
         Subscription,
         on_delete=models.CASCADE,
@@ -404,7 +401,7 @@ class BillingSchedule(TimestampMixin):
         blank=True,
         help_text='When this billing was processed'
     )
-    
+
     class Meta:
         db_table = 'accounts_billing_schedule'
         verbose_name = 'Billing Schedule'
@@ -414,14 +411,14 @@ class BillingSchedule(TimestampMixin):
             models.Index(fields=['subscription', 'scheduled_date']),
             models.Index(fields=['status', 'scheduled_date']),
         ]
-    
+
     def __str__(self):
         return f"{self.subscription.user.email} - {self.scheduled_date} - {self.amount}"
-    
+
     def is_due(self):
         """Check if this billing schedule is due"""
         return timezone.now() >= self.scheduled_date and self.status == self.ScheduleStatus.PENDING
-    
+
     def can_be_processed(self):
         """Check if this billing can be processed"""
         return (
@@ -429,10 +426,6 @@ class BillingSchedule(TimestampMixin):
             self.subscription.is_active and
             not self.subscription.is_expired()
         )
-
-
-
-
 
 
 # Signal to create basic subscription for new users

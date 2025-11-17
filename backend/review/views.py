@@ -28,17 +28,17 @@ logger = logging.getLogger(__name__)
 class ReviewScheduleViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     """
     복습 스케줄 관리
-    
+
     에빙하우스 망각곡선 기반 복습 스케줄을 관리합니다.
     """
     queryset = ReviewSchedule.objects.all()
     serializer_class = ReviewScheduleSerializer
     pagination_class = ReviewPagination
-    
+
     # Query optimization configuration
     select_related_fields = ['content', 'content__category', 'user']
     prefetch_related_fields = []
-    
+
     @swagger_auto_schema(
         operation_summary="복습 스케줄 목록 조회",
         operation_description="사용자의 모든 복습 스케줄을 조회합니다.",
@@ -111,19 +111,19 @@ class ReviewScheduleViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
 class ReviewHistoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     """
     복습 기록 관리
-    
+
     사용자의 복습 기록을 관리하고 조회할 수 있습니다.
     """
     queryset = ReviewHistory.objects.all()
     serializer_class = ReviewHistorySerializer
     pagination_class = ReviewPagination
-    
+
     # Query optimization configuration
     select_related_fields = ['content', 'content__category', 'user']
-    
+
     def get_queryset(self):
         return super().get_queryset().order_by('-review_date')
-    
+
     @swagger_auto_schema(
         operation_summary="복습 기록 목록 조회",
         operation_description="사용자의 모든 복습 기록을 조회합니다.",
@@ -131,16 +131,15 @@ class ReviewHistoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
-    
 
 
 class TodayReviewView(APIView):
     """
     오늘의 복습
-    
+
     오늘 복습해야 할 콘텐츠 목록을 조회합니다.
     """
-    
+
     @swagger_auto_schema(
         operation_summary="구독 티어별 복습 목록 조회",
         operation_description="""
@@ -199,13 +198,13 @@ class TodayReviewView(APIView):
         category_slug = request.query_params.get('category_slug', None)
         if category_slug:
             schedules = schedules.filter(content__category__slug=category_slug)
-        
+
         # Get total active schedules for progress display
         total_schedules = ReviewSchedule.objects.filter(
             user=request.user,
             is_active=True
         ).count()
-        
+
         # Apply category filter to total count if specified
         if category_slug:
             total_schedules = ReviewSchedule.objects.filter(
@@ -213,7 +212,7 @@ class TodayReviewView(APIView):
                 is_active=True,
                 content__category__slug=category_slug
             ).count()
-        
+
         serializer = ReviewScheduleSerializer(schedules, many=True)
 
         response_data = {
@@ -230,10 +229,10 @@ class TodayReviewView(APIView):
 class CompleteReviewView(APIView):
     """
     복습 완료
-    
+
     복습 세션을 완료하고 다음 복습 일정을 업데이트합니다.
     """
-    
+
     @swagger_auto_schema(
         operation_summary="복습 완료 처리",
         operation_description="""
@@ -250,7 +249,7 @@ class CompleteReviewView(APIView):
             properties={
                 'content_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='콘텐츠 ID'),
                 'result': openapi.Schema(
-                    type=openapi.TYPE_STRING, 
+                    type=openapi.TYPE_STRING,
                     enum=['remembered', 'partial', 'forgot'],
                     description='복습 결과'
                 ),
@@ -503,13 +502,13 @@ class CompleteReviewView(APIView):
                     # Stay at current interval but reset date with subscription validation
                     intervals = get_review_intervals(request.user)
                     user_max_interval = SubscriptionService(request.user).get_max_review_interval()
-                    
+
                     # Ensure current interval doesn't exceed subscription limits
                     if schedule.interval_index >= len(intervals):
                         schedule.interval_index = len(intervals) - 1
-                    
+
                     current_interval = intervals[schedule.interval_index]
-                    
+
                     # Additional check: ensure interval respects subscription tier
                     if current_interval > user_max_interval:
                         # Find the highest allowed interval
@@ -524,7 +523,7 @@ class CompleteReviewView(APIView):
                         else:
                             current_interval = intervals[0]
                             schedule.interval_index = 0
-                    
+
                     schedule.next_review_date = timezone.now() + timezone.timedelta(days=current_interval)
                     schedule.save()
                 else:  # 'forgot'
@@ -536,7 +535,7 @@ class CompleteReviewView(APIView):
                     schedule.interval_index = 0
                     # Don't change next_review_date - keep it available for immediate retry in same session
                     schedule.save()
-                
+
                 response_data = {
                     'message': 'Review completed successfully',
                     'next_review_date': schedule.next_review_date,
@@ -558,7 +557,7 @@ class CompleteReviewView(APIView):
         except Exception as e:
             logger.error(f"Error completing review: {str(e)}", exc_info=True)
             return Response(
-                {'error': '복습 완료 처리 중 오류가 발생했습니다.'}, 
+                {'error': '복습 완료 처리 중 오류가 발생했습니다.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -566,10 +565,10 @@ class CompleteReviewView(APIView):
 class CategoryReviewStatsView(APIView):
     """
     카테고리별 복습 통계
-    
+
     각 카테고리별로 복습 현황과 성과를 제공합니다.
     """
-    
+
     @swagger_auto_schema(
         operation_summary="카테고리별 복습 통계 조회",
         operation_description="각 카테고리별 오늘의 복습 수, 전체 콘텐츠 수, 성공률 등을 제공합니다.",
@@ -585,7 +584,7 @@ class CategoryReviewStatsView(APIView):
                         "total_reviews_30_days": 45
                     },
                     "math": {
-                        "category": "수학", 
+                        "category": "수학",
                         "today_reviews": 3,
                         "total_content": 15,
                         "success_rate": 92.1,
@@ -606,7 +605,7 @@ class CategoryReviewStatsView(APIView):
             Q(user=None) | Q(user=request.user)
         )
         result = {}
-        
+
         # Import additional Django aggregation functions
         from datetime import timedelta
 

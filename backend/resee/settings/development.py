@@ -3,6 +3,7 @@ Django development settings for resee project.
 Settings specific to development environment.
 """
 
+import dj_database_url
 import os
 
 from .base import *
@@ -18,7 +19,6 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend', '0.0.0.0']
 
 # Database for development - Use DATABASE_URL from environment
 # Will use DATABASE_URL from .env file, no hardcoded credentials
-import dj_database_url
 
 DATABASES = {
     'default': dj_database_url.config(
@@ -108,9 +108,9 @@ RATE_LIMIT_ENABLE = False
 # Override DRF throttling rates for development
 REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'anon': '10000/hour',     # Much higher for development
-    'user': '10000/hour',     # Much higher for development  
+    'user': '10000/hour',     # Much higher for development
     'login': '100/min',       # Higher for development
-    'registration': '100/min', # Higher for development
+    'registration': '100/min',  # Higher for development
     'register': '100/min',    # Higher for development
     'email': '1000/hour',     # Higher for development
 }
