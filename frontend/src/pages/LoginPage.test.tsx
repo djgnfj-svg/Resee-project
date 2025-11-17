@@ -25,13 +25,13 @@ describe('LoginPage', () => {
 
     expect(screen.getByLabelText(/이메일/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/비밀번호/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /로그인/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^로그인$/ })).toBeInTheDocument();
   });
 
   it('shows validation errors for empty form', async () => {
     render(<LoginPage />);
 
-    const submitButton = screen.getByRole('button', { name: /로그인/i });
+    const submitButton = screen.getByRole('button', { name: /^로그인$/ });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -57,12 +57,12 @@ describe('LoginPage', () => {
   it('shows Google login button', () => {
     render(<LoginPage />);
 
-    expect(screen.getByText(/Google로 계속하기/i)).toBeInTheDocument();
+    expect(screen.getByText(/Google로 로그인/i)).toBeInTheDocument();
   });
 
   it('shows register link', () => {
     render(<LoginPage />);
 
-    expect(screen.getByText(/회원가입/i)).toBeInTheDocument();
+    expect(screen.getByText(/무료로 가입하기/i)).toBeInTheDocument();
   });
 });

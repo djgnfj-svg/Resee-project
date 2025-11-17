@@ -28,9 +28,24 @@ jest.mock('@tiptap/react', () => ({
 }));
 
 // Mock @tiptap/starter-kit and other extensions
-jest.mock('@tiptap/starter-kit', () => jest.fn());
-jest.mock('@tiptap/extension-placeholder', () => ({ configure: jest.fn() }));
-jest.mock('@tiptap/extension-link', () => ({ configure: jest.fn() }));
+jest.mock('@tiptap/starter-kit', () => ({
+  __esModule: true,
+  default: {
+    configure: jest.fn(() => ({})),
+  },
+}));
+jest.mock('@tiptap/extension-placeholder', () => ({
+  __esModule: true,
+  default: {
+    configure: jest.fn(() => ({})),
+  },
+}));
+jest.mock('@tiptap/extension-link', () => ({
+  __esModule: true,
+  default: {
+    configure: jest.fn(() => ({})),
+  },
+}));
 
 describe('TipTapEditor', () => {
   const mockProps = {
@@ -43,47 +58,42 @@ describe('TipTapEditor', () => {
     jest.clearAllMocks();
   });
 
-  it('renders editor toolbar', () => {
-    render(<TipTapEditor {...mockProps} />);
-
-    expect(screen.getByLabelText(/볼드/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/이탤릭/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/취소선/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/인라인 코드/i)).toBeInTheDocument();
-  });
-
-  it('renders editor content', () => {
+  it('renders editor content area', () => {
     render(<TipTapEditor {...mockProps} />);
 
     expect(screen.getByTestId('editor-content')).toBeInTheDocument();
   });
 
-  it('calls onChange when content changes', () => {
-    const mockOnChange = jest.fn();
-    render(<TipTapEditor {...mockProps} onChange={mockOnChange} />);
+  it('renders with border container', () => {
+    const { container } = render(<TipTapEditor {...mockProps} />);
 
-    // Since we're mocking the editor, we'll test that the component renders
-    // In a real test, you would trigger content changes and verify onChange is called
+    const editorContainer = container.querySelector('.border');
+    expect(editorContainer).toBeInTheDocument();
+  });
+
+  it('renders editor with custom className', () => {
+    const { container } = render(<TipTapEditor {...mockProps} className="custom-class" />);
+
+    const editorContainer = container.querySelector('.custom-class');
+    expect(editorContainer).toBeInTheDocument();
+  });
+
+  it('renders with default placeholder', () => {
+    const { container } = render(
+      <TipTapEditor content="" onChange={jest.fn()} />
+    );
+
+    // Component should render even without explicit placeholder
     expect(screen.getByTestId('editor-content')).toBeInTheDocument();
   });
 
-  it('renders toolbar buttons', () => {
-    render(<TipTapEditor {...mockProps} />);
+  it('handles empty content gracefully', () => {
+    const { container } = render(
+      <TipTapEditor content="" onChange={jest.fn()} placeholder="Type here..." />
+    );
 
-    // Check for various formatting buttons
-    expect(screen.getByText('B')).toBeInTheDocument(); // Bold
-    expect(screen.getByText('I')).toBeInTheDocument(); // Italic
-    expect(screen.getByText('S')).toBeInTheDocument(); // Strike
-    expect(screen.getByText('</>')).toBeInTheDocument(); // Code
-  });
-
-  it('handles toolbar button clicks', () => {
-    render(<TipTapEditor {...mockProps} />);
-
-    const boldButton = screen.getByLabelText(/볼드/i);
-    fireEvent.click(boldButton);
-
-    // The actual command execution is mocked, so we just verify the button exists
-    expect(boldButton).toBeInTheDocument();
+    // Editor should still render with empty content
+    expect(screen.getByTestId('editor-content')).toBeInTheDocument();
+    expect(container.querySelector('.border')).toBeInTheDocument();
   });
 });

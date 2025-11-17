@@ -1,7 +1,10 @@
 import React from 'react';
-import { screen } from '@testing-library/react';
-import { render, mockUser } from '../test-utils/test-utils';
+import { screen, waitFor, renderHook } from '@testing-library/react';
+import { mockUser, createTestQueryClient } from '../test-utils/test-utils';
 import DashboardPage from './DashboardPage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
+import { reviewAPI, contentAPI } from '../utils/api';
 
 // Mock the useAuth hook
 jest.mock('../contexts/AuthContext', () => ({
@@ -11,21 +14,19 @@ jest.mock('../contexts/AuthContext', () => ({
   }),
 }));
 
-// Mock React Query
-jest.mock('@tanstack/react-query', () => ({
-  ...jest.requireActual('@tanstack/react-query'),
-  useQuery: jest.fn(() => ({
-    data: {
-      today_reviews: 2,
-      total_content: 5,
-      success_rate: 85.7,
-      total_reviews_30_days: 28
-    },
-    isLoading: false,
-    error: null,
-  })),
+// Mock the API modules directly
+jest.mock('../utils/api/review', () => ({
+  reviewAPI: {
+    getDashboard: jest.fn(),
+  },
 }));
 
+jest.mock('../utils/api/content', () => ({
+  contentAPI: {
+    getContents: jest.fn(),
+    getCategories: jest.fn(),
+  },
+}));
 
 // Mock react-router-dom
 jest.mock('react-router-dom', () => ({
@@ -34,35 +35,107 @@ jest.mock('react-router-dom', () => ({
 }));
 
 describe('DashboardPage', () => {
-  it('renders dashboard title', () => {
-    render(<DashboardPage />);
+  beforeEach(() => {
+    // Setup mock implementations before each test
+    (reviewAPI.getDashboard as jest.Mock).mockResolvedValue({
+      today_reviews: 2,
+      total_content: 5,
+      success_rate: 85.7,
+      total_reviews_30_days: 28,
+      recent_reviews: [],
+    });
 
-    expect(screen.getByText(/대시보드/i)).toBeInTheDocument();
+    (contentAPI.getContents as jest.Mock).mockResolvedValue({
+      results: [],
+      usage: {
+        used: 5,
+        limit: 100,
+      },
+      count: 0,
+      next: null,
+      previous: null,
+    });
+
+    (contentAPI.getCategories as jest.Mock).mockResolvedValue({
+      results: [],
+      usage: {
+        used: 0,
+        limit: 3,
+      },
+      count: 0,
+      next: null,
+      previous: null,
+    });
   });
 
-  it('renders welcome message', () => {
-    render(<DashboardPage />);
-
-    expect(screen.getByText(/안녕하세요/i)).toBeInTheDocument();
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('renders content stats', () => {
-    render(<DashboardPage />);
+  // Custom render with providers
+  const renderWithProviders = (ui: React.ReactElement) => {
+    const queryClient = createTestQueryClient();
+    return {
+      ...screen,
+      ...(function() {
+        const { render: rtlRender } = require('@testing-library/react');
+        return rtlRender(
+          <QueryClientProvider client={queryClient}>
+            <MemoryRouter>
+              {ui}
+            </MemoryRouter>
+          </QueryClientProvider>
+        );
+      })(),
+    };
+  };
 
-    expect(screen.getByText(/전체 컨텐츠/i)).toBeInTheDocument();
-    expect(screen.getByText(/오늘의 복습/i)).toBeInTheDocument();
+  it('renders dashboard title', async () => {
+    renderWithProviders(<DashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/대시보드/i)).toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Debug: print rendered output
+    if (!screen.queryByText(/대시보드/i)) {
+      console.log('Rendered HTML:', container.innerHTML);
+    }
   });
 
-  it('renders action buttons', () => {
-    render(<DashboardPage />);
+  it('renders welcome message', async () => {
+    renderWithProviders(<DashboardPage />);
 
-    expect(screen.getByText(/새 컨텐츠 작성/i)).toBeInTheDocument();
-    expect(screen.getByText(/복습 시작/i)).toBeInTheDocument();
+    await waitFor(() => {
+      // Component shows time-based greeting like "좋은 아침이에요", "좋은 오후에요", etc.
+      expect(screen.getByText(/좋은/i)).toBeInTheDocument();
+    });
   });
 
-  it('renders recent activity section', () => {
-    render(<DashboardPage />);
+  it('renders content stats', async () => {
+    renderWithProviders(<DashboardPage />);
 
-    expect(screen.getByText(/최근 활동/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/학습 콘텐츠/i)).toBeInTheDocument();
+      expect(screen.getByText(/오늘의 복습/i)).toBeInTheDocument();
+    });
+  });
+
+  it('renders action buttons', async () => {
+    renderWithProviders(<DashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/새 콘텐츠 추가하기/i)).toBeInTheDocument();
+      expect(screen.getByText(/복습 시작/i)).toBeInTheDocument();
+    });
+  });
+
+  it('renders statistics section', async () => {
+    renderWithProviders(<DashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/평균 복습 성공률/i)).toBeInTheDocument();
+      expect(screen.getByText(/최근 30일 복습 횟수/i)).toBeInTheDocument();
+    });
   });
 });

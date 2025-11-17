@@ -128,7 +128,8 @@ const LoginPage: React.FC = () => {
                       이메일
                     </label>
                     <input
-                      {...register('email', { 
+                      id="email"
+                      {...register('email', {
                         required: '이메일을 입력해주세요.',
                         pattern: {
                           value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -152,6 +153,7 @@ const LoginPage: React.FC = () => {
                       비밀번호
                     </label>
                     <input
+                      id="password"
                       {...register('password', { required: '비밀번호를 입력해주세요.' })}
                       type="password"
                       placeholder="••••••••"
