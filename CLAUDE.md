@@ -19,7 +19,8 @@ Context for Claude Code when working with this Django + React spaced repetition 
 
 **Infrastructure**
 - Dev: Docker Compose
-- Prod: AWS ECS Fargate, RDS PostgreSQL 15, Upstash Redis, Vercel (frontend)
+- **Prod (Current)**: Railway (Django + Celery), Supabase PostgreSQL, Upstash Redis, Vercel (frontend)
+- **Prod (Legacy)**: AWS ECS Fargate (deprecated, migrated to Railway for 90% cost reduction)
 
 ---
 
@@ -30,11 +31,16 @@ Context for Claude Code when working with this Django + React spaced repetition 
 docker-compose up -d
 docker-compose logs -f backend
 
-# Access
+# Access (Development)
 http://localhost              # Nginx (production-like)
 http://localhost:3000         # React dev server
 http://localhost:8000/api     # Django API
 http://localhost/api/docs/    # Swagger UI
+
+# Access (Production)
+https://reseeall.com                                    # Frontend (Vercel)
+https://resee-project-production.up.railway.app/api    # Backend API (Railway)
+https://resee-project-production.up.railway.app/api/docs/  # API Documentation
 
 # Test accounts
 interview@resee.com / interview2025!   # PRO tier
@@ -277,7 +283,62 @@ docker-compose.prod.yml    # Local prod-like (gunicorn, nginx)
 
 ---
 
-## AWS Production Infrastructure
+## Railway Production Infrastructure (Current)
+
+**Platform**: Railway (us-west1)
+- URL: `https://resee-project-production.up.railway.app`
+- Services: Django Backend + Celery (Worker + Beat)
+- Deployment: Auto-deploy from GitHub `main` branch
+- Cost: ~$5-10/month (90% cheaper than AWS ECS)
+
+**Database**: Supabase PostgreSQL 15
+- Host: `aws-1-ap-southeast-2.pooler.supabase.com:6543`
+- Connection: Pooler (Transaction Mode)
+- Response time: ~200ms
+- Automatic backups: Daily
+
+**Cache & Broker**: Upstash Redis
+- Host: `calm-jaybird-34425.upstash.io:6379`
+- Protocol: rediss:// (TLS)
+- Usage: Celery broker + rate limiting + Django cache
+- Response time: ~230ms
+
+**Frontend**: Vercel
+- Domain: `reseeall.com`
+- React deployment, global CDN, HTTPS
+
+**Architecture Flow**:
+```
+User → Vercel (reseeall.com)
+     → Railway Backend (Django + Celery) → Supabase PostgreSQL
+                                        → Upstash Redis
+```
+
+**Environment Variables** (Railway):
+```bash
+# Core
+SECRET_KEY=<production-key>
+DEBUG=False
+DJANGO_SETTINGS_MODULE=resee.settings.production
+ALLOWED_HOSTS=reseeall.com,www.reseeall.com,.up.railway.app,healthcheck.railway.app
+
+# Database & Cache
+DATABASE_URL=postgresql://postgres.xxx:password@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres
+REDIS_URL=rediss://default:password@calm-jaybird-34425.upstash.io:6379
+
+# Services
+ANTHROPIC_API_KEY=sk-ant-api03-...
+FRONTEND_URL=https://reseeall.com
+```
+
+**Deployment Files**:
+- `Dockerfile` (root) - Railway build configuration
+- `railway.toml` - Railway settings (healthcheck, restart policy)
+- `.env.production` - Environment variables template
+
+---
+
+## AWS ECS Infrastructure (Legacy - Deprecated)
 
 **ECS Cluster**: `resee-cluster` (ap-northeast-2)
 - Services: `resee-backend-service`, `resee-celery-worker-service`, `resee-celery-beat-service`
@@ -333,7 +394,40 @@ FRONTEND_URL=http://localhost
 SLACK_WEBHOOK_URL=your-webhook-url
 ```
 
-### Production (.env.prod - AWS ECS)
+### Production - Railway (Current)
+```bash
+# Railway Variables (set in Railway dashboard)
+SECRET_KEY=<production-key>
+DEBUG=False
+DJANGO_SETTINGS_MODULE=resee.settings.production
+TIME_ZONE=Asia/Seoul
+ALLOWED_HOSTS=reseeall.com,www.reseeall.com,.up.railway.app,healthcheck.railway.app
+CSRF_TRUSTED_ORIGINS=https://reseeall.com,https://www.reseeall.com,https://*.up.railway.app
+
+# Database (Supabase PostgreSQL)
+DATABASE_URL=postgresql://postgres.xxx:password@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres
+
+# Cache & Broker (Upstash Redis)
+REDIS_URL=rediss://default:password@calm-jaybird-34425.upstash.io:6379
+
+# AI & Frontend
+ANTHROPIC_API_KEY=sk-ant-api03-...
+FRONTEND_URL=https://reseeall.com
+
+# Email (Gmail SMTP)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=reseeall2025@gmail.com
+EMAIL_HOST_PASSWORD=<app-password>
+DEFAULT_FROM_EMAIL=noreply@reseeall.com
+
+# Monitoring (Optional)
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+SLACK_DEFAULT_CHANNEL=#alerts
+```
+
+### Production - AWS ECS (Legacy)
 ```bash
 SECRET_KEY=your-production-key
 DEBUG=False
