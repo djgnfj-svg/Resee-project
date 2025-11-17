@@ -5,9 +5,6 @@ import logging
 import time
 
 from django.conf import settings
-from django.core.cache import cache
-from django.db import connection
-from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 
 logger = logging.getLogger(__name__)

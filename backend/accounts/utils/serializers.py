@@ -5,7 +5,9 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from ..models import Subscription, SubscriptionTier, PaymentHistory, NotificationPreference
+from ..models import (
+    NotificationPreference, PaymentHistory, Subscription, SubscriptionTier,
+)
 
 User = get_user_model()
 
@@ -173,8 +175,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         """Create new user"""
-        from django.utils import timezone
         from django.db import IntegrityError
+        from django.utils import timezone
 
         try:
             # Remove terms agreement fields from user creation data

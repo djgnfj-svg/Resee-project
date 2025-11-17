@@ -9,6 +9,7 @@ Uses Claude 3 Haiku for cost-efficient evaluation.
 
 import logging
 from typing import Dict, Optional
+
 from langchain_core.prompts import ChatPromptTemplate
 
 from ai_services.base import BaseAIService

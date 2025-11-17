@@ -11,12 +11,12 @@ Provides:
 
 import json
 import logging
-from typing import Optional, Dict, Any
 from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional
 
+import anthropic
 from django.conf import settings
 from langchain_anthropic import ChatAnthropic
-import anthropic
 
 logger = logging.getLogger(__name__)
 
@@ -84,12 +84,10 @@ class BaseAIService(ABC):
     @abstractmethod
     def _get_temperature(self) -> float:
         """Get temperature for this service. Must be implemented by subclasses."""
-        pass
 
     @abstractmethod
     def _get_max_tokens(self) -> int:
         """Get max tokens for this service. Must be implemented by subclasses."""
-        pass
 
     def parse_json_response(self, response_text: str) -> Optional[Dict[str, Any]]:
         """

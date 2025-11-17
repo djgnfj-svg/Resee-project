@@ -1,17 +1,18 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-# Subscription views
-from .subscription.subscription_views import subscription_detail, subscription_tiers
-
-# Account management views (non-auth)
-from .views import (ProfileView, WeeklyGoalUpdateView, NotificationPreferenceView)
-
 # Authentication views
-from .auth.views import (GoogleOAuthView, UserViewSet)
-
+from .auth.views import GoogleOAuthView, UserViewSet
 # Email views
 from .email.email_views import EmailVerificationView, ResendVerificationView
+# Subscription views
+from .subscription.subscription_views import (
+    subscription_detail, subscription_tiers,
+)
+# Account management views (non-auth)
+from .views import (
+    NotificationPreferenceView, ProfileView, WeeklyGoalUpdateView,
+)
 
 app_name = 'accounts'
 

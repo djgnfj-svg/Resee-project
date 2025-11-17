@@ -6,8 +6,9 @@
 
 import pytest
 from django.test import TestCase
-from content.models import Content, Category
+
 from accounts.models import User
+from content.models import Category, Content
 
 
 @pytest.mark.django_db

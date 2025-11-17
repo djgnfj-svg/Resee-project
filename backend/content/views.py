@@ -1,6 +1,5 @@
 import logging
 
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Count, Prefetch
 from django_filters.rest_framework import DjangoFilterBackend
@@ -10,16 +9,16 @@ from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from accounts.subscription.services import PermissionService
+from ai_services import validate_content
 from resee.mixins import AuthorViewSetMixin, UserOwnershipMixin
-from resee.pagination import ContentPagination, OptimizedPageNumberPagination
-# Performance monitoring removed for production
-from resee.structured_logging import (log_api_call, log_performance,
-                                      performance_logger)
+from resee.pagination import ContentPagination
 
 from .models import Category, Content
 from .serializers import CategorySerializer, ContentSerializer
-from ai_services import validate_content
-from accounts.subscription.services import PermissionService
+
+# Performance monitoring removed for production
+
 
 logger = logging.getLogger(__name__)
 

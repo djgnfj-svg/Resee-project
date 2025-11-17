@@ -4,9 +4,10 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+
+from accounts.subscription.services import SubscriptionService
 from resee.models import TimestampMixin, UserOwnedMixin
 from resee.validators import validate_review_interval_index
-from accounts.subscription.services import SubscriptionService
 
 User = get_user_model()
 

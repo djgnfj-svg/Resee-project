@@ -3,10 +3,8 @@ Review system utility functions
 """
 from datetime import timedelta
 
-from django.conf import settings
 from django.utils import timezone
 
-from .models import ReviewHistory
 from accounts.subscription.services import SubscriptionService
 
 
@@ -139,8 +137,10 @@ def get_today_reviews_count(user, category=None):
     Returns:
         int: Number of reviews due today (including initial reviews not yet completed)
     """
-    from django.db.models import Q
     from datetime import timedelta
+
+    from django.db.models import Q
+
     from .models import ReviewSchedule
 
     today = timezone.now().date()

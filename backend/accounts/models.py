@@ -1,7 +1,5 @@
 import logging
-from datetime import timedelta
 
-from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.db.models.signals import post_save
@@ -459,7 +457,9 @@ def adjust_review_schedules_on_subscription_change(sender, instance, created, **
     """
     if not created:  # Only for updates, not new subscriptions
         # Import task lazily to avoid circular imports
-        from review.tasks import adjust_review_schedules_on_subscription_change as adjust_task
+        from review.tasks import (
+            adjust_review_schedules_on_subscription_change as adjust_task,
+        )
 
         # Queue the adjustment task asynchronously
         adjust_task.delay(instance.id)

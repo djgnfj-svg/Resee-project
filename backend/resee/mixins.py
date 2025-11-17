@@ -42,4 +42,3 @@ class AuthorViewSetMixin(AuthorOwnershipMixin):
 
     Use this for ViewSets where the ownership field is 'author'.
     """
-    pass

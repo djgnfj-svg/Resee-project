@@ -1,20 +1,17 @@
 import logging
-from datetime import timedelta
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.utils import timezone
-from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from resee.error_handlers import APIErrorHandler, StandardAPIResponse
+from resee.error_handlers import APIErrorHandler
 
-from .utils.serializers import (AccountDeleteSerializer, ProfileSerializer,
-                                SubscriptionUpgradeSerializer, UserSerializer, NotificationPreferenceSerializer)
+from .utils.serializers import (
+    NotificationPreferenceSerializer, ProfileSerializer, UserSerializer,
+)
 
 User = get_user_model()
 logger = logging.getLogger(__name__)

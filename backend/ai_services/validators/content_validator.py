@@ -10,7 +10,7 @@ Uses Claude 3.7 Sonnet for high-quality validation.
 """
 
 import logging
-from typing import Dict
+
 from langchain_core.prompts import ChatPromptTemplate
 
 from ai_services.base import BaseAIService

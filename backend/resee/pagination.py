@@ -6,8 +6,7 @@ import logging
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db import connection
-from rest_framework.pagination import (LimitOffsetPagination,
-                                       PageNumberPagination)
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)

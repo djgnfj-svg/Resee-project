@@ -1,9 +1,9 @@
-from rest_framework import serializers
 from django.utils import timezone
-from datetime import datetime, timedelta
+from rest_framework import serializers
 
-from .models import WeeklyTest, WeeklyTestQuestion, WeeklyTestAnswer
 from content.serializers import ContentSerializer
+
+from .models import WeeklyTest, WeeklyTestAnswer, WeeklyTestQuestion
 
 
 class WeeklyTestQuestionSerializer(serializers.ModelSerializer):

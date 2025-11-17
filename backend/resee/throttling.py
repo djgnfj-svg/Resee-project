@@ -2,7 +2,7 @@
 Custom throttling classes for Resee platform using Redis cache.
 """
 from django.core.cache import caches
-from rest_framework.throttling import UserRateThrottle, AnonRateThrottle, ScopedRateThrottle
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 
 class RedisThrottleMixin:

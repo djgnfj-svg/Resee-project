@@ -2,18 +2,16 @@
 Review notification tasks using Celery
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import List
 
 from celery import shared_task
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db.models import Q
 from django.utils import timezone
 
 from accounts.email.email_service import EmailService
-from accounts.models import NotificationPreference
-from review.models import ReviewSchedule, ReviewHistory
+from review.models import ReviewSchedule
 
 User = get_user_model()
 logger = logging.getLogger(__name__)

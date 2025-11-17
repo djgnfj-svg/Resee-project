@@ -9,7 +9,8 @@ Uses Claude 3 Haiku for cost-efficient generation.
 """
 
 import logging
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
+
 from langchain_core.prompts import ChatPromptTemplate
 
 from ai_services.base import BaseAIService

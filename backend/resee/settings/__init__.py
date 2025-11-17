@@ -21,7 +21,7 @@ elif environment == 'production' or 'production' in settings_module:
 elif environment == 'staging' or 'staging' in settings_module:
     # Staging settings use development as base
     from .development import *
-    
+
     # Staging-specific overrides
     DEBUG = os.environ.get('DEBUG', 'False') == 'True'
     ALLOWED_HOSTS.extend(['staging.resee.com', 'resee-staging.herokuapp.com'])

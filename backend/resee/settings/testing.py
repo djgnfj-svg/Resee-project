@@ -4,7 +4,6 @@ Settings specific to testing environment.
 """
 
 import logging
-import os
 
 from .base import *
 

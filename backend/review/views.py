@@ -1,7 +1,6 @@
 import logging
 from datetime import timedelta
 
-from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -12,15 +11,16 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.subscription.services import SubscriptionService
 from resee.mixins import UserOwnershipMixin
-from resee.pagination import OptimizedPageNumberPagination, ReviewPagination
-from resee.cache_utils import invalidate_cache
+from resee.pagination import ReviewPagination
 
 from .models import ReviewHistory, ReviewSchedule
 from .serializers import ReviewHistorySerializer, ReviewScheduleSerializer
-from .utils import (calculate_success_rate, get_review_intervals,
-                    get_today_reviews_count, get_pending_reviews_count)
-from accounts.subscription.services import SubscriptionService
+from .utils import (
+    calculate_success_rate, get_pending_reviews_count, get_review_intervals,
+    get_today_reviews_count,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -276,7 +276,6 @@ class CompleteReviewView(APIView):
     def post(self, request):
         """Complete a review and update schedule with improved error handling"""
         from django.utils import timezone
-        import json
 
         content_id = request.data.get('content_id')
         result = request.data.get('result')  # 'remembered', 'partial', 'forgot'
@@ -609,9 +608,10 @@ class CategoryReviewStatsView(APIView):
         result = {}
         
         # Import additional Django aggregation functions
-        from django.db.models import Count, Avg, Case, When, IntegerField
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.db.models import Avg, Case, Count, IntegerField, When
+        from django.utils import timezone
 
         # Get user-accessible categories with content count in one query
         categories = categories.annotate(

@@ -9,12 +9,8 @@ from django.test import TestCase
 from django.utils import timezone
 
 from accounts.models import (
-    BillingSchedule,
-    NotificationPreference,
-    PaymentHistory,
-    Subscription,
-    SubscriptionTier,
-    BillingCycle,
+    BillingCycle, BillingSchedule, NotificationPreference, PaymentHistory,
+    Subscription, SubscriptionTier,
 )
 
 User = get_user_model()

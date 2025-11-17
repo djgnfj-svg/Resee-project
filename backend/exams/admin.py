@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import WeeklyTest, WeeklyTestQuestion, WeeklyTestAnswer
+
+from .models import WeeklyTest, WeeklyTestAnswer, WeeklyTestQuestion
 
 
 @admin.register(WeeklyTest)

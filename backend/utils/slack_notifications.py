@@ -2,10 +2,10 @@
 Slack notification utility for Resee
 Sends alerts to Slack for critical system events
 """
-import os
 import logging
+from typing import Any, Dict, Optional
+
 import requests
-from typing import Optional, Dict, Any
 from django.conf import settings
 
 logger = logging.getLogger(__name__)

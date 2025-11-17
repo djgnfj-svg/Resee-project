@@ -1,22 +1,19 @@
 """
 Tests for exams serializers.
 """
-from django.contrib.auth import get_user_model
-from django.test import TestCase, RequestFactory
-from rest_framework import serializers as drf_serializers
 from datetime import date, timedelta
 
-from exams.models import WeeklyTest, WeeklyTestQuestion, WeeklyTestAnswer
+from django.contrib.auth import get_user_model
+from django.test import RequestFactory, TestCase
+from rest_framework import serializers as drf_serializers
+
+from content.models import Category, Content
+from exams.models import WeeklyTest, WeeklyTestAnswer, WeeklyTestQuestion
 from exams.serializers import (
-    WeeklyTestQuestionSerializer,
-    WeeklyTestAnswerSerializer,
-    WeeklyTestSerializer,
-    WeeklyTestListSerializer,
-    SubmitAnswerSerializer,
-    StartTestSerializer,
-    CompleteTestSerializer
+    CompleteTestSerializer, StartTestSerializer, SubmitAnswerSerializer,
+    WeeklyTestAnswerSerializer, WeeklyTestListSerializer,
+    WeeklyTestQuestionSerializer, WeeklyTestSerializer,
 )
-from content.models import Content, Category
 
 User = get_user_model()
 

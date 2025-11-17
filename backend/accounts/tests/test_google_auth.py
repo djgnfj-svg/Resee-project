@@ -2,12 +2,15 @@
 Tests for Google OAuth authentication.
 """
 from unittest.mock import Mock, patch
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient
 
-from accounts.auth.google_auth import GoogleAuthService, GoogleOAuthError, GoogleAuthSerializer
+from accounts.auth.google_auth import (
+    GoogleAuthSerializer, GoogleAuthService, GoogleOAuthError,
+)
 
 User = get_user_model()
 

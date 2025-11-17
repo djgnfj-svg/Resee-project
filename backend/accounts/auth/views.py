@@ -1,10 +1,8 @@
 import logging
-from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, viewsets
@@ -15,15 +13,14 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from resee.throttling import (EmailRateThrottle, LoginRateThrottle,
-                              RegistrationRateThrottle)
 from resee.error_handlers import APIErrorHandler, StandardAPIResponse
-from resee.permissions import EmailVerifiedRequired
+from resee.throttling import LoginRateThrottle, RegistrationRateThrottle
 
+from ..utils.serializers import (
+    EmailTokenObtainPairSerializer, PasswordChangeSerializer,
+    UserRegistrationSerializer, UserSerializer,
+)
 from .google_auth import GoogleAuthSerializer
-from ..utils.serializers import (EmailTokenObtainPairSerializer,
-                                PasswordChangeSerializer,
-                                UserRegistrationSerializer, UserSerializer)
 
 User = get_user_model()
 logger = logging.getLogger(__name__)

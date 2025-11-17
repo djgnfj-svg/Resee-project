@@ -1,12 +1,10 @@
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin
-from django.core.mail import send_mass_mail
 from django.db import transaction
-from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.html import format_html
 
-from .models import Subscription, SubscriptionTier, User, PaymentHistory
+from .models import Subscription, User
 
 
 @admin.register(User)
@@ -78,6 +76,7 @@ class CustomUserAdmin(UserAdmin):
     def bulk_send_welcome_email(self, request, queryset):
         """Send welcome email to selected users with individual error tracking"""
         import logging
+
         from django.core.mail import send_mail
 
         logger = logging.getLogger(__name__)
@@ -153,6 +152,7 @@ The Resee Team
     def export_users_csv(self, request, queryset):
         """Export selected users to CSV"""
         import csv
+
         from django.http import HttpResponse
 
         response = HttpResponse(content_type='text/csv')

@@ -2,8 +2,9 @@
 Tests for content serializers.
 """
 from unittest.mock import Mock, patch
+
 from django.contrib.auth import get_user_model
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory, TestCase
 
 from content.models import Category, Content
 from content.serializers import CategorySerializer, ContentSerializer
@@ -317,6 +318,7 @@ class ContentSerializerTest(TestCase):
     def test_get_next_review_date_prefetched(self):
         """Test get_next_review_date uses prefetched value."""
         from datetime import datetime
+
         from django.utils import timezone
 
         content = Content.objects.create(

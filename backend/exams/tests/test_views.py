@@ -1,16 +1,17 @@
 """
 Tests for exams views and API endpoints.
 """
-from unittest.mock import patch, Mock
+from datetime import date, timedelta
+from unittest.mock import Mock, patch
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
-from rest_framework.test import APIClient
 from rest_framework import status
-from datetime import date, timedelta
+from rest_framework.test import APIClient
 
-from exams.models import WeeklyTest, WeeklyTestQuestion, WeeklyTestAnswer
-from content.models import Content, Category
+from content.models import Category, Content
+from exams.models import WeeklyTest, WeeklyTestAnswer, WeeklyTestQuestion
 
 User = get_user_model()
 

@@ -9,11 +9,12 @@
 
 import logging
 import random
-from typing import List, Dict, TypedDict
+from typing import Dict, List, TypedDict
+
 from django.conf import settings
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 
 logger = logging.getLogger(__name__)
 

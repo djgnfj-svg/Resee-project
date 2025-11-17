@@ -2,8 +2,9 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.text import slugify
+
 from resee.models import TimestampMixin
-from resee.validators import validate_content_length, validate_category_name
+from resee.validators import validate_category_name, validate_content_length
 
 User = get_user_model()
 

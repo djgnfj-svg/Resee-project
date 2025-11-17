@@ -19,6 +19,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend', '0.0.0.0']
 # Database for development - Use DATABASE_URL from environment
 # Will use DATABASE_URL from .env file, no hardcoded credentials
 import dj_database_url
+
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL'),

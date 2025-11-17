@@ -6,9 +6,10 @@ LangGraph 기반 Distractor 생성 품질 검증
 
 import pytest
 from django.test import TestCase
-from content.models import Content, Category
+
 from accounts.models import User
 from ai_services import ai_question_generator
+from content.models import Category, Content
 
 
 @pytest.mark.django_db

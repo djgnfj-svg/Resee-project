@@ -2,7 +2,9 @@
 Production settings for Resee
 """
 import os
+
 import dj_database_url
+
 from .base import *
 
 # Security settings - SECRET_KEY is mandatory in production

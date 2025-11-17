@@ -1,24 +1,23 @@
+import logging
+import random
+
+from django.db import transaction
+from django.utils import timezone
 from rest_framework import generics, status, viewsets
-from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.utils import timezone
-from django.db.models import Q, Count
-from django.db import transaction
-from datetime import datetime, timedelta
-import random
-import logging
 
-from .models import WeeklyTest, WeeklyTestQuestion, WeeklyTestAnswer
+from .models import WeeklyTest, WeeklyTestAnswer, WeeklyTestQuestion
 
 logger = logging.getLogger(__name__)
-from .serializers import (
-    WeeklyTestSerializer, WeeklyTestListSerializer,
-    WeeklyTestQuestionSerializer, SubmitAnswerSerializer,
-    StartTestSerializer, CompleteTestSerializer
-)
 from content.models import Content
 from resee.mixins import UserOwnershipMixin
+
+from .serializers import (
+    CompleteTestSerializer, StartTestSerializer, SubmitAnswerSerializer,
+    WeeklyTestListSerializer, WeeklyTestSerializer,
+)
 
 
 class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
@@ -57,10 +56,11 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         """Create 메서드 오버라이드로 주간 제한 확인"""
-        from rest_framework.exceptions import ValidationError
         from datetime import timedelta
+
         from django.conf import settings
         from django.utils import timezone
+        from rest_framework.exceptions import ValidationError
 
         user = request.user
 
@@ -251,7 +251,9 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
     def _is_ai_available(self):
         """AI API 사용 가능 여부 확인"""
-        from ai_services.generators.question_generator import ai_question_generator
+        from ai_services.generators.question_generator import (
+            ai_question_generator,
+        )
         return ai_question_generator.is_available()
 
     def _create_ai_question(self, weekly_test, content, order):
@@ -260,7 +262,9 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
         LangGraph 기반 고품질 Distractor 생성 시스템 사용
         """
-        from ai_services.generators.question_generator import ai_question_generator
+        from ai_services.generators.question_generator import (
+            ai_question_generator,
+        )
 
         # 중복 체크: 이미 해당 order에 문제가 있으면 스킵
         if WeeklyTestQuestion.objects.filter(weekly_test=weekly_test, order=order).exists():
@@ -298,7 +302,6 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
     def _create_simple_question(self, weekly_test, content, order):
         """간단한 문제 생성 (AI 없이) - 개선된 버전"""
-        import re
 
         # 중복 체크: 이미 해당 order에 문제가 있으면 스킵
         if WeeklyTestQuestion.objects.filter(weekly_test=weekly_test, order=order).exists():

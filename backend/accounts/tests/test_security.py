@@ -16,8 +16,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.token_blacklist.models import (
-    BlacklistedToken,
-    OutstandingToken,
+    BlacklistedToken, OutstandingToken,
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 

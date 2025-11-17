@@ -2,13 +2,14 @@
 Tests for content views (CategoryViewSet and ContentViewSet).
 """
 from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient
 
-from content.models import Category, Content
 from accounts.models import Subscription, SubscriptionTier
+from content.models import Category, Content
 
 User = get_user_model()
 

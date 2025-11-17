@@ -2,6 +2,7 @@
 Celery tasks for exam question generation
 """
 import logging
+
 from celery import shared_task
 from django.db import transaction
 
@@ -17,10 +18,9 @@ def generate_exam_questions(self, test_id, content_ids=None):
         test_id: WeeklyTest ID
         content_ids: 선택된 콘텐츠 ID 리스트 (None이면 자동 밸런싱)
     """
-    from .models import WeeklyTest, WeeklyTestQuestion
-    from content.models import Content
     from ai_services.generators.question_generator import ai_question_generator
-    import random
+
+    from .models import WeeklyTest
 
     logger.info(f"[Task] Starting question generation for test {test_id}")
 
@@ -67,7 +67,6 @@ def generate_exam_questions(self, test_id, content_ids=None):
 
 def _generate_questions_from_ids(weekly_test, content_ids, ai_available):
     """전달받은 콘텐츠 ID로 순서대로 문제 생성"""
-    from .models import WeeklyTestQuestion
     from content.models import Content
 
     try:
@@ -120,7 +119,6 @@ def _generate_balanced_questions(weekly_test, ai_available):
     콘텐츠를 자동 선택합니다.
     """
     from ai_services.graphs import select_balanced_contents_for_test
-    from .models import WeeklyTestQuestion
     from content.models import Content
 
     logger.info(f"[Task] Starting balanced question generation for test {weekly_test.id}")
@@ -240,6 +238,7 @@ def _create_ai_question(weekly_test, content, order):
     LangGraph 기반 고품질 Distractor 생성 시스템 사용
     """
     from ai_services.generators.question_generator import ai_question_generator
+
     from .models import WeeklyTestQuestion
 
     # 중복 체크: 이미 해당 order에 문제가 있으면 스킵
@@ -279,8 +278,8 @@ def _create_ai_question(weekly_test, content, order):
 
 def _create_simple_question(weekly_test, content, order):
     """간단한 문제 생성 (AI 없이) - 개선된 버전"""
-    import re
     import random
+
     from .models import WeeklyTestQuestion
 
     # 중복 체크: 이미 해당 order에 문제가 있으면 스킵

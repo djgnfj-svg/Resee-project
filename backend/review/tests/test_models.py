@@ -1,14 +1,15 @@
 """
 Tests for review models (ReviewSchedule and ReviewHistory).
 """
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
-from datetime import timedelta
 
-from review.models import ReviewSchedule, ReviewHistory
-from content.models import Content, Category
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
 
 User = get_user_model()
 

@@ -1,14 +1,17 @@
 """
 Tests for review serializers.
 """
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
-from datetime import timedelta
 
-from review.models import ReviewSchedule, ReviewHistory
-from review.serializers import ReviewScheduleSerializer, ReviewHistorySerializer
-from content.models import Content, Category
+from content.models import Category, Content
+from review.models import ReviewHistory, ReviewSchedule
+from review.serializers import (
+    ReviewHistorySerializer, ReviewScheduleSerializer,
+)
 
 User = get_user_model()
 

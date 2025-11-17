@@ -17,12 +17,12 @@ Graph Flow:
 import json
 import logging
 import random
-from typing import TypedDict, Literal, List, Dict, Optional
+from typing import Dict, List, Literal, Optional, TypedDict
 
+from django.conf import settings
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
-from langgraph.graph import StateGraph, END
-from django.conf import settings
+from langgraph.graph import END, StateGraph
 
 logger = logging.getLogger(__name__)
 

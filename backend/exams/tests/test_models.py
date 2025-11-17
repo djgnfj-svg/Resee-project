@@ -1,14 +1,15 @@
 """
 Tests for exams models (WeeklyTest, WeeklyTestQuestion, WeeklyTestAnswer).
 """
+from datetime import date, timedelta
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
-from datetime import date, timedelta
 
-from exams.models import WeeklyTest, WeeklyTestQuestion, WeeklyTestAnswer
-from content.models import Content, Category
+from content.models import Category, Content
+from exams.models import WeeklyTest, WeeklyTestAnswer, WeeklyTestQuestion
 
 User = get_user_model()
 

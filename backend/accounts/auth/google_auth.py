@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 class GoogleOAuthError(Exception):
     """Google OAuth 관련 에러"""
-    pass
 
 
 class GoogleAuthService:
