@@ -2,19 +2,28 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
+// Store access token in memory (NOT localStorage)
+let accessToken: string | null = null;
+
+export const setAccessToken = (token: string | null) => {
+  accessToken = token;
+};
+
+export const getAccessToken = () => accessToken;
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Send cookies with requests
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   },
@@ -33,28 +42,22 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (refreshToken) {
-        try {
-          const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
-            refresh: refreshToken,
-          });
+      try {
+        // Refresh token is sent automatically via HttpOnly cookie
+        const response = await axios.post(
+          `${API_BASE_URL}/auth/token/refresh/`,
+          {},
+          { withCredentials: true }
+        );
 
-          const newAccessToken = response.data.access;
-          localStorage.setItem('access_token', newAccessToken);
+        const newAccessToken = response.data.access;
+        setAccessToken(newAccessToken);
 
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-          return api(originalRequest);
-        } catch (refreshError) {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          // Don't redirect automatically, let the component handle it
-          error.isAuthError = true;
-        }
-      } else {
-        // No refresh token available
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed, clear access token
+        setAccessToken(null);
         error.isAuthError = true;
       }
     }

@@ -8,9 +8,11 @@ from django.urls import include, path, re_path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
-from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
+from rest_framework_simplejwt.views import TokenVerifyView
 
-from accounts.auth.views import EmailTokenObtainPairView
+from accounts.auth.views import (
+    CookieTokenRefreshView, EmailTokenObtainPairView, LogoutView,
+)
 
 from .views import health_check
 
@@ -44,8 +46,9 @@ urlpatterns = [
 
     # Authentication
     path('api/auth/token/', EmailTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/auth/token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('api/auth/logout/', LogoutView.as_view(), name='logout'),
 
     # Health check endpoints (root level for load balancers)
     # Note: monitoring app removed, basic health checks handled by resee.health
