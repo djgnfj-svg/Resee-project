@@ -147,6 +147,63 @@ curl http://resee-alb-64869428.ap-northeast-2.elb.amazonaws.com/api/health/detai
 
 ---
 
+## Git Workflow
+
+### Commit Message Format
+
+Follow the conventional commits pattern with detailed body:
+
+```
+type(scope): Brief description (50 chars max)
+
+**Section Title** (if multiple changes):
+- Bullet point explaining what changed
+- Why this change was needed
+- Technical details if relevant
+
+**Another Section** (optional):
+- More changes grouped logically
+
+**Test Results** (if applicable):
+- Test coverage or validation results
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+**Types**:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `test`: Add or update tests
+- `refactor`: Code refactoring
+- `chore`: Maintenance tasks
+- `ci`: CI/CD changes
+
+**Scopes** (optional):
+- `ci`, `exams`, `review`, `content`, `accounts`, `frontend`, etc.
+
+**Examples**:
+```bash
+# Simple fix
+fix(ci): Fix CI failures - frontend types and backend dependencies
+
+# Feature with details
+feat(exams): Implement async exam question generation with polling
+
+**Backend**:
+- Add polling endpoint for exam status
+- Implement Celery task for async generation
+- Add rate limiting (5 req/min per user)
+
+**Frontend**:
+- Add loading state with progress indicator
+- Implement auto-refresh polling every 2s
+```
+
+---
+
 ## Testing Requirements
 
 **CRITICAL: Always use MCP Playwright for end-to-end testing**

@@ -93,6 +93,7 @@ README-DEPLOYMENT.md
 
 # Images
 image.png
+image**.png
 scripts
 scripts/*
 temp/.claude/settings.local.json
