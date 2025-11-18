@@ -1,25 +1,30 @@
 // HTML to Markdown conversion utilities
 export const convertToMarkdown = (html: string): string => {
   if (!html) return '';
-  
+
   let markdown = html;
-  
+
+  // 먼저 p 태그를 줄바꿈으로 변환 (다른 변환 전에 처리)
+  markdown = markdown.replace(/<\/p>\s*<p[^>]*>/g, '\n\n');
+  markdown = markdown.replace(/<p[^>]*>/g, '');
+  markdown = markdown.replace(/<\/p>/g, '\n');
+
   // 제목 변환
-  markdown = markdown.replace(/<h1[^>]*>(.*?)<\/h1>/g, '# $1');
-  markdown = markdown.replace(/<h2[^>]*>(.*?)<\/h2>/g, '## $1');
-  markdown = markdown.replace(/<h3[^>]*>(.*?)<\/h3>/g, '### $1');
-  
+  markdown = markdown.replace(/<h1[^>]*>(.*?)<\/h1>/g, '# $1\n');
+  markdown = markdown.replace(/<h2[^>]*>(.*?)<\/h2>/g, '## $1\n');
+  markdown = markdown.replace(/<h3[^>]*>(.*?)<\/h3>/g, '### $1\n');
+
   // 굵게, 기울임
   markdown = markdown.replace(/<strong[^>]*>(.*?)<\/strong>/g, '**$1**');
   markdown = markdown.replace(/<em[^>]*>(.*?)<\/em>/g, '*$1*');
   
   // 목록
-  markdown = markdown.replace(/<ul[^>]*>(.*?)<\/ul>/gs, (match, content) => {
-    return content.replace(/<li[^>]*>(.*?)<\/li>/g, '- $1');
+  markdown = markdown.replace(/<ul[^>]*>(.*?)<\/ul>/gs, (match: string, content: string) => {
+    return content.replace(/<li[^>]*>(.*?)<\/li>/g, (_: string, item: string) => `- ${item}\n`);
   });
-  markdown = markdown.replace(/<ol[^>]*>(.*?)<\/ol>/gs, (match, content) => {
+  markdown = markdown.replace(/<ol[^>]*>(.*?)<\/ol>/gs, (match: string, content: string) => {
     let counter = 1;
-    return content.replace(/<li[^>]*>(.*?)<\/li>/g, () => `${counter++}. $1`);
+    return content.replace(/<li[^>]*>(.*?)<\/li>/g, (_: string, item: string) => `${counter++}. ${item}\n`);
   });
   
   // 인용문
@@ -34,10 +39,7 @@ export const convertToMarkdown = (html: string): string => {
   
   // 줄바꿈
   markdown = markdown.replace(/<br\s*\/?>/g, '\n');
-  markdown = markdown.replace(/<\/p>\s*<p[^>]*>/g, '\n\n');
-  markdown = markdown.replace(/<p[^>]*>/g, '');
-  markdown = markdown.replace(/<\/p>/g, '');
-  
+
   // HTML 태그 제거
   markdown = markdown.replace(/<[^>]*>/g, '');
   
@@ -47,7 +49,7 @@ export const convertToMarkdown = (html: string): string => {
   markdown = markdown.replace(/&gt;/g, '>');
   markdown = markdown.replace(/&quot;/g, '"');
   markdown = markdown.replace(/&#39;/g, "'");
-  
+
   return markdown.trim();
 };
 

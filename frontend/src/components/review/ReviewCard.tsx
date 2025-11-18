@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ReviewSchedule } from '../../types';
 
 interface ReviewCardProps {
@@ -86,8 +87,8 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
             </button>
           </div>
         ) : (
-          <div className="prose dark:prose-invert max-w-none">
-            <ReactMarkdown>{review.content.content}</ReactMarkdown>
+          <div className="prose dark:prose-invert max-w-none prose-p:max-w-none prose-headings:max-w-none prose-ul:max-w-none prose-ol:max-w-none prose-pre:max-w-none break-words overflow-hidden whitespace-pre-wrap">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{review.content.content}</ReactMarkdown>
           </div>
         )}
       </div>
@@ -161,8 +162,8 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
             {/* Correct Answer */}
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">정답</h4>
-              <div className="prose prose-sm dark:prose-invert max-w-none break-words">
-                <ReactMarkdown>{review.content.content}</ReactMarkdown>
+              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:max-w-none prose-headings:max-w-none prose-ul:max-w-none prose-ol:max-w-none prose-pre:max-w-none break-words overflow-hidden whitespace-pre-wrap">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{review.content.content}</ReactMarkdown>
               </div>
             </div>
           </div>
@@ -198,8 +199,8 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
           <div className="space-y-6">
             {/* Content */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-              <div className="prose prose-sm dark:prose-invert max-w-none break-words">
-                <ReactMarkdown>{review.content.content}</ReactMarkdown>
+              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:max-w-none prose-headings:max-w-none prose-ul:max-w-none prose-ol:max-w-none prose-pre:max-w-none break-words overflow-hidden whitespace-pre-wrap">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{review.content.content}</ReactMarkdown>
               </div>
             </div>
 
@@ -238,8 +239,8 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
             {/* Content */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">내용</h4>
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown>{review.content.content}</ReactMarkdown>
+              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:max-w-none prose-headings:max-w-none prose-ul:max-w-none prose-ol:max-w-none prose-pre:max-w-none break-words overflow-hidden whitespace-pre-wrap">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{review.content.content}</ReactMarkdown>
               </div>
             </div>
 
@@ -302,8 +303,8 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
           <div className="space-y-6">
             {/* Content */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-              <div className="prose prose-sm dark:prose-invert max-w-none break-words">
-                <ReactMarkdown>{review.content.content}</ReactMarkdown>
+              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:max-w-none prose-headings:max-w-none prose-ul:max-w-none prose-ol:max-w-none prose-pre:max-w-none break-words overflow-hidden whitespace-pre-wrap">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{review.content.content}</ReactMarkdown>
               </div>
             </div>
 
@@ -336,8 +337,8 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
             {/* Content */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">내용</h4>
-              <div className="prose prose-sm dark:prose-invert max-w-none break-words">
-                <ReactMarkdown>{review.content.content}</ReactMarkdown>
+              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:max-w-none prose-headings:max-w-none prose-ul:max-w-none prose-ol:max-w-none prose-pre:max-w-none break-words overflow-hidden whitespace-pre-wrap">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{review.content.content}</ReactMarkdown>
               </div>
             </div>
 
@@ -361,7 +362,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
             {/* Correct Answer */}
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
               <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">정답</h4>
-              <p className="text-green-700 dark:text-green-300 font-medium">{review.content.title}</p>
+              <p className="text-green-700 dark:text-green-300 font-medium break-words">{review.content.title}</p>
             </div>
           </div>
         )}

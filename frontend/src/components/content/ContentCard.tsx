@@ -167,7 +167,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
         {/* Content Preview/Full */}
         <div className="mb-4">
           {isExpanded ? (
-            <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-gray-900 dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-gray-300">
+            <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-gray-900 dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:max-w-none prose-headings:max-w-none prose-ul:max-w-none prose-ol:max-w-none prose-pre:max-w-none break-words overflow-hidden whitespace-pre-wrap">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {content.content}
               </ReactMarkdown>
