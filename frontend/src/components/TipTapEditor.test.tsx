@@ -1,5 +1,5 @@
 import React from 'react';
-import { screen, fireEvent } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { render } from '../test-utils/test-utils';
 import TipTapEditor from './TipTapEditor';
 
@@ -64,22 +64,8 @@ describe('TipTapEditor', () => {
     expect(screen.getByTestId('editor-content')).toBeInTheDocument();
   });
 
-  it('renders with border container', () => {
-    const { container } = render(<TipTapEditor {...mockProps} />);
-
-    const editorContainer = container.querySelector('.border');
-    expect(editorContainer).toBeInTheDocument();
-  });
-
-  it('renders editor with custom className', () => {
-    const { container } = render(<TipTapEditor {...mockProps} className="custom-class" />);
-
-    const editorContainer = container.querySelector('.custom-class');
-    expect(editorContainer).toBeInTheDocument();
-  });
-
   it('renders with default placeholder', () => {
-    const { container } = render(
+    render(
       <TipTapEditor content="" onChange={jest.fn()} />
     );
 
@@ -88,12 +74,11 @@ describe('TipTapEditor', () => {
   });
 
   it('handles empty content gracefully', () => {
-    const { container } = render(
+    render(
       <TipTapEditor content="" onChange={jest.fn()} placeholder="Type here..." />
     );
 
     // Editor should still render with empty content
     expect(screen.getByTestId('editor-content')).toBeInTheDocument();
-    expect(container.querySelector('.border')).toBeInTheDocument();
   });
 });

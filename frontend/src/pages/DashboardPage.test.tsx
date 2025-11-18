@@ -1,8 +1,8 @@
 import React from 'react';
-import { screen, waitFor, renderHook } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { mockUser, createTestQueryClient } from '../test-utils/test-utils';
 import DashboardPage from './DashboardPage';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { reviewAPI, contentAPI } from '../utils/api';
 
@@ -96,11 +96,6 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/대시보드/i)).toBeInTheDocument();
     }, { timeout: 3000 });
-
-    // Debug: print rendered output
-    if (!screen.queryByText(/대시보드/i)) {
-      console.log('Rendered HTML:', container.innerHTML);
-    }
   });
 
   it('renders welcome message', async () => {
@@ -117,8 +112,9 @@ describe('DashboardPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/학습 콘텐츠/i)).toBeInTheDocument();
-      expect(screen.getByText(/오늘의 복습/i)).toBeInTheDocument();
     });
+
+    expect(screen.getByText(/오늘의 복습/i)).toBeInTheDocument();
   });
 
   it('renders action buttons', async () => {
@@ -126,8 +122,9 @@ describe('DashboardPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/새 콘텐츠 추가하기/i)).toBeInTheDocument();
-      expect(screen.getByText(/복습 시작/i)).toBeInTheDocument();
     });
+
+    expect(screen.getByText(/복습 시작/i)).toBeInTheDocument();
   });
 
   it('renders statistics section', async () => {
@@ -135,7 +132,8 @@ describe('DashboardPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/평균 복습 성공률/i)).toBeInTheDocument();
-      expect(screen.getByText(/최근 30일 복습 횟수/i)).toBeInTheDocument();
     });
+
+    expect(screen.getByText(/최근 30일 복습 횟수/i)).toBeInTheDocument();
   });
 });
