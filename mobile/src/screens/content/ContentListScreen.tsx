@@ -70,12 +70,19 @@ const ContentListScreen: React.FC<Props> = ({ navigation }) => {
       activeOpacity={0.7}
     >
       <View style={styles.contentHeader}>
-        <Text style={[styles.contentTitle, { color: colors.text }]} numberOfLines={1}>
-          {item.title}
-        </Text>
-        {item.is_ai_validated && (
-          <View style={[styles.validatedBadge, { backgroundColor: colors.success }]}>
-            <Text style={styles.validatedText}>✓ 검증됨</Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.contentTitle, { color: colors.text }]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          {item.is_ai_validated && (
+            <View style={styles.validatedBadge}>
+              <Text style={styles.validatedText}>✓</Text>
+            </View>
+          )}
+        </View>
+        {item.category && (
+          <View style={[styles.categoryTag, { backgroundColor: colors.primary + '15' }]}>
+            <Text style={[styles.categoryText, { color: colors.primary }]}>{item.category.name}</Text>
           </View>
         )}
       </View>
@@ -85,23 +92,25 @@ const ContentListScreen: React.FC<Props> = ({ navigation }) => {
       </Text>
 
       <View style={styles.contentFooter}>
-        {item.category && (
-          <View style={[styles.categoryTag, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.categoryText, { color: colors.primary }]}>{item.category.name}</Text>
-          </View>
-        )}
+        <View style={[styles.reviewModeBadge, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.reviewModeText, { color: colors.text }]}>
+            {getReviewModeLabel(item.review_mode)}
+          </Text>
+        </View>
         <View style={styles.contentStats}>
-          <Text style={[styles.statsText, { color: colors.textSecondary }]}>복습 {item.review_count}회</Text>
+          <View style={styles.statItem}>
+            <Text style={styles.statIcon}>🔄</Text>
+            <Text style={[styles.statsText, { color: colors.textSecondary }]}>{item.review_count}</Text>
+          </View>
           {item.next_review_date && (
-            <Text style={[styles.statsText, { color: colors.textSecondary }]}> • 다음 복습: {new Date(item.next_review_date).toLocaleDateString()}</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statIcon}>📅</Text>
+              <Text style={[styles.statsText, { color: colors.textSecondary }]}>
+                {new Date(item.next_review_date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+              </Text>
+            </View>
           )}
         </View>
-      </View>
-
-      <View style={[styles.reviewModeContainer, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.reviewModeText, { color: colors.textSecondary }]}>
-          모드: {getReviewModeLabel(item.review_mode)}
-        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -179,9 +188,9 @@ const ContentListScreen: React.FC<Props> = ({ navigation }) => {
 
 const getReviewModeLabel = (mode: string) => {
   const labels: Record<string, string> = {
-    objective: '객관식',
+    objective: '기억 확인',
     descriptive: '서술형',
-    multiple_choice: '다지선다',
+    multiple_choice: '객관식',
     subjective: '주관식',
   };
   return labels[mode] || mode;
@@ -233,98 +242,109 @@ const styles = StyleSheet.create({
   },
   contentCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   contentHeader: {
+    marginBottom: 12,
+  },
+  titleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
   contentTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontWeight: '600',
     flex: 1,
     marginRight: 8,
   },
   validatedBadge: {
-    backgroundColor: '#d1fae5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#22c55e',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   validatedText: {
+    fontSize: 14,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  categoryTag: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  categoryText: {
     fontSize: 12,
-    color: '#065f46',
     fontWeight: '600',
   },
   contentPreview: {
-    fontSize: 14,
-    color: '#6b7280',
-    lineHeight: 20,
-    marginBottom: 12,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 14,
   },
   contentFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
-  categoryTag: {
-    backgroundColor: '#dbeafe',
+  reviewModeBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
-  categoryText: {
+  reviewModeText: {
     fontSize: 12,
-    color: '#1e40af',
     fontWeight: '500',
   },
   contentStats: {
     flexDirection: 'row',
-    flex: 1,
-    marginLeft: 8,
+    gap: 12,
+    alignItems: 'center',
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statIcon: {
+    fontSize: 14,
   },
   statsText: {
-    fontSize: 12,
-    color: '#9ca3af',
-  },
-  reviewModeContainer: {
-    marginTop: 4,
-  },
-  reviewModeText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: 13,
+    fontWeight: '500',
   },
   fab: {
     position: 'absolute',
     right: 20,
     bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#3b82f6',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 10,
   },
   fabText: {
-    fontSize: 32,
+    fontSize: 36,
     color: '#fff',
     fontWeight: '300',
+    lineHeight: 36,
   },
   limitWarning: {
     position: 'absolute',

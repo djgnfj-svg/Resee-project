@@ -12,6 +12,7 @@ import { ContentStackScreenProps } from '../../navigation/types';
 import { contentAPI } from '../../api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
+import MarkdownContent from '../../components/common/MarkdownContent';
 import { useTheme } from '../../contexts/ThemeContext';
 
 type Props = ContentStackScreenProps<'ContentDetail'>;
@@ -124,7 +125,7 @@ const ContentDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         {/* Content */}
         <View style={[styles.section, { borderBottomColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>내용</Text>
-          <Text style={[styles.contentText, { color: colors.textSecondary }]}>{content.content}</Text>
+          <MarkdownContent content={content.content} />
         </View>
 
         {/* Multiple Choice Options */}
@@ -226,9 +227,9 @@ const ContentDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
 const getReviewModeLabel = (mode: string) => {
   const labels: Record<string, string> = {
-    objective: '객관식',
+    objective: '기억 확인',
     descriptive: '서술형',
-    multiple_choice: '다지선다',
+    multiple_choice: '객관식',
     subjective: '주관식',
   };
   return labels[mode] || mode;
@@ -242,26 +243,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 20,
+    padding: 24,
     borderBottomWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 16,
+    lineHeight: 34,
   },
   validatedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#d1fae5',
+    backgroundColor: '#22c55e',
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
   },
   validatedText: {
     fontSize: 14,
-    color: '#065f46',
+    color: '#ffffff',
     fontWeight: '600',
   },
   scoreText: {
@@ -299,17 +306,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   section: {
-    padding: 20,
+    padding: 24,
     borderBottomWidth: 1,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   contentText: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 17,
+    lineHeight: 28,
   },
   choiceItem: {
     flexDirection: 'row',
@@ -387,26 +394,37 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    padding: 16,
+    padding: 20,
     borderTopWidth: 1,
-    gap: 12,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 4,
   },
   actionButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 8,
+    padding: 18,
+    borderRadius: 12,
     alignItems: 'center',
+    minHeight: 56,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
   },
   deleteButton: {
-    borderWidth: 1,
+    borderWidth: 2,
   },
   editButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
   },
   deleteButtonText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
   },
 });

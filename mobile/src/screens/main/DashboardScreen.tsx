@@ -7,19 +7,37 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigation } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { reviewAPI } from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { MainTabParamList } from '../../navigation/types';
+
+type NavigationProp = BottomTabNavigationProp<MainTabParamList, 'DashboardTab'>;
 
 const DashboardScreen = () => {
   const { user } = useAuth();
   const { colors } = useTheme();
+  const navigation = useNavigation<NavigationProp>();
 
   const { data: dashboardData, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => reviewAPI.getDashboard(),
   });
+
+  // Get greeting based on time
+  const currentHour = new Date().getHours();
+  const greeting =
+    currentHour < 12
+      ? '좋은 아침이에요'
+      : currentHour < 18
+      ? '좋은 오후에요'
+      : '좋은 저녁이에요';
+
+  const userName = user?.email?.split('@')[0] || '사용자';
 
   if (isLoading) {
     return (
@@ -31,25 +49,52 @@ const DashboardScreen = () => {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Text style={[styles.greeting, { color: colors.text }]}>안녕하세요, {user?.email}님!</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>오늘도 학습을 시작해보세요</Text>
-      </View>
+      {/* Hero Section with Gradient */}
+      <LinearGradient
+        colors={[colors.gradient.start, colors.gradient.middle, colors.gradient.end]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.heroSection}
+      >
+        <View style={styles.heroContent}>
+          <Text style={styles.heroGreeting}>
+            {greeting}, {userName}님! 👋
+          </Text>
+          <Text style={styles.heroSubtitle}>
+            오늘도 꾸준한 학습으로 목표를 향해 나아가세요
+          </Text>
+        </View>
+        {/* Decorative circles */}
+        <View style={styles.decorCircle1} />
+        <View style={styles.decorCircle2} />
+      </LinearGradient>
 
+      {/* Stats Cards */}
       <View style={styles.statsContainer}>
         <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.statValue, { color: colors.primary }]}>{dashboardData?.today_reviews || 0}</Text>
+          <View style={[styles.statIconContainer, { backgroundColor: colors.primaryLight + '20' }]}>
+            <Text style={styles.statIcon}>📅</Text>
+          </View>
+          <Text style={[styles.statValue, { color: colors.primary }]}>
+            {dashboardData?.today_reviews || 0}
+          </Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>오늘의 복습</Text>
         </View>
 
         <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.statValue, { color: colors.primary }]}>
+          <View style={[styles.statIconContainer, { backgroundColor: colors.warning + '20' }]}>
+            <Text style={styles.statIcon}>⏳</Text>
+          </View>
+          <Text style={[styles.statValue, { color: colors.warning }]}>
             {dashboardData?.pending_reviews || 0}
           </Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>대기 중</Text>
         </View>
 
         <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+          <View style={[styles.statIconContainer, { backgroundColor: colors.primary + '20' }]}>
+            <Text style={styles.statIcon}>📚</Text>
+          </View>
           <Text style={[styles.statValue, { color: colors.primary }]}>
             {dashboardData?.total_content || 0}
           </Text>
@@ -57,7 +102,10 @@ const DashboardScreen = () => {
         </View>
 
         <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.statValue, { color: colors.primary }]}>
+          <View style={[styles.statIconContainer, { backgroundColor: colors.success + '20' }]}>
+            <Text style={styles.statIcon}>✨</Text>
+          </View>
+          <Text style={[styles.statValue, { color: colors.success }]}>
             {dashboardData?.success_rate
               ? `${dashboardData.success_rate.toFixed(1)}%`
               : '0%'}
@@ -66,33 +114,90 @@ const DashboardScreen = () => {
         </View>
       </View>
 
-      <View style={styles.section}>
+      {/* Action Cards */}
+      <View style={styles.actionsSection}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>빠른 실행</Text>
 
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.primary }]}>
-          <Text style={styles.actionButtonText}>오늘의 복습 시작</Text>
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => navigation.navigate('ReviewTab')}
+          activeOpacity={0.7}
+        >
+          <LinearGradient
+            colors={[colors.gradient.start, colors.gradient.end]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.actionGradient}
+          >
+            <View style={styles.actionIconContainer}>
+              <Text style={styles.actionIcon}>🎯</Text>
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>오늘의 복습 시작</Text>
+              <Text style={styles.actionSubtitle}>
+                {dashboardData?.today_reviews || 0}개의 복습 대기 중
+              </Text>
+            </View>
+            <Text style={styles.actionArrow}>→</Text>
+          </LinearGradient>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionButton, styles.actionButtonSecondary, { backgroundColor: colors.card, borderColor: colors.primary }]}
+          style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => navigation.navigate('ContentTab', { screen: 'ContentCreate' })}
+          activeOpacity={0.7}
         >
-          <Text style={[styles.actionButtonTextSecondary, { color: colors.primary }]}>새 콘텐츠 추가</Text>
+          <View style={[styles.actionCardContent, { paddingHorizontal: 16, paddingVertical: 20 }]}>
+            <View style={[styles.actionIconContainer, { backgroundColor: colors.primary + '15' }]}>
+              <Text style={styles.actionIcon}>✏️</Text>
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>새 콘텐츠 추가</Text>
+              <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>
+                학습할 내용을 추가하세요
+              </Text>
+            </View>
+            <Text style={[styles.actionArrow, { color: colors.primary }]}>→</Text>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionButton, styles.actionButtonSecondary, { backgroundColor: colors.card, borderColor: colors.primary }]}
+          style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => navigation.navigate('ExamsTab', { screen: 'ExamList' })}
+          activeOpacity={0.7}
         >
-          <Text style={[styles.actionButtonTextSecondary, { color: colors.primary }]}>AI 주간 시험</Text>
+          <View style={[styles.actionCardContent, { paddingHorizontal: 16, paddingVertical: 20 }]}>
+            <View style={[styles.actionIconContainer, { backgroundColor: colors.warning + '15' }]}>
+              <Text style={styles.actionIcon}>📝</Text>
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={[styles.actionTitle, { color: colors.text }]}>AI 주간 시험</Text>
+              <Text style={[styles.actionSubtitle, { color: colors.textSecondary }]}>
+                실력을 확인해보세요
+              </Text>
+            </View>
+            <Text style={[styles.actionArrow, { color: colors.primary }]}>→</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>최근 활동</Text>
-        <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-          최근 30일간 {dashboardData?.total_reviews_30_days || 0}번의 복습을
-          완료했습니다.
-        </Text>
+      {/* Recent Activity */}
+      <View style={[styles.activitySection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.activityHeader}>
+          <Text style={[styles.activityTitle, { color: colors.text }]}>📊 최근 활동</Text>
+        </View>
+        <View style={styles.activityContent}>
+          <View style={styles.activityItem}>
+            <Text style={[styles.activityLabel, { color: colors.textSecondary }]}>최근 30일 복습</Text>
+            <Text style={[styles.activityValue, { color: colors.primary }]}>
+              {dashboardData?.total_reviews_30_days || 0}회
+            </Text>
+          </View>
+        </View>
       </View>
+
+      {/* Bottom Padding */}
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 };
@@ -100,92 +205,193 @@ const DashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+
+  // Hero Section
+  heroSection: {
+    padding: 32,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  greeting: {
-    fontSize: 24,
+  heroContent: {
+    zIndex: 10,
+  },
+  heroGreeting: {
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#111827',
+    color: '#ffffff',
+    marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginTop: 4,
+  heroSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 22,
   },
+  decorCircle1: {
+    position: 'absolute',
+    top: -80,
+    right: -80,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  decorCircle2: {
+    position: 'absolute',
+    bottom: -60,
+    left: -60,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+
+  // Stats Section
   statsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 10,
+    padding: 16,
+    paddingTop: 24,
+    gap: 12,
   },
   statCard: {
     width: '48%',
-    backgroundColor: '#fff',
+    minWidth: 150,
     padding: 20,
-    margin: '1%',
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 3,
   },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statIcon: {
+    fontSize: 24,
+  },
   statValue: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#3b82f6',
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginTop: 4,
+    fontSize: 13,
+    fontWeight: '500',
   },
-  section: {
-    padding: 20,
+
+  // Actions Section
+  actionsSection: {
+    padding: 16,
+    paddingTop: 8,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 12,
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
-  actionButton: {
-    backgroundColor: '#3b82f6',
-    padding: 16,
-    borderRadius: 8,
+  actionCard: {
+    borderRadius: 16,
     marginBottom: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  actionGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+  },
+  actionCardContent: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  actionButtonSecondary: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#3b82f6',
+  actionIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  actionIcon: {
+    fontSize: 28,
   },
-  actionButtonTextSecondary: {
-    color: '#3b82f6',
-    fontSize: 16,
-    fontWeight: 'bold',
+  actionContent: {
+    flex: 1,
   },
-  infoText: {
+  actionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+  actionSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
-    lineHeight: 20,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  actionArrow: {
+    fontSize: 24,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+
+  // Activity Section
+  activitySection: {
+    margin: 16,
+    marginTop: 8,
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  activityHeader: {
+    marginBottom: 16,
+  },
+  activityTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  activityContent: {
+    gap: 12,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  activityLabel: {
+    fontSize: 15,
+  },
+  activityValue: {
+    fontSize: 17,
+    fontWeight: '600',
   },
 });
 

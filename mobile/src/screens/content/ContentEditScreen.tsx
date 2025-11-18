@@ -63,9 +63,11 @@ const ContentEditScreen: React.FC<Props> = ({ route, navigation }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contents'] });
       queryClient.invalidateQueries({ queryKey: ['content', id] });
-      Alert.alert('성공', '콘텐츠가 수정되었습니다.', [
-        { text: '확인', onPress: () => navigation.goBack() },
-      ]);
+      navigation.goBack();
+      // Show success message briefly after navigation
+      setTimeout(() => {
+        Alert.alert('성공', '콘텐츠가 수정되었습니다.');
+      }, 100);
     },
     onError: (error: any) => {
       Alert.alert('오류', error.userMessage || '콘텐츠 수정에 실패했습니다.');
@@ -107,9 +109,9 @@ const ContentEditScreen: React.FC<Props> = ({ route, navigation }) => {
   const categories = categoriesData?.results || [];
 
   const reviewModes: { value: ReviewMode; label: string }[] = [
-    { value: 'objective', label: '객관식' },
+    { value: 'objective', label: '기억 확인' },
     { value: 'descriptive', label: '서술형' },
-    { value: 'multiple_choice', label: '다지선다' },
+    { value: 'multiple_choice', label: '객관식' },
     { value: 'subjective', label: '주관식' },
   ];
 

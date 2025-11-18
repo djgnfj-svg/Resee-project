@@ -13,9 +13,16 @@ interface ThemeColors {
   textSecondary: string;
   border: string;
   primary: string;
+  primaryDark: string;
+  primaryLight: string;
   error: string;
   success: string;
   warning: string;
+  gradient: {
+    start: string;
+    middle: string;
+    end: string;
+  };
 }
 
 interface ThemeContextType {
@@ -26,29 +33,43 @@ interface ThemeContextType {
 }
 
 const lightColors: ThemeColors = {
-  background: '#ffffff',
-  surface: '#f9fafb',
+  background: '#f8fafc',
+  surface: '#f1f5f9',
   card: '#ffffff',
-  text: '#111827',
-  textSecondary: '#6b7280',
-  border: '#d1d5db',
-  primary: '#3b82f6',
+  text: '#0f172a',
+  textSecondary: '#64748b',
+  border: '#e2e8f0',
+  primary: '#6366f1',
+  primaryDark: '#4f46e5',
+  primaryLight: '#818cf8',
   error: '#ef4444',
-  success: '#10b981',
+  success: '#22c55e',
   warning: '#f59e0b',
+  gradient: {
+    start: '#6366f1',
+    middle: '#7c3aed',
+    end: '#a855f7',
+  },
 };
 
 const darkColors: ThemeColors = {
-  background: '#111827',
-  surface: '#1f2937',
-  card: '#374151',
-  text: '#f9fafb',
-  textSecondary: '#9ca3af',
-  border: '#4b5563',
-  primary: '#60a5fa',
+  background: '#0f172a',
+  surface: '#1e293b',
+  card: '#334155',
+  text: '#f1f5f9',
+  textSecondary: '#94a3b8',
+  border: '#475569',
+  primary: '#818cf8',
+  primaryDark: '#6366f1',
+  primaryLight: '#a5b4fc',
   error: '#f87171',
   success: '#34d399',
   warning: '#fbbf24',
+  gradient: {
+    start: '#6366f1',
+    middle: '#7c3aed',
+    end: '#a855f7',
+  },
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

@@ -5,10 +5,13 @@ import {
   CompleteReviewData,
   PaginatedResponse,
   DashboardData,
+  TodayReviewsResponse,
 } from '../types';
 
 export const reviewAPI = {
-  getTodayReviews: async (params?: string): Promise<ReviewSchedule[]> => {
+  getTodayReviews: async (
+    params?: string
+  ): Promise<TodayReviewsResponse | ReviewSchedule[]> => {
     const url = params
       ? `/review/schedules/today/${params}`
       : '/review/schedules/today/';
@@ -44,6 +47,8 @@ export const reviewAPI = {
     ai_evaluation?: {
       score: number;
       feedback: string;
+      auto_result?: 'remembered' | 'forgot';
+      is_correct?: boolean;
     };
   }> => {
     const response = await apiClient.post(

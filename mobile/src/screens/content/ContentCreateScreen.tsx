@@ -40,9 +40,11 @@ const ContentCreateScreen: React.FC<Props> = ({ navigation }) => {
     }) => contentAPI.createContent(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contents'] });
-      Alert.alert('성공', '콘텐츠가 생성되었습니다.', [
-        { text: '확인', onPress: () => navigation.goBack() },
-      ]);
+      navigation.goBack();
+      // Show success message briefly after navigation
+      setTimeout(() => {
+        Alert.alert('성공', '콘텐츠가 생성되었습니다.');
+      }, 100);
     },
     onError: (error: any) => {
       Alert.alert('오류', error.userMessage || '콘텐츠 생성에 실패했습니다.');
@@ -71,9 +73,9 @@ const ContentCreateScreen: React.FC<Props> = ({ navigation }) => {
   const categories = categoriesData?.results || [];
 
   const reviewModes: { value: ReviewMode; label: string }[] = [
-    { value: 'objective', label: '객관식' },
+    { value: 'objective', label: '기억 확인' },
     { value: 'descriptive', label: '서술형' },
-    { value: 'multiple_choice', label: '다지선다' },
+    { value: 'multiple_choice', label: '객관식' },
     { value: 'subjective', label: '주관식' },
   ];
 
@@ -195,11 +197,11 @@ const ContentCreateScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.infoTitle}>ℹ️ 복습 모드 안내</Text>
               <Text style={styles.infoText}>
                 {reviewMode === 'objective' &&
-                  '• 객관식: 제목을 보고 내용을 기억하는 방식'}
+                  '• 기억 확인: 제목을 보고 내용을 기억하는 방식'}
                 {reviewMode === 'descriptive' &&
                   '• 서술형: 제목을 보고 내용을 작성하여 AI가 평가'}
                 {reviewMode === 'multiple_choice' &&
-                  '• 다지선다: AI가 생성한 선택지에서 정답을 고르는 방식'}
+                  '• 객관식: AI가 생성한 선택지에서 정답을 고르는 방식'}
                 {reviewMode === 'subjective' &&
                   '• 주관식: 내용을 보고 제목을 유추하여 AI가 평가'}
               </Text>
