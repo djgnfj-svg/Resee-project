@@ -34,11 +34,11 @@ RUN adduser --disabled-password --gecos '' appuser && \
 USER appuser
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health/ || exit 1
+    CMD curl -f http://localhost:8080/api/health/ || exit 1
 
-# Run gunicorn on port 8000
-CMD ["gunicorn", "resee.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "2", "--timeout", "120"]
+# Run gunicorn on port 8080
+CMD ["gunicorn", "resee.wsgi:application", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "2", "--timeout", "120"]
