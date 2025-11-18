@@ -88,13 +88,6 @@ class TestAIQuestionGenerator(TestCase):
         self.assertIn('version', metadata)
         self.assertEqual(metadata['version'], 'langgraph')
 
-        # 품질 점수 출력
-        print(f"\n✅ 문제 생성 성공!")
-        print(f"  질문: {result['question_text'][:60]}...")
-        print(f"  품질 점수: {metadata['quality_score']:.1f}")
-        print(f"  반복 횟수: {metadata.get('iterations', 0)}")
-        print(f"  선택지 개수: {len(result['choices'])}")
-
     def test_distractor_quality(self):
         """Distractor 품질 테스트"""
         result = ai_question_generator.generate_question(self.content)
@@ -117,17 +110,6 @@ class TestAIQuestionGenerator(TestCase):
             "선택지 길이 편차가 너무 큼"
         )
 
-        # 품질 점수 검증
-        quality_score = result['metadata'].get('quality_score', 0)
-        print(f"\n✅ Distractor 품질 검증")
-        print(f"  품질 점수: {quality_score:.1f}")
-        print(f"  선택지 평균 길이: {avg_len:.0f}자")
-        print(f"  최대 편차: {max_deviation:.0f}자")
-
-        # 경고: 품질이 80점 미만이면 로그만 출력
-        if quality_score < 80:
-            print(f"  ⚠️  Warning: Quality score below 80")
-
     def test_multiple_generations(self):
         """여러 번 생성 시 일관성 테스트"""
         results = []
@@ -143,9 +125,3 @@ class TestAIQuestionGenerator(TestCase):
         # 모두 4개의 선택지를 가지는지
         for result in results:
             self.assertEqual(len(result['choices']), 4)
-
-        # 품질 점수 출력
-        scores = [r['metadata']['quality_score'] for r in results]
-        print(f"\n✅ 연속 생성 일관성")
-        print(f"  품질 점수: {scores}")
-        print(f"  평균: {sum(scores)/len(scores):.1f}")

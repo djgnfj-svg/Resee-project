@@ -96,11 +96,6 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/대시보드/i)).toBeInTheDocument();
     }, { timeout: 3000 });
-
-    // Debug: print rendered output
-    if (!screen.queryByText(/대시보드/i)) {
-      console.log('Rendered HTML:', container.innerHTML);
-    }
   });
 
   it('renders welcome message', async () => {

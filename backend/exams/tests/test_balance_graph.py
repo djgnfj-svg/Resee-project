@@ -154,14 +154,6 @@ class TestWeeklyTestBalanceGraph(TestCase):
         for selected_id in selected_ids:
             self.assertIn(selected_id, content_ids)
 
-        # 로그 출력
-        print(f"\n✅ Balance Graph 테스트 성공!")
-        print(f"  선택된 콘텐츠: {len(selected_ids)}개")
-        print(f"  난이도 분포:")
-        print(f"    - Easy: {balance['easy']}개")
-        print(f"    - Medium: {balance['medium']}개")
-        print(f"    - Hard: {balance['hard']}개")
-
     def test_balance_distribution(self):
         """난이도 분포 비율 테스트"""
         from ai_services.graphs import select_balanced_contents_for_test
@@ -193,10 +185,6 @@ class TestWeeklyTestBalanceGraph(TestCase):
         self.assertGreaterEqual(balance['medium'], expected_medium - 2)
         self.assertGreaterEqual(balance['hard'], expected_hard - 1)
 
-        print(f"\n✅ 난이도 분포 검증")
-        print(f"  목표: Easy {expected_easy}, Medium {expected_medium}, Hard {expected_hard}")
-        print(f"  실제: Easy {balance['easy']}, Medium {balance['medium']}, Hard {balance['hard']}")
-
     def test_insufficient_contents(self):
         """콘텐츠가 부족한 경우 테스트"""
         from ai_services.graphs import select_balanced_contents_for_test
@@ -219,6 +207,3 @@ class TestWeeklyTestBalanceGraph(TestCase):
         # 5개만 선택되어야 함
         selected_ids = result['selected_content_ids']
         self.assertLessEqual(len(selected_ids), 5)
-
-        print(f"\n✅ 부족한 콘텐츠 처리")
-        print(f"  요청: 10개, 가용: 5개, 선택: {len(selected_ids)}개")
