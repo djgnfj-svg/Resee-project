@@ -153,6 +153,7 @@ REST_FRAMEWORK = {
         'register': '3/min',
         'email': '10/hour',
     },
+    'EXCEPTION_HANDLER': 'resee.exception_handlers.custom_exception_handler',
 }
 
 

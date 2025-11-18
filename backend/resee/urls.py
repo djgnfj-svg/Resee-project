@@ -14,7 +14,7 @@ from accounts.auth.views import (
     CookieTokenRefreshView, EmailTokenObtainPairView, LogoutView,
 )
 
-from .views import health_check
+from .views import health_check, detailed_health_check, test_slack_notification
 from .metrics import system_metrics, performance_metrics, business_metrics
 
 # API documentation schema
@@ -33,8 +33,12 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # Health check (for Docker/AWS infrastructure monitoring)
+    # Health check (for Docker/Railway infrastructure monitoring)
     path('api/health/', health_check, name='health'),
+    path('api/health/detailed/', detailed_health_check, name='detailed-health'),
+
+    # Slack notification test (staff only)
+    path('api/slack/test/', test_slack_notification, name='test-slack'),
 
     # Metrics Dashboard (admin only)
     path('api/metrics/system/', system_metrics, name='system-metrics'),
