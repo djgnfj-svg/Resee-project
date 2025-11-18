@@ -26,8 +26,6 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
-const TermsPage = lazy(() => import('./pages/TermsPage'));
-const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,8 +51,6 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/verify-email" element={<EmailVerificationPage />} />
               <Route path="/verification-pending" element={<VerificationPendingPage />} />
-              <Route path="/terms" element={<TermsPage />} />
-              <Route path="/privacy" element={<PrivacyPage />} />
               <Route 
                 path="/dashboard"
                 element={
