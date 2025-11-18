@@ -68,19 +68,19 @@ const HomePage: React.FC = () => {
             <div className="mt-24 grid grid-cols-1 gap-8 md:grid-cols-3 max-w-5xl mx-auto">
               {[
                 {
-                  label: '자동 주기적 복습',
-                  description: '에빙하우스 망각곡선 기반으로 최적의 복습 주기를 자동으로 설정하고 알려드립니다',
+                  label: '주기적 복습',
+                  description: '최적의 복습 주기를 자동으로 설정하고 알려드립니다',
                   icon: '',
                   color: 'from-indigo-500 to-indigo-600'
                 },
                 {
-                  label: '자동 AI 시험',
+                  label: 'AI 시험',
                   description: 'AI가 학습 내용을 분석하여 자동으로 시험 문제를 생성하고 평가합니다',
                   icon: '',
                   color: 'from-indigo-500 to-indigo-600'
                 },
                 {
-                  label: '자동 AI 내용 검증',
+                  label: 'AI 내용 검증',
                   description: 'AI가 학습 자료의 정확성을 검증하고 개선 사항을 자동으로 제안합니다',
                   icon: '',
                   color: 'from-indigo-500 to-indigo-600'

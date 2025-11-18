@@ -22,10 +22,7 @@ const ReviewHeader: React.FC<ReviewHeaderProps> = ({
                 </svg>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">복습 타임</h1>
-                <p className="text-indigo-100 text-sm mt-1">
-                  에빙하우스 망각곡선을 활용한 스마트 복습 시스템
-                </p>
+                <h1 className="text-3xl font-bold text-white">복습 정보</h1>
               </div>
             </div>
           </div>
