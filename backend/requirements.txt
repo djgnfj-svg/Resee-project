@@ -22,6 +22,7 @@ python-decouple==3.8
 whitenoise==6.6.0
 gunicorn==21.2.0
 django-ipware==6.0.5
+psutil==6.1.1  # System and process monitoring
 
 # Markdown support
 markdown==3.5.1
@@ -46,8 +47,9 @@ django-celery-beat==2.5.0
 
 # Note: AWS packages (boto3, botocore, django-storages) removed - not using S3
 
-# Logging
+# Logging & Monitoring
 python-json-logger==2.0.7
+sentry-sdk[django]==2.18.0  # Error tracking and performance monitoring
 
 # Development
 django-extensions==3.2.3

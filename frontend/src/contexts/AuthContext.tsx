@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { User, LoginData, RegisterData, RegisterResponse } from '../types';
 import { authAPI } from '../utils/api';
+import { setAccessToken, getAccessToken } from '../utils/api/index';
 
 interface AuthContextType {
   user: User | null;
@@ -39,42 +40,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isAuthenticated = !!user;
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const initAuth = async () => {
       try {
+        // Try to refresh token on page load (cookie-based)
+        const response = await authAPI.refreshToken();
+        setAccessToken(response.access);
+
+        // Fetch user data
         const userData = await authAPI.getProfile();
         setUser(userData);
       } catch (error) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        // No valid refresh token, user needs to login
+        setAccessToken(null);
         setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
 
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      fetchUser();
-    } else {
-      setIsLoading(false);
-    }
+    initAuth();
   }, []);
 
   const login = async (data: LoginData) => {
     try {
-      const tokens = await authAPI.login(data);
-      localStorage.setItem('access_token', tokens.access);
-      localStorage.setItem('refresh_token', tokens.refresh);
-      
+      const response = await authAPI.login(data);
+      // Access token stored in memory, refresh token in HttpOnly cookie
+      setAccessToken(response.access);
+
       // Fetch user data after successful login
       const userData = await authAPI.getProfile();
       setUser(userData);
     } catch (error: any) {
       // Clean up any partial state
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      setAccessToken(null);
       setUser(null);
-      
+
       // Re-throw the error so the login component can handle it
       throw error;
     }
@@ -98,16 +98,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loginWithGoogle = async (token: string) => {
     try {
       const response = await authAPI.googleLogin(token);
-      
-      // JWT 토큰 저장
-      localStorage.setItem('access_token', response.access);
-      localStorage.setItem('refresh_token', response.refresh);
-      
+
+      // Access token stored in memory, refresh token in HttpOnly cookie
+      setAccessToken(response.access);
+
       // 사용자 정보 설정
       setUser(response.user);
-      
+
       // Skip welcome modal for Google signups too
-      
+
       return response;
     } catch (error) {
       throw error;
@@ -115,10 +114,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async () => {
+    try {
+      // Call logout endpoint to clear HttpOnly cookie
+      await authAPI.logout();
+    } catch (error) {
+      // Continue logout even if API call fails
+      console.error('Logout API call failed:', error);
+    }
+
     // Clear all React Query cache first to prevent data leakage between users
     await queryClient.clear();
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+
+    // Clear access token from memory
+    setAccessToken(null);
     setUser(null);
   };
 

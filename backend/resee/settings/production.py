@@ -5,8 +5,47 @@ from django.http import request as django_request
 import os
 
 import dj_database_url
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
 
 from .base import *
+
+# Sentry Error Tracking & Performance Monitoring
+SENTRY_DSN = os.environ.get('SENTRY_DSN')
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            CeleryIntegration(),
+            RedisIntegration(),
+        ],
+        # Performance monitoring
+        traces_sample_rate=0.1,  # 10% of transactions for performance monitoring
+        profiles_sample_rate=0.1,  # 10% profiling rate
+
+        # Error sampling
+        sample_rate=1.0,  # 100% of errors
+
+        # Environment
+        environment=os.environ.get('SENTRY_ENVIRONMENT', 'production'),
+
+        # Release tracking (use git commit SHA or version)
+        release=os.environ.get('SENTRY_RELEASE', None),
+
+        # Send PII (Personally Identifiable Information)
+        send_default_pii=False,  # Don't send user IP, cookies, etc.
+
+        # Before send callback to scrub sensitive data
+        before_send=lambda event, hint: event,
+
+        # Ignore certain errors
+        ignore_errors=[
+            KeyboardInterrupt,
+        ],
+    )
 
 # Security settings - SECRET_KEY is mandatory in production
 SECRET_KEY = os.environ.get('SECRET_KEY')
@@ -169,7 +208,7 @@ EMAIL_VERIFICATION_TIMEOUT_DAYS = 1  # 이메일 인증 유효기간 (일)
 # Frontend URL for email links
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://reseeall.com')
 
-# Logging
+# Logging - Structured JSON logging for better log aggregation
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -182,16 +221,29 @@ LOGGING = {
             'format': '{levelname} {message}',
             'style': '{',
         },
+        'json': {
+            '()': 'resee.logging_config.JSONFormatter',
+        },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'simple',
+            'formatter': 'json',  # Use JSON format for production logs
         },
         'file': {
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
             'filename': '/app/logs/django.log',
-            'formatter': 'verbose',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 5,
+            'formatter': 'json',
+        },
+        'error_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/app/logs/error.log',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 5,
+            'formatter': 'json',
+            'level': 'ERROR',
         },
     },
     'root': {
@@ -200,11 +252,36 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'file', 'error_file'],
             'level': os.environ.get('LOG_LEVEL', 'INFO'),
             'propagate': False,
         },
+        'django.request': {
+            'handlers': ['console', 'error_file'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
         'resee': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'accounts': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'content': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'review': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'exams': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': False,
@@ -214,6 +291,9 @@ LOGGING = {
 
 # Performance settings
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Add performance metrics middleware (production only)
+MIDDLEWARE = MIDDLEWARE + ['resee.metrics.MetricsMiddleware']
 
 # Rate limiting (more restrictive in production)
 REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {

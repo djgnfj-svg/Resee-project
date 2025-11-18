@@ -8,11 +8,14 @@ from django.urls import include, path, re_path
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
-from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
+from rest_framework_simplejwt.views import TokenVerifyView
 
-from accounts.auth.views import EmailTokenObtainPairView
+from accounts.auth.views import (
+    CookieTokenRefreshView, EmailTokenObtainPairView, LogoutView,
+)
 
 from .views import health_check
+from .metrics import system_metrics, performance_metrics, business_metrics
 
 # API documentation schema
 schema_view = get_schema_view(
@@ -33,6 +36,11 @@ urlpatterns = [
     # Health check (for Docker/AWS infrastructure monitoring)
     path('api/health/', health_check, name='health'),
 
+    # Metrics Dashboard (admin only)
+    path('api/metrics/system/', system_metrics, name='system-metrics'),
+    path('api/metrics/performance/', performance_metrics, name='performance-metrics'),
+    path('api/metrics/business/', business_metrics, name='business-metrics'),
+
     # API Documentation
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
@@ -44,8 +52,9 @@ urlpatterns = [
 
     # Authentication
     path('api/auth/token/', EmailTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/auth/token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('api/auth/logout/', LogoutView.as_view(), name='logout'),
 
     # Health check endpoints (root level for load balancers)
     # Note: monitoring app removed, basic health checks handled by resee.health

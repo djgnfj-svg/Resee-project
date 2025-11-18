@@ -1,7 +1,7 @@
 {
   "name": "Resee - 과학적 복습 학습 플랫폼",
   "short_name": "Resee",
-  "description": "에빙하우스 망각곡선 기반 간격 반복 학습 플랫폼",
+  "description": "에빙하우스 망각곡선 기반 간격 반복 학습 플랫폼. AI가 당신의 학습을 분석하고 최적의 복습 시간을 알려드립니다.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -10,9 +10,38 @@
   "scope": "/",
   "lang": "ko",
   "categories": ["education", "productivity"],
-  "icons": [],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
   "screenshots": [],
-  "shortcuts": [],
+  "shortcuts": [
+    {
+      "name": "오늘의 복습",
+      "short_name": "복습",
+      "description": "오늘 복습할 콘텐츠 확인",
+      "url": "/review",
+      "icons": []
+    },
+    {
+      "name": "콘텐츠 추가",
+      "short_name": "추가",
+      "description": "새로운 학습 콘텐츠 추가",
+      "url": "/content/new",
+      "icons": []
+    },
+    {
+      "name": "대시보드",
+      "short_name": "대시보드",
+      "description": "학습 현황 확인",
+      "url": "/dashboard",
+      "icons": []
+    }
+  ],
   "related_applications": [],
   "prefer_related_applications": false
 }

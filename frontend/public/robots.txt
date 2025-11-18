@@ -1,0 +1,29 @@
+# robots.txt for Resee (reseeall.com)
+# 검색 엔진 크롤러 가이드
+
+# 모든 검색 엔진 허용
+User-agent: *
+Allow: /
+
+# 검색 엔진에서 제외할 경로
+Disallow: /api/
+Disallow: /admin/
+Disallow: /settings/
+Disallow: /profile/
+
+# 크롤링 속도 제한 (초당 1회)
+Crawl-delay: 1
+
+# Sitemap 위치
+Sitemap: https://reseeall.com/sitemap.xml
+
+# 특정 검색 엔진별 설정
+User-agent: Googlebot
+Allow: /
+
+User-agent: Yeti
+# Naver 검색 로봇
+Allow: /
+
+User-agent: Bingbot
+Allow: /

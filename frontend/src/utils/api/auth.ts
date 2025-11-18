@@ -58,4 +58,24 @@ export const authAPI = {
     const response = await api.patch('/accounts/weekly-goal/', { weekly_goal: weeklyGoal });
     return response.data;
   },
+
+  refreshToken: async (): Promise<{ access: string }> => {
+    const response = await api.post('/auth/token/refresh/', {});
+    return response.data;
+  },
+
+  logout: async (): Promise<{ message: string }> => {
+    const response = await api.post('/auth/logout/', {});
+    return response.data;
+  },
+
+  getNotificationPreferences: async (): Promise<any> => {
+    const response = await api.get('/accounts/notification-preferences/');
+    return response.data;
+  },
+
+  updateNotificationPreferences: async (data: any): Promise<any> => {
+    const response = await api.put('/accounts/notification-preferences/', data);
+    return response.data;
+  },
 };

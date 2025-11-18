@@ -10,8 +10,9 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from resee.error_handlers import APIErrorHandler, StandardAPIResponse
 from resee.throttling import LoginRateThrottle, RegistrationRateThrottle
@@ -24,6 +25,33 @@ from .google_auth import GoogleAuthSerializer
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
+
+def set_refresh_token_cookie(response, refresh_token):
+    """Set refresh token as HttpOnly cookie"""
+    # Determine if we're in production (HTTPS) or development (HTTP)
+    is_production = not settings.DEBUG
+
+    response.set_cookie(
+        key='refresh_token',
+        value=str(refresh_token),
+        max_age=60 * 60 * 24 * 7,  # 7 days
+        httponly=True,
+        secure=is_production,  # HTTPS only in production
+        samesite='Lax',  # CSRF protection
+        path='/',
+    )
+    return response
+
+
+def delete_refresh_token_cookie(response):
+    """Delete refresh token cookie"""
+    response.delete_cookie(
+        key='refresh_token',
+        path='/',
+        samesite='Lax',
+    )
+    return response
 
 
 class EmailTokenObtainPairView(TokenObtainPairView):
@@ -46,10 +74,13 @@ class EmailTokenObtainPairView(TokenObtainPairView):
         **응답 예시:**
         ```json
         {
-          "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-          "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+          "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
         }
         ```
+
+        **보안:**
+        - Access token: 응답 본문에 포함 (메모리에 저장)
+        - Refresh token: HttpOnly Cookie로 설정 (XSS 공격 방지)
 
         받은 `access` 토큰을 다음과 같이 헤더에 포함하여 API 요청을 보내세요:
         `Authorization: Bearer <access_token>`
@@ -63,7 +94,6 @@ class EmailTokenObtainPairView(TokenObtainPairView):
                     type=openapi.TYPE_OBJECT,
                     properties={
                         'access': openapi.Schema(type=openapi.TYPE_STRING, description="액세스 토큰 (60분 유효)"),
-                        'refresh': openapi.Schema(type=openapi.TYPE_STRING, description="리프레시 토큰 (7일 유효)"),
                     }
                 )
             ),
@@ -72,7 +102,14 @@ class EmailTokenObtainPairView(TokenObtainPairView):
         }
     )
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        response = super().post(request, *args, **kwargs)
+
+        # Set refresh token as HttpOnly cookie
+        if response.status_code == 200 and 'refresh' in response.data:
+            refresh_token = response.data.pop('refresh')
+            set_refresh_token_cookie(response, refresh_token)
+
+        return response
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -363,6 +400,10 @@ class GoogleOAuthView(APIView):
         - 기존 계정이 있으면 로그인
         - 없으면 자동으로 계정 생성
         - 이메일 인증이 자동으로 완료됨
+
+        **보안:**
+        - Access token: 응답 본문에 포함 (메모리에 저장)
+        - Refresh token: HttpOnly Cookie로 설정 (XSS 공격 방지)
         """,
         tags=['Authentication'],
         request_body=GoogleAuthSerializer,
@@ -374,7 +415,6 @@ class GoogleOAuthView(APIView):
                     properties={
                         'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
                         'access': openapi.Schema(type=openapi.TYPE_STRING, description="액세스 토큰"),
-                        'refresh': openapi.Schema(type=openapi.TYPE_STRING, description="리프레시 토큰"),
                         'user': openapi.Schema(type=openapi.TYPE_OBJECT, description="사용자 정보"),
                         'is_new_user': openapi.Schema(type=openapi.TYPE_BOOLEAN, description="신규 사용자 여부"),
                         'google_user_info': openapi.Schema(type=openapi.TYPE_OBJECT, description="Google 사용자 정보"),
@@ -403,7 +443,6 @@ class GoogleOAuthView(APIView):
             response_data = {
                 'message': f"Google login {'and registration' if is_new_user else ''} completed successfully.",
                 'access': str(access_token),
-                'refresh': str(refresh),
                 'user': UserSerializer(user).data,
                 'is_new_user': is_new_user,
                 'google_user_info': {
@@ -413,6 +452,134 @@ class GoogleOAuthView(APIView):
                 }
             }
 
-            return Response(response_data, status=status.HTTP_200_OK)
+            response = Response(response_data, status=status.HTTP_200_OK)
+
+            # Set refresh token as HttpOnly cookie
+            set_refresh_token_cookie(response, refresh)
+
+            return response
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    """Custom token refresh view that reads refresh token from HttpOnly cookie"""
+
+    @swagger_auto_schema(
+        operation_summary="JWT 토큰 갱신 (Cookie 기반)",
+        operation_description="""HttpOnly Cookie에 저장된 refresh token을 사용하여 새 access token을 발급합니다.
+
+        **보안:**
+        - Refresh token은 HttpOnly Cookie에서 자동으로 읽어옵니다
+        - 새로운 refresh token도 HttpOnly Cookie로 설정됩니다 (rotation)
+        - Access token만 응답 본문에 포함됩니다
+
+        **응답 예시:**
+        ```json
+        {
+          "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+        }
+        ```
+        """,
+        tags=['Authentication'],
+        request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={}),
+        responses={
+            200: openapi.Response(
+                description="토큰 갱신 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'access': openapi.Schema(type=openapi.TYPE_STRING, description="새 액세스 토큰 (60분 유효)"),
+                    }
+                )
+            ),
+            401: "인증 실패 - refresh token이 없거나 유효하지 않음",
+        }
+    )
+    def post(self, request, *args, **kwargs):
+        # Read refresh token from cookie
+        refresh_token = request.COOKIES.get('refresh_token')
+
+        if not refresh_token:
+            return Response(
+                {'detail': 'Refresh token not found in cookies'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Add refresh token to request data
+        request.data['refresh'] = refresh_token
+
+        try:
+            response = super().post(request, *args, **kwargs)
+
+            # Set new refresh token as HttpOnly cookie (rotation)
+            if response.status_code == 200 and 'refresh' in response.data:
+                new_refresh_token = response.data.pop('refresh')
+                set_refresh_token_cookie(response, new_refresh_token)
+
+            return response
+        except (InvalidToken, TokenError) as e:
+            return Response(
+                {'detail': str(e)},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+
+class LogoutView(APIView):
+    """Logout view that clears the refresh token cookie"""
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="로그아웃",
+        operation_description="""로그아웃하고 refresh token cookie를 삭제합니다.
+
+        **기능:**
+        - Refresh token을 blacklist에 추가 (재사용 방지)
+        - HttpOnly Cookie 삭제
+
+        **헤더 요구사항:**
+        - Authorization: Bearer <access_token>
+        """,
+        tags=['Authentication'],
+        responses={
+            200: openapi.Response(
+                description="로그아웃 성공",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
+                    }
+                )
+            ),
+            401: "인증 필요",
+        }
+    )
+    def post(self, request):
+        try:
+            # Get refresh token from cookie
+            refresh_token = request.COOKIES.get('refresh_token')
+
+            if refresh_token:
+                # Blacklist the refresh token
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                logger.info(f"User {request.user.email} logged out successfully")
+
+            response = Response(
+                {'message': 'Logged out successfully'},
+                status=status.HTTP_200_OK
+            )
+
+            # Delete the refresh token cookie
+            delete_refresh_token_cookie(response)
+
+            return response
+        except Exception as e:
+            logger.error(f"Logout failed for user {request.user.email}: {str(e)}")
+            # Still delete the cookie even if blacklisting fails
+            response = Response(
+                {'message': 'Logged out successfully'},
+                status=status.HTTP_200_OK
+            )
+            delete_refresh_token_cookie(response)
+            return response

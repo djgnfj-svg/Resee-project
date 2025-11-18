@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { authAPI } from '../../utils/api';
 
 interface NotificationSettings {
   email_notifications_enabled: boolean;
@@ -22,19 +23,7 @@ const NotificationTab: React.FC = () => {
   // Fetch current notification preferences
   const { data: notificationPreferences, isLoading: preferencesLoading } = useQuery({
     queryKey: ['notification-preferences'],
-    queryFn: async () => {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/accounts/notification-preferences/`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch notification preferences');
-      }
-
-      return response.json();
-    },
+    queryFn: () => authAPI.getNotificationPreferences(),
   });
 
   const notificationForm = useForm<NotificationSettings>({
@@ -91,23 +80,7 @@ const NotificationTab: React.FC = () => {
 
   // Notification settings update mutation
   const notificationMutation = useMutation({
-    mutationFn: async (data: NotificationSettings) => {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/accounts/notification-preferences/`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '알림 설정 저장에 실패했습니다.');
-      }
-
-      return response.json();
-    },
+    mutationFn: (data: NotificationSettings) => authAPI.updateNotificationPreferences(data),
     onSuccess: () => {
       alert('알림 설정이 성공적으로 저장되었습니다.');
       // Invalidate and refetch notification preferences
