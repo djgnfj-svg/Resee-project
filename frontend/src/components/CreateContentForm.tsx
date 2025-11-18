@@ -43,9 +43,9 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
   const watchedTitle = watch('title');
 
   const contentLength = content.trim().length;
-  // All AI modes require 200+ chars (descriptive, multiple_choice, subjective)
+  // AI modes (descriptive, multiple_choice) require 200+ chars
   // Only objective mode can be short
-  const needsLongContent = reviewMode !== 'objective';
+  const needsLongContent = reviewMode === 'descriptive' || reviewMode === 'multiple_choice';
   const minContentLength = needsLongContent ? 200 : 1;
   const hasValidContentLength = contentLength >= minContentLength;
 
@@ -130,7 +130,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
               <label className="block text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
                 복습 방식
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <label className={`flex items-start p-3 border-2 rounded-lg cursor-pointer transition-all ${
                   reviewMode === 'objective'
                     ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
@@ -163,7 +163,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                   />
                   <div className="ml-2">
                     <div className="font-medium text-gray-900 dark:text-gray-100">서술형</div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">제목 보고 내용 작성 → AI 평가 (200자+)</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">제목 보고 내용 작성</div>
                   </div>
                 </label>
 
@@ -182,24 +182,6 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
                   <div className="ml-2">
                     <div className="font-medium text-gray-900 dark:text-gray-100">객관식</div>
                     <div className="text-xs text-gray-600 dark:text-gray-400">내용 보고 4지선다에서 제목 선택</div>
-                  </div>
-                </label>
-
-                <label className={`flex items-start p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                  reviewMode === 'subjective'
-                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-                }`}>
-                  <input
-                    type="radio"
-                    value="subjective"
-                    checked={reviewMode === 'subjective'}
-                    onChange={(e) => setReviewMode(e.target.value as ReviewMode)}
-                    className="w-4 h-4 text-indigo-600 mt-0.5"
-                  />
-                  <div className="ml-2">
-                    <div className="font-medium text-gray-900 dark:text-gray-100">주관식</div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">내용 보고 제목 유추 → AI 평가 (200자+)</div>
                   </div>
                 </label>
               </div>

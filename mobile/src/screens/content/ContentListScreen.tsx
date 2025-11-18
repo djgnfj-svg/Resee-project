@@ -191,7 +191,6 @@ const getReviewModeLabel = (mode: string) => {
     objective: '기억 확인',
     descriptive: '서술형',
     multiple_choice: '객관식',
-    subjective: '주관식',
   };
   return labels[mode] || mode;
 };

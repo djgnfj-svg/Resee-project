@@ -45,7 +45,7 @@ export interface Category {
   created_at: string;
 }
 
-export type ReviewMode = 'objective' | 'descriptive' | 'multiple_choice' | 'subjective';
+export type ReviewMode = 'objective' | 'descriptive' | 'multiple_choice';
 
 export interface MultipleChoiceOptions {
   choices: string[];
@@ -231,7 +231,6 @@ export interface CompleteReviewData {
   notes?: string;
   descriptive_answer?: string;  // descriptive mode: 제목 보고 내용 작성
   selected_choice?: string;  // multiple_choice mode: 선택한 답변
-  user_title?: string;  // subjective mode: 유추한 제목
 }
 
 export interface CreateReviewHistoryData extends CompleteReviewData {}

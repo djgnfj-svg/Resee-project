@@ -30,7 +30,6 @@ export const REVIEW_MODES = {
   OBJECTIVE: 'objective',
   DESCRIPTIVE: 'descriptive',
   MULTIPLE_CHOICE: 'multiple_choice',
-  SUBJECTIVE: 'subjective',
 } as const;
 
 // Subscription Tiers

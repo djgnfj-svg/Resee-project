@@ -12,8 +12,6 @@ const ReviewPage: React.FC = () => {
   const [descriptiveAnswer, setDescriptiveAnswer] = useState<string>('');
   // Multiple choice mode: 내용 보고 제목 선택
   const [selectedChoice, setSelectedChoice] = useState<string>('');
-  // Subjective mode: 내용 보고 제목 유추
-  const [userTitle, setUserTitle] = useState<string>('');
   // AI evaluation result
   const [aiEvaluation, setAiEvaluation] = useState<{
     score: number;
@@ -84,7 +82,7 @@ const ReviewPage: React.FC = () => {
     setSubmittedAnswer(descriptiveAnswer);
 
     try {
-      const response = await handleReviewComplete(null as any, descriptiveAnswer, '', '') as any;
+      const response = await handleReviewComplete(null as any, descriptiveAnswer, '') as any;
 
       if (response && response.ai_evaluation) {
         setAiEvaluation(response.ai_evaluation);
@@ -110,7 +108,7 @@ const ReviewPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await handleReviewComplete(null as any, '', selectedChoice, '') as any;
+      const response = await handleReviewComplete(null as any, '', selectedChoice) as any;
 
       // Use Backend's authoritative ai_evaluation
       if (response && response.ai_evaluation) {
@@ -128,30 +126,6 @@ const ReviewPage: React.FC = () => {
     }
   }, [currentReview, selectedChoice, handleReviewComplete, showToast, setIsFlipped, setShowContent]);
 
-  // 3. Subjective Mode: 내용 보고 제목 유추 → AI 평가
-  const handleSubmitSubjective = useCallback(async () => {
-    if (!currentReview || (userTitle || '').length < 2) return;
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await handleReviewComplete(null as any, '', '', userTitle) as any;
-
-      if (response && response.ai_evaluation) {
-        setAiEvaluation(response.ai_evaluation);
-        const resultText = response.ai_evaluation.auto_result === 'remembered' ? '기억함' : '모름';
-        showToast(`AI 평가: ${Math.round(response.ai_evaluation.score)}점 - ${resultText}`,
-                  response.ai_evaluation.auto_result === 'remembered' ? 'success' : 'warning');
-      }
-
-      setIsFlipped(true);
-      setShowContent(true);
-    } catch (error) {
-      showToast('평가에 실패했습니다. 다시 시도해주세요.', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [currentReview, userTitle, handleReviewComplete, showToast, setIsFlipped, setShowContent]);
 
   // 다음으로 넘어가기 (AI 평가 후)
   const handleNextAfterEvaluation = useCallback(() => {
@@ -168,14 +142,13 @@ const ReviewPage: React.FC = () => {
     setAiEvaluation(null);
     setDescriptiveAnswer('');
     setSelectedChoice('');
-    setUserTitle('');
     setSubmittedAnswer('');
   }, [aiEvaluation, removeCurrentCard, moveCurrentCardToEnd, showToast, setReviewsCompleted]);
 
-  // v0.4: 객관식 모드 - 복습 완료 핸들러
+  // 객관식/서술형 아닌 모드 - 복습 완료 핸들러
   const handleReviewCompleteWithAI = useCallback(async (result: 'remembered' | 'partial' | 'forgot') => {
-    // 기억 확인 모드에서는 descriptiveAnswer를 전달하지 않음
-    await handleReviewComplete(result, '');
+    // 기억 확인 모드에서는 AI 필드를 전달하지 않음
+    await handleReviewComplete(result, '', '');
   }, [handleReviewComplete]);
 
 
@@ -230,10 +203,6 @@ const ReviewPage: React.FC = () => {
             selectedChoice={selectedChoice}
             onSelectChoice={setSelectedChoice}
             onSubmitMultipleChoice={handleSubmitMultipleChoice}
-            // Subjective mode
-            userTitle={userTitle}
-            onUserTitleChange={setUserTitle}
-            onSubmitSubjective={handleSubmitSubjective}
             // Common
             isSubmitting={isSubmitting}
             submittedAnswer={submittedAnswer}
@@ -249,13 +218,13 @@ const ReviewPage: React.FC = () => {
               isPending={completeReviewMutation.isPending}
             />
           ) : (
-            // AI 평가 모드 (descriptive, multiple_choice, subjective): AI 평가 완료 후 "다음으로" 버튼
+            // AI mode (descriptive, multiple_choice): AI 평가 완료 후 "다음으로" 버튼
             aiEvaluation && (
               <ReviewControls
                 showContent={showContent}
                 onReviewComplete={handleReviewCompleteWithAI}
                 isPending={false}
-                isSubjectiveMode={true}
+                isAIMode={true}
                 onNext={handleNextAfterEvaluation}
               />
             )

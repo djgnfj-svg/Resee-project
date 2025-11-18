@@ -112,7 +112,6 @@ const ContentEditScreen: React.FC<Props> = ({ route, navigation }) => {
     { value: 'objective', label: '기억 확인' },
     { value: 'descriptive', label: '서술형' },
     { value: 'multiple_choice', label: '객관식' },
-    { value: 'subjective', label: '주관식' },
   ];
 
   return (

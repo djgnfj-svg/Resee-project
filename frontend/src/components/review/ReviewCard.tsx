@@ -16,10 +16,6 @@ interface ReviewCardProps {
   selectedChoice?: string;
   onSelectChoice?: (choice: string) => void;
   onSubmitMultipleChoice?: () => void;
-  // Subjective mode (내용 → 제목 작성)
-  userTitle?: string;
-  onUserTitleChange?: (value: string) => void;
-  onSubmitSubjective?: () => void;
   // Common
   isSubmitting?: boolean;
   submittedAnswer?: string;
@@ -42,21 +38,14 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   selectedChoice,
   onSelectChoice,
   onSubmitMultipleChoice,
-  userTitle,
-  onUserTitleChange,
-  onSubmitSubjective,
   isSubmitting = false,
   submittedAnswer,
   aiEvaluation,
 }) => {
   const reviewMode = review.content.review_mode;
-  const isDescriptive = reviewMode === 'descriptive';
-  const isMultipleChoice = reviewMode === 'multiple_choice';
-  const isSubjective = reviewMode === 'subjective';
-  const isObjective = reviewMode === 'objective';
 
   // Mode 1: Objective (기억 확인)
-  if (isObjective) {
+  if (reviewMode === 'objective') {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
         {/* Header */}
@@ -96,7 +85,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   }
 
   // Mode 2: Descriptive (제목 → 내용 작성)
-  if (isDescriptive) {
+  if (reviewMode === 'descriptive') {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
         {/* Header */}
@@ -110,7 +99,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                 {review.content.category.name}
               </span>
             )}
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
               서술형
             </span>
           </div>
@@ -173,7 +162,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   }
 
   // Mode 3: Multiple Choice (내용 → 제목 선택)
-  if (isMultipleChoice) {
+  if (reviewMode === 'multiple_choice') {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
         {/* Header */}
@@ -270,100 +259,6 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
                 <p className="text-green-700 dark:text-green-300 font-medium break-words">{review.content.title}</p>
               </div>
             )}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Mode 4: Subjective (내용 → 제목 작성)
-  if (isSubjective) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">주관식</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            {review.content.category && (
-              <span className="px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
-                {review.content.category.name}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {!aiEvaluation ? (
-          <div className="space-y-6">
-            {/* Content */}
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:max-w-none prose-headings:max-w-none prose-ul:max-w-none prose-ol:max-w-none prose-pre:max-w-none break-words overflow-hidden whitespace-pre-wrap">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{review.content.content}</ReactMarkdown>
-              </div>
-            </div>
-
-            {/* Title Input */}
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={userTitle || ''}
-                onChange={(e) => onUserTitleChange?.(e.target.value)}
-                placeholder="이 내용에 맞는 제목을 작성해주세요"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                maxLength={100}
-                disabled={isSubmitting}
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-gray-400">{(userTitle || '').length}/100자</span>
-                <button
-                  onClick={onSubmitSubjective}
-                  disabled={(userTitle || '').length < 2 || isSubmitting}
-                  className="px-6 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? '평가 중...' : '제출하기'}
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Result View */
-          <div className="space-y-4">
-            {/* Content */}
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">내용</h4>
-              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:max-w-none prose-headings:max-w-none prose-ul:max-w-none prose-ol:max-w-none prose-pre:max-w-none break-words overflow-hidden whitespace-pre-wrap">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{review.content.content}</ReactMarkdown>
-              </div>
-            </div>
-
-            {/* User Answer */}
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">내가 작성한 제목</h4>
-              <p className="text-gray-800 dark:text-gray-200 font-medium break-words">{userTitle}</p>
-            </div>
-
-            {/* AI Evaluation */}
-            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-700">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 평가</h4>
-                <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
-                  {Math.round(aiEvaluation.score)}점
-                </div>
-              </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{aiEvaluation.feedback}</p>
-            </div>
-
-            {/* Correct Answer */}
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">정답</h4>
-              <p className="text-green-700 dark:text-green-300 font-medium break-words">{review.content.title}</p>
-            </div>
           </div>
         )}
       </div>

@@ -81,7 +81,6 @@ class ReviewScheduleViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
                 'notes': openapi.Schema(type=openapi.TYPE_STRING),
                 'descriptive_answer': openapi.Schema(type=openapi.TYPE_STRING),
                 'selected_choice': openapi.Schema(type=openapi.TYPE_STRING),
-                'user_title': openapi.Schema(type=openapi.TYPE_STRING),
             }
         ),
         responses={200: "복습 완료 성공"}
@@ -282,7 +281,6 @@ class CompleteReviewView(APIView):
         notes = request.data.get('notes', '')
         descriptive_answer = request.data.get('descriptive_answer', '')  # descriptive mode
         selected_choice = request.data.get('selected_choice', '')  # multiple_choice mode
-        user_title = request.data.get('user_title', '')  # subjective mode
 
         # === Input Validation ===
         # 1. content_id validation
@@ -386,75 +384,7 @@ class CompleteReviewView(APIView):
 
                     logger.info(f"객관식 답변: {selected_choice} (정답: {mc_choices['correct_answer']}) -> {result}")
 
-                # 2. Subjective Mode: User guesses title from content → AI evaluates
-                elif review_mode == 'subjective':
-                    if not user_title or len(user_title.strip()) < 2:
-                        return Response(
-                            {'error': '주관식 모드에서는 제목을 작성해야 합니다.'},
-                            status=status.HTTP_400_BAD_REQUEST
-                        )
-
-                    # AI evaluation
-                    from ai_services import ai_title_evaluator
-                    if not ai_title_evaluator.is_available():
-                        return Response(
-                            {'error': 'AI 평가 서비스를 사용할 수 없습니다.'},
-                            status=status.HTTP_503_SERVICE_UNAVAILABLE
-                        )
-
-                    evaluation = ai_title_evaluator.evaluate_title(
-                        content=schedule.content.content,
-                        user_title=user_title,
-                        actual_title=schedule.content.title
-                    )
-
-                    if not evaluation:
-                        return Response(
-                            {'error': 'AI 평가에 실패했습니다. 다시 시도해주세요.'},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                        )
-
-                    ai_score = evaluation['score']
-                    ai_feedback = evaluation['feedback']
-                    ai_auto_result = evaluation.get('auto_result', 'remembered' if ai_score >= 70 else 'forgot')
-                    result = ai_auto_result
-                    logger.info(f"주관식 제목 평가: {user_title} -> {ai_score}점 -> {result}")
-
-                # 3. Descriptive Mode: User writes content from title → AI evaluates
-                elif review_mode == 'descriptive':
-                    if not descriptive_answer or len(descriptive_answer.strip()) < 10:
-                        return Response(
-                            {'error': '서술형 모드에서는 최소 10자 이상의 답변을 작성해야 합니다.'},
-                            status=status.HTTP_400_BAD_REQUEST
-                        )
-
-                    # AI evaluation
-                    from ai_services import ai_answer_evaluator
-                    if not ai_answer_evaluator.is_available():
-                        return Response(
-                            {'error': 'AI 평가 서비스를 사용할 수 없습니다.'},
-                            status=status.HTTP_503_SERVICE_UNAVAILABLE
-                        )
-
-                    evaluation = ai_answer_evaluator.evaluate_answer(
-                        content_title=schedule.content.title,
-                        content_body=schedule.content.content,
-                        user_answer=descriptive_answer
-                    )
-
-                    if not evaluation:
-                        return Response(
-                            {'error': 'AI 평가에 실패했습니다. 다시 시도해주세요.'},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                        )
-
-                    ai_score = evaluation['score']
-                    ai_feedback = evaluation['feedback']
-                    ai_auto_result = evaluation.get('auto_result', 'remembered' if ai_score >= 70 else 'forgot')
-                    result = ai_auto_result
-                    logger.info(f"서술형 답변 평가: {ai_score}점 -> {result}")
-
-                # 4. Objective Mode: User self-assesses (remembered/partial/forgot)
+                # 2. Objective Mode: User self-assesses (remembered/partial/forgot)
                 else:  # objective mode
                     if not result:
                         return Response(
@@ -481,7 +411,6 @@ class CompleteReviewView(APIView):
                     notes=notes,
                     descriptive_answer=descriptive_answer,
                     selected_choice=selected_choice,
-                    user_title=user_title,
                     ai_score=float(ai_score) if ai_score is not None else None,
                     ai_feedback=ai_feedback,
                 )

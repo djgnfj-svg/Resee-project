@@ -47,7 +47,7 @@ export interface Category {
   created_at: string;
 }
 
-export type ReviewMode = 'objective' | 'descriptive' | 'multiple_choice' | 'subjective';
+export type ReviewMode = 'objective' | 'descriptive' | 'multiple_choice';
 
 export interface MultipleChoiceOptions {
   choices: string[];

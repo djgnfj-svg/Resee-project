@@ -158,7 +158,7 @@ class ContentModelTest(TestCase):
 
     def test_content_review_mode_choices(self):
         """Test all review mode choices."""
-        modes = ['objective', 'descriptive', 'multiple_choice', 'subjective']
+        modes = ['objective', 'descriptive', 'multiple_choice']
 
         for mode in modes:
             content = Content.objects.create(
@@ -169,20 +169,29 @@ class ContentModelTest(TestCase):
             )
             self.assertEqual(content.review_mode, mode)
 
-    def test_content_ai_mode_minimum_length(self):
-        """Test AI modes require 200+ characters."""
-        ai_modes = ['descriptive', 'multiple_choice', 'subjective']
+    def test_content_descriptive_minimum_length(self):
+        """Test descriptive mode requires 200+ characters."""
+        content = Content(
+            title='Test',
+            content='Short content',  # < 200 chars
+            author=self.user,
+            review_mode='descriptive'
+        )
+        with self.assertRaises(ValidationError) as context:
+            content.save()
+        self.assertIn('200자 이상', str(context.exception))
 
-        for mode in ai_modes:
-            content = Content(
-                title='Test',
-                content='Short content',  # < 200 chars
-                author=self.user,
-                review_mode=mode
-            )
-            with self.assertRaises(ValidationError) as context:
-                content.save()
-            self.assertIn('200자 이상', str(context.exception))
+    def test_content_multiple_choice_minimum_length(self):
+        """Test multiple choice mode requires 200+ characters."""
+        content = Content(
+            title='Test',
+            content='Short content',  # < 200 chars
+            author=self.user,
+            review_mode='multiple_choice'
+        )
+        with self.assertRaises(ValidationError) as context:
+            content.save()
+        self.assertIn('200자 이상', str(context.exception))
 
     def test_content_objective_mode_no_length_requirement(self):
         """Test objective mode has no minimum length."""

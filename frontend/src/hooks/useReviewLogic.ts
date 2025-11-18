@@ -122,13 +122,12 @@ export const useReviewLogic = (
     mutationFn: ({ scheduleId, data }: { scheduleId: number; data: Omit<import('../types').CompleteReviewData, 'content_id'> }) =>
       reviewAPI.completeReview(scheduleId, data),
     onSuccess: async (responseData, variables) => {
-      // AI 평가 모드(descriptive, multiple_choice, subjective): handleNextAfterEvaluation에서 처리
+      // AI 평가 모드(descriptive, multiple_choice): handleNextAfterEvaluation에서 처리
       // 카드 이동 및 카운트는 사용자가 "다음으로" 버튼 눌렀을 때
       const hasDescriptiveAnswer = variables.data.descriptive_answer && variables.data.descriptive_answer.length > 0;
       const hasSelectedChoice = variables.data.selected_choice && variables.data.selected_choice.length > 0;
-      const hasUserTitle = variables.data.user_title && variables.data.user_title.length > 0;
 
-      if (hasDescriptiveAnswer || hasSelectedChoice || hasUserTitle) {
+      if (hasDescriptiveAnswer || hasSelectedChoice) {
         // AI 평가 모드: ReviewPage의 handleNextAfterEvaluation에서 카운트 처리
         return;
       }
@@ -157,8 +156,7 @@ export const useReviewLogic = (
   const handleReviewComplete = useCallback((
     result: 'remembered' | 'partial' | 'forgot' | null,
     descriptiveAnswer?: string,
-    selectedChoice?: string,
-    userTitle?: string
+    selectedChoice?: string
   ) => {
     const currentReview = reviews[currentReviewIndex];
     if (currentReview) {
@@ -173,7 +171,6 @@ export const useReviewLogic = (
             time_spent: timeSpent,
             descriptive_answer: descriptiveAnswer || '',
             selected_choice: selectedChoice || '',
-            user_title: userTitle || '',
           }
         }, {
           onSuccess: (data) => {

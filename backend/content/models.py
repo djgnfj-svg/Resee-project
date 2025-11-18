@@ -52,9 +52,8 @@ class Content(TimestampMixin):
 
     REVIEW_MODE_CHOICES = [
         ('objective', '기억 확인 (제목만 보고 기억함/모름 선택)'),
-        ('descriptive', '서술형 (제목 보고 내용 작성 → AI 평가)'),
+        ('descriptive', '서술형 (제목 보고 내용 작성 후 AI 평가)'),
         ('multiple_choice', '객관식 (내용 보고 4지선다에서 제목 맞추기)'),
-        ('subjective', '주관식 (내용 보고 제목 유추 작성 → AI 평가)'),
     ]
 
     title = models.CharField(max_length=30)  # 프론트엔드와 동기화
@@ -130,18 +129,12 @@ class Content(TimestampMixin):
         if not self.title or not self.title.strip():
             raise ValidationError({'title': 'Title cannot be empty.'})
 
-        # AI 평가 모드(descriptive, multiple_choice, subjective)는 콘텐츠가 200자 이상이어야 함
-        if self.review_mode in ['descriptive', 'multiple_choice', 'subjective']:
+        # AI 평가 모드(서술형, 객관식)는 콘텐츠가 200자 이상이어야 함
+        if self.review_mode in ['descriptive', 'multiple_choice']:
             content_length = len(self.content.strip())
             if content_length < 200:
-                mode_names = {
-                    'descriptive': '서술형',
-                    'multiple_choice': '객관식',
-                    'subjective': '주관식'
-                }
-                mode_name = mode_names.get(self.review_mode, self.review_mode)
                 raise ValidationError({
-                    'content': f'{mode_name} 모드는 AI 평가를 위해 콘텐츠가 최소 200자 이상이어야 합니다. (현재: {content_length}자)'
+                    'content': f'AI 평가 모드는 정확한 판단을 위해 콘텐츠가 최소 200자 이상이어야 합니다. (현재: {content_length}자)'
                 })
 
     def save(self, *args, **kwargs):

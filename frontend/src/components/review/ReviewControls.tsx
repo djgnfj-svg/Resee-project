@@ -4,7 +4,7 @@ interface ReviewControlsProps {
   showContent: boolean;
   onReviewComplete: (result: 'remembered' | 'forgot') => void;
   isPending: boolean;
-  isSubjectiveMode?: boolean;
+  isAIMode?: boolean;  // descriptive or multiple_choice
   onNext?: () => void;
 }
 
@@ -12,13 +12,13 @@ const ReviewControls: React.FC<ReviewControlsProps> = ({
   showContent,
   onReviewComplete,
   isPending,
-  isSubjectiveMode = false,
+  isAIMode = false,
   onNext,
 }) => {
   const isDisabled = !showContent || isPending;
 
-  // 주관식 평가: 단일 "다음으로" 버튼
-  if (isSubjectiveMode) {
+  // AI 평가 모드(서술형, 객관식): 단일 "다음으로" 버튼
+  if (isAIMode) {
     return (
       <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:shadow-gray-900/25 border border-gray-200 dark:border-gray-700 p-6 transition-opacity duration-300 ${!showContent ? 'opacity-50' : 'opacity-100'}`}>
         <div className="text-center">

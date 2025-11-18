@@ -32,7 +32,6 @@ const ReviewScreen = () => {
   // Review mode state
   const [descriptiveAnswer, setDescriptiveAnswer] = useState('');
   const [selectedChoice, setSelectedChoice] = useState('');
-  const [userTitle, setUserTitle] = useState('');
   const [aiEvaluation, setAiEvaluation] = useState<{
     score: number;
     feedback: string;
@@ -102,7 +101,6 @@ const ReviewScreen = () => {
     setStartTime(Date.now());
     setDescriptiveAnswer('');
     setSelectedChoice('');
-    setUserTitle('');
     setAiEvaluation(null);
     setIsSubmitting(false);
   }, []);
@@ -268,38 +266,6 @@ const ReviewScreen = () => {
     }
   }, [currentReview, selectedChoice, handleReviewComplete]);
 
-  // 4. Subjective mode: 내용 보고 제목 유추 → AI 평가
-  const handleSubmitSubjective = useCallback(async () => {
-    if (!currentReview || userTitle.length < 2) {
-      Alert.alert('알림', '제목을 2자 이상 입력해주세요.');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await handleReviewComplete(null, '', '', userTitle);
-
-      if (response && response.ai_evaluation) {
-        setAiEvaluation(response.ai_evaluation);
-        const resultText =
-          response.ai_evaluation.auto_result === 'remembered'
-            ? '기억함'
-            : '모름';
-        Alert.alert(
-          'AI 평가',
-          `${Math.round(response.ai_evaluation.score)}점 - ${resultText}\n\n${response.ai_evaluation.feedback}`
-        );
-      }
-
-      setIsFlipped(true);
-      setShowContent(true);
-    } catch (error) {
-      // Error already handled
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [currentReview, userTitle, handleReviewComplete]);
 
   // AI 평가 후 다음으로
   const handleNextAfterEvaluation = useCallback(() => {
@@ -345,7 +311,6 @@ const ReviewScreen = () => {
   const isObjectiveMode = reviewMode === 'objective';
   const isDescriptiveMode = reviewMode === 'descriptive';
   const isMultipleChoiceMode = reviewMode === 'multiple_choice';
-  const isSubjectiveMode = reviewMode === 'subjective';
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -393,7 +358,7 @@ const ReviewScreen = () => {
           )}
 
           {/* Content (shown based on mode and flip state) */}
-          {(showContent || isMultipleChoiceMode || isSubjectiveMode) && (
+          {(showContent || isMultipleChoiceMode) && (
             <View style={styles.cardSection}>
               <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>
                 내용
@@ -504,43 +469,6 @@ const ReviewScreen = () => {
           </>
         )}
 
-        {/* Subjective mode: 내용 보고 제목 유추 */}
-        {isSubjectiveMode && !aiEvaluation && (
-          <>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>
-              내용을 보고 제목을 유추해주세요
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                  color: colors.text,
-                },
-              ]}
-              placeholder="제목을 입력하세요 (최소 2자)"
-              placeholderTextColor={colors.textSecondary}
-              value={userTitle}
-              onChangeText={setUserTitle}
-            />
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                { backgroundColor: colors.primary },
-                (isSubmitting || userTitle.length < 2) && styles.disabledButton,
-              ]}
-              onPress={handleSubmitSubjective}
-              disabled={isSubmitting || userTitle.length < 2}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitButtonText}>제출</Text>
-              )}
-            </TouchableOpacity>
-          </>
-        )}
       </View>
 
       {/* Action buttons */}

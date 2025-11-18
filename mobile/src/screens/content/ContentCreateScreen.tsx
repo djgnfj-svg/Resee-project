@@ -76,7 +76,6 @@ const ContentCreateScreen: React.FC<Props> = ({ navigation }) => {
     { value: 'objective', label: '기억 확인' },
     { value: 'descriptive', label: '서술형' },
     { value: 'multiple_choice', label: '객관식' },
-    { value: 'subjective', label: '주관식' },
   ];
 
   return (
@@ -202,8 +201,6 @@ const ContentCreateScreen: React.FC<Props> = ({ navigation }) => {
                   '• 서술형: 제목을 보고 내용을 작성하여 AI가 평가'}
                 {reviewMode === 'multiple_choice' &&
                   '• 객관식: AI가 생성한 선택지에서 정답을 고르는 방식'}
-                {reviewMode === 'subjective' &&
-                  '• 주관식: 내용을 보고 제목을 유추하여 AI가 평가'}
               </Text>
             </View>
           </View>
