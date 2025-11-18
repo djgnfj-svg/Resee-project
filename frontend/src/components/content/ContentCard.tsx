@@ -29,14 +29,26 @@ const ContentCard: React.FC<ContentCardProps> = ({
     return firstLine.substring(0, maxLength) + '...';
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string, isFutureDate: boolean = false) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return '오늘';
-    if (diffDays === 1) return '어제';
-    if (diffDays < 7) return `${diffDays}일 전`;
+    // 미래 날짜인 경우 (다음 복습 날짜)
+    if (isFutureDate) {
+      if (diffDays === 0) return '오늘';
+      if (diffDays === 1) return '내일';
+      if (diffDays > 0) return `D-${diffDays}`;
+      // 과거 날짜인 경우 (복습 기한 지남)
+      if (diffDays === -1) return '어제';
+      if (diffDays < 0) return `D+${Math.abs(diffDays)}`;
+    }
+
+    // 과거 날짜인 경우 (생성 날짜)
+    const pastDiffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (pastDiffDays === 0) return '오늘';
+    if (pastDiffDays === 1) return '어제';
+    if (pastDiffDays < 7) return `${pastDiffDays}일 전`;
     return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
@@ -188,7 +200,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="font-medium text-indigo-700 dark:text-indigo-300">
-                {content.next_review_date ? `다음 복습: ${formatDate(content.next_review_date)}` : '복습 대기 중'}
+                {content.next_review_date ? `다음 복습: ${formatDate(content.next_review_date, true)}` : '복습 대기 중'}
               </span>
             </div>
           </div>
