@@ -78,22 +78,22 @@ class Content(TimestampMixin):
     # AI 검증 관련 필드
     is_ai_validated = models.BooleanField(
         default=False,
-        help_text='AI 검증 완료 여부 (주간 시험 생성에 필수)'
+        help_text='Whether AI validation is completed (required for exam generation)'
     )
     ai_validation_score = models.FloatField(
         null=True,
         blank=True,
-        help_text='AI 검증 평균 점수 (0-100, 3가지 항목의 평균)'
+        help_text='AI validation average score (0-100, average of 3 metrics)'
     )
     ai_validation_result = models.JSONField(
         null=True,
         blank=True,
-        help_text='AI 검증 상세 결과 (factual_accuracy, logical_consistency, title_relevance)'
+        help_text='AI validation detailed result (factual_accuracy, logical_consistency, title_relevance)'
     )
     ai_validated_at = models.DateTimeField(
         null=True,
         blank=True,
-        help_text='AI 검증 완료 시각'
+        help_text='AI validation completion timestamp'
     )
 
     # 객관식 모드용 보기 저장

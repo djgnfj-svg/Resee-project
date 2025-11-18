@@ -15,6 +15,7 @@ from accounts.auth.views import (
 )
 
 from .views import health_check
+from .metrics import system_metrics, performance_metrics, business_metrics
 
 # API documentation schema
 schema_view = get_schema_view(
@@ -34,6 +35,11 @@ urlpatterns = [
 
     # Health check (for Docker/AWS infrastructure monitoring)
     path('api/health/', health_check, name='health'),
+
+    # Metrics Dashboard (admin only)
+    path('api/metrics/system/', system_metrics, name='system-metrics'),
+    path('api/metrics/performance/', performance_metrics, name='performance-metrics'),
+    path('api/metrics/business/', business_metrics, name='business-metrics'),
 
     # API Documentation
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

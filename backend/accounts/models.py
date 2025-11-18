@@ -69,19 +69,19 @@ class User(AbstractUser):
     # 학습 목표 설정
     weekly_goal = models.IntegerField(
         default=7,
-        help_text='주간 복습 목표 횟수'
+        help_text='Weekly review goal count'
     )
 
     # 약관 동의 관련 필드
     terms_agreed_at = models.DateTimeField(
         null=True,
         blank=True,
-        help_text='이용약관 동의 일시'
+        help_text='Terms of service agreement timestamp'
     )
     privacy_agreed_at = models.DateTimeField(
         null=True,
         blank=True,
-        help_text='개인정보처리방침 동의 일시'
+        help_text='Privacy policy agreement timestamp'
     )
 
     USERNAME_FIELD = 'email'

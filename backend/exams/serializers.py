@@ -43,10 +43,10 @@ class WeeklyTestSerializer(serializers.ModelSerializer):
     content_ids = serializers.ListField(
         child=serializers.IntegerField(),
         write_only=True,
-        required=False,  # 자동 밸런싱 모드 지원
+        required=False,  # Auto-balancing mode support
         min_length=7,
         max_length=10,
-        help_text="시험에 포함할 콘텐츠 ID 목록 (7~10개, AI 검증 완료 필수). 비어있으면 자동 밸런싱 모드로 생성."
+        help_text="Content IDs to include in exam (7-10 items, AI validation required). If empty, auto-balancing mode is used."
     )
 
     class Meta:
