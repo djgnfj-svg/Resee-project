@@ -32,7 +32,11 @@ const ContentCard: React.FC<ContentCardProps> = ({
   const formatDate = (dateString: string, isFutureDate: boolean = false) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffDays = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    // 시간을 무시하고 날짜만 비교 (자정 기준)
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.round((dateOnly.getTime() - nowOnly.getTime()) / (1000 * 60 * 60 * 24));
 
     // 미래 날짜인 경우 (다음 복습 날짜)
     if (isFutureDate) {
@@ -45,7 +49,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
     }
 
     // 과거 날짜인 경우 (생성 날짜)
-    const pastDiffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    const pastDiffDays = Math.round((nowOnly.getTime() - dateOnly.getTime()) / (1000 * 60 * 60 * 24));
     if (pastDiffDays === 0) return '오늘';
     if (pastDiffDays === 1) return '어제';
     if (pastDiffDays < 7) return `${pastDiffDays}일 전`;

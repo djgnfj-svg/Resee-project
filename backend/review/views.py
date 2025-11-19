@@ -166,7 +166,9 @@ class TodayReviewView(APIView):
     )
     def get(self, request):
         """Get review items due today or overdue (within subscription limits)"""
-        today = timezone.now().date()
+        # Use timezone-aware date calculation (respects TIME_ZONE setting)
+        now = timezone.now()
+        today = now.date()
 
         # Get user's subscription tier and determine overdue limit
         max_overdue_days = SubscriptionService(request.user).get_max_review_interval()
@@ -175,16 +177,20 @@ class TodayReviewView(APIView):
 
         # Calculate cutoff date for overdue reviews based on subscription
         # Don't show reviews older than the subscription allows
-        cutoff_date = timezone.now() - timedelta(days=max_overdue_days)
+        cutoff_date = now - timedelta(days=max_overdue_days)
 
         schedules = ReviewSchedule.objects.filter(
             user=request.user,
             is_active=True
         ).filter(
-            # Only include reviews that are due TODAY or overdue (but within subscription range)
-            # OR initial reviews not yet completed
-            Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date) |
-            Q(initial_review_completed=False)
+            # Initial reviews always shown (regardless of date/cutoff)
+            Q(initial_review_completed=False) |
+            # Completed reviews shown if due today/overdue (within subscription range)
+            Q(
+                initial_review_completed=True,
+                next_review_date__date__lte=today,
+                next_review_date__gte=cutoff_date
+            )
         )
 
         schedules = schedules.select_related(
