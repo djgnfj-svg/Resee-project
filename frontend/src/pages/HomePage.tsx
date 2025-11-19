@@ -36,7 +36,7 @@ const HomePage: React.FC = () => {
         <div className={`relative z-10 mx-auto max-w-5xl px-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="text-center mb-12">
             <h1 className="text-5xl font-bold tracking-tight sm:text-7xl">
-              <span className="text-white">
+              <span className="text-gray-900 dark:text-white">
                 복습을 자동화하다
               </span>
             </h1>
