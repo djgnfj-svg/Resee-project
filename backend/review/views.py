@@ -190,6 +190,7 @@ class TodayReviewView(APIView):
         schedules = schedules.select_related(
             'content',
             'content__category',
+            'content__author',
             'user'
         ).order_by('next_review_date')
 
