@@ -209,10 +209,9 @@ class UserViewSet(viewsets.ModelViewSet):
                         message='회원가입이 완료되었습니다!'
                     )
                 else:
-                    # 프로덕션 환경에서는 이메일 인증 필요
-                    from ..email.email_service import EmailService
-                    email_service = EmailService()
-                    email_service.send_verification_email(user.id)
+                    # 프로덕션 환경에서는 이메일 인증 필요 (비동기 처리)
+                    from ..email.tasks import send_verification_email_async
+                    send_verification_email_async.delay(user.id)
 
                     return StandardAPIResponse.created(
                         data={
