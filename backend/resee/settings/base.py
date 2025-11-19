@@ -474,6 +474,16 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Seoul'
 CELERY_ENABLE_UTC = True
 
+# SSL configuration for rediss:// URLs (Upstash Redis)
+if CELERY_BROKER_URL and CELERY_BROKER_URL.startswith('rediss://'):
+    import ssl
+    CELERY_BROKER_USE_SSL = {
+        'ssl_cert_reqs': ssl.CERT_NONE,  # Upstash uses self-signed certificates
+    }
+    CELERY_REDIS_BACKEND_USE_SSL = {
+        'ssl_cert_reqs': ssl.CERT_NONE,
+    }
+
 # Celery Beat Configuration
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 

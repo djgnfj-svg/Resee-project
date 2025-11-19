@@ -151,6 +151,7 @@ CACHES = {
             'CONNECTION_POOL_CLASS_KWARGS': {
                 'max_connections': 50,
                 'retry_on_timeout': True,
+                'ssl_cert_reqs': None,  # For rediss:// URLs
             },
             'SOCKET_CONNECT_TIMEOUT': 5,
             'SOCKET_TIMEOUT': 5,
@@ -167,6 +168,7 @@ CACHES = {
             'CONNECTION_POOL_CLASS_KWARGS': {
                 'max_connections': 50,
                 'retry_on_timeout': True,
+                'ssl_cert_reqs': None,  # For rediss:// URLs
             },
             'SOCKET_CONNECT_TIMEOUT': 5,
             'SOCKET_TIMEOUT': 5,
