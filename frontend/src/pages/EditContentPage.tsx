@@ -26,7 +26,7 @@ const EditContentPage: React.FC = () => {
     onSuccess: async () => {
       alert('Success: 콘텐츠가 성공적으로 수정되었습니다!');
       await queryClient.invalidateQueries({ queryKey: ['contents'] });
-      await queryClient.invalidateQueries({ queryKey: ['content', id] });
+      await queryClient.invalidateQueries({ queryKey: ['content', user?.id, id] });
       await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       navigate('/content');
     },
@@ -87,6 +87,7 @@ const EditContentPage: React.FC = () => {
         title: content.title,
         content: content.content,
         category: content.category?.id || undefined,
+        review_mode: content.review_mode,
       }}
     />
   );
