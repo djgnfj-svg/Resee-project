@@ -18,6 +18,9 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 
+# Explicitly import tasks from subdirectories
+app.autodiscover_tasks(['accounts.email'])
+
 # Note: Using DatabaseScheduler (django-celery-beat) for dynamic task scheduling
 # All periodic tasks are managed through Django admin or PeriodicTask model
 

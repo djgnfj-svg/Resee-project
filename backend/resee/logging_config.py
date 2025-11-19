@@ -70,7 +70,13 @@ class JSONFormatter(logging.Formatter):
                           'exc_text', 'stack_info', 'user_id', 'request_id',
                           'ip_address', 'endpoint', 'method', 'status_code', 'duration']:
                 if not key.startswith('_'):
-                    log_data[key] = value
+                    # Only add JSON serializable values
+                    try:
+                        json.dumps(value)
+                        log_data[key] = value
+                    except (TypeError, ValueError):
+                        # Skip non-serializable objects (WSGIRequest, etc.)
+                        log_data[key] = str(type(value).__name__)
 
         return json.dumps(log_data)
 
