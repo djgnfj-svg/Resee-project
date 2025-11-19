@@ -292,9 +292,10 @@ docker-compose.prod.yml    # Local prod-like (gunicorn, nginx)
 - Cost: ~$5-10/month (90% cheaper than AWS ECS)
 
 **Database**: Supabase PostgreSQL 15
-- Host: `aws-1-ap-southeast-2.pooler.supabase.com:6543`
+- Host: `aws-1-ap-northeast-2.pooler.supabase.com:6543`
+- Region: Seoul (ap-northeast-2)
 - Connection: Pooler (Transaction Mode)
-- Response time: ~200ms
+- Response time: ~50ms (Seoul region)
 - Automatic backups: Daily
 
 **Cache & Broker**: Upstash Redis
@@ -323,7 +324,7 @@ DJANGO_SETTINGS_MODULE=resee.settings.production
 ALLOWED_HOSTS=reseeall.com,www.reseeall.com,.up.railway.app,healthcheck.railway.app
 
 # Database & Cache
-DATABASE_URL=postgresql://postgres.xxx:password@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres
+DATABASE_URL=postgresql://postgres.xxx:password@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres
 REDIS_URL=rediss://default:password@calm-jaybird-34425.upstash.io:6379
 
 # Services
