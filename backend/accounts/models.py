@@ -432,12 +432,17 @@ class BillingSchedule(TimestampMixin):
 @receiver(post_save, sender=User)
 def create_user_subscription(sender, instance, created, **kwargs):
     """Create a basic subscription for new users"""
-    if created and not hasattr(instance, 'subscription'):
-        Subscription.objects.create(
-            user=instance,
-            tier=SubscriptionTier.BASIC,
-            max_interval_days=90
-        )
+    if created:
+        try:
+            # Check if subscription already exists
+            _ = instance.subscription
+        except Subscription.DoesNotExist:
+            # Create subscription only if it doesn't exist
+            Subscription.objects.create(
+                user=instance,
+                tier=SubscriptionTier.BASIC,
+                max_interval_days=90
+            )
 
 
 @receiver(post_save, sender=Subscription)

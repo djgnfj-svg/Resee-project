@@ -82,9 +82,12 @@ class PermissionService:
 
     def _get_user_tier(self):
         """Get user's current subscription tier"""
-        if not hasattr(self.user, 'subscription') or not self.user.subscription.is_active or self.user.subscription.is_expired():
-            return 'free'
-        return self.user.subscription.tier
+        try:
+            if self.user.subscription.is_active and not self.user.subscription.is_expired():
+                return self.user.subscription.tier
+        except (AttributeError, Exception):
+            pass
+        return 'free'
 
 
 class SubscriptionService:
@@ -97,9 +100,11 @@ class SubscriptionService:
 
     def has_active_subscription(self):
         """Check if user has an active subscription"""
-        if not hasattr(self.user, 'subscription'):
+        try:
+            return self.user.subscription.is_active and not self.user.subscription.is_expired()
+        except (AttributeError, Exception):
+            # User has no subscription or subscription is not accessible
             return False
-        return self.user.subscription.is_active and not self.user.subscription.is_expired()
 
     def get_max_review_interval(self):
         """Get maximum review interval based on subscription"""
