@@ -1,13 +1,13 @@
 from rest_framework import serializers
 
-from content.serializers import ContentSerializer
+from content.serializers import ContentSerializer, ReviewContentSerializer
 
 from .models import ReviewHistory, ReviewSchedule
 
 
 class ReviewScheduleSerializer(serializers.ModelSerializer):
-    """Review schedule serializer"""
-    content = ContentSerializer(read_only=True)
+    """Review schedule serializer - uses lightweight ReviewContentSerializer"""
+    content = ReviewContentSerializer(read_only=True)
     user = serializers.StringRelatedField(read_only=True)
 
     class Meta:

@@ -16,6 +16,24 @@ class CategorySerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'slug', 'created_at', 'user')
 
 
+class ReviewContentSerializer(serializers.ModelSerializer):
+    """
+    Lightweight Content serializer for review pages.
+    Excludes expensive SerializerMethodFields (review_count, next_review_date)
+    to avoid N+1 query problems.
+    """
+    author = serializers.StringRelatedField(read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True, allow_null=True)
+
+    class Meta:
+        model = Content
+        fields = ('id', 'title', 'content', 'author', 'category_name',
+                  'review_mode', 'mc_choices', 'is_ai_validated',
+                  'ai_validation_score', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'author', 'created_at', 'updated_at',
+                            'is_ai_validated', 'ai_validation_score', 'mc_choices')
+
+
 class ContentSerializer(serializers.ModelSerializer):
     """Content serializer"""
     author = serializers.StringRelatedField(read_only=True)
