@@ -40,23 +40,32 @@ const RegisterPage: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      
-      if (err.response?.data?.field_errors) {
+
+      if (err.response?.data?.error) {
+        // New standardized error format
+        const errorResponse = err.response.data.error;
+        setError(errorResponse.message || '입력 정보를 확인해주세요.');
+
+        if (errorResponse.details) {
+          const extractedErrors: Record<string, string[]> = {};
+          Object.keys(errorResponse.details).forEach(field => {
+            const fieldError = errorResponse.details[field];
+            if (Array.isArray(fieldError)) {
+              extractedErrors[field] = fieldError;
+            } else if (typeof fieldError === 'string') {
+              extractedErrors[field] = [fieldError];
+            }
+          });
+          setFieldErrors(extractedErrors);
+        }
+      } else if (err.response?.data?.field_errors) {
+        // Legacy format
         setFieldErrors(err.response.data.field_errors);
         setError(err.response.data.error || '입력 정보를 확인해주세요.');
       } else if (err.response?.data) {
+        // Fallback for other formats
         const errorData = err.response.data;
-        const extractedErrors: Record<string, string[]> = {};
-        Object.keys(errorData).forEach(field => {
-          if (Array.isArray(errorData[field])) {
-            extractedErrors[field] = errorData[field];
-          } else if (typeof errorData[field] === 'string') {
-            extractedErrors[field] = [errorData[field]];
-          }
-        });
-        
-        setFieldErrors(extractedErrors);
-        setError(errorData.detail || errorData.error || '회원가입에 실패했습니다.');
+        setError(errorData.detail || errorData.message || '회원가입에 실패했습니다.');
       } else {
         setError('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
       }

@@ -228,7 +228,7 @@ class UserViewSet(viewsets.ModelViewSet):
         # Log detailed error information
         logger.error(f"User registration validation failed: {serializer.errors}")
 
-        return APIErrorHandler.validation_error(serializer.errors)
+        return APIErrorHandler.validation_error("입력 정보를 확인해주세요.", serializer.errors)
 
     @swagger_auto_schema(
         method='get',
