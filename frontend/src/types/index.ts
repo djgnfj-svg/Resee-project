@@ -99,8 +99,15 @@ export interface ContentListResponse {
   results: Content[];
   usage: ContentUsage;
   count: number;
-  next: string | null;
-  previous: string | null;
+  page_size: number;
+  current_page: number;
+  total_pages: number;
+  links: {
+    next: string | null;
+    previous: string | null;
+  };
+  next?: string | null;  // Legacy support
+  previous?: string | null;  // Legacy support
 }
 
 export interface CategoryUsage {

@@ -145,15 +145,9 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
-        # Add content usage metadata to response
-        if hasattr(response, 'data'):
-            response.data = {
-                'results': response.data.get('results', response.data),
-                'usage': PermissionService(request.user).get_content_usage(),
-                'count': response.data.get('count') if isinstance(response.data, dict) else len(response.data),
-                'next': response.data.get('next') if isinstance(response.data, dict) else None,
-                'previous': response.data.get('previous') if isinstance(response.data, dict) else None,
-            }
+        # Add content usage metadata to response (preserve all pagination fields)
+        if hasattr(response, 'data') and isinstance(response.data, dict):
+            response.data['usage'] = PermissionService(request.user).get_content_usage()
         return response
 
     @swagger_auto_schema(

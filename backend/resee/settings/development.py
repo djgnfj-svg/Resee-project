@@ -36,6 +36,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://frontend:3000",
+    "http://localhost:8081",  # Expo web
+    "http://127.0.0.1:8081",  # Expo web
+    "http://localhost:19006",  # Expo web alternative port
+    "http://127.0.0.1:19006",  # Expo web alternative port
 ]
 
 # 개발환경에서는 HTTPS 관련 설정 비활성화
