@@ -391,7 +391,48 @@ class CompleteReviewView(APIView):
 
                     logger.info(f"객관식 답변: {selected_choice} (정답: {mc_choices['correct_answer']}) -> {result}")
 
-                # 2. Objective Mode: User self-assesses (remembered/partial/forgot)
+                # 2. Descriptive Mode: AI evaluates user's answer
+                elif review_mode == 'descriptive':
+                    if not descriptive_answer:
+                        return Response(
+                            {'error': '서술형 모드에서는 답변을 작성해야 합니다.'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # AI evaluation for descriptive answer
+                    from ai_services.evaluators import ai_answer_evaluator
+
+                    try:
+                        evaluation = ai_answer_evaluator.evaluate_answer(
+                            content_title=schedule.content.title,
+                            content_body=schedule.content.content,
+                            user_answer=descriptive_answer
+                        )
+
+                        ai_score = evaluation.get('score', 0.0)
+                        ai_feedback = evaluation.get('feedback', '')
+
+                        # Auto-determine result based on score
+                        if ai_score >= 80:
+                            result = 'remembered'
+                        elif ai_score >= 50:
+                            result = 'partial'
+                        else:
+                            result = 'forgot'
+
+                        ai_auto_result = result
+
+                        logger.info(f"서술형 AI 평가: score={ai_score} -> {result}")
+                    except Exception as e:
+                        logger.error(f"AI evaluation failed: {str(e)}", exc_info=True)
+                        # Fallback: require manual result
+                        if not result:
+                            return Response(
+                                {'error': 'AI 평가 실패. result를 수동으로 입력해주세요.'},
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
+
+                # 3. Objective Mode: User self-assesses (remembered/partial/forgot)
                 else:  # objective mode
                     if not result:
                         return Response(
