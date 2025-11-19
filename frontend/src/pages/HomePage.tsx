@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [scrollY, setScrollY] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -15,13 +14,8 @@ const HomePage: React.FC = () => {
       return;
     }
 
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-
     // 진입 애니메이션
     setTimeout(() => setIsVisible(true), 100);
-
-    return () => window.removeEventListener('scroll', handleScroll);
   }, [isAuthenticated, navigate]);
 
   return (

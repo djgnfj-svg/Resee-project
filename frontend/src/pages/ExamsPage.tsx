@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { weeklyTestAPI, WeeklyTest } from '../utils/api/exams';
 import { contentAPI } from '../utils/api/content';
@@ -23,6 +23,26 @@ const ExamsPage: React.FC = () => {
   const [selectedContentIds, setSelectedContentIds] = useState<number[]>([]);
   const [creatingTestMessage, setCreatingTestMessage] = useState<string | null>(null);
 
+  const startTest = useCallback(async (testId: number) => {
+    try {
+      setIsLoading(true);
+      const response = await weeklyTestAPI.startTest(testId);
+      setCurrentTest(response.test);
+      setCurrentQuestionIndex(0);
+      setAnswers({});
+      setError('');
+      // URL을 /exams/:id로 변경
+      if (!id) {
+        navigate(`/exams/${testId}`);
+      }
+    } catch (error: any) {
+      console.error('Failed to start test:', error);
+      setError(error.response?.data?.detail || '시험 시작에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [navigate, id]);
+
   useEffect(() => {
     loadTests();
     loadContents();
@@ -31,7 +51,7 @@ const ExamsPage: React.FC = () => {
     if (id) {
       startTest(parseInt(id));
     }
-  }, [id]);
+  }, [id, startTest]);
 
   const loadContents = async () => {
     try {
@@ -157,26 +177,6 @@ const ExamsPage: React.FC = () => {
         return [...prev, contentId];
       }
     });
-  };
-
-  const startTest = async (testId: number) => {
-    try {
-      setIsLoading(true);
-      const response = await weeklyTestAPI.startTest(testId);
-      setCurrentTest(response.test);
-      setCurrentQuestionIndex(0);
-      setAnswers({});
-      setError('');
-      // URL을 /exams/:id로 변경
-      if (!id) {
-        navigate(`/exams/${testId}`);
-      }
-    } catch (error: any) {
-      console.error('Failed to start test:', error);
-      setError(error.response?.data?.detail || '시험 시작에 실패했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const submitAnswer = async (questionId: number, answer: string) => {

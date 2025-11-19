@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SubscriptionTierInfo, SubscriptionTier } from '../types';
@@ -9,7 +8,6 @@ import { subscriptionAPI } from '../utils/api';
 
 const SubscriptionPage: React.FC = () => {
   const { user, refreshUser } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [billingCycle] = useState<'monthly' | 'yearly'>('monthly');
 

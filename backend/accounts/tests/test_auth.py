@@ -28,7 +28,8 @@ class EmailTokenObtainPairViewTest(TestCase):
         })
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
+        # Refresh token is sent as HttpOnly cookie, not in response body
+        self.assertIn('refresh_token', response.cookies)
 
     def test_login_invalid_email(self):
         """Test login with non-existent email."""

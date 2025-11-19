@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { reviewAPI } from '../utils/api';
 import { ReviewSchedule, TodayReviewsResponse } from '../types';
 import { extractResults } from '../utils/helpers';
@@ -39,8 +39,6 @@ export const useReviewLogic = (
     totalSchedules,
     setTotalSchedules,
   } = useReviewState();
-
-  const queryClient = useQueryClient();
 
   // Local reviews state management for card reordering
   const [localReviews, setLocalReviews] = useState<ReviewSchedule[]>([]);

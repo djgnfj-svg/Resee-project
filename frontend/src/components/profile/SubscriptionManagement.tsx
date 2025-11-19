@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+// import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CreditCardIcon } from '@heroicons/react/24/outline';
-import { subscriptionAPI } from '../../utils/api';
+// import { subscriptionAPI } from '../../utils/api';
 import { User } from '../../types';
 
 interface SubscriptionManagementProps {
@@ -10,71 +10,73 @@ interface SubscriptionManagementProps {
 }
 
 const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ user }) => {
-  const queryClient = useQueryClient();
+  // Commented out until subscription management UI is implemented
+  // const queryClient = useQueryClient();
 
-  // Toggle auto renewal mutation
-  const toggleAutoRenewalMutation = useMutation({
-    mutationFn: ({ password, autoRenewal }: { password: string; autoRenewal: boolean }) =>
-      subscriptionAPI.toggleAutoRenewal(password, autoRenewal),
-    onSuccess: (updatedSubscription) => {
-      const isEnabled = updatedSubscription.auto_renewal;
-      alert(`Success: 자동갱신이 ${isEnabled ? '활성화' : '비활성화'}되었습니다.`);
-      // Update user data with new subscription info
-      queryClient.setQueryData(['profile'], (oldData: User | undefined) => {
-        if (oldData) {
-          return { ...oldData, subscription: updatedSubscription };
-        }
-        return oldData;
-      });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-    },
-    onError: (error: any) => {
-      const errorMessage = error.userMessage || '자동갱신 설정 변경에 실패했습니다.';
-      alert(`Error: ${errorMessage}`);
-    },
-  });
+  // // Toggle auto renewal mutation
+  // const toggleAutoRenewalMutation = useMutation({
+  //   mutationFn: ({ password, autoRenewal }: { password: string; autoRenewal: boolean }) =>
+  //     subscriptionAPI.toggleAutoRenewal(password, autoRenewal),
+  //   onSuccess: (updatedSubscription) => {
+  //     const isEnabled = updatedSubscription.auto_renewal;
+  //     alert(`Success: 자동갱신이 ${isEnabled ? '활성화' : '비활성화'}되었습니다.`);
+  //     // Update user data with new subscription info
+  //     queryClient.setQueryData(['profile'], (oldData: User | undefined) => {
+  //       if (oldData) {
+  //         return { ...oldData, subscription: updatedSubscription };
+  //       }
+  //       return oldData;
+  //     });
+  //     queryClient.invalidateQueries({ queryKey: ['profile'] });
+  //   },
+  //   onError: (error: any) => {
+  //     const errorMessage = error.userMessage || '자동갱신 설정 변경에 실패했습니다.';
+  //     alert(`Error: ${errorMessage}`);
+  //   },
+  // });
 
-  const cancelSubscriptionMutation = useMutation({
-    mutationFn: (password: string) => subscriptionAPI.cancelSubscription(password),
-    onSuccess: (updatedSubscription) => {
-      alert('Success: 구독이 성공적으로 취소되었습니다. 무료 플랜으로 변경되었습니다.');
-      // Update user data with new subscription info
-      queryClient.setQueryData(['profile'], (oldData: User | undefined) => {
-        if (oldData) {
-          return { ...oldData, subscription: updatedSubscription };
-        }
-        return oldData;
-      });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-    },
-    onError: (error: any) => {
-      const errorMessage = error.userMessage || '구독 취소에 실패했습니다.';
-      alert(`Error: ${errorMessage}`);
-    },
-  });
+  // const cancelSubscriptionMutation = useMutation({
+  //   mutationFn: (password: string) => subscriptionAPI.cancelSubscription(password),
+  //   onSuccess: (updatedSubscription) => {
+  //     alert('Success: 구독이 성공적으로 취소되었습니다. 무료 플랜으로 변경되었습니다.');
+  //     // Update user data with new subscription info
+  //     queryClient.setQueryData(['profile'], (oldData: User | undefined) => {
+  //       if (oldData) {
+  //         return { ...oldData, subscription: updatedSubscription };
+  //       }
+  //       return oldData;
+  //     });
+  //     queryClient.invalidateQueries({ queryKey: ['profile'] });
+  //   },
+  //   onError: (error: any) => {
+  //     const errorMessage = error.userMessage || '구독 취소에 실패했습니다.';
+  //     alert(`Error: ${errorMessage}`);
+  //   },
+  // });
 
-  const handleToggleAutoRenewal = () => {
-    const password = window.prompt('비밀번호를 입력해주세요:');
-    if (!password) return;
+  // Commented out until subscription management UI is implemented
+  // const handleToggleAutoRenewal = () => {
+  //   const password = window.prompt('비밀번호를 입력해주세요:');
+  //   if (!password) return;
 
-    const newAutoRenewal = !user.subscription?.auto_renewal;
-    toggleAutoRenewalMutation.mutate({ password, autoRenewal: newAutoRenewal });
-  };
+  //   const newAutoRenewal = !user.subscription?.auto_renewal;
+  //   toggleAutoRenewalMutation.mutate({ password, autoRenewal: newAutoRenewal });
+  // };
 
-  const handleCancelSubscription = () => {
-    if (window.confirm(
-      '정말 구독을 취소하시겠습니까?\n\n' +
-      '구독을 취소하면:\n' +
-      '• 무료 플랜으로 변경됩니다\n' +
-      '• 복습 간격이 3일로 제한됩니다\n\n' +
-      '이 작업은 즉시 적용되며 되돌릴 수 없습니다.'
-    )) {
-      const password = window.prompt('비밀번호를 입력해주세요:');
-      if (!password) return;
+  // const handleCancelSubscription = () => {
+  //   if (window.confirm(
+  //     '정말 구독을 취소하시겠습니까?\n\n' +
+  //     '구독을 취소하면:\n' +
+  //     '• 무료 플랜으로 변경됩니다\n' +
+  //     '• 복습 간격이 3일로 제한됩니다\n\n' +
+  //     '이 작업은 즉시 적용되며 되돌릴 수 없습니다.'
+  //   )) {
+  //     const password = window.prompt('비밀번호를 입력해주세요:');
+  //     if (!password) return;
 
-      cancelSubscriptionMutation.mutate(password);
-    }
-  };
+  //     cancelSubscriptionMutation.mutate(password);
+  //   }
+  // };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -23,7 +23,6 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   buttonText = "Google로 로그인",
   disabled = false,
 }) => {
-  const buttonRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { loginWithGoogle } = useAuth();
   

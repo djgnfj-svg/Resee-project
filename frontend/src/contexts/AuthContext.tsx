@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { User, LoginData, RegisterData, RegisterResponse } from '../types';
 import { authAPI } from '../utils/api';
-import { setAccessToken, getAccessToken } from '../utils/api/index';
+import { setAccessToken } from '../utils/api/index';
 
 interface AuthContextType {
   user: User | null;

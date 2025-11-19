@@ -59,13 +59,10 @@ const ReviewPage: React.FC = () => {
 
   const {
     currentReview,
-    progress,
     isLoading,
     completeReviewMutation,
     handleReviewComplete,
-    reviewsCompleted,
     setReviewsCompleted,
-    totalSchedules,
     remainingReviews,
     removeCurrentCard,
     moveCurrentCardToEnd,
