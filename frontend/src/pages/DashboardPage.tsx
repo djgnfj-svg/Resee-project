@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { reviewAPI, contentAPI } from '../utils/api';
 import { DashboardData, ContentUsage, CategoryUsage } from '../types';
@@ -115,12 +116,12 @@ const SimpleDashboard: React.FC = () => {
               </span>
             )}
           </div>
-          <a
-            href="/review"
+          <Link
+            to="/review"
             className="block w-full text-center px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all duration-150 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
             {dashboardData?.today_reviews === 0 ? '콘텐츠 만들러 가기' : '지금 복습 시작하기'} →
-          </a>
+          </Link>
         </div>
 
         {/* Content Management Card */}
@@ -142,12 +143,12 @@ const SimpleDashboard: React.FC = () => {
               </p>
             </div>
           </div>
-          <a
-            href="/content/new"
+          <Link
+            to="/content/new"
             className="block w-full text-center px-6 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-indigo-600 hover:bg-indigo-50 dark:hover:bg-gray-700 dark:hover:border-indigo-500 font-semibold rounded-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
             + 새 콘텐츠 추가하기
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -220,12 +221,12 @@ const SimpleDashboard: React.FC = () => {
               </div>
             )}
           </div>
-          <a
-            href="/subscription"
+          <Link
+            to="/subscription"
             className="block mt-3 text-center text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline"
           >
             플랜 변경하기 →
-          </a>
+          </Link>
         </div>
       </div>
 
