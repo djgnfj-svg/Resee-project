@@ -180,13 +180,12 @@ const ReviewPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <ReviewHeader
-          remainingReviews={remainingReviews}
-        />
+    <>
+      <ReviewHeader
+        remainingReviews={remainingReviews}
+      />
 
-        <div className="space-y-6">
+      <div className="space-y-6">
           <ReviewCard
             review={currentReview}
             showContent={showContent}
@@ -237,14 +236,13 @@ const ReviewPage: React.FC = () => {
           onUpgrade={() => window.location.href = '/subscription'}
         />
 
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          isVisible={toast.isVisible}
-          onClose={hideToast}
-        />
-      </div>
-    </div>
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={hideToast}
+      />
+    </>
   );
 };
 
