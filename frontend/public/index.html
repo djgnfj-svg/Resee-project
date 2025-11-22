@@ -57,6 +57,32 @@
     <!-- Pretendard Variable Font -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
 
+    <!-- Theme Initialization Script (Prevent Dark Mode Flash) -->
+    <script>
+      (function() {
+        try {
+          // localStorage에서 저장된 테마 읽기
+          var savedTheme = localStorage.getItem('resee-theme');
+
+          // 시스템 다크모드 설정 확인
+          var systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+          // 테마 결정: 저장된 테마 우선, 없으면 시스템 설정 따름
+          var theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+
+          // HTML root 요소에 즉시 테마 클래스 적용
+          document.documentElement.classList.add(theme);
+        } catch (e) {
+          // localStorage 접근 실패 시 (프라이빗 모드 등) 시스템 설정 사용
+          if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.add('light');
+          }
+        }
+      })();
+    </script>
+
     <!-- Google Analytics -->
     <script>
       (function() {
