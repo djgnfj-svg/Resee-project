@@ -13,12 +13,13 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
     <button
       onClick={toggleTheme}
       className={`
-        relative inline-flex items-center justify-center w-10 h-10 
+        relative inline-flex items-center justify-center w-10 h-10
         rounded-lg border border-gray-300 dark:border-gray-600
-        bg-white dark:bg-gray-800 
+        bg-white dark:bg-gray-800
         hover:bg-gray-50 dark:hover:bg-gray-700
         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800
         transition-all duration-200 ease-in-out
+        button-press
         ${className}
       `}
       aria-label={theme === 'light' ? '다크모드로 전환' : '라이트모드로 전환'}

@@ -104,6 +104,13 @@
   animation: skeleton-loading 1.5s infinite;
 }
 
+/* Dark mode skeleton loading */
+.dark .animate-skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200px 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
 /* Hover effects */
 .hover-scale {
   transition: transform 0.3s ease-in-out;
