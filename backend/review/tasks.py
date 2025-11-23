@@ -1,6 +1,7 @@
 """
 Review notification tasks using Celery
 """
+
 import logging
 from datetime import timedelta
 from typing import List
@@ -47,38 +48,38 @@ def send_daily_reminders_for_hour(hour: int):
         today = timezone.now().date()
 
         # 해당 시간에 일일 알림을 받을 사용자들 조회
-        schedules_today = ReviewSchedule.objects.filter(
-            next_review_date__date=today,
-            is_active=True,
-            user__notification_preference__email_notifications_enabled=True,
-            user__notification_preference__daily_reminder_enabled=True,
-            user__notification_preference__daily_reminder_time__hour=hour
-        ).select_related(
-            'user', 'content', 'user__notification_preference'
-        ).prefetch_related('content__category')
+        schedules_today = (
+            ReviewSchedule.objects.filter(
+                next_review_date__date=today,
+                is_active=True,
+                user__notification_preference__email_notifications_enabled=True,
+                user__notification_preference__daily_reminder_enabled=True,
+                user__notification_preference__daily_reminder_time__hour=hour,
+            )
+            .select_related("user", "content", "user__notification_preference")
+            .prefetch_related("content__category")
+        )
 
         # 사용자별로 그룹화
         user_schedules = {}
         for schedule in schedules_today:
             user_id = schedule.user.id
             if user_id not in user_schedules:
-                user_schedules[user_id] = {
-                    'user': schedule.user,
-                    'schedules': []
-                }
-            user_schedules[user_id]['schedules'].append(schedule)
+                user_schedules[user_id] = {"user": schedule.user, "schedules": []}
+            user_schedules[user_id]["schedules"].append(schedule)
 
         sent_count = 0
         # 각 사용자에게 개별 이메일 발송
         for user_data in user_schedules.values():
             try:
                 send_individual_review_reminder.delay(
-                    user_data['user'].id,
-                    [s.id for s in user_data['schedules']]
+                    user_data["user"].id, [s.id for s in user_data["schedules"]]
                 )
                 sent_count += 1
             except Exception as e:
-                logger.error(f"Failed to queue daily reminder for user {user_data['user'].email}: {str(e)}")
+                logger.error(
+                    f"Failed to queue daily reminder for user {user_data['user'].email}: {str(e)}"
+                )
 
         if sent_count > 0:
             logger.info(f"일일 알림 {sent_count}개 큐잉 완료 - {hour}시")
@@ -100,10 +101,11 @@ def send_individual_review_reminder(self, user_id: int, schedule_ids: List[int])
     """
     try:
         user = User.objects.get(id=user_id)
-        schedules = ReviewSchedule.objects.filter(
-            id__in=schedule_ids,
-            user=user
-        ).select_related('content').prefetch_related('content__category')
+        schedules = (
+            ReviewSchedule.objects.filter(id__in=schedule_ids, user=user)
+            .select_related("content")
+            .prefetch_related("content__category")
+        )
 
         if not schedules.exists():
             logger.warning(f"No schedules found for user {user.email}")
@@ -111,13 +113,13 @@ def send_individual_review_reminder(self, user_id: int, schedule_ids: List[int])
 
         # 이메일 컨텍스트 준비
         context = {
-            'user': user,
-            'schedules': schedules,
-            'total_reviews': schedules.count(),
-            'review_url': f"{settings.FRONTEND_URL}/review",
-            'unsubscribe_url': user.notification_preference.generate_unsubscribe_url(),
-            'company_name': getattr(settings, 'COMPANY_NAME', 'Resee'),
-            'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@resee.com'),
+            "user": user,
+            "schedules": schedules,
+            "total_reviews": schedules.count(),
+            "review_url": f"{settings.FRONTEND_URL}/review",
+            "unsubscribe_url": user.notification_preference.generate_unsubscribe_url(),
+            "company_name": getattr(settings, "COMPANY_NAME", "Resee"),
+            "support_email": getattr(settings, "SUPPORT_EMAIL", "support@resee.com"),
         }
 
         # 이메일 제목
@@ -129,14 +131,16 @@ def send_individual_review_reminder(self, user_id: int, schedule_ids: List[int])
         # 이메일 발송
         email_service = EmailService()
         success = email_service.send_template_email(
-            template_name='daily_review_notification',
+            template_name="daily_review_notification",
             context=context,
             subject=subject,
-            recipient_email=user.email
+            recipient_email=user.email,
         )
 
         if success:
-            result_message = f"Review reminder sent to {user.email} for {schedules.count()} items"
+            result_message = (
+                f"Review reminder sent to {user.email} for {schedules.count()} items"
+            )
             logger.info(result_message)
             return result_message
         else:
@@ -165,7 +169,9 @@ def adjust_review_schedules_on_subscription_change(self, subscription_id: int):
         from accounts.models import Subscription
         from review.utils import get_review_intervals
 
-        subscription = Subscription.objects.select_related('user').get(id=subscription_id)
+        subscription = Subscription.objects.select_related("user").get(
+            id=subscription_id
+        )
         user = subscription.user
 
         # Get new intervals for the updated subscription
@@ -173,10 +179,7 @@ def adjust_review_schedules_on_subscription_change(self, subscription_id: int):
         new_max_interval = subscription.max_interval_days
 
         # Get all active review schedules for this user
-        schedules = ReviewSchedule.objects.filter(
-            user=user,
-            is_active=True
-        )
+        schedules = ReviewSchedule.objects.filter(user=user, is_active=True)
 
         adjusted_count = 0
         for schedule in schedules:
@@ -197,7 +200,9 @@ def adjust_review_schedules_on_subscription_change(self, subscription_id: int):
                 if allowed_intervals:
                     max_allowed_interval = max(allowed_intervals)
                     try:
-                        schedule.interval_index = new_intervals.index(max_allowed_interval)
+                        schedule.interval_index = new_intervals.index(
+                            max_allowed_interval
+                        )
                         current_interval = max_allowed_interval
                         schedule_changed = True
                     except ValueError:
@@ -217,11 +222,15 @@ def adjust_review_schedules_on_subscription_change(self, subscription_id: int):
                     base_date = timezone.now()
                     if schedule.created_at:
                         # Calculate how far we should be from creation based on new interval
-                        days_since_creation = (timezone.now() - schedule.created_at).days
+                        days_since_creation = (
+                            timezone.now() - schedule.created_at
+                        ).days
                         if days_since_creation < current_interval:
                             base_date = schedule.created_at
 
-                    schedule.next_review_date = base_date + timedelta(days=current_interval)
+                    schedule.next_review_date = base_date + timedelta(
+                        days=current_interval
+                    )
 
                 schedule.save()
                 adjusted_count += 1
@@ -237,5 +246,7 @@ def adjust_review_schedules_on_subscription_change(self, subscription_id: int):
         logger.error(f"Subscription with id {subscription_id} does not exist")
         return f"Subscription with id {subscription_id} does not exist"
     except Exception as exc:
-        logger.error(f"Error adjusting review schedules for subscription {subscription_id}: {str(exc)}")
+        logger.error(
+            f"Error adjusting review schedules for subscription {subscription_id}: {str(exc)}"
+        )
         raise self.retry(exc=exc)

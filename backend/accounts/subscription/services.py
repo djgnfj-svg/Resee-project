@@ -1,6 +1,7 @@
 """
 Permission and subscription services for user accounts.
 """
+
 from django.conf import settings
 
 from ..constants import CATEGORY_LIMITS, CONTENT_LIMITS
@@ -20,10 +21,16 @@ class PermissionService:
 
     def can_upgrade_subscription(self):
         """Check if user can upgrade subscription"""
-        if getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', True) and not self.user.is_email_verified:
+        if (
+            getattr(settings, "ENFORCE_EMAIL_VERIFICATION", True)
+            and not self.user.is_email_verified
+        ):
             return False
 
-        if hasattr(self.user, 'subscription') and self.user.subscription.tier == SubscriptionTier.PRO:
+        if (
+            hasattr(self.user, "subscription")
+            and self.user.subscription.tier == SubscriptionTier.PRO
+        ):
             return False
 
         return True
@@ -31,12 +38,14 @@ class PermissionService:
     def can_create_content(self):
         """Check if user can create more content based on subscription limit"""
         from content.models import Content
+
         current_count = Content.objects.filter(author=self.user).count()
         return current_count < self.get_content_limit()
 
     def can_create_category(self):
         """Check if user can create more categories based on subscription limit"""
         from content.models import Category
+
         current_count = Category.objects.filter(user=self.user).count()
         return current_count < self.get_category_limit()
 
@@ -53,41 +62,46 @@ class PermissionService:
     def get_content_usage(self):
         """Get content usage statistics for the user"""
         from content.models import Content
+
         current_count = Content.objects.filter(author=self.user).count()
         limit = self.get_content_limit()
 
         return {
-            'current': current_count,
-            'limit': limit,
-            'remaining': max(0, limit - current_count),
-            'percentage': (current_count / limit * 100) if limit > 0 else 0,
-            'can_create': current_count < limit,
-            'tier': self._get_user_tier()
+            "current": current_count,
+            "limit": limit,
+            "remaining": max(0, limit - current_count),
+            "percentage": (current_count / limit * 100) if limit > 0 else 0,
+            "can_create": current_count < limit,
+            "tier": self._get_user_tier(),
         }
 
     def get_category_usage(self):
         """Get category usage statistics for the user"""
         from content.models import Category
+
         current_count = Category.objects.filter(user=self.user).count()
         limit = self.get_category_limit()
 
         return {
-            'current': current_count,
-            'limit': limit,
-            'remaining': max(0, limit - current_count),
-            'percentage': (current_count / limit * 100) if limit > 0 else 0,
-            'can_create': current_count < limit,
-            'tier': self._get_user_tier()
+            "current": current_count,
+            "limit": limit,
+            "remaining": max(0, limit - current_count),
+            "percentage": (current_count / limit * 100) if limit > 0 else 0,
+            "can_create": current_count < limit,
+            "tier": self._get_user_tier(),
         }
 
     def _get_user_tier(self):
         """Get user's current subscription tier"""
         try:
-            if self.user.subscription.is_active and not self.user.subscription.is_expired():
+            if (
+                self.user.subscription.is_active
+                and not self.user.subscription.is_expired()
+            ):
                 return self.user.subscription.tier
         except (AttributeError, Exception):
             pass
-        return 'free'
+        return "free"
 
 
 class SubscriptionService:
@@ -101,7 +115,10 @@ class SubscriptionService:
     def has_active_subscription(self):
         """Check if user has an active subscription"""
         try:
-            return self.user.subscription.is_active and not self.user.subscription.is_expired()
+            return (
+                self.user.subscription.is_active
+                and not self.user.subscription.is_expired()
+            )
         except (AttributeError, Exception):
             # User has no subscription or subscription is not accessible
             return False

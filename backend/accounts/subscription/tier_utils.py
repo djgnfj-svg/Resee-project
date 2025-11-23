@@ -7,12 +7,18 @@ Provides functions for:
 - Feature and limit lookups
 - Tier validation
 """
+
 from decimal import Decimal
 from typing import Dict, List
 
 from ..constants import (
-    BILLING_CYCLE_DAYS, CATEGORY_LIMITS, CONTENT_LIMITS, TIER_FEATURES,
-    TIER_HIERARCHY, TIER_MAX_INTERVALS, TIER_MONTHLY_PRICES,
+    BILLING_CYCLE_DAYS,
+    CATEGORY_LIMITS,
+    CONTENT_LIMITS,
+    TIER_FEATURES,
+    TIER_HIERARCHY,
+    TIER_MAX_INTERVALS,
+    TIER_MONTHLY_PRICES,
     YEARLY_DISCOUNT_RATE,
 )
 from ..models import BillingCycle, SubscriptionTier
@@ -100,13 +106,10 @@ def get_monthly_price(tier: str) -> Decimal:
     Returns:
         Monthly price as Decimal
     """
-    return TIER_MONTHLY_PRICES.get(tier, Decimal('0.00'))
+    return TIER_MONTHLY_PRICES.get(tier, Decimal("0.00"))
 
 
-def calculate_price(
-    tier: str,
-    billing_cycle: str = BillingCycle.MONTHLY
-) -> Decimal:
+def calculate_price(tier: str, billing_cycle: str = BillingCycle.MONTHLY) -> Decimal:
     """
     Calculate price based on tier and billing cycle.
 
@@ -192,16 +195,16 @@ def get_tier_info(tier: str, billing_cycle: str = BillingCycle.MONTHLY) -> Dict:
         Dictionary with tier information
     """
     return {
-        'tier': tier,
-        'tier_display': dict(SubscriptionTier.choices).get(tier, tier),
-        'level': get_tier_level(tier),
-        'max_interval_days': get_max_interval(tier),
-        'monthly_price': float(get_monthly_price(tier)),
-        'price': float(calculate_price(tier, billing_cycle)),
-        'billing_cycle': billing_cycle,
-        'content_limit': get_content_limit(tier),
-        'category_limit': get_category_limit(tier),
-        'features': get_features(tier),
+        "tier": tier,
+        "tier_display": dict(SubscriptionTier.choices).get(tier, tier),
+        "level": get_tier_level(tier),
+        "max_interval_days": get_max_interval(tier),
+        "monthly_price": float(get_monthly_price(tier)),
+        "price": float(calculate_price(tier, billing_cycle)),
+        "billing_cycle": billing_cycle,
+        "content_limit": get_content_limit(tier),
+        "category_limit": get_category_limit(tier),
+        "features": get_features(tier),
     }
 
 
@@ -215,16 +218,11 @@ def get_all_tiers_info(billing_cycle: str = BillingCycle.MONTHLY) -> List[Dict]:
     Returns:
         List of tier information dictionaries
     """
-    return [
-        get_tier_info(tier, billing_cycle)
-        for tier, _ in SubscriptionTier.choices
-    ]
+    return [get_tier_info(tier, billing_cycle) for tier, _ in SubscriptionTier.choices]
 
 
 def calculate_prorated_refund(
-    current_price: Decimal,
-    days_remaining: int,
-    total_days: int
+    current_price: Decimal, days_remaining: int, total_days: int
 ) -> Decimal:
     """
     Calculate prorated refund for downgrade/cancellation.
@@ -238,7 +236,7 @@ def calculate_prorated_refund(
         Refund amount as Decimal
     """
     if days_remaining <= 0 or total_days <= 0:
-        return Decimal('0.00')
+        return Decimal("0.00")
 
     refund = current_price * (Decimal(days_remaining) / Decimal(total_days))
-    return refund.quantize(Decimal('0.01'))
+    return refund.quantize(Decimal("0.01"))

@@ -5,12 +5,16 @@ from django.db import migrations
 
 def convert_deprecated_review_modes(apps, schema_editor):
     """Convert only subjective mode to objective mode. Keep descriptive mode."""
-    Content = apps.get_model('content', 'Content')
+    Content = apps.get_model("content", "Content")
 
     # Convert only subjective to objective
-    subjective_count = Content.objects.filter(review_mode='subjective').update(review_mode='objective')
+    subjective_count = Content.objects.filter(review_mode="subjective").update(
+        review_mode="objective"
+    )
 
-    print(f"Migration: Converted {subjective_count} subjective content to objective mode")
+    print(
+        f"Migration: Converted {subjective_count} subjective content to objective mode"
+    )
 
 
 def reverse_migration(apps, schema_editor):
@@ -21,7 +25,7 @@ def reverse_migration(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('content', '0004_content_mc_choices_alter_content_review_mode'),
+        ("content", "0004_content_mc_choices_alter_content_review_mode"),
     ]
 
     operations = [

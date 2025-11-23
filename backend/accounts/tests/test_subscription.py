@@ -1,6 +1,7 @@
 """
 Tests for subscription services and utilities.
 """
+
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -40,22 +41,42 @@ class TierUtilsTest(TestCase):
 
     def test_is_upgrade(self):
         """Test is_upgrade function."""
-        self.assertTrue(tier_utils.is_upgrade(SubscriptionTier.FREE, SubscriptionTier.BASIC))
-        self.assertTrue(tier_utils.is_upgrade(SubscriptionTier.BASIC, SubscriptionTier.PRO))
-        self.assertFalse(tier_utils.is_upgrade(SubscriptionTier.BASIC, SubscriptionTier.FREE))
-        self.assertFalse(tier_utils.is_upgrade(SubscriptionTier.BASIC, SubscriptionTier.BASIC))
+        self.assertTrue(
+            tier_utils.is_upgrade(SubscriptionTier.FREE, SubscriptionTier.BASIC)
+        )
+        self.assertTrue(
+            tier_utils.is_upgrade(SubscriptionTier.BASIC, SubscriptionTier.PRO)
+        )
+        self.assertFalse(
+            tier_utils.is_upgrade(SubscriptionTier.BASIC, SubscriptionTier.FREE)
+        )
+        self.assertFalse(
+            tier_utils.is_upgrade(SubscriptionTier.BASIC, SubscriptionTier.BASIC)
+        )
 
     def test_is_downgrade(self):
         """Test is_downgrade function."""
-        self.assertTrue(tier_utils.is_downgrade(SubscriptionTier.BASIC, SubscriptionTier.FREE))
-        self.assertTrue(tier_utils.is_downgrade(SubscriptionTier.PRO, SubscriptionTier.BASIC))
-        self.assertFalse(tier_utils.is_downgrade(SubscriptionTier.FREE, SubscriptionTier.BASIC))
-        self.assertFalse(tier_utils.is_downgrade(SubscriptionTier.BASIC, SubscriptionTier.BASIC))
+        self.assertTrue(
+            tier_utils.is_downgrade(SubscriptionTier.BASIC, SubscriptionTier.FREE)
+        )
+        self.assertTrue(
+            tier_utils.is_downgrade(SubscriptionTier.PRO, SubscriptionTier.BASIC)
+        )
+        self.assertFalse(
+            tier_utils.is_downgrade(SubscriptionTier.FREE, SubscriptionTier.BASIC)
+        )
+        self.assertFalse(
+            tier_utils.is_downgrade(SubscriptionTier.BASIC, SubscriptionTier.BASIC)
+        )
 
     def test_can_change_tier(self):
         """Test can_change_tier function."""
-        self.assertTrue(tier_utils.can_change_tier(SubscriptionTier.FREE, SubscriptionTier.BASIC))
-        self.assertFalse(tier_utils.can_change_tier(SubscriptionTier.BASIC, SubscriptionTier.BASIC))
+        self.assertTrue(
+            tier_utils.can_change_tier(SubscriptionTier.FREE, SubscriptionTier.BASIC)
+        )
+        self.assertFalse(
+            tier_utils.can_change_tier(SubscriptionTier.BASIC, SubscriptionTier.BASIC)
+        )
 
     def test_get_monthly_price(self):
         """Test get_monthly_price function."""
@@ -86,8 +107,8 @@ class TierUtilsTest(TestCase):
         """Test get_tier_info function."""
         info = tier_utils.get_tier_info(SubscriptionTier.BASIC)
         self.assertIsInstance(info, dict)
-        self.assertIn('tier', info)
-        self.assertIn('max_interval_days', info)
+        self.assertIn("tier", info)
+        self.assertIn("max_interval_days", info)
 
     def test_get_all_tiers_info(self):
         """Test get_all_tiers_info function."""
@@ -98,12 +119,10 @@ class TierUtilsTest(TestCase):
     def test_calculate_prorated_refund(self):
         """Test calculate_prorated_refund function."""
         refund = tier_utils.calculate_prorated_refund(
-            current_price=Decimal('100.00'),
-            days_remaining=15,
-            total_days=30
+            current_price=Decimal("100.00"), days_remaining=15, total_days=30
         )
         self.assertIsInstance(refund, Decimal)
-        self.assertEqual(refund, Decimal('50.00'))
+        self.assertEqual(refund, Decimal("50.00"))
 
 
 class SubscriptionViewsTest(TestCase):
@@ -112,30 +131,28 @@ class SubscriptionViewsTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass123',
-            is_email_verified=True
+            email="test@example.com", password="testpass123", is_email_verified=True
         )
         self.client.force_authenticate(user=self.user)
 
     def test_subscription_detail(self):
         """Test getting subscription details."""
-        response = self.client.get('/api/accounts/subscription/')
+        response = self.client.get("/api/accounts/subscription/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('tier', response.data)
+        self.assertIn("tier", response.data)
 
     def test_subscription_tiers(self):
         """Test getting available tiers."""
-        response = self.client.get('/api/accounts/subscription/tiers/')
+        response = self.client.get("/api/accounts/subscription/tiers/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('tiers', response.data)
-        self.assertIn('billing_cycle', response.data)
-        self.assertEqual(response.data['billing_cycle'], 'monthly')
-        self.assertIsInstance(response.data['tiers'], list)
-        self.assertEqual(len(response.data['tiers']), 3)  # FREE, BASIC, PRO
+        self.assertIn("tiers", response.data)
+        self.assertIn("billing_cycle", response.data)
+        self.assertEqual(response.data["billing_cycle"], "monthly")
+        self.assertIsInstance(response.data["tiers"], list)
+        self.assertEqual(len(response.data["tiers"]), 3)  # FREE, BASIC, PRO
 
     def test_subscription_detail_unauthenticated(self):
         """Test subscription detail without authentication."""
         self.client.logout()
-        response = self.client.get('/api/accounts/subscription/')
+        response = self.client.get("/api/accounts/subscription/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

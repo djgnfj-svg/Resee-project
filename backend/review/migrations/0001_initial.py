@@ -10,77 +10,179 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('content', '0001_initial'),
+        ("content", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ReviewHistory',
+            name="ReviewHistory",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('review_date', models.DateTimeField(auto_now_add=True)),
-                ('result', models.CharField(choices=[('remembered', '기억함'), ('partial', '애매함'), ('forgot', '모름')], max_length=20)),
-                ('time_spent', models.IntegerField(blank=True, help_text='Time spent in seconds', null=True)),
-                ('notes', models.TextField(blank=True, max_length=1000)),
-                ('content', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='review_history', to='content.content')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("review_date", models.DateTimeField(auto_now_add=True)),
+                (
+                    "result",
+                    models.CharField(
+                        choices=[
+                            ("remembered", "기억함"),
+                            ("partial", "애매함"),
+                            ("forgot", "모름"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "time_spent",
+                    models.IntegerField(
+                        blank=True, help_text="Time spent in seconds", null=True
+                    ),
+                ),
+                ("notes", models.TextField(blank=True, max_length=1000)),
+                (
+                    "content",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="review_history",
+                        to="content.content",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Review histories',
-                'ordering': ['-review_date'],
+                "verbose_name_plural": "Review histories",
+                "ordering": ["-review_date"],
             },
         ),
         migrations.CreateModel(
-            name='ReviewSchedule',
+            name="ReviewSchedule",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('next_review_date', models.DateTimeField()),
-                ('interval_index', models.IntegerField(default=0, help_text='Index in REVIEW_INTERVALS')),
-                ('is_active', models.BooleanField(default=True)),
-                ('initial_review_completed', models.BooleanField(default=False, help_text='Whether the initial review has been completed')),
-                ('content', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='review_schedules', to='content.content')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("next_review_date", models.DateTimeField()),
+                (
+                    "interval_index",
+                    models.IntegerField(
+                        default=0, help_text="Index in REVIEW_INTERVALS"
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True)),
+                (
+                    "initial_review_completed",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Whether the initial review has been completed",
+                    ),
+                ),
+                (
+                    "content",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="review_schedules",
+                        to="content.content",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['next_review_date'],
-                'indexes': [models.Index(fields=['user', 'next_review_date', 'is_active'], name='review_sched_user_active'), models.Index(fields=['next_review_date'], name='review_schedule_next_date'), models.Index(fields=['user', 'is_active'], name='review_schedule_user_active')],
+                "ordering": ["next_review_date"],
+                "indexes": [
+                    models.Index(
+                        fields=["user", "next_review_date", "is_active"],
+                        name="review_sched_user_active",
+                    ),
+                    models.Index(
+                        fields=["next_review_date"], name="review_schedule_next_date"
+                    ),
+                    models.Index(
+                        fields=["user", "is_active"], name="review_schedule_user_active"
+                    ),
+                ],
             },
         ),
         migrations.AddConstraint(
-            model_name='reviewschedule',
-            constraint=models.CheckConstraint(check=models.Q(('interval_index__gte', 0)), name='review_schedule_interval_index_non_negative'),
+            model_name="reviewschedule",
+            constraint=models.CheckConstraint(
+                check=models.Q(("interval_index__gte", 0)),
+                name="review_schedule_interval_index_non_negative",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='reviewschedule',
-            constraint=models.CheckConstraint(check=models.Q(('next_review_date__gte', models.F('created_at'))), name='review_schedule_next_date_after_creation', violation_error_message='Next review date must be after creation date'),
+            model_name="reviewschedule",
+            constraint=models.CheckConstraint(
+                check=models.Q(("next_review_date__gte", models.F("created_at"))),
+                name="review_schedule_next_date_after_creation",
+                violation_error_message="Next review date must be after creation date",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='reviewschedule',
-            unique_together={('content', 'user')},
+            name="reviewschedule",
+            unique_together={("content", "user")},
         ),
         migrations.AddIndex(
-            model_name='reviewhistory',
-            index=models.Index(fields=['user', '-review_date'], name='review_history_user_date'),
+            model_name="reviewhistory",
+            index=models.Index(
+                fields=["user", "-review_date"], name="review_history_user_date"
+            ),
         ),
         migrations.AddIndex(
-            model_name='reviewhistory',
-            index=models.Index(fields=['content', '-review_date'], name='review_history_content_date'),
+            model_name="reviewhistory",
+            index=models.Index(
+                fields=["content", "-review_date"], name="review_history_content_date"
+            ),
         ),
         migrations.AddIndex(
-            model_name='reviewhistory',
-            index=models.Index(fields=['user', 'result', '-review_date'], name='review_hist_user_result'),
+            model_name="reviewhistory",
+            index=models.Index(
+                fields=["user", "result", "-review_date"],
+                name="review_hist_user_result",
+            ),
         ),
         migrations.AddIndex(
-            model_name='reviewhistory',
-            index=models.Index(fields=['-review_date'], name='review_history_date_only'),
+            model_name="reviewhistory",
+            index=models.Index(
+                fields=["-review_date"], name="review_history_date_only"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='reviewhistory',
-            constraint=models.CheckConstraint(check=models.Q(('time_spent__gte', 0), ('time_spent__isnull', True), _connector='OR'), name='review_history_time_spent_non_negative'),
+            model_name="reviewhistory",
+            constraint=models.CheckConstraint(
+                check=models.Q(
+                    ("time_spent__gte", 0),
+                    ("time_spent__isnull", True),
+                    _connector="OR",
+                ),
+                name="review_history_time_spent_non_negative",
+            ),
         ),
     ]

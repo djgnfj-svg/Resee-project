@@ -30,24 +30,37 @@ class CategoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
     학습 콘텐츠를 분류하기 위한 카테고리를 관리합니다.
     전역 카테고리와 사용자별 커스텀 카테고리를 지원합니다.
     """
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
     @swagger_auto_schema(
         operation_summary="카테고리 목록 조회",
         operation_description="사용자의 개인 커스텀 카테고리 목록을 반환합니다.",
-        responses={200: CategorySerializer(many=True)}
+        responses={200: CategorySerializer(many=True)},
     )
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
         # Add category usage metadata to response
-        if hasattr(response, 'data'):
+        if hasattr(response, "data"):
             response.data = {
-                'results': response.data.get('results', response.data),
-                'usage': PermissionService(request.user).get_category_usage(),
-                'count': response.data.get('count') if isinstance(response.data, dict) else len(response.data),
-                'next': response.data.get('next') if isinstance(response.data, dict) else None,
-                'previous': response.data.get('previous') if isinstance(response.data, dict) else None,
+                "results": response.data.get("results", response.data),
+                "usage": PermissionService(request.user).get_category_usage(),
+                "count": (
+                    response.data.get("count")
+                    if isinstance(response.data, dict)
+                    else len(response.data)
+                ),
+                "next": (
+                    response.data.get("next")
+                    if isinstance(response.data, dict)
+                    else None
+                ),
+                "previous": (
+                    response.data.get("previous")
+                    if isinstance(response.data, dict)
+                    else None
+                ),
             }
         return response
 
@@ -62,27 +75,26 @@ class CategoryViewSet(UserOwnershipMixin, viewsets.ModelViewSet):
                 examples={
                     "application/json": {
                         "error": "카테고리 생성 제한에 도달했습니다",
-                        "usage": {
-                            "current": 3,
-                            "limit": 3,
-                            "tier": "free"
-                        },
-                        "message": "더 많은 카테고리를 생성하려면 구독을 업그레이드하세요"
+                        "usage": {"current": 3, "limit": 3, "tier": "free"},
+                        "message": "더 많은 카테고리를 생성하려면 구독을 업그레이드하세요",
                     }
-                }
-            )
-        }
+                },
+            ),
+        },
     )
     def create(self, request, *args, **kwargs):
         # Check category creation limit
         user = request.user
         if not PermissionService(user).can_create_category():
             usage = PermissionService(user).get_category_usage()
-            return Response({
-                'error': '카테고리 생성 제한에 도달했습니다',
-                'usage': usage,
-                'message': '더 많은 카테고리를 생성하려면 구독을 업그레이드하세요'
-            }, status=status.HTTP_402_PAYMENT_REQUIRED)
+            return Response(
+                {
+                    "error": "카테고리 생성 제한에 도달했습니다",
+                    "usage": usage,
+                    "message": "더 많은 카테고리를 생성하려면 구독을 업그레이드하세요",
+                },
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
 
         return super().create(request, *args, **kwargs)
 
@@ -94,14 +106,19 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     사용자의 학습 콘텐츠를 생성, 수정, 삭제, 조회할 수 있습니다.
     필터링, 정렬 기능을 지원합니다.
     """
+
     queryset = Content.objects.all()
     serializer_class = ContentSerializer
     pagination_class = ContentPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['category']
-    search_fields = ['title', 'content']
-    ordering_fields = ['created_at', 'updated_at', 'title']
-    ordering = ['-created_at']
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+    filterset_fields = ["category"]
+    search_fields = ["title", "content"]
+    ordering_fields = ["created_at", "updated_at", "title"]
+    ordering = ["-created_at"]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -110,22 +127,29 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         from review.models import ReviewSchedule
 
         # Optimize queries with select_related and prefetch_related
-        queryset = queryset.select_related('category', 'author')
+        queryset = queryset.select_related("category", "author")
 
         # Annotate review count to avoid N+1 queries (성공한 복습만 카운트)
         queryset = queryset.annotate(
-            review_count_annotated=Count('review_history', filter=models.Q(
-                review_history__result='remembered'), distinct=True)
+            review_count_annotated=Count(
+                "review_history",
+                filter=models.Q(review_history__result="remembered"),
+                distinct=True,
+            )
         )
 
         # Prefetch review schedules filtered by current user
         user_schedules = ReviewSchedule.objects.filter(user=self.request.user)
         queryset = queryset.prefetch_related(
-            Prefetch('review_schedules', queryset=user_schedules, to_attr='user_review_schedules')
+            Prefetch(
+                "review_schedules",
+                queryset=user_schedules,
+                to_attr="user_review_schedules",
+            )
         )
 
         # Category filter
-        category_slug = self.request.query_params.get('category_slug', None)
+        category_slug = self.request.query_params.get("category_slug", None)
         if category_slug:
             queryset = queryset.filter(category__slug=category_slug)
 
@@ -135,19 +159,38 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         operation_summary="콘텐츠 목록 조회",
         operation_description="사용자의 모든 학습 콘텐츠를 조회합니다. 필터링, 정렬이 가능합니다.",
         manual_parameters=[
-            openapi.Parameter('category', openapi.IN_QUERY, description="카테고리로 필터링", type=openapi.TYPE_INTEGER),
-            openapi.Parameter('category_slug', openapi.IN_QUERY, description="카테고리 슬러그로 필터링", type=openapi.TYPE_STRING),
-            openapi.Parameter('search', openapi.IN_QUERY, description="제목 및 내용에서 검색", type=openapi.TYPE_STRING),
-            openapi.Parameter('ordering', openapi.IN_QUERY,
-                              description="정렬 (-created_at, title, updated_at)", type=openapi.TYPE_STRING),
+            openapi.Parameter(
+                "category",
+                openapi.IN_QUERY,
+                description="카테고리로 필터링",
+                type=openapi.TYPE_INTEGER,
+            ),
+            openapi.Parameter(
+                "category_slug",
+                openapi.IN_QUERY,
+                description="카테고리 슬러그로 필터링",
+                type=openapi.TYPE_STRING,
+            ),
+            openapi.Parameter(
+                "search",
+                openapi.IN_QUERY,
+                description="제목 및 내용에서 검색",
+                type=openapi.TYPE_STRING,
+            ),
+            openapi.Parameter(
+                "ordering",
+                openapi.IN_QUERY,
+                description="정렬 (-created_at, title, updated_at)",
+                type=openapi.TYPE_STRING,
+            ),
         ],
-        responses={200: ContentSerializer(many=True)}
+        responses={200: ContentSerializer(many=True)},
     )
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
         # Add content usage metadata to response (preserve all pagination fields)
-        if hasattr(response, 'data') and isinstance(response.data, dict):
-            response.data['usage'] = PermissionService(request.user).get_content_usage()
+        if hasattr(response, "data") and isinstance(response.data, dict):
+            response.data["usage"] = PermissionService(request.user).get_content_usage()
         return response
 
     @swagger_auto_schema(
@@ -161,27 +204,26 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
                 examples={
                     "application/json": {
                         "error": "콘텐츠 생성 제한에 도달했습니다",
-                        "usage": {
-                            "current": 10,
-                            "limit": 10,
-                            "tier": "free"
-                        },
-                        "message": "더 많은 콘텐츠를 생성하려면 구독을 업그레이드하세요"
+                        "usage": {"current": 10, "limit": 10, "tier": "free"},
+                        "message": "더 많은 콘텐츠를 생성하려면 구독을 업그레이드하세요",
                     }
-                }
-            )
-        }
+                },
+            ),
+        },
     )
     def create(self, request, *args, **kwargs):
         # Check content creation limit
         user = request.user
         if not PermissionService(user).can_create_content():
             usage = PermissionService(user).get_content_usage()
-            return Response({
-                'error': '콘텐츠 생성 제한에 도달했습니다',
-                'usage': usage,
-                'message': '더 많은 콘텐츠를 생성하려면 구독을 업그레이드하세요'
-            }, status=status.HTTP_402_PAYMENT_REQUIRED)
+            return Response(
+                {
+                    "error": "콘텐츠 생성 제한에 도달했습니다",
+                    "usage": usage,
+                    "message": "더 많은 콘텐츠를 생성하려면 구독을 업그레이드하세요",
+                },
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
 
         response = super().create(request, *args, **kwargs)
         logger.info(f"Content created for user {user.id}")
@@ -191,7 +233,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     @swagger_auto_schema(
         operation_summary="콘텐츠 상세 조회",
         operation_description="특정 콘텐츠의 상세 정보를 조회합니다.",
-        responses={200: ContentSerializer()}
+        responses={200: ContentSerializer()},
     )
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
@@ -200,7 +242,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         operation_summary="콘텐츠 수정",
         operation_description="기존 콘텐츠를 수정합니다.",
         request_body=ContentSerializer,
-        responses={200: ContentSerializer()}
+        responses={200: ContentSerializer()},
     )
     def update(self, request, *args, **kwargs):
         response = super().update(request, *args, **kwargs)
@@ -210,7 +252,7 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
     @swagger_auto_schema(
         operation_summary="콘텐츠 삭제",
         operation_description="콘텐츠를 삭제합니다. 관련된 복습 스케줄도 함께 삭제됩니다.",
-        responses={204: "삭제 완료"}
+        responses={204: "삭제 완료"},
     )
     def destroy(self, request, *args, **kwargs):
         response = super().destroy(request, *args, **kwargs)
@@ -222,11 +264,15 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         operation_description="학습 콘텐츠의 사실적 정확성, 논리적 일관성, 제목 적합성을 AI로 검증합니다.",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=['title', 'content'],
+            required=["title", "content"],
             properties={
-                'title': openapi.Schema(type=openapi.TYPE_STRING, description='콘텐츠 제목'),
-                'content': openapi.Schema(type=openapi.TYPE_STRING, description='콘텐츠 내용 (마크다운)'),
-            }
+                "title": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="콘텐츠 제목"
+                ),
+                "content": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="콘텐츠 내용 (마크다운)"
+                ),
+            },
         ),
         responses={
             200: openapi.Response(
@@ -237,29 +283,29 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
                         "factual_accuracy": {"score": 95, "issues": []},
                         "logical_consistency": {"score": 90, "issues": []},
                         "title_relevance": {"score": 100, "issues": []},
-                        "overall_feedback": "훌륭한 학습 자료입니다."
+                        "overall_feedback": "훌륭한 학습 자료입니다.",
                     }
-                }
+                },
             ),
-            400: "잘못된 요청"
-        }
+            400: "잘못된 요청",
+        },
     )
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=["post"])
     def validate(self, request):
         """Validate content using AI"""
-        title = request.data.get('title', '').strip()
-        content = request.data.get('content', '').strip()
+        title = request.data.get("title", "").strip()
+        content = request.data.get("content", "").strip()
 
         if not title or not content:
             return Response(
-                {'error': '제목과 내용을 모두 입력해주세요.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "제목과 내용을 모두 입력해주세요."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if len(content) < 200:
             return Response(
-                {'error': '서술 평가는 최소 200자 이상의 콘텐츠가 필요합니다.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "서술 평가는 최소 200자 이상의 콘텐츠가 필요합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
@@ -268,8 +314,8 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Content validation failed: {str(e)}", exc_info=True)
             return Response(
-                {'error': f'AI 검증 중 오류가 발생했습니다: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": f"AI 검증 중 오류가 발생했습니다: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     @swagger_auto_schema(
@@ -283,15 +329,15 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
                         "message": "AI 검증이 완료되었습니다.",
                         "is_valid": True,
                         "ai_validation_score": 95.0,
-                        "validated_at": "2025-01-15T10:30:00Z"
+                        "validated_at": "2025-01-15T10:30:00Z",
                     }
-                }
+                },
             ),
             400: "이미 검증된 콘텐츠 또는 잘못된 요청",
-            500: "AI 검증 실패"
-        }
+            500: "AI 검증 실패",
+        },
     )
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def validate_and_save(self, request, pk=None):
         """Validate content using AI and save results to DB"""
         from django.utils import timezone
@@ -302,19 +348,19 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
         if content_obj.is_ai_validated:
             return Response(
                 {
-                    'message': '이미 AI 검증이 완료된 콘텐츠입니다.',
-                    'is_valid': True,
-                    'ai_validation_score': content_obj.ai_validation_score,
-                    'validated_at': content_obj.ai_validated_at
+                    "message": "이미 AI 검증이 완료된 콘텐츠입니다.",
+                    "is_valid": True,
+                    "ai_validation_score": content_obj.ai_validation_score,
+                    "validated_at": content_obj.ai_validated_at,
                 },
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
 
         # 콘텐츠 길이 확인
         if len(content_obj.content.strip()) < 200:
             return Response(
-                {'error': 'AI 검증은 최소 200자 이상의 콘텐츠가 필요합니다.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "AI 검증은 최소 200자 이상의 콘텐츠가 필요합니다."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
@@ -322,12 +368,12 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
             result = validate_content(content_obj.title, content_obj.content)
 
             # 검증 결과 저장
-            if result.get('is_valid', False):
+            if result.get("is_valid", False):
                 # 평균 점수 계산
                 scores = [
-                    result['factual_accuracy']['score'],
-                    result['logical_consistency']['score'],
-                    result['title_relevance']['score']
+                    result["factual_accuracy"]["score"],
+                    result["logical_consistency"]["score"],
+                    result["title_relevance"]["score"],
                 ]
                 avg_score = sum(scores) / len(scores)
 
@@ -338,26 +384,37 @@ class ContentViewSet(AuthorViewSetMixin, viewsets.ModelViewSet):
                 content_obj.ai_validated_at = timezone.now()
                 content_obj.save()
 
-                logger.info(f"Content {content_obj.id} AI validation saved: {avg_score}")
+                logger.info(
+                    f"Content {content_obj.id} AI validation saved: {avg_score}"
+                )
 
-                return Response({
-                    'message': 'AI 검증이 완료되었습니다.',
-                    'is_valid': True,
-                    'ai_validation_score': content_obj.ai_validation_score,
-                    'validated_at': content_obj.ai_validated_at,
-                    'result': result
-                }, status=status.HTTP_200_OK)
+                return Response(
+                    {
+                        "message": "AI 검증이 완료되었습니다.",
+                        "is_valid": True,
+                        "ai_validation_score": content_obj.ai_validation_score,
+                        "validated_at": content_obj.ai_validated_at,
+                        "result": result,
+                    },
+                    status=status.HTTP_200_OK,
+                )
             else:
                 # 검증 실패 (점수 70 미만)
-                return Response({
-                    'message': 'AI 검증 결과 일부 개선이 필요합니다.',
-                    'is_valid': False,
-                    'result': result
-                }, status=status.HTTP_200_OK)
+                return Response(
+                    {
+                        "message": "AI 검증 결과 일부 개선이 필요합니다.",
+                        "is_valid": False,
+                        "result": result,
+                    },
+                    status=status.HTTP_200_OK,
+                )
 
         except Exception as e:
-            logger.error(f"AI validation failed for content {content_obj.id}: {str(e)}", exc_info=True)
+            logger.error(
+                f"AI validation failed for content {content_obj.id}: {str(e)}",
+                exc_info=True,
+            )
             return Response(
-                {'error': f'AI 검증 중 오류가 발생했습니다: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": f"AI 검증 중 오류가 발생했습니다: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

@@ -14,11 +14,18 @@ class WeeklyTestQuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = WeeklyTestQuestion
         fields = [
-            'id', 'question_type', 'question_text', 'choices',
-            'correct_answer', 'explanation', 'order', 'points',
-            'content', 'created_at'
+            "id",
+            "question_type",
+            "question_text",
+            "choices",
+            "correct_answer",
+            "explanation",
+            "order",
+            "points",
+            "content",
+            "created_at",
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ["id", "created_at"]
 
 
 class WeeklyTestAnswerSerializer(serializers.ModelSerializer):
@@ -29,37 +36,72 @@ class WeeklyTestAnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = WeeklyTestAnswer
         fields = [
-            'id', 'question', 'user_answer', 'is_correct',
-            'points_earned', 'ai_score', 'ai_feedback', 'answered_at'
+            "id",
+            "question",
+            "user_answer",
+            "is_correct",
+            "points_earned",
+            "ai_score",
+            "ai_feedback",
+            "answered_at",
         ]
-        read_only_fields = ['id', 'is_correct', 'points_earned', 'ai_score', 'ai_feedback', 'answered_at']
+        read_only_fields = [
+            "id",
+            "is_correct",
+            "points_earned",
+            "ai_score",
+            "ai_feedback",
+            "answered_at",
+        ]
 
 
 class WeeklyTestSerializer(serializers.ModelSerializer):
     """주간 시험 시리얼라이저"""
 
     questions = WeeklyTestQuestionSerializer(many=True, read_only=True)
-    user_answers = WeeklyTestAnswerSerializer(source='questions__answers', many=True, read_only=True)
+    user_answers = WeeklyTestAnswerSerializer(
+        source="questions__answers", many=True, read_only=True
+    )
     content_ids = serializers.ListField(
         child=serializers.IntegerField(),
         write_only=True,
         required=False,  # Auto-balancing mode support
         min_length=7,
         max_length=10,
-        help_text="Content IDs to include in exam (7-10 items, AI validation required). If empty, auto-balancing mode is used."
+        help_text="Content IDs to include in exam (7-10 items, AI validation required). If empty, auto-balancing mode is used.",
     )
 
     class Meta:
         model = WeeklyTest
         fields = [
-            'id', 'title', 'description', 'start_date', 'end_date',
-            'status', 'total_questions', 'correct_answers', 'score_percentage',
-            'started_at', 'completed_at', 'time_spent', 'created_at', 'updated_at',
-            'questions', 'user_answers', 'content_ids'
+            "id",
+            "title",
+            "description",
+            "start_date",
+            "end_date",
+            "status",
+            "total_questions",
+            "correct_answers",
+            "score_percentage",
+            "started_at",
+            "completed_at",
+            "time_spent",
+            "created_at",
+            "updated_at",
+            "questions",
+            "user_answers",
+            "content_ids",
         ]
         read_only_fields = [
-            'id', 'total_questions', 'correct_answers', 'score_percentage',
-            'started_at', 'completed_at', 'time_spent', 'created_at', 'updated_at'
+            "id",
+            "total_questions",
+            "correct_answers",
+            "score_percentage",
+            "started_at",
+            "completed_at",
+            "time_spent",
+            "created_at",
+            "updated_at",
         ]
 
     def validate_content_ids(self, value):
@@ -70,7 +112,7 @@ class WeeklyTestSerializer(serializers.ModelSerializer):
         if not value:
             return value
 
-        user = self.context['request'].user
+        user = self.context["request"].user
 
         # 중복 제거
         unique_ids = list(set(value))
@@ -80,12 +122,14 @@ class WeeklyTestSerializer(serializers.ModelSerializer):
         # 콘텐츠 존재 및 소유 확인
         contents = Content.objects.filter(id__in=value, author=user)
         if contents.count() != len(value):
-            raise serializers.ValidationError("유효하지 않은 콘텐츠가 포함되어 있습니다.")
+            raise serializers.ValidationError(
+                "유효하지 않은 콘텐츠가 포함되어 있습니다."
+            )
 
         # AI 검증 확인 (핵심!)
         not_validated = contents.filter(is_ai_validated=False)
         if not_validated.exists():
-            titles = list(not_validated.values_list('title', flat=True)[:3])
+            titles = list(not_validated.values_list("title", flat=True)[:3])
             count = not_validated.count()
             error_msg = f"AI 검증이 완료되지 않은 콘텐츠가 {count}개 있습니다: {', '.join(titles)}"
             if count > 3:
@@ -96,13 +140,13 @@ class WeeklyTestSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """주간 시험 생성"""
-        user = self.context['request'].user
-        content_ids = validated_data.pop('content_ids', None)
-        validated_data['user'] = user
+        user = self.context["request"].user
+        content_ids = validated_data.pop("content_ids", None)
+        validated_data["user"] = user
 
         # 생성 시각 기록
-        if 'created_at' not in validated_data:
-            validated_data['created_at'] = timezone.now()
+        if "created_at" not in validated_data:
+            validated_data["created_at"] = timezone.now()
 
         weekly_test = super().create(validated_data)
 
@@ -118,11 +162,18 @@ class WeeklyTestListSerializer(serializers.ModelSerializer):
     class Meta:
         model = WeeklyTest
         fields = [
-            'id', 'title', 'start_date', 'end_date', 'status',
-            'total_questions', 'correct_answers', 'score_percentage',
-            'created_at', 'completed_at'
+            "id",
+            "title",
+            "start_date",
+            "end_date",
+            "status",
+            "total_questions",
+            "correct_answers",
+            "score_percentage",
+            "created_at",
+            "completed_at",
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ["id", "created_at"]
 
 
 class SubmitAnswerSerializer(serializers.Serializer):
@@ -136,7 +187,7 @@ class SubmitAnswerSerializer(serializers.Serializer):
         try:
             question = WeeklyTestQuestion.objects.get(id=value)
             # 현재 사용자의 시험인지 확인
-            user = self.context['request'].user
+            user = self.context["request"].user
             if question.weekly_test.user != user:
                 raise serializers.ValidationError("접근 권한이 없습니다.")
             return value
@@ -153,13 +204,13 @@ class StartTestSerializer(serializers.Serializer):
         """시험 ID 유효성 검사"""
         try:
             test = WeeklyTest.objects.get(id=value)
-            user = self.context['request'].user
+            user = self.context["request"].user
 
             if test.user != user:
                 raise serializers.ValidationError("접근 권한이 없습니다.")
 
             # pending 또는 in_progress 상태만 허용 (계속하기 기능 지원)
-            if test.status not in ['pending', 'in_progress']:
+            if test.status not in ["pending", "in_progress"]:
                 raise serializers.ValidationError("이미 완료된 시험입니다.")
 
             return value
@@ -176,12 +227,12 @@ class CompleteTestSerializer(serializers.Serializer):
         """시험 ID 유효성 검사"""
         try:
             test = WeeklyTest.objects.get(id=value)
-            user = self.context['request'].user
+            user = self.context["request"].user
 
             if test.user != user:
                 raise serializers.ValidationError("접근 권한이 없습니다.")
 
-            if test.status != 'in_progress':
+            if test.status != "in_progress":
                 raise serializers.ValidationError("진행 중인 시험이 아닙니다.")
 
             return value

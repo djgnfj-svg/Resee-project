@@ -30,10 +30,7 @@ class TitleEvaluator(BaseAIService):
 
     def __init__(self):
         # Use Claude 3 Haiku for cost-efficient evaluation
-        super().__init__(
-            model="claude-3-haiku-20240307",
-            use_langchain=True
-        )
+        super().__init__(model="claude-3-haiku-20240307", use_langchain=True)
 
     def _get_temperature(self) -> float:
         return 0.3
@@ -42,10 +39,7 @@ class TitleEvaluator(BaseAIService):
         return 500
 
     def evaluate_title(
-        self,
-        content: str,
-        user_title: str,
-        actual_title: str
+        self, content: str, user_title: str, actual_title: str
     ) -> Optional[Dict]:
         """
         Evaluate user's guessed title using AI.
@@ -71,10 +65,10 @@ class TitleEvaluator(BaseAIService):
         # Check title length
         if not user_title or len(user_title.strip()) < 2:
             return {
-                'score': 0,
-                'feedback': '제목이 너무 짧습니다. 내용에 맞는 제목을 작성해주세요.',
-                'is_correct': False,
-                'auto_result': 'forgot'
+                "score": 0,
+                "feedback": "제목이 너무 짧습니다. 내용에 맞는 제목을 작성해주세요.",
+                "is_correct": False,
+                "auto_result": "forgot",
             }
 
         try:
@@ -83,11 +77,13 @@ class TitleEvaluator(BaseAIService):
                 prompt_template,
                 content=content[:1500] + ("..." if len(content) > 1500 else ""),
                 actual_title=actual_title,
-                user_title=user_title
+                user_title=user_title,
             )
 
             if not response_text:
-                logger.warning(f"No response from AI for title evaluation: {actual_title}")
+                logger.warning(
+                    f"No response from AI for title evaluation: {actual_title}"
+                )
                 return None
 
             result = self.parse_json_response(response_text)
@@ -95,12 +91,12 @@ class TitleEvaluator(BaseAIService):
                 return None
 
             # Validate required fields
-            required_fields = ['score', 'is_correct', 'feedback']
+            required_fields = ["score", "is_correct", "feedback"]
             if not self.validate_required_fields(result, required_fields):
                 return None
 
             # Validate and normalize score
-            score = float(result['score'])
+            score = float(result["score"])
             if not (0 <= score <= 100):
                 logger.warning(f"Invalid score: {score}")
                 score = max(0, min(100, score))
@@ -109,15 +105,15 @@ class TitleEvaluator(BaseAIService):
             is_correct = score >= 70
 
             # Auto-generate auto_result if not provided
-            auto_result = result.get('auto_result')
+            auto_result = result.get("auto_result")
             if not auto_result:
-                auto_result = 'remembered' if score >= 70 else 'forgot'
+                auto_result = "remembered" if score >= 70 else "forgot"
 
             evaluation_result = {
-                'score': score,
-                'is_correct': is_correct,
-                'feedback': result['feedback'],
-                'auto_result': auto_result
+                "score": score,
+                "is_correct": is_correct,
+                "feedback": result["feedback"],
+                "auto_result": auto_result,
             }
 
             logger.info(
@@ -127,15 +123,13 @@ class TitleEvaluator(BaseAIService):
             return evaluation_result
 
         except Exception as e:
-            logger.error(
-                f"Failed to evaluate title '{user_title}': {e}",
-                exc_info=True
-            )
+            logger.error(f"Failed to evaluate title '{user_title}': {e}", exc_info=True)
             return None
 
     def _create_evaluation_prompt(self) -> ChatPromptTemplate:
         """Create evaluation prompt template."""
-        return ChatPromptTemplate.from_template("""다음 학습 콘텐츠의 내용을 읽고, 사용자가 유추한 제목이 적절한지 평가해주세요.
+        return ChatPromptTemplate.from_template(
+            """다음 학습 콘텐츠의 내용을 읽고, 사용자가 유추한 제목이 적절한지 평가해주세요.
 
 **학습 콘텐츠 내용**:
 {content}
@@ -172,7 +166,8 @@ class TitleEvaluator(BaseAIService):
 - 반드시 유효한 JSON 형식으로만 응답
 - 의미가 비슷하면 표현이 달라도 높은 점수
 - 핵심을 잘못 파악했으면 반드시 감점
-- 70점 미만은 "forgot", 70점 이상만 "remembered"로 판단""")
+- 70점 미만은 "forgot", 70점 이상만 "remembered"로 판단"""
+        )
 
 
 # Singleton instance

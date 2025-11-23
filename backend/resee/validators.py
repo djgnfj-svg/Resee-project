@@ -1,6 +1,7 @@
 """
 Common validation utilities and validators with enhanced data integrity
 """
+
 import re
 
 from django.core.exceptions import ValidationError
@@ -22,13 +23,11 @@ def validate_required_fields(data, required_fields):
     """
     missing_fields = []
     for field in required_fields:
-        if field not in data or data[field] is None or data[field] == '':
+        if field not in data or data[field] is None or data[field] == "":
             missing_fields.append(field)
 
     if missing_fields:
-        raise ValidationError(
-            f"Required fields missing: {', '.join(missing_fields)}"
-        )
+        raise ValidationError(f"Required fields missing: {', '.join(missing_fields)}")
 
 
 def validate_choice_field(value, choices, field_name=None):
@@ -43,7 +42,9 @@ def validate_choice_field(value, choices, field_name=None):
     Raises:
         ValidationError: If value is not in choices
     """
-    valid_choices = [choice[0] if isinstance(choice, tuple) else choice for choice in choices]
+    valid_choices = [
+        choice[0] if isinstance(choice, tuple) else choice for choice in choices
+    ]
 
     if value not in valid_choices:
         field_part = f" for {field_name}" if field_name else ""
@@ -82,107 +83,96 @@ def handle_validation_error(func):
             # Your view logic here
             return super().create(request, *args, **kwargs)
     """
+
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except ValidationError as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     return wrapper
 
 
 def validate_subscription_tier_consistency(user, tier):
     """Validate subscription tier changes are logical"""
-    if not hasattr(user, 'subscription'):
+    if not hasattr(user, "subscription"):
         return  # First subscription is always valid
 
     current_tier = user.subscription.tier
-    tier_hierarchy = {'free': 0, 'basic': 1, 'pro': 2}
+    tier_hierarchy = {"free": 0, "basic": 1, "pro": 2}
     current_level = tier_hierarchy.get(current_tier, 0)
     new_level = tier_hierarchy.get(tier, 0)
 
     # Log suspicious downgrades for monitoring
     if new_level < current_level:
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.info(f'User {user.email} downgrading from {current_tier} to {tier}')
+        logger.info(f"User {user.email} downgrading from {current_tier} to {tier}")
 
 
 def validate_review_interval_index(interval_index, user=None):
     """Validate that interval index is within allowed range for user's subscription"""
     if interval_index < 0:
         raise ValidationError(
-            _('Interval index cannot be negative.'),
-            code='negative_interval'
+            _("Interval index cannot be negative."), code="negative_interval"
         )
 
     if user:
         from review.utils import get_review_intervals
+
         allowed_intervals = get_review_intervals(user)
 
         if interval_index >= len(allowed_intervals):
             raise ValidationError(
-                _('Interval index %(index)s exceeds maximum allowed for subscription (%(max)s).'),
-                params={'index': interval_index, 'max': len(allowed_intervals) - 1},
-                code='interval_exceeds_subscription'
+                _(
+                    "Interval index %(index)s exceeds maximum allowed for subscription (%(max)s)."
+                ),
+                params={"index": interval_index, "max": len(allowed_intervals) - 1},
+                code="interval_exceeds_subscription",
             )
 
 
 def validate_content_length(content):
     """Validate content length is reasonable"""
     if not content or not content.strip():
-        raise ValidationError(
-            _('Content cannot be empty.'),
-            code='empty_content'
-        )
+        raise ValidationError(_("Content cannot be empty."), code="empty_content")
 
     if len(content) < 1:  # 최소 1글자 이상
         raise ValidationError(
-            _('Content must be at least 1 character long.'),
-            code='content_too_short'
+            _("Content must be at least 1 character long."), code="content_too_short"
         )
 
     if len(content) > 50000:  # 50KB limit
         raise ValidationError(
-            _('Content cannot exceed 50,000 characters.'),
-            code='content_too_long'
+            _("Content cannot exceed 50,000 characters."), code="content_too_long"
         )
 
 
 def validate_weekly_goal(goal):
     """Validate weekly goal is reasonable"""
     if goal < 1:
-        raise ValidationError(
-            _('Weekly goal must be at least 1.'),
-            code='goal_too_low'
-        )
+        raise ValidationError(_("Weekly goal must be at least 1."), code="goal_too_low")
 
     if goal > 50:  # Reasonable upper limit
         raise ValidationError(
-            _('Weekly goal cannot exceed 50 reviews.'),
-            code='goal_too_high'
+            _("Weekly goal cannot exceed 50 reviews."), code="goal_too_high"
         )
 
 
 def validate_category_name(name):
     """Validate category name"""
     if not name or not name.strip():
-        raise ValidationError(
-            _('Category name cannot be empty.'),
-            code='empty_name'
-        )
+        raise ValidationError(_("Category name cannot be empty."), code="empty_name")
 
     if len(name) > 100:
         raise ValidationError(
-            _('Category name cannot exceed 100 characters.'),
-            code='name_too_long'
+            _("Category name cannot exceed 100 characters."), code="name_too_long"
         )
 
     # Prevent names with only special characters
-    if not re.search(r'[a-zA-Z0-9가-힣]', name):
+    if not re.search(r"[a-zA-Z0-9가-힣]", name):
         raise ValidationError(
-            _('Category name must contain at least one letter or number.'),
-            code='name_no_alphanumeric'
+            _("Category name must contain at least one letter or number."),
+            code="name_no_alphanumeric",
         )

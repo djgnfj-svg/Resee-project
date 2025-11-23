@@ -2,6 +2,7 @@
 Slack notification utility for Resee
 Sends alerts to Slack for critical system events
 """
+
 import logging
 from typing import Any, Dict, Optional
 
@@ -17,18 +18,18 @@ class SlackNotifier:
     """
 
     def __init__(self):
-        self.webhook_url = getattr(settings, 'SLACK_WEBHOOK_URL', None)
-        self.default_channel = getattr(settings, 'SLACK_DEFAULT_CHANNEL', '#alerts')
-        self.bot_name = getattr(settings, 'SLACK_BOT_NAME', 'Resee Alert Bot')
+        self.webhook_url = getattr(settings, "SLACK_WEBHOOK_URL", None)
+        self.default_channel = getattr(settings, "SLACK_DEFAULT_CHANNEL", "#alerts")
+        self.bot_name = getattr(settings, "SLACK_BOT_NAME", "Resee Alert Bot")
         self.enabled = bool(self.webhook_url)
 
     def send_alert(
         self,
         message: str,
-        level: str = 'error',
+        level: str = "error",
         title: Optional[str] = None,
         fields: Optional[Dict[str, Any]] = None,
-        channel: Optional[str] = None
+        channel: Optional[str] = None,
     ) -> bool:
         """
         Send an alert to Slack
@@ -49,49 +50,42 @@ class SlackNotifier:
 
         try:
             # Choose emoji and color based on level
-            emoji_map = {
-                'error': '🔴',
-                'warning': '⚠️',
-                'info': 'ℹ️',
-                'success': '✅'
-            }
+            emoji_map = {"error": "🔴", "warning": "⚠️", "info": "ℹ️", "success": "✅"}
             color_map = {
-                'error': '#DC2626',    # red-600
-                'warning': '#F59E0B',  # amber-500
-                'info': '#3B82F6',     # blue-500
-                'success': '#10B981'   # green-500
+                "error": "#DC2626",  # red-600
+                "warning": "#F59E0B",  # amber-500
+                "info": "#3B82F6",  # blue-500
+                "success": "#10B981",  # green-500
             }
 
-            emoji = emoji_map.get(level, '📢')
-            color = color_map.get(level, '#6B7280')
+            emoji = emoji_map.get(level, "📢")
+            color = color_map.get(level, "#6B7280")
 
             # Build Slack message
             payload = {
-                'username': self.bot_name,
-                'channel': channel or self.default_channel,
-                'text': f"{emoji} {title or 'System Alert'}",
-                'attachments': [{
-                    'color': color,
-                    'text': message,
-                    'footer': 'Resee Monitoring',
-                    'footer_icon': 'https://platform.slack-edge.com/img/default_application_icon.png',
-                    'ts': self._get_timestamp()
-                }]
+                "username": self.bot_name,
+                "channel": channel or self.default_channel,
+                "text": f"{emoji} {title or 'System Alert'}",
+                "attachments": [
+                    {
+                        "color": color,
+                        "text": message,
+                        "footer": "Resee Monitoring",
+                        "footer_icon": "https://platform.slack-edge.com/img/default_application_icon.png",
+                        "ts": self._get_timestamp(),
+                    }
+                ],
             }
 
             # Add fields if provided
             if fields:
-                payload['attachments'][0]['fields'] = [
-                    {'title': key, 'value': str(value), 'short': True}
+                payload["attachments"][0]["fields"] = [
+                    {"title": key, "value": str(value), "short": True}
                     for key, value in fields.items()
                 ]
 
             # Send to Slack
-            response = requests.post(
-                self.webhook_url,
-                json=payload,
-                timeout=10
-            )
+            response = requests.post(self.webhook_url, json=payload, timeout=10)
             response.raise_for_status()
 
             logger.info(f"Slack alert sent successfully: {title or message[:50]}")
@@ -121,16 +115,11 @@ class SlackNotifier:
             message += f"**Context:** {context}\n"
 
         return self.send_alert(
-            message=message,
-            level='error',
-            title='Application Error Detected'
+            message=message, level="error", title="Application Error Detected"
         )
 
     def send_health_alert(
-        self,
-        service: str,
-        status: str,
-        details: Optional[str] = None
+        self, service: str, status: str, details: Optional[str] = None
     ) -> bool:
         """
         Send a health check alert
@@ -143,12 +132,8 @@ class SlackNotifier:
         Returns:
             bool: True if alert was sent successfully
         """
-        level_map = {
-            'down': 'error',
-            'degraded': 'warning',
-            'recovered': 'success'
-        }
-        level = level_map.get(status, 'warning')
+        level_map = {"down": "error", "degraded": "warning", "recovered": "success"}
+        level = level_map.get(status, "warning")
 
         message = f"**Service:** {service}\n"
         message += f"**Status:** {status.upper()}\n"
@@ -156,16 +141,11 @@ class SlackNotifier:
             message += f"**Details:** {details}\n"
 
         return self.send_alert(
-            message=message,
-            level=level,
-            title=f'Health Check Alert: {service}'
+            message=message, level=level, title=f"Health Check Alert: {service}"
         )
 
     def send_payment_alert(
-        self,
-        alert_type: str,
-        count: int,
-        details: Optional[Dict[str, Any]] = None
+        self, alert_type: str, count: int, details: Optional[Dict[str, Any]] = None
     ) -> bool:
         """
         Send a payment-related alert
@@ -184,17 +164,11 @@ class SlackNotifier:
         fields = details or {}
 
         return self.send_alert(
-            message=message,
-            level='error',
-            title='Payment System Alert',
-            fields=fields
+            message=message, level="error", title="Payment System Alert", fields=fields
         )
 
     def send_celery_alert(
-        self,
-        queue_name: str,
-        queue_length: int,
-        threshold: int
+        self, queue_name: str, queue_length: int, threshold: int
     ) -> bool:
         """
         Send a Celery queue alert
@@ -212,16 +186,11 @@ class SlackNotifier:
         message += f"**Threshold:** {threshold}\n"
 
         return self.send_alert(
-            message=message,
-            level='warning',
-            title='Celery Queue Alert'
+            message=message, level="warning", title="Celery Queue Alert"
         )
 
     def send_api_performance_alert(
-        self,
-        endpoint: str,
-        response_time: float,
-        threshold: float
+        self, endpoint: str, response_time: float, threshold: float
     ) -> bool:
         """
         Send an API performance alert
@@ -239,16 +208,11 @@ class SlackNotifier:
         message += f"**Threshold:** {threshold:.2f}s\n"
 
         return self.send_alert(
-            message=message,
-            level='warning',
-            title='API Performance Alert'
+            message=message, level="warning", title="API Performance Alert"
         )
 
     def send_error_rate_alert(
-        self,
-        error_rate: float,
-        threshold: float,
-        time_window: str = '1 hour'
+        self, error_rate: float, threshold: float, time_window: str = "1 hour"
     ) -> bool:
         """
         Send an error rate alert
@@ -266,15 +230,14 @@ class SlackNotifier:
         message += f"**Time Window:** {time_window}\n"
 
         return self.send_alert(
-            message=message,
-            level='error',
-            title='High Error Rate Detected'
+            message=message, level="error", title="High Error Rate Detected"
         )
 
     @staticmethod
     def _get_timestamp() -> int:
         """Get current Unix timestamp"""
         import time
+
         return int(time.time())
 
 
@@ -283,7 +246,7 @@ slack_notifier = SlackNotifier()
 
 
 # Convenience functions
-def send_slack_alert(message: str, level: str = 'error', **kwargs) -> bool:
+def send_slack_alert(message: str, level: str = "error", **kwargs) -> bool:
     """Send a Slack alert (convenience function)"""
     return slack_notifier.send_alert(message, level, **kwargs)
 

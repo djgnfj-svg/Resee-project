@@ -6,13 +6,21 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('content', '0001_initial'),
+        ("content", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='content',
-            name='review_mode',
-            field=models.CharField(choices=[('objective', '객관식 (내용 보고 기억함/모름 선택)'), ('subjective', '주관식 (먼저 작성 후 AI 자동 평가)')], default='objective', help_text='Review test mode: objective or subjective with AI auto-evaluation', max_length=20),
+            model_name="content",
+            name="review_mode",
+            field=models.CharField(
+                choices=[
+                    ("objective", "객관식 (내용 보고 기억함/모름 선택)"),
+                    ("subjective", "주관식 (먼저 작성 후 AI 자동 평가)"),
+                ],
+                default="objective",
+                help_text="Review test mode: objective or subjective with AI auto-evaluation",
+                max_length=20,
+            ),
         ),
     ]

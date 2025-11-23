@@ -20,20 +20,15 @@ class TestAIQuestionGenerator(TestCase):
         """테스트 데이터 생성"""
         # 사용자 생성
         self.user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass123',
-            is_email_verified=True
+            email="test@example.com", password="testpass123", is_email_verified=True
         )
 
         # 카테고리 생성
-        self.category = Category.objects.create(
-            name='Python 기초',
-            user=self.user
-        )
+        self.category = Category.objects.create(name="Python 기초", user=self.user)
 
         # 콘텐츠 생성
         self.content = Content.objects.create(
-            title='Python 리스트 이해하기',
+            title="Python 리스트 이해하기",
             content="""
             리스트(List)는 Python의 가장 기본적인 자료구조 중 하나입니다.
 
@@ -57,7 +52,7 @@ class TestAIQuestionGenerator(TestCase):
             author=self.user,
             category=self.category,
             is_ai_validated=True,
-            ai_validation_score=95
+            ai_validation_score=95,
         )
 
     def test_ai_availability(self):
@@ -70,23 +65,23 @@ class TestAIQuestionGenerator(TestCase):
 
         # 기본 구조 검증
         self.assertIsNotNone(result)
-        self.assertIn('question_type', result)
-        self.assertIn('question_text', result)
-        self.assertIn('choices', result)
-        self.assertIn('correct_answer', result)
-        self.assertIn('explanation', result)
-        self.assertIn('metadata', result)
+        self.assertIn("question_type", result)
+        self.assertIn("question_text", result)
+        self.assertIn("choices", result)
+        self.assertIn("correct_answer", result)
+        self.assertIn("explanation", result)
+        self.assertIn("metadata", result)
 
         # 객관식 검증
-        self.assertEqual(result['question_type'], 'multiple_choice')
-        self.assertEqual(len(result['choices']), 4)
-        self.assertIn(result['correct_answer'], result['choices'])
+        self.assertEqual(result["question_type"], "multiple_choice")
+        self.assertEqual(len(result["choices"]), 4)
+        self.assertIn(result["correct_answer"], result["choices"])
 
         # 메타데이터 검증
-        metadata = result['metadata']
-        self.assertIn('quality_score', metadata)
-        self.assertIn('version', metadata)
-        self.assertEqual(metadata['version'], 'langgraph')
+        metadata = result["metadata"]
+        self.assertIn("quality_score", metadata)
+        self.assertIn("version", metadata)
+        self.assertEqual(metadata["version"], "langgraph")
 
     def test_distractor_quality(self):
         """Distractor 품질 테스트"""
@@ -95,8 +90,8 @@ class TestAIQuestionGenerator(TestCase):
         if not result:
             self.skipTest("AI 문제 생성 실패")
 
-        choices = result['choices']
-        correct_answer = result['correct_answer']
+        choices = result["choices"]
+        correct_answer = result["correct_answer"]
 
         # 길이 균형 검증
         lengths = [len(c) for c in choices]
@@ -104,11 +99,7 @@ class TestAIQuestionGenerator(TestCase):
         max_deviation = max(abs(l - avg_len) for l in lengths)
 
         # 평균 길이의 50% 이내 편차 허용
-        self.assertLess(
-            max_deviation,
-            avg_len * 0.5,
-            "선택지 길이 편차가 너무 큼"
-        )
+        self.assertLess(max_deviation, avg_len * 0.5, "선택지 길이 편차가 너무 큼")
 
     def test_multiple_generations(self):
         """여러 번 생성 시 일관성 테스트"""
@@ -124,4 +115,4 @@ class TestAIQuestionGenerator(TestCase):
 
         # 모두 4개의 선택지를 가지는지
         for result in results:
-            self.assertEqual(len(result['choices']), 4)
+            self.assertEqual(len(result["choices"]), 4)

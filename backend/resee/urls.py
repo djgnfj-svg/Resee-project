@@ -1,6 +1,7 @@
 """
 URL configuration for resee project.
 """
+
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -11,7 +12,9 @@ from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenVerifyView
 
 from accounts.auth.views import (
-    CookieTokenRefreshView, EmailTokenObtainPairView, LogoutView,
+    CookieTokenRefreshView,
+    EmailTokenObtainPairView,
+    LogoutView,
 )
 
 from .views import health_check, detailed_health_check, test_slack_notification
@@ -21,7 +24,7 @@ from .metrics import system_metrics, performance_metrics, business_metrics
 schema_view = get_schema_view(
     openapi.Info(
         title="Resee API",
-        default_version='v1',
+        default_version="v1",
         description="Resee 스마트 복습 플랫폼 API",
         contact=openapi.Contact(email="admin@resee.com"),
         license=openapi.License(name="MIT License"),
@@ -31,43 +34,61 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-
+    path("admin/", admin.site.urls),
     # Health check (for Docker/Railway infrastructure monitoring)
-    path('api/health/', health_check, name='health'),
-    path('api/health/detailed/', detailed_health_check, name='detailed-health'),
-
+    path("api/health/", health_check, name="health"),
+    path("api/health/detailed/", detailed_health_check, name="detailed-health"),
     # Slack notification test (staff only)
-    path('api/slack/test/', test_slack_notification, name='test-slack'),
-
+    path("api/slack/test/", test_slack_notification, name="test-slack"),
     # Metrics Dashboard (admin only)
-    path('api/metrics/system/', system_metrics, name='system-metrics'),
-    path('api/metrics/performance/', performance_metrics, name='performance-metrics'),
-    path('api/metrics/business/', business_metrics, name='business-metrics'),
-
+    path("api/metrics/system/", system_metrics, name="system-metrics"),
+    path("api/metrics/performance/", performance_metrics, name="performance-metrics"),
+    path("api/metrics/business/", business_metrics, name="business-metrics"),
     # API Documentation
-    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-
+    re_path(
+        r"^swagger(?P<format>\.json|\.yaml)$",
+        schema_view.without_ui(cache_timeout=0),
+        name="schema-json",
+    ),
+    re_path(
+        r"^swagger/$",
+        schema_view.with_ui("swagger", cache_timeout=0),
+        name="schema-swagger-ui",
+    ),
+    re_path(
+        r"^redoc/$", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"
+    ),
     # Convenient API docs shortcuts
-    path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='api-docs-swagger'),
-    path('api/docs/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='api-docs-redoc'),
-
+    path(
+        "api/docs/",
+        schema_view.with_ui("swagger", cache_timeout=0),
+        name="api-docs-swagger",
+    ),
+    path(
+        "api/docs/redoc/",
+        schema_view.with_ui("redoc", cache_timeout=0),
+        name="api-docs-redoc",
+    ),
     # Authentication
-    path('api/auth/token/', EmailTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/auth/token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
-    path('api/auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
-    path('api/auth/logout/', LogoutView.as_view(), name='logout'),
-
+    path(
+        "api/auth/token/", EmailTokenObtainPairView.as_view(), name="token_obtain_pair"
+    ),
+    path(
+        "api/auth/token/refresh/",
+        CookieTokenRefreshView.as_view(),
+        name="token_refresh",
+    ),
+    path("api/auth/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
+    path("api/auth/logout/", LogoutView.as_view(), name="logout"),
     # Health check endpoints (root level for load balancers)
     # Note: monitoring app removed, basic health checks handled by resee.health
-
     # API endpoints
-    path('api/accounts/', include('accounts.urls')),  # includes legal endpoints
-    path('api/', include('content.urls')),  # contents/, categories/ at root level
-    path('api/review/', include('review.urls')),  # includes dashboard stats
-    path('api/exams/', include('exams.urls')),  # exam functionality (previously weekly-test)
+    path("api/accounts/", include("accounts.urls")),  # includes legal endpoints
+    path("api/", include("content.urls")),  # contents/, categories/ at root level
+    path("api/review/", include("review.urls")),  # includes dashboard stats
+    path(
+        "api/exams/", include("exams.urls")
+    ),  # exam functionality (previously weekly-test)
 ]
 
 if settings.DEBUG:

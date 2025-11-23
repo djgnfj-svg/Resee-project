@@ -1,6 +1,9 @@
 from .serializers import (
-    CompleteTestSerializer, StartTestSerializer, SubmitAnswerSerializer,
-    WeeklyTestListSerializer, WeeklyTestSerializer,
+    CompleteTestSerializer,
+    StartTestSerializer,
+    SubmitAnswerSerializer,
+    WeeklyTestListSerializer,
+    WeeklyTestSerializer,
 )
 from resee.mixins import UserOwnershipMixin
 from content.models import Content
@@ -28,7 +31,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         return WeeklyTest.objects.filter(user=self.request.user)
 
     def get_serializer_class(self):
-        if self.request.method == 'POST':
+        if self.request.method == "POST":
             return WeeklyTestSerializer
         return WeeklyTestListSerializer
 
@@ -37,21 +40,25 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         from .tasks import generate_exam_questions
 
         # content_ids는 serializer의 validated_data에 있음
-        content_ids = serializer.validated_data.get('content_ids', [])
+        content_ids = serializer.validated_data.get("content_ids", [])
 
         # 시험 생성 (preparing 상태)
-        weekly_test = serializer.save(user=self.request.user, status='preparing')
+        weekly_test = serializer.save(user=self.request.user, status="preparing")
 
         # 이미 문제가 생성되어 있으면 추가 생성하지 않음
         if weekly_test.questions.exists():
-            logger.info(f"Test {weekly_test.id} already has questions, skipping generation")
-            weekly_test.status = 'pending'
+            logger.info(
+                f"Test {weekly_test.id} already has questions, skipping generation"
+            )
+            weekly_test.status = "pending"
             weekly_test.save()
             return
 
         # Celery task로 비동기 문제 생성
         logger.info(f"Queuing question generation task for test {weekly_test.id}")
-        generate_exam_questions.delay(weekly_test.id, content_ids if content_ids else None)
+        generate_exam_questions.delay(
+            weekly_test.id, content_ids if content_ids else None
+        )
 
     def create(self, request, *args, **kwargs):
         """Create 메서드 오버라이드로 주간 제한 확인"""
@@ -70,21 +77,25 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         week_end = week_start + timedelta(days=6)
 
         tests_this_week = WeeklyTest.objects.filter(
-            user=user,
-            created_at__date__gte=week_start,
-            created_at__date__lte=week_end
+            user=user, created_at__date__gte=week_start, created_at__date__lte=week_end
         ).count()
 
         # 구독 설정에서 주간 제한 확인
         subscription_settings = settings.SUBSCRIPTION_SETTINGS
-        user_tier = user.subscription.tier.upper() if hasattr(user, 'subscription') else 'FREE'
-        tier_limits = subscription_settings.get(f'{user_tier}_TIER_LIMITS', subscription_settings['FREE_TIER_LIMITS'])
-        max_weekly_tests = tier_limits.get('max_exams_per_week', 1)
+        user_tier = (
+            user.subscription.tier.upper() if hasattr(user, "subscription") else "FREE"
+        )
+        tier_limits = subscription_settings.get(
+            f"{user_tier}_TIER_LIMITS", subscription_settings["FREE_TIER_LIMITS"]
+        )
+        max_weekly_tests = tier_limits.get("max_exams_per_week", 1)
 
         if tests_this_week >= max_weekly_tests:
-            raise ValidationError({
-                'detail': f'주간 시험은 주당 {max_weekly_tests}회만 생성할 수 있습니다. 이번 주에 이미 {tests_this_week}개의 시험을 생성했습니다.'
-            })
+            raise ValidationError(
+                {
+                    "detail": f"주간 시험은 주당 {max_weekly_tests}회만 생성할 수 있습니다. 이번 주에 이미 {tests_this_week}개의 시험을 생성했습니다."
+                }
+            )
 
         return super().create(request, *args, **kwargs)
 
@@ -94,9 +105,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
             with transaction.atomic():
                 # 콘텐츠 조회 (AI 검증된 콘텐츠만)
                 contents = Content.objects.filter(
-                    id__in=content_ids,
-                    author=self.request.user,
-                    is_ai_validated=True
+                    id__in=content_ids, author=self.request.user, is_ai_validated=True
                 )
 
                 # 존재하지 않거나 검증되지 않은 콘텐츠가 있으면 에러
@@ -120,13 +129,13 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
                 weekly_test.total_questions = weekly_test.questions.count()
 
                 # 문제 생성 완료 후 preparing 상태를 pending으로 변경
-                if weekly_test.status == 'preparing':
-                    weekly_test.status = 'pending'
+                if weekly_test.status == "preparing":
+                    weekly_test.status = "pending"
 
                 weekly_test.save()
         except Exception as e:
             logger.error(f"Failed to generate questions from IDs: {e}", exc_info=True)
-            weekly_test.status = 'pending'
+            weekly_test.status = "pending"
             weekly_test.save()
             raise
 
@@ -139,32 +148,33 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         """
         from ai_services.graphs import select_balanced_contents_for_test
 
-        logger.info(f"[Balance] Starting balanced question generation for test {weekly_test.id}")
+        logger.info(
+            f"[Balance] Starting balanced question generation for test {weekly_test.id}"
+        )
 
         # 이미 문제가 생성되어 있으면 스킵
         if weekly_test.questions.exists():
-            logger.info(f"[Balance] Test {weekly_test.id} already has questions, skipping generation")
+            logger.info(
+                f"[Balance] Test {weekly_test.id} already has questions, skipping generation"
+            )
             return
 
         # 사용자의 AI 검증된 콘텐츠 조회
         contents = Content.objects.filter(
-            author=self.request.user,
-            is_ai_validated=True
-        ).order_by('-created_at')
+            author=self.request.user, is_ai_validated=True
+        ).order_by("-created_at")
 
         if not contents.exists():
-            logger.warning(f"[Balance] No AI-validated contents for user {self.request.user.id}")
-            weekly_test.status = 'pending'
+            logger.warning(
+                f"[Balance] No AI-validated contents for user {self.request.user.id}"
+            )
+            weekly_test.status = "pending"
             weekly_test.save()
             return
 
         # Balance Graph용 데이터 준비
         content_data = [
-            {
-                'id': content.id,
-                'title': content.title,
-                'content': content.content
-            }
+            {"id": content.id, "title": content.title, "content": content.content}
             for content in contents
         ]
 
@@ -179,13 +189,12 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         try:
             # LangGraph Balance Graph 실행
             balance_result = select_balanced_contents_for_test(
-                contents=content_data,
-                target_count=target_count
+                contents=content_data, target_count=target_count
             )
 
-            selected_ids = balance_result['selected_content_ids']
-            balance_info = balance_result['balance']
-            difficulty_scores = balance_result['difficulty_scores']
+            selected_ids = balance_result["selected_content_ids"]
+            balance_info = balance_result["balance"]
+            difficulty_scores = balance_result["difficulty_scores"]
 
             logger.info(
                 f"[Balance] Selected {len(selected_ids)} contents - "
@@ -212,16 +221,16 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
                 # 밸런스 정보 저장 (메타데이터로)
                 weekly_test.total_questions = weekly_test.questions.count()
                 weekly_test.metadata = {
-                    'balance': balance_info,
-                    'difficulty_scores': {
+                    "balance": balance_info,
+                    "difficulty_scores": {
                         str(cid): score for cid, score in difficulty_scores.items()
                     },
-                    'auto_balanced': True
+                    "auto_balanced": True,
                 }
 
                 # 문제 생성 완료 후 preparing 상태를 pending으로 변경
-                if weekly_test.status == 'preparing':
-                    weekly_test.status = 'pending'
+                if weekly_test.status == "preparing":
+                    weekly_test.status = "pending"
 
                 weekly_test.save()
 
@@ -232,8 +241,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
         except Exception as e:
             logger.error(
-                f"[Balance] Failed to generate balanced questions: {e}",
-                exc_info=True
+                f"[Balance] Failed to generate balanced questions: {e}", exc_info=True
             )
             # Fallback: 무작위 선택 (트랜잭션으로 보호)
             with transaction.atomic():
@@ -245,7 +253,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
                         self._create_simple_question(weekly_test, content, order)
 
                 weekly_test.total_questions = weekly_test.questions.count()
-                weekly_test.status = 'pending'
+                weekly_test.status = "pending"
                 weekly_test.save()
 
     def _is_ai_available(self):
@@ -253,6 +261,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         from ai_services.generators.question_generator import (
             ai_question_generator,
         )
+
         return ai_question_generator.is_available()
 
     def _create_ai_question(self, weekly_test, content, order):
@@ -266,7 +275,9 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         )
 
         # 중복 체크: 이미 해당 order에 문제가 있으면 스킵
-        if WeeklyTestQuestion.objects.filter(weekly_test=weekly_test, order=order).exists():
+        if WeeklyTestQuestion.objects.filter(
+            weekly_test=weekly_test, order=order
+        ).exists():
             logger.info(f"Question at order {order} already exists, skipping")
             return True
 
@@ -277,13 +288,13 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
                 WeeklyTestQuestion.objects.create(
                     weekly_test=weekly_test,
                     content=content,
-                    question_type=question_data['question_type'],
-                    question_text=question_data['question_text'],
-                    choices=question_data.get('choices'),
-                    correct_answer=question_data['correct_answer'],
-                    explanation=question_data['explanation'],
+                    question_type=question_data["question_type"],
+                    question_text=question_data["question_text"],
+                    choices=question_data.get("choices"),
+                    correct_answer=question_data["correct_answer"],
+                    explanation=question_data["explanation"],
                     order=order,
-                    points=10
+                    points=10,
                 )
                 logger.info(
                     f"AI question generated (quality: "
@@ -303,8 +314,12 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         """간단한 문제 생성 (AI 없이) - 개선된 버전"""
 
         # 중복 체크: 이미 해당 order에 문제가 있으면 스킵
-        if WeeklyTestQuestion.objects.filter(weekly_test=weekly_test, order=order).exists():
-            logger.info(f"Question at order {order} already exists, skipping simple question creation")
+        if WeeklyTestQuestion.objects.filter(
+            weekly_test=weekly_test, order=order
+        ).exists():
+            logger.info(
+                f"Question at order {order} already exists, skipping simple question creation"
+            )
             return
 
         # 콘텐츠에서 의미있는 문장 추출
@@ -330,22 +345,26 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
             explanation = f"O - 학습 내용에 정확히 포함된 내용입니다."
         else:
             # 내용을 살짝 변형하여 오답 생성 (정답: X)
-            modified_sentence = self._create_modified_statement(content.title, selected_sentence)
+            modified_sentence = self._create_modified_statement(
+                content.title, selected_sentence
+            )
             modified_sentence = self._wrap_code_elements(modified_sentence)
             question_text = f"'{content.title}'에 대한 다음 설명이 맞습니까? (O/X)\n\n{modified_sentence}"
             correct_answer = "X"
-            explanation = f"X - 학습 내용과 다릅니다. 정확한 내용: {selected_sentence[:100]}..."
+            explanation = (
+                f"X - 학습 내용과 다릅니다. 정확한 내용: {selected_sentence[:100]}..."
+            )
 
         WeeklyTestQuestion.objects.create(
             weekly_test=weekly_test,
             content=content,
-            question_type='true_false',
+            question_type="true_false",
             question_text=question_text,
             choices=None,
             correct_answer=correct_answer,
             explanation=explanation,
             order=order,
-            points=10
+            points=10,
         )
 
     def _extract_meaningful_sentences(self, text):
@@ -353,12 +372,12 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         import re
 
         # 마크다운 헤더, 코드 블록 등 제거
-        text = re.sub(r'#+\s+', '', text)  # 헤더 제거
-        text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)  # 코드 블록 제거
-        text = re.sub(r'`[^`]+`', '', text)  # 인라인 코드 제거
+        text = re.sub(r"#+\s+", "", text)  # 헤더 제거
+        text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)  # 코드 블록 제거
+        text = re.sub(r"`[^`]+`", "", text)  # 인라인 코드 제거
 
         # 문장 분리 (. ! ? 기준)
-        sentences = re.split(r'[.!?]\s+', text)
+        sentences = re.split(r"[.!?]\s+", text)
 
         # 의미있는 길이의 문장만 필터링 (50-300자)
         meaningful = [s.strip() for s in sentences if 50 <= len(s.strip()) <= 300]
@@ -381,26 +400,32 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
         import re
 
         # 이미 백틱으로 감싸진 부분은 보존
-        if '`' in text:
+        if "`" in text:
             return text
 
         # 코드 패턴들 정의
         # 한글과 함께 사용되므로 \b 대신 (?<![a-zA-Z0-9_])와 (?![a-zA-Z0-9_]) 사용
         patterns = [
             # 던더 메서드 (__init__, __str__ 등) - 괄호 포함
-            (r'(__[a-zA-Z_]+__)\s*\(', r'`\1`('),
+            (r"(__[a-zA-Z_]+__)\s*\(", r"`\1`("),
             # 던더 메서드 (__init__, __str__ 등) - 괄호 없음
-            (r'(?<![a-zA-Z0-9_])(__[a-zA-Z_]+__)(?![a-zA-Z0-9_])', r'`\1`'),
+            (r"(?<![a-zA-Z0-9_])(__[a-zA-Z_]+__)(?![a-zA-Z0-9_])", r"`\1`"),
             # self, cls 같은 특수 키워드 (한글 앞뒤 허용)
-            (r'(?<![a-zA-Z0-9_])(self|cls)(?![a-zA-Z0-9_])', r'`\1`'),
+            (r"(?<![a-zA-Z0-9_])(self|cls)(?![a-zA-Z0-9_])", r"`\1`"),
             # 함수/메서드 호출 (괄호 포함, 던더 메서드 제외)
-            (r'(?<![a-zA-Z0-9_])(?!__)([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', r'`\1`('),
+            (r"(?<![a-zA-Z0-9_])(?!__)([a-zA-Z_][a-zA-Z0-9_]*)\s*\(", r"`\1`("),
             # 파이썬 키워드들
-            (r'(?<![a-zA-Z0-9_])(def|class|import|from|return|if|else|elif|for|while|try|except|with|as|lambda|yield|async|await)(?![a-zA-Z0-9_])', r'`\1`'),
+            (
+                r"(?<![a-zA-Z0-9_])(def|class|import|from|return|if|else|elif|for|while|try|except|with|as|lambda|yield|async|await)(?![a-zA-Z0-9_])",
+                r"`\1`",
+            ),
             # 타입 힌트나 타입 이름
-            (r'(?<![a-zA-Z0-9_])(int|str|float|bool|list|dict|tuple|set|None|True|False)(?![a-zA-Z0-9_])', r'`\1`'),
+            (
+                r"(?<![a-zA-Z0-9_])(int|str|float|bool|list|dict|tuple|set|None|True|False)(?![a-zA-Z0-9_])",
+                r"`\1`",
+            ),
             # 변수명 패턴 (언더스코어 포함)
-            (r'(?<![a-zA-Z0-9_])([a-z][a-z0-9_]*_[a-z0-9_]+)(?![a-zA-Z0-9_])', r'`\1`'),
+            (r"(?<![a-zA-Z0-9_])([a-z][a-z0-9_]*_[a-z0-9_]+)(?![a-zA-Z0-9_])", r"`\1`"),
         ]
 
         result = text
@@ -408,7 +433,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
             result = re.sub(pattern, replacement, result)
 
         # 중복 백틱 제거 (예: ``code``)
-        result = re.sub(r'`+', '`', result)
+        result = re.sub(r"`+", "`", result)
 
         return result
 
@@ -423,80 +448,81 @@ class WeeklyTestDetailView(UserOwnershipMixin, generics.RetrieveUpdateDestroyAPI
         return WeeklyTest.objects.filter(user=self.request.user)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def start_test(request):
     """시험 시작 또는 계속하기"""
-    serializer = StartTestSerializer(data=request.data, context={'request': request})
+    serializer = StartTestSerializer(data=request.data, context={"request": request})
 
     if serializer.is_valid():
-        test_id = serializer.validated_data['test_id']
+        test_id = serializer.validated_data["test_id"]
         weekly_test = WeeklyTest.objects.get(id=test_id)
 
         # 시험 상태 업데이트 (pending인 경우에만)
-        if weekly_test.status == 'pending':
-            weekly_test.status = 'in_progress'
+        if weekly_test.status == "pending":
+            weekly_test.status = "in_progress"
             weekly_test.started_at = timezone.now()
             weekly_test.save()
-            message = '시험이 시작되었습니다.'
+            message = "시험이 시작되었습니다."
         else:
-            message = '시험을 계속합니다.'
+            message = "시험을 계속합니다."
 
         # 시험 정보 반환
         test_serializer = WeeklyTestSerializer(weekly_test)
-        return Response({
-            'message': message,
-            'test': test_serializer.data
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {"message": message, "test": test_serializer.data},
+            status=status.HTTP_200_OK,
+        )
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def submit_answer(request):
     """답변 제출"""
-    serializer = SubmitAnswerSerializer(data=request.data, context={'request': request})
+    serializer = SubmitAnswerSerializer(data=request.data, context={"request": request})
 
     if serializer.is_valid():
-        question_id = serializer.validated_data['question_id']
-        user_answer = serializer.validated_data['user_answer']
+        question_id = serializer.validated_data["question_id"]
+        user_answer = serializer.validated_data["user_answer"]
 
         question = WeeklyTestQuestion.objects.get(id=question_id)
 
         # 기존 답변이 있으면 업데이트, 없으면 생성
         answer, created = WeeklyTestAnswer.objects.get_or_create(
-            question=question,
-            user=request.user,
-            defaults={'user_answer': user_answer}
+            question=question, user=request.user, defaults={"user_answer": user_answer}
         )
 
         if not created:
             answer.user_answer = user_answer
             answer.save()
 
-        return Response({
-            'message': '답변이 저장되었습니다.',
-            'answer_id': answer.id,
-            'is_correct': answer.is_correct,
-            'points_earned': answer.points_earned
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "답변이 저장되었습니다.",
+                "answer_id": answer.id,
+                "is_correct": answer.is_correct,
+                "points_earned": answer.points_earned,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def complete_test(request):
     """시험 완료"""
-    serializer = CompleteTestSerializer(data=request.data, context={'request': request})
+    serializer = CompleteTestSerializer(data=request.data, context={"request": request})
 
     if serializer.is_valid():
-        test_id = serializer.validated_data['test_id']
+        test_id = serializer.validated_data["test_id"]
         weekly_test = WeeklyTest.objects.get(id=test_id)
 
         # 시험 완료 처리
-        weekly_test.status = 'completed'
+        weekly_test.status = "completed"
         weekly_test.completed_at = timezone.now()
 
         # 소요 시간 계산
@@ -505,70 +531,72 @@ def complete_test(request):
 
         # 점수 계산
         answered_questions = WeeklyTestAnswer.objects.filter(
-            question__weekly_test=weekly_test,
-            user=request.user
+            question__weekly_test=weekly_test, user=request.user
         )
 
         weekly_test.correct_answers = answered_questions.filter(is_correct=True).count()
         weekly_test.calculate_score()
 
-        return Response({
-            'message': '시험이 완료되었습니다.',
-            'score_percentage': weekly_test.score_percentage,
-            'correct_answers': weekly_test.correct_answers,
-            'total_questions': weekly_test.total_questions,
-            'time_spent': str(weekly_test.time_spent) if weekly_test.time_spent else None
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "message": "시험이 완료되었습니다.",
+                "score_percentage": weekly_test.score_percentage,
+                "correct_answers": weekly_test.correct_answers,
+                "total_questions": weekly_test.total_questions,
+                "time_spent": (
+                    str(weekly_test.time_spent) if weekly_test.time_spent else None
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def test_results(request, test_id):
     """시험 결과 조회"""
     try:
         weekly_test = WeeklyTest.objects.get(id=test_id, user=request.user)
 
-        if weekly_test.status != 'completed':
-            return Response({
-                'error': '완료된 시험이 아닙니다.'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        if weekly_test.status != "completed":
+            return Response(
+                {"error": "완료된 시험이 아닙니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # 답변 내역 조회
         answers = WeeklyTestAnswer.objects.filter(
-            question__weekly_test=weekly_test,
-            user=request.user
-        ).select_related('question', 'question__content')
+            question__weekly_test=weekly_test, user=request.user
+        ).select_related("question", "question__content")
 
-        result_data = {
-            'test': WeeklyTestSerializer(weekly_test).data,
-            'answers': []
-        }
+        result_data = {"test": WeeklyTestSerializer(weekly_test).data, "answers": []}
 
         for answer in answers:
-            result_data['answers'].append({
-                'question': {
-                    'id': answer.question.id,
-                    'question_text': answer.question.question_text,
-                    'question_type': answer.question.question_type,
-                    'correct_answer': answer.question.correct_answer,
-                    'explanation': answer.question.explanation,
-                    'content_title': answer.question.content.title
-                },
-                'user_answer': answer.user_answer,
-                'is_correct': answer.is_correct,
-                'points_earned': answer.points_earned,
-                'ai_score': answer.ai_score,
-                'ai_feedback': answer.ai_feedback
-            })
+            result_data["answers"].append(
+                {
+                    "question": {
+                        "id": answer.question.id,
+                        "question_text": answer.question.question_text,
+                        "question_type": answer.question.question_type,
+                        "correct_answer": answer.question.correct_answer,
+                        "explanation": answer.question.explanation,
+                        "content_title": answer.question.content.title,
+                    },
+                    "user_answer": answer.user_answer,
+                    "is_correct": answer.is_correct,
+                    "points_earned": answer.points_earned,
+                    "ai_score": answer.ai_score,
+                    "ai_feedback": answer.ai_feedback,
+                }
+            )
 
         return Response(result_data, status=status.HTTP_200_OK)
 
     except WeeklyTest.DoesNotExist:
-        return Response({
-            'error': '존재하지 않는 시험입니다.'
-        }, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"error": "존재하지 않는 시험입니다."}, status=status.HTTP_404_NOT_FOUND
+        )
 
 
 class TestSessionViewSet(viewsets.GenericViewSet):
@@ -581,6 +609,7 @@ class TestSessionViewSet(viewsets.GenericViewSet):
     - PATCH /test-sessions/{id}/ - Complete test session
     - GET /test-sessions/{id}/results/ - Get test results
     """
+
     permission_classes = [IsAuthenticated]
     serializer_class = WeeklyTestSerializer
 
@@ -599,31 +628,33 @@ class TestSessionViewSet(viewsets.GenericViewSet):
             - message: Success message
             - test: Test session data
         """
-        serializer = StartTestSerializer(data=request.data, context={'request': request})
+        serializer = StartTestSerializer(
+            data=request.data, context={"request": request}
+        )
 
         if serializer.is_valid():
-            test_id = serializer.validated_data['test_id']
+            test_id = serializer.validated_data["test_id"]
             weekly_test = WeeklyTest.objects.get(id=test_id)
 
             # 시험 상태 업데이트 (pending인 경우에만)
-            if weekly_test.status == 'pending':
-                weekly_test.status = 'in_progress'
+            if weekly_test.status == "pending":
+                weekly_test.status = "in_progress"
                 weekly_test.started_at = timezone.now()
                 weekly_test.save()
-                message = '시험이 시작되었습니다.'
+                message = "시험이 시작되었습니다."
             else:
-                message = '시험을 계속합니다.'
+                message = "시험을 계속합니다."
 
             # 시험 정보 반환
             test_serializer = WeeklyTestSerializer(weekly_test)
-            return Response({
-                'message': message,
-                'test': test_serializer.data
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {"message": message, "test": test_serializer.data},
+                status=status.HTTP_200_OK,
+            )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'], url_path='answers')
+    @action(detail=True, methods=["post"], url_path="answers")
     def submit_answer_action(self, request, pk=None):
         """
         POST /test-sessions/{id}/answers/
@@ -643,16 +674,18 @@ class TestSessionViewSet(viewsets.GenericViewSet):
         try:
             test_session = self.get_queryset().get(pk=pk)
         except WeeklyTest.DoesNotExist:
-            return Response({
-                'error': '존재하지 않는 시험입니다.'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "존재하지 않는 시험입니다."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         # Validate and submit answer
-        serializer = SubmitAnswerSerializer(data=request.data, context={'request': request})
+        serializer = SubmitAnswerSerializer(
+            data=request.data, context={"request": request}
+        )
 
         if serializer.is_valid():
-            question_id = serializer.validated_data['question_id']
-            user_answer = serializer.validated_data['user_answer']
+            question_id = serializer.validated_data["question_id"]
+            user_answer = serializer.validated_data["user_answer"]
 
             question = WeeklyTestQuestion.objects.get(id=question_id)
 
@@ -660,19 +693,22 @@ class TestSessionViewSet(viewsets.GenericViewSet):
             answer, created = WeeklyTestAnswer.objects.get_or_create(
                 question=question,
                 user=request.user,
-                defaults={'user_answer': user_answer}
+                defaults={"user_answer": user_answer},
             )
 
             if not created:
                 answer.user_answer = user_answer
                 answer.save()
 
-            return Response({
-                'message': '답변이 저장되었습니다.',
-                'answer_id': answer.id,
-                'is_correct': answer.is_correct,
-                'points_earned': answer.points_earned
-            }, status=status.HTTP_201_CREATED)
+            return Response(
+                {
+                    "message": "답변이 저장되었습니다.",
+                    "answer_id": answer.id,
+                    "is_correct": answer.is_correct,
+                    "points_earned": answer.points_earned,
+                },
+                status=status.HTTP_201_CREATED,
+            )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -695,18 +731,19 @@ class TestSessionViewSet(viewsets.GenericViewSet):
         try:
             weekly_test = self.get_queryset().get(pk=pk)
         except WeeklyTest.DoesNotExist:
-            return Response({
-                'error': '존재하지 않는 시험입니다.'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "존재하지 않는 시험입니다."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         # Validate test can be completed
-        if weekly_test.status != 'in_progress':
-            return Response({
-                'error': '진행 중인 시험이 아닙니다.'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        if weekly_test.status != "in_progress":
+            return Response(
+                {"error": "진행 중인 시험이 아닙니다."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Complete test - implement logic directly
-        weekly_test.status = 'completed'
+        weekly_test.status = "completed"
         weekly_test.completed_at = timezone.now()
 
         # Calculate time spent
@@ -715,22 +752,26 @@ class TestSessionViewSet(viewsets.GenericViewSet):
 
         # Calculate score
         answered_questions = WeeklyTestAnswer.objects.filter(
-            question__weekly_test=weekly_test,
-            user=request.user
+            question__weekly_test=weekly_test, user=request.user
         )
 
         weekly_test.correct_answers = answered_questions.filter(is_correct=True).count()
         weekly_test.calculate_score()
 
-        return Response({
-            'message': '시험이 완료되었습니다.',
-            'score_percentage': weekly_test.score_percentage,
-            'correct_answers': weekly_test.correct_answers,
-            'total_questions': weekly_test.total_questions,
-            'time_spent': str(weekly_test.time_spent) if weekly_test.time_spent else None
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "message": "시험이 완료되었습니다.",
+                "score_percentage": weekly_test.score_percentage,
+                "correct_answers": weekly_test.correct_answers,
+                "total_questions": weekly_test.total_questions,
+                "time_spent": (
+                    str(weekly_test.time_spent) if weekly_test.time_spent else None
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
 
-    @action(detail=True, methods=['get'], url_path='results')
+    @action(detail=True, methods=["get"], url_path="results")
     def results(self, request, pk=None):
         """
         GET /test-sessions/{id}/results/
@@ -743,42 +784,44 @@ class TestSessionViewSet(viewsets.GenericViewSet):
         try:
             weekly_test = self.get_queryset().get(pk=pk)
 
-            if weekly_test.status != 'completed':
-                return Response({
-                    'error': '완료된 시험이 아닙니다.'
-                }, status=status.HTTP_400_BAD_REQUEST)
+            if weekly_test.status != "completed":
+                return Response(
+                    {"error": "완료된 시험이 아닙니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             # 답변 내역 조회
             answers = WeeklyTestAnswer.objects.filter(
-                question__weekly_test=weekly_test,
-                user=request.user
-            ).select_related('question', 'question__content')
+                question__weekly_test=weekly_test, user=request.user
+            ).select_related("question", "question__content")
 
             result_data = {
-                'test': WeeklyTestSerializer(weekly_test).data,
-                'answers': []
+                "test": WeeklyTestSerializer(weekly_test).data,
+                "answers": [],
             }
 
             for answer in answers:
-                result_data['answers'].append({
-                    'question': {
-                        'id': answer.question.id,
-                        'question_text': answer.question.question_text,
-                        'question_type': answer.question.question_type,
-                        'correct_answer': answer.question.correct_answer,
-                        'explanation': answer.question.explanation,
-                        'content_title': answer.question.content.title
-                    },
-                    'user_answer': answer.user_answer,
-                    'is_correct': answer.is_correct,
-                    'points_earned': answer.points_earned,
-                    'ai_score': answer.ai_score,
-                    'ai_feedback': answer.ai_feedback
-                })
+                result_data["answers"].append(
+                    {
+                        "question": {
+                            "id": answer.question.id,
+                            "question_text": answer.question.question_text,
+                            "question_type": answer.question.question_type,
+                            "correct_answer": answer.question.correct_answer,
+                            "explanation": answer.question.explanation,
+                            "content_title": answer.question.content.title,
+                        },
+                        "user_answer": answer.user_answer,
+                        "is_correct": answer.is_correct,
+                        "points_earned": answer.points_earned,
+                        "ai_score": answer.ai_score,
+                        "ai_feedback": answer.ai_feedback,
+                    }
+                )
 
             return Response(result_data, status=status.HTTP_200_OK)
 
         except WeeklyTest.DoesNotExist:
-            return Response({
-                'error': '존재하지 않는 시험입니다.'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "존재하지 않는 시험입니다."}, status=status.HTTP_404_NOT_FOUND
+            )

@@ -6,18 +6,25 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0001_initial'),
+        ("accounts", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='paymenthistory',
-            name='gateway_order_id',
-            field=models.CharField(blank=True, help_text='Order ID from gateway', max_length=200, null=True),
+            model_name="paymenthistory",
+            name="gateway_order_id",
+            field=models.CharField(
+                blank=True, help_text="Order ID from gateway", max_length=200, null=True
+            ),
         ),
         migrations.AddField(
-            model_name='paymenthistory',
-            name='gateway_payment_id',
-            field=models.CharField(blank=True, help_text='Payment ID from gateway (Toss, Stripe, etc.)', max_length=200, null=True),
+            model_name="paymenthistory",
+            name="gateway_payment_id",
+            field=models.CharField(
+                blank=True,
+                help_text="Payment ID from gateway (Toss, Stripe, etc.)",
+                max_length=200,
+                null=True,
+            ),
         ),
     ]

@@ -15,51 +15,111 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Category',
+            name="Category",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('name', models.CharField(max_length=100)),
-                ('slug', models.SlugField(blank=True, max_length=100)),
-                ('description', models.TextField(blank=True, max_length=500)),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("name", models.CharField(max_length=100)),
+                ("slug", models.SlugField(blank=True, max_length=100)),
+                ("description", models.TextField(blank=True, max_length=500)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Categories',
-                'ordering': ['name'],
+                "verbose_name_plural": "Categories",
+                "ordering": ["name"],
             },
         ),
         migrations.CreateModel(
-            name='Content',
+            name="Content",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('title', models.CharField(max_length=30)),
-                ('content', models.TextField(help_text='Markdown content')),
-                ('author', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='contents', to=settings.AUTH_USER_MODEL)),
-                ('category', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='content.category')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("title", models.CharField(max_length=30)),
+                ("content", models.TextField(help_text="Markdown content")),
+                (
+                    "author",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="contents",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "category",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="content.category",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['author', '-created_at'], name='content_author_created'), models.Index(fields=['author', 'category', '-created_at'], name='content_auth_cat_created'), models.Index(fields=['category', '-created_at'], name='content_category_created')],
+                "ordering": ["-created_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["author", "-created_at"], name="content_author_created"
+                    ),
+                    models.Index(
+                        fields=["author", "category", "-created_at"],
+                        name="content_auth_cat_created",
+                    ),
+                    models.Index(
+                        fields=["category", "-created_at"],
+                        name="content_category_created",
+                    ),
+                ],
             },
         ),
         migrations.AddConstraint(
-            model_name='content',
-            constraint=models.CheckConstraint(check=models.Q(('title', ''), _negated=True), name='content_title_not_empty'),
+            model_name="content",
+            constraint=models.CheckConstraint(
+                check=models.Q(("title", ""), _negated=True),
+                name="content_title_not_empty",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='content',
-            constraint=models.CheckConstraint(check=models.Q(('content', ''), _negated=True), name='content_body_not_empty'),
+            model_name="content",
+            constraint=models.CheckConstraint(
+                check=models.Q(("content", ""), _negated=True),
+                name="content_body_not_empty",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='category',
-            constraint=models.CheckConstraint(check=models.Q(('name', ''), _negated=True), name='category_name_not_empty'),
+            model_name="category",
+            constraint=models.CheckConstraint(
+                check=models.Q(("name", ""), _negated=True),
+                name="category_name_not_empty",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='category',
-            unique_together={('slug', 'user'), ('name', 'user')},
+            name="category",
+            unique_together={("slug", "user"), ("name", "user")},
         ),
     ]

@@ -6,23 +6,27 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0003_remove_cookieconsent_user_and_more'),
+        ("accounts", "0003_remove_cookieconsent_user_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='privacy_agreed_at',
-            field=models.DateTimeField(blank=True, help_text='Privacy policy agreement timestamp', null=True),
+            model_name="user",
+            name="privacy_agreed_at",
+            field=models.DateTimeField(
+                blank=True, help_text="Privacy policy agreement timestamp", null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='terms_agreed_at',
-            field=models.DateTimeField(blank=True, help_text='Terms of service agreement timestamp', null=True),
+            model_name="user",
+            name="terms_agreed_at",
+            field=models.DateTimeField(
+                blank=True, help_text="Terms of service agreement timestamp", null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='weekly_goal',
-            field=models.IntegerField(default=7, help_text='Weekly review goal count'),
+            model_name="user",
+            name="weekly_goal",
+            field=models.IntegerField(default=7, help_text="Weekly review goal count"),
         ),
     ]

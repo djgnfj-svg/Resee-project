@@ -29,8 +29,10 @@ logger = logging.getLogger(__name__)
 
 # ========== State Definition ==========
 
+
 class DistractorGenerationState(TypedDict):
     """Distractor 생성 프로세스의 상태"""
+
     # 입력
     content_title: str
     content_body: str
@@ -57,15 +59,16 @@ class DistractorGenerationState(TypedDict):
 
 # ========== Helper Functions ==========
 
+
 def _parse_json_response(response_text: str) -> Optional[Dict]:
     """JSON 응답 파싱 (코드 블록 제거 포함)"""
     try:
         text = response_text.strip()
 
         # 코드 블록 제거
-        if text.startswith('```json'):
+        if text.startswith("```json"):
             text = text[7:-3].strip()
-        elif text.startswith('```'):
+        elif text.startswith("```"):
             text = text[3:-3].strip()
 
         return json.loads(text)
@@ -81,7 +84,7 @@ def _parse_json_response(response_text: str) -> Optional[Dict]:
 
 def _get_llm(temperature: float = 0.3, max_tokens: int = 1000) -> ChatAnthropic:
     """LLM 인스턴스 생성"""
-    api_key = getattr(settings, 'ANTHROPIC_API_KEY', None)
+    api_key = getattr(settings, "ANTHROPIC_API_KEY", None)
 
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY not configured")
@@ -90,14 +93,15 @@ def _get_llm(temperature: float = 0.3, max_tokens: int = 1000) -> ChatAnthropic:
         model="claude-3-haiku-20240307",
         temperature=temperature,
         max_tokens=max_tokens,
-        api_key=api_key
+        api_key=api_key,
     )
 
 
 # ========== Node Functions ==========
 
+
 def extract_concepts_and_misconceptions(
-    state: DistractorGenerationState
+    state: DistractorGenerationState,
 ) -> DistractorGenerationState:
     """
     Step 1: 핵심 개념 및 오개념 추출
@@ -108,7 +112,8 @@ def extract_concepts_and_misconceptions(
 
     llm = _get_llm(temperature=0.3, max_tokens=800)
 
-    prompt = ChatPromptTemplate.from_template("""
+    prompt = ChatPromptTemplate.from_template(
+        """
 다음 학습 콘텐츠와 정답을 분석하여 핵심 개념과 흔한 오개념을 추출하세요.
 
 **콘텐츠 정보:**
@@ -167,49 +172,52 @@ def extract_concepts_and_misconceptions(
   ],
   "similar_concepts": ["개념1", "개념2", "개념3"]
 }}
-""")
+"""
+    )
 
     try:
-        response = llm.invoke(prompt.format(
-            title=state['content_title'],
-            content=state['content_body'][:1500],
-            correct_answer=state['correct_answer']
-        ))
+        response = llm.invoke(
+            prompt.format(
+                title=state["content_title"],
+                content=state["content_body"][:1500],
+                correct_answer=state["correct_answer"],
+            )
+        )
 
         result = _parse_json_response(response.content)
 
         if result:
-            state['core_concepts'] = result.get('core_concepts', [])
-            state['misconceptions'] = result.get('misconceptions', [])
-            state['similar_concepts'] = result.get('similar_concepts', [])
+            state["core_concepts"] = result.get("core_concepts", [])
+            state["misconceptions"] = result.get("misconceptions", [])
+            state["similar_concepts"] = result.get("similar_concepts", [])
 
             logger.info(
                 f"[Extract] Success - {len(state['misconceptions'])} misconceptions"
             )
         else:
             logger.warning("[Extract] Failed to parse response, using defaults")
-            state['core_concepts'] = []
-            state['misconceptions'] = []
-            state['similar_concepts'] = []
+            state["core_concepts"] = []
+            state["misconceptions"] = []
+            state["similar_concepts"] = []
 
     except Exception as e:
         logger.error(f"[Extract] Error: {e}", exc_info=True)
-        state['core_concepts'] = []
-        state['misconceptions'] = []
-        state['similar_concepts'] = []
+        state["core_concepts"] = []
+        state["misconceptions"] = []
+        state["similar_concepts"] = []
 
     return state
 
 
 def generate_typed_distractors(
-    state: DistractorGenerationState
+    state: DistractorGenerationState,
 ) -> DistractorGenerationState:
     """
     Step 2: 유형별 Distractor 생성 (★핵심★)
 
     교육학적 오개념을 반영한 3가지 유형의 그럴듯한 오답을 생성합니다.
     """
-    is_improvement = state['iteration'] > 0
+    is_improvement = state["iteration"] > 0
     mode = "Improve" if is_improvement else "Generate"
 
     logger.info(f"[{mode}] Iteration {state['iteration']}")
@@ -218,7 +226,8 @@ def generate_typed_distractors(
 
     if is_improvement:
         # 개선 모드
-        prompt = ChatPromptTemplate.from_template("""
+        prompt = ChatPromptTemplate.from_template(
+            """
 이전 오답의 문제점을 개선하여 재생성하세요.
 
 **정답:**
@@ -258,20 +267,25 @@ def generate_typed_distractors(
     }}
   ]
 }}
-""")
+"""
+        )
 
-        response = llm.invoke(prompt.format(
-            correct_answer=state['correct_answer'],
-            previous_distractors=json.dumps(
-                state['distractors'], ensure_ascii=False, indent=2
-            ),
-            quality_issues='\n'.join(f"- {issue}" for issue in state['quality_issues']),
-            correct_len=len(state['correct_answer'])
-        ))
+        response = llm.invoke(
+            prompt.format(
+                correct_answer=state["correct_answer"],
+                previous_distractors=json.dumps(
+                    state["distractors"], ensure_ascii=False, indent=2
+                ),
+                quality_issues="\n".join(
+                    f"- {issue}" for issue in state["quality_issues"]
+                ),
+                correct_len=len(state["correct_answer"]),
+            )
+        )
 
     else:
         # 초기 생성 모드
-        misconceptions = state['misconceptions']
+        misconceptions = state["misconceptions"]
 
         # 오개념이 부족한 경우 기본값 사용
         if len(misconceptions) < 3:
@@ -279,10 +293,11 @@ def generate_typed_distractors(
             misconceptions = [
                 {"type": "A", "description": "반대 개념 혼동"},
                 {"type": "B", "description": "부분적 이해"},
-                {"type": "C", "description": "유사 개념 혼동"}
+                {"type": "C", "description": "유사 개념 혼동"},
             ]
 
-        prompt = ChatPromptTemplate.from_template("""
+        prompt = ChatPromptTemplate.from_template(
+            """
 다음 정답에 대해 교육학적으로 의미 있는 오답 3개를 생성하세요.
 
 **정답:**
@@ -344,47 +359,50 @@ def generate_typed_distractors(
     }}
   ]
 }}
-""")
+"""
+        )
 
-        correct_len = len(state['correct_answer'])
+        correct_len = len(state["correct_answer"])
         min_len = int(correct_len * 0.8)
         max_len = int(correct_len * 1.2)
 
-        response = llm.invoke(prompt.format(
-            correct_answer=state['correct_answer'],
-            correct_len=correct_len,
-            min_len=min_len,
-            max_len=max_len,
-            core_concepts=json.dumps(state['core_concepts'], ensure_ascii=False),
-            misconceptions=json.dumps(misconceptions, ensure_ascii=False, indent=2),
-            similar_concepts=', '.join(state['similar_concepts']),
-            misconception_a=misconceptions[0].get('description', '반대 개념'),
-            misconception_b=misconceptions[1].get('description', '부분적 이해'),
-            misconception_c=misconceptions[2].get('description', '유사 개념')
-        ))
+        response = llm.invoke(
+            prompt.format(
+                correct_answer=state["correct_answer"],
+                correct_len=correct_len,
+                min_len=min_len,
+                max_len=max_len,
+                core_concepts=json.dumps(state["core_concepts"], ensure_ascii=False),
+                misconceptions=json.dumps(misconceptions, ensure_ascii=False, indent=2),
+                similar_concepts=", ".join(state["similar_concepts"]),
+                misconception_a=misconceptions[0].get("description", "반대 개념"),
+                misconception_b=misconceptions[1].get("description", "부분적 이해"),
+                misconception_c=misconceptions[2].get("description", "유사 개념"),
+            )
+        )
 
     # JSON 파싱
     try:
         result = _parse_json_response(response.content)
 
-        if result and 'distractors' in result:
-            state['distractors'] = result['distractors']
+        if result and "distractors" in result:
+            state["distractors"] = result["distractors"]
             logger.info(f"[{mode}] Success - {len(state['distractors'])} distractors")
         else:
             logger.warning(f"[{mode}] Failed to parse, keeping previous")
-            if not state.get('distractors'):
-                state['distractors'] = []
+            if not state.get("distractors"):
+                state["distractors"] = []
 
     except Exception as e:
         logger.error(f"[{mode}] Error: {e}", exc_info=True)
-        if not state.get('distractors'):
-            state['distractors'] = []
+        if not state.get("distractors"):
+            state["distractors"] = []
 
     return state
 
 
 def validate_choices_quality(
-    state: DistractorGenerationState
+    state: DistractorGenerationState,
 ) -> DistractorGenerationState:
     """
     Step 3: 선택지 품질 검증
@@ -394,22 +412,23 @@ def validate_choices_quality(
     logger.info("[Validate] Checking quality")
 
     # 오답이 3개 미만이면 품질 0점
-    if len(state.get('distractors', [])) < 3:
+    if len(state.get("distractors", [])) < 3:
         logger.warning("[Validate] Insufficient distractors (< 3)")
-        state['validation_result'] = {}
-        state['quality_score'] = 0.0
-        state['quality_issues'] = ["오답 개수 부족 (3개 미만)"]
+        state["validation_result"] = {}
+        state["quality_score"] = 0.0
+        state["quality_issues"] = ["오답 개수 부족 (3개 미만)"]
         return state
 
     llm = _get_llm(temperature=0.3, max_tokens=900)
 
     # 모든 선택지
-    all_choices = [state['correct_answer']] + [
-        d['text'] for d in state['distractors'][:3]
+    all_choices = [state["correct_answer"]] + [
+        d["text"] for d in state["distractors"][:3]
     ]
     lengths = [len(c) for c in all_choices]
 
-    prompt = ChatPromptTemplate.from_template("""
+    prompt = ChatPromptTemplate.from_template(
+        """
 다음 객관식 선택지의 품질을 엄격하게 평가하세요.
 
 **정답:** {correct_answer}
@@ -476,45 +495,46 @@ def validate_choices_quality(
 }}
 
 엄격하게 평가하세요. 80점 이상은 정말 우수한 경우에만 부여하세요.
-""")
+"""
+    )
 
     try:
-        response = llm.invoke(prompt.format(
-            correct_answer=state['correct_answer'],
-            all_choices=json.dumps(all_choices, ensure_ascii=False, indent=2),
-            distractors=json.dumps(
-                state['distractors'][:3], ensure_ascii=False, indent=2
-            ),
-            correct_len=len(state['correct_answer']),
-            lengths=lengths
-        ))
+        response = llm.invoke(
+            prompt.format(
+                correct_answer=state["correct_answer"],
+                all_choices=json.dumps(all_choices, ensure_ascii=False, indent=2),
+                distractors=json.dumps(
+                    state["distractors"][:3], ensure_ascii=False, indent=2
+                ),
+                correct_len=len(state["correct_answer"]),
+                lengths=lengths,
+            )
+        )
 
         result = _parse_json_response(response.content)
 
         if result:
-            state['validation_result'] = result
-            state['quality_score'] = float(result.get('overall_score', 0))
-            state['quality_issues'] = result.get('summary_issues', [])
+            state["validation_result"] = result
+            state["quality_score"] = float(result.get("overall_score", 0))
+            state["quality_issues"] = result.get("summary_issues", [])
 
             logger.info(f"[Validate] Quality score: {state['quality_score']:.1f}")
         else:
             logger.warning("[Validate] Failed to parse, using default")
-            state['validation_result'] = {}
-            state['quality_score'] = 0.0
-            state['quality_issues'] = ["검증 응답 파싱 실패"]
+            state["validation_result"] = {}
+            state["quality_score"] = 0.0
+            state["quality_issues"] = ["검증 응답 파싱 실패"]
 
     except Exception as e:
         logger.error(f"[Validate] Error: {e}", exc_info=True)
-        state['validation_result'] = {}
-        state['quality_score'] = 0.0
-        state['quality_issues'] = [f"검증 오류: {str(e)}"]
+        state["validation_result"] = {}
+        state["quality_score"] = 0.0
+        state["quality_issues"] = [f"검증 오류: {str(e)}"]
 
     return state
 
 
-def finalize_choices(
-    state: DistractorGenerationState
-) -> DistractorGenerationState:
+def finalize_choices(state: DistractorGenerationState) -> DistractorGenerationState:
     """
     Step 4: 최종화
 
@@ -523,22 +543,20 @@ def finalize_choices(
     logger.info(f"[Finalize] Quality: {state['quality_score']:.1f}")
 
     # 정답 + 오답 3개
-    choices = [state['correct_answer']] + [
-        d['text'] for d in state['distractors'][:3]
-    ]
+    choices = [state["correct_answer"]] + [d["text"] for d in state["distractors"][:3]]
 
     # 랜덤 섞기 (정답 위치 랜덤화)
     random.shuffle(choices)
 
-    state['final_choices'] = choices
+    state["final_choices"] = choices
 
     # 메타데이터
-    state['metadata'] = {
-        'quality_score': state['quality_score'],
-        'iterations': state['iteration'],
-        'validation_details': state['validation_result'],
-        'correct_answer': state['correct_answer'],
-        'distractors_info': state['distractors'][:3]
+    state["metadata"] = {
+        "quality_score": state["quality_score"],
+        "iterations": state["iteration"],
+        "validation_details": state["validation_result"],
+        "correct_answer": state["correct_answer"],
+        "distractors_info": state["distractors"][:3],
     }
 
     logger.info(f"[Finalize] Complete after {state['iteration']} iterations")
@@ -548,9 +566,8 @@ def finalize_choices(
 
 # ========== Conditional Edge ==========
 
-def should_improve(
-    state: DistractorGenerationState
-) -> Literal["improve", "finalize"]:
+
+def should_improve(state: DistractorGenerationState) -> Literal["improve", "finalize"]:
     """
     품질 기준에 따라 개선 여부 결정
 
@@ -558,8 +575,8 @@ def should_improve(
     - iteration >= 1: 최대 1회 개선만 → 완료
     - 그 외: 개선 필요 → 재생성
     """
-    quality_score = state['quality_score']
-    iteration = state['iteration']
+    quality_score = state["quality_score"]
+    iteration = state["iteration"]
 
     if quality_score >= 80:
         logger.info(f"[Decision] Quality sufficient ({quality_score:.1f}) → Finalize")
@@ -573,16 +590,15 @@ def should_improve(
     return "improve"
 
 
-def increment_iteration(
-    state: DistractorGenerationState
-) -> DistractorGenerationState:
+def increment_iteration(state: DistractorGenerationState) -> DistractorGenerationState:
     """반복 횟수 증가"""
-    state['iteration'] += 1
+    state["iteration"] += 1
     logger.info(f"[Loop] Starting iteration {state['iteration']}")
     return state
 
 
 # ========== Graph Construction ==========
+
 
 def create_distractor_generation_graph():
     """
@@ -607,12 +623,7 @@ def create_distractor_generation_graph():
 
     # Conditional routing
     workflow.add_conditional_edges(
-        "validate",
-        should_improve,
-        {
-            "improve": "increment",
-            "finalize": "finalize"
-        }
+        "validate", should_improve, {"improve": "increment", "finalize": "finalize"}
     )
 
     workflow.add_edge("increment", "generate")
@@ -628,10 +639,9 @@ def create_distractor_generation_graph():
 
 # ========== Main Function ==========
 
+
 def generate_quality_choices(
-    content_title: str,
-    content_body: str,
-    correct_answer: str
+    content_title: str, content_body: str, correct_answer: str
 ) -> Dict[str, any]:
     """
     고품질 객관식 보기 생성 (메인 함수)
@@ -663,22 +673,22 @@ def generate_quality_choices(
         "quality_score": 0.0,
         "quality_issues": [],
         "final_choices": [],
-        "metadata": {}
+        "metadata": {},
     }
 
     try:
         result = graph.invoke(initial_state)
 
         return {
-            'choices': result['final_choices'],
-            'correct_answer': result['correct_answer'],
-            'metadata': result['metadata']
+            "choices": result["final_choices"],
+            "correct_answer": result["correct_answer"],
+            "metadata": result["metadata"],
         }
 
     except Exception as e:
         logger.error(f"[Error] Graph execution failed: {e}", exc_info=True)
         return {
-            'choices': [],
-            'correct_answer': correct_answer,
-            'metadata': {'error': str(e)}
+            "choices": [],
+            "correct_answer": correct_answer,
+            "metadata": {"error": str(e)},
         }

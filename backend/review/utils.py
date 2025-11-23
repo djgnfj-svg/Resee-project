@@ -1,6 +1,7 @@
 """
 Review system utility functions
 """
+
 from datetime import timedelta
 
 from django.utils import timezone
@@ -13,7 +14,7 @@ def get_review_intervals(user=None):
 
     Based on Hermann Ebbinghaus's research on optimal spaced repetition intervals:
     - 1 day: Initial reinforcement
-    - 3 days: Short-term consolidation  
+    - 3 days: Short-term consolidation
     - 7 days: Working memory to long-term transfer
     - 14 days: Long-term memory strengthening
     - 30 days: Monthly reinforcement
@@ -33,8 +34,25 @@ def get_review_intervals(user=None):
     # Ebbinghaus-optimized intervals for each tier
     tier_intervals = {
         SubscriptionTier.FREE: [1, 3],  # Basic spaced repetition (max 3 days)
-        SubscriptionTier.BASIC: [1, 3, 7, 14, 30, 60, 90],  # Medium-term memory (max 90 days)
-        SubscriptionTier.PRO: [1, 3, 7, 14, 30, 60, 120, 180],  # Complete long-term retention (max 180 days)
+        SubscriptionTier.BASIC: [
+            1,
+            3,
+            7,
+            14,
+            30,
+            60,
+            90,
+        ],  # Medium-term memory (max 90 days)
+        SubscriptionTier.PRO: [
+            1,
+            3,
+            7,
+            14,
+            30,
+            60,
+            120,
+            180,
+        ],  # Complete long-term retention (max 180 days)
     }
 
     # Default to free tier intervals if no user
@@ -42,7 +60,7 @@ def get_review_intervals(user=None):
         return tier_intervals[SubscriptionTier.FREE]
 
     # Check if user has active subscription
-    if not hasattr(user, 'subscription'):
+    if not hasattr(user, "subscription"):
         return tier_intervals[SubscriptionTier.FREE]
 
     subscription = user.subscription
@@ -55,7 +73,7 @@ def get_review_intervals(user=None):
     return tier_intervals.get(subscription.tier, tier_intervals[SubscriptionTier.FREE])
 
 
-def calculate_next_review_date(user, interval_index, result='remembered'):
+def calculate_next_review_date(user, interval_index, result="remembered"):
     """
     Calculate next review date using Ebbinghaus forgetting curve intervals
 
@@ -69,7 +87,7 @@ def calculate_next_review_date(user, interval_index, result='remembered'):
     """
     intervals = get_review_intervals(user)
 
-    if result == 'forgotten':
+    if result == "forgotten":
         # Reset to first interval on failure
         new_interval_index = 0
     else:
@@ -100,19 +118,18 @@ def calculate_success_rate(user, category=None, days=30):
     start_date = timezone.now().date() - timedelta(days=days)
 
     # Base queryset
-    reviews = ReviewHistory.objects.filter(
-        user=user,
-        review_date__date__gte=start_date
-    )
+    reviews = ReviewHistory.objects.filter(user=user, review_date__date__gte=start_date)
 
     # Filter by category if provided
     if category:
         reviews = reviews.filter(content__category=category)
 
     total_reviews = reviews.count()
-    successful_reviews = reviews.filter(result='remembered').count()
+    successful_reviews = reviews.filter(result="remembered").count()
 
-    success_rate = (successful_reviews / total_reviews * 100) if total_reviews > 0 else 0
+    success_rate = (
+        (successful_reviews / total_reviews * 100) if total_reviews > 0 else 0
+    )
 
     # Create details dict with breakdown by result
     details = {}
@@ -153,13 +170,10 @@ def get_today_reviews_count(user, category=None):
     # Calculate cutoff date for overdue reviews based on subscription
     cutoff_date = timezone.now() - timedelta(days=max_overdue_days)
 
-    schedules = ReviewSchedule.objects.filter(
-        user=user,
-        is_active=True
-    ).filter(
+    schedules = ReviewSchedule.objects.filter(user=user, is_active=True).filter(
         # Same logic as TodayReviewView: due today/overdue OR initial review not completed
-        Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date) |
-        Q(initial_review_completed=False)
+        Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date)
+        | Q(initial_review_completed=False)
     )
 
     if category:
@@ -183,9 +197,7 @@ def get_pending_reviews_count(user, category=None):
 
     today = timezone.now().date()
     schedules = ReviewSchedule.objects.filter(
-        user=user,
-        is_active=True,
-        next_review_date__date__lt=today
+        user=user, is_active=True, next_review_date__date__lt=today
     )
 
     if category:

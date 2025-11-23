@@ -26,10 +26,7 @@ class MCGenerator(BaseAIService):
 
     def __init__(self):
         # Use Claude 3 Haiku for fast generation
-        super().__init__(
-            model="claude-3-haiku-20240307",
-            use_langchain=True
-        )
+        super().__init__(model="claude-3-haiku-20240307", use_langchain=True)
 
     def _get_temperature(self) -> float:
         # Higher temperature for creative wrong options
@@ -39,9 +36,7 @@ class MCGenerator(BaseAIService):
         return 500
 
     def generate_multiple_choice_options(
-        self,
-        title: str,
-        content: str
+        self, title: str, content: str
     ) -> Optional[Dict]:
         """
         Generate multiple choice options based on content.
@@ -66,7 +61,7 @@ class MCGenerator(BaseAIService):
             response_text = self.call_langchain(
                 prompt_template,
                 title=title,
-                content=content[:1500] + ("..." if len(content) > 1500 else "")
+                content=content[:1500] + ("..." if len(content) > 1500 else ""),
             )
 
             if not response_text:
@@ -87,13 +82,14 @@ class MCGenerator(BaseAIService):
         except Exception as e:
             logger.error(
                 f"Failed to generate MC options for '{title[:50]}...': {e}",
-                exc_info=True
+                exc_info=True,
             )
             return None
 
     def _create_generation_prompt(self) -> ChatPromptTemplate:
         """Create MC generation prompt template."""
-        return ChatPromptTemplate.from_template("""당신은 학습 콘텐츠 기반 객관식 문제 생성 전문가입니다.
+        return ChatPromptTemplate.from_template(
+            """당신은 학습 콘텐츠 기반 객관식 문제 생성 전문가입니다.
 
 다음 학습 콘텐츠의 **내용**을 읽고, 가장 적합한 **제목**을 맞추는 4지선다 문제를 만들어주세요.
 
@@ -120,40 +116,41 @@ class MCGenerator(BaseAIService):
 정답: "파이썬 리스트 기초"
 오답: ["파이썬 딕셔너리 활용", "파이썬 문자열 처리", "파이썬 반복문 이해"]
 
-JSON만 반환하세요.""")
+JSON만 반환하세요."""
+        )
 
     def _validate_mc_response(self, result: Dict, expected_title: str) -> bool:
         """Validate MC response structure."""
         # Check required keys
-        if 'choices' not in result or 'correct_answer' not in result:
+        if "choices" not in result or "correct_answer" not in result:
             logger.warning("Missing required keys: choices or correct_answer")
             return False
 
         # Check choices is a list
-        if not isinstance(result['choices'], list):
+        if not isinstance(result["choices"], list):
             logger.warning("choices must be a list")
             return False
 
         # Check exactly 4 choices
-        if len(result['choices']) != 4:
+        if len(result["choices"]) != 4:
             logger.warning(f"Must have exactly 4 choices, got {len(result['choices'])}")
             return False
 
         # Check correct answer is in choices
-        if result['correct_answer'] not in result['choices']:
+        if result["correct_answer"] not in result["choices"]:
             logger.warning("correct_answer must be one of the choices")
             return False
 
         # Ensure correct answer matches expected title
-        if result['correct_answer'] != expected_title:
+        if result["correct_answer"] != expected_title:
             logger.warning(
                 f"AI returned different correct_answer: {result['correct_answer']} vs {expected_title}"
             )
-            result['correct_answer'] = expected_title
+            result["correct_answer"] = expected_title
 
             # Replace one of the choices with the expected title if not present
-            if expected_title not in result['choices']:
-                result['choices'][0] = expected_title
+            if expected_title not in result["choices"]:
+                result["choices"][0] = expected_title
 
         return True
 

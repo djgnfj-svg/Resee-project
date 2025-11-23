@@ -18,8 +18,10 @@ from resee.error_handlers import APIErrorHandler, StandardAPIResponse
 from resee.throttling import LoginRateThrottle, RegistrationRateThrottle
 
 from ..utils.serializers import (
-    EmailTokenObtainPairSerializer, PasswordChangeSerializer,
-    UserRegistrationSerializer, UserSerializer,
+    EmailTokenObtainPairSerializer,
+    PasswordChangeSerializer,
+    UserRegistrationSerializer,
+    UserSerializer,
 )
 from .google_auth import GoogleAuthSerializer
 
@@ -33,13 +35,13 @@ def set_refresh_token_cookie(response, refresh_token):
     is_production = not settings.DEBUG
 
     response.set_cookie(
-        key='refresh_token',
+        key="refresh_token",
         value=str(refresh_token),
         max_age=60 * 60 * 24 * 7,  # 7 days
         httponly=True,
         secure=is_production,  # HTTPS only in production
-        samesite='Lax',  # CSRF protection
-        path='/',
+        samesite="Lax",  # CSRF protection
+        path="/",
     )
     return response
 
@@ -47,15 +49,16 @@ def set_refresh_token_cookie(response, refresh_token):
 def delete_refresh_token_cookie(response):
     """Delete refresh token cookie"""
     response.delete_cookie(
-        key='refresh_token',
-        path='/',
-        samesite='Lax',
+        key="refresh_token",
+        path="/",
+        samesite="Lax",
     )
     return response
 
 
 class EmailTokenObtainPairView(TokenObtainPairView):
     """Custom JWT token view that uses email instead of username"""
+
     serializer_class = EmailTokenObtainPairSerializer
     throttle_classes = [LoginRateThrottle]
 
@@ -85,7 +88,7 @@ class EmailTokenObtainPairView(TokenObtainPairView):
         받은 `access` 토큰을 다음과 같이 헤더에 포함하여 API 요청을 보내세요:
         `Authorization: Bearer <access_token>`
         """,
-        tags=['Authentication'],
+        tags=["Authentication"],
         request_body=EmailTokenObtainPairSerializer,
         responses={
             200: openapi.Response(
@@ -93,20 +96,23 @@ class EmailTokenObtainPairView(TokenObtainPairView):
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        'access': openapi.Schema(type=openapi.TYPE_STRING, description="액세스 토큰 (60분 유효)"),
-                    }
-                )
+                        "access": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description="액세스 토큰 (60분 유효)",
+                        ),
+                    },
+                ),
             ),
             400: "잘못된 요청 - 이메일 또는 비밀번호 오류",
             401: "인증 실패 - 이메일 또는 비밀번호가 틀림",
-        }
+        },
     )
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
 
         # Set refresh token as HttpOnly cookie
-        if response.status_code == 200 and 'refresh' in response.data:
-            refresh_token = response.data.pop('refresh')
+        if response.status_code == 200 and "refresh" in response.data:
+            refresh_token = response.data.pop("refresh")
             set_refresh_token_cookie(response, refresh_token)
 
         return response
@@ -114,27 +120,28 @@ class EmailTokenObtainPairView(TokenObtainPairView):
 
 class UserViewSet(viewsets.ModelViewSet):
     """User viewset"""
-    queryset = User.objects.select_related('subscription').all()
+
+    queryset = User.objects.select_related("subscription").all()
     serializer_class = UserSerializer
 
     def get_permissions(self):
         """Override permissions based on action"""
-        if self.action in ['create', 'register']:
+        if self.action in ["create", "register"]:
             return []
-        elif self.action in ['me', 'update_password', 'destroy']:
+        elif self.action in ["me", "update_password", "destroy"]:
             return [IsAuthenticated()]
         return super().get_permissions()
 
     def get_throttle_classes(self):
         """Override throttle classes based on action"""
-        if self.action in ['create', 'register']:
+        if self.action in ["create", "register"]:
             return [RegistrationRateThrottle]
         return super().get_throttle_classes()
 
     def get_serializer_class(self):
-        if self.action in ['create', 'register']:
+        if self.action in ["create", "register"]:
             return UserRegistrationSerializer
-        elif self.action == 'update_password':
+        elif self.action == "update_password":
             return PasswordChangeSerializer
         return UserSerializer
 
@@ -155,7 +162,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         개발 환경에서는 이메일 인증이 자동으로 완료되며, 프로덕션 환경에서는 인증 이메일이 발송됩니다.
         """,
-        tags=['Authentication'],
+        tags=["Authentication"],
         request_body=UserRegistrationSerializer,
         responses={
             201: openapi.Response(
@@ -163,28 +170,37 @@ class UserViewSet(viewsets.ModelViewSet):
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
-                        'user': openapi.Schema(type=openapi.TYPE_OBJECT, description="생성된 사용자 정보"),
-                        'requires_email_verification': openapi.Schema(type=openapi.TYPE_BOOLEAN, description="이메일 인증 필요 여부"),
-                    }
-                )
+                        "message": openapi.Schema(
+                            type=openapi.TYPE_STRING, description="성공 메시지"
+                        ),
+                        "user": openapi.Schema(
+                            type=openapi.TYPE_OBJECT, description="생성된 사용자 정보"
+                        ),
+                        "requires_email_verification": openapi.Schema(
+                            type=openapi.TYPE_BOOLEAN,
+                            description="이메일 인증 필요 여부",
+                        ),
+                    },
+                ),
             ),
             400: "잘못된 요청 - 유효성 검사 실패",
             500: "서버 오류",
-        }
+        },
     )
     def create(self, request):
         """RESTful user registration (POST /users/)"""
         return self._register_user(request)
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=["post"])
     def register(self, request):
         """Legacy registration endpoint (POST /users/register/) - 하위 호환성"""
         return self._register_user(request)
 
     def _register_user(self, request):
         """Common registration logic"""
-        logger.info(f"User registration request: {request.data.get('email', 'unknown')}")
+        logger.info(
+            f"User registration request: {request.data.get('email', 'unknown')}"
+        )
 
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
@@ -193,54 +209,63 @@ class UserViewSet(viewsets.ModelViewSet):
                 logger.info(f"User registration successful: {user.email}")
 
                 # 이메일 인증 강제 설정 확인
-                enforce_email_verification = getattr(settings, 'ENFORCE_EMAIL_VERIFICATION', False)
+                enforce_email_verification = getattr(
+                    settings, "ENFORCE_EMAIL_VERIFICATION", False
+                )
 
                 # ENFORCE_EMAIL_VERIFICATION이 False일 때만 자동 인증
                 if not enforce_email_verification:
                     user.is_email_verified = True
                     user.save()
-                    logger.info(f"Development environment: Email auto-verified for {user.email}")
+                    logger.info(
+                        f"Development environment: Email auto-verified for {user.email}"
+                    )
 
                     return StandardAPIResponse.created(
                         data={
-                            'user': UserSerializer(user).data,
-                            'requires_email_verification': False
+                            "user": UserSerializer(user).data,
+                            "requires_email_verification": False,
                         },
-                        message='회원가입이 완료되었습니다!'
+                        message="회원가입이 완료되었습니다!",
                     )
                 else:
                     # 프로덕션 환경에서는 이메일 인증 필요 (비동기 처리)
                     from ..email.tasks import send_verification_email_async
+
                     send_verification_email_async.delay(user.id)
 
                     return StandardAPIResponse.created(
                         data={
-                            'user': UserSerializer(user).data,
-                            'requires_email_verification': True
+                            "user": UserSerializer(user).data,
+                            "requires_email_verification": True,
                         },
-                        message='회원가입이 완료되었습니다. 이메일을 확인하여 인증을 완료해주세요.'
+                        message="회원가입이 완료되었습니다. 이메일을 확인하여 인증을 완료해주세요.",
                     )
             except Exception as e:
                 logger.error(f"User registration failed: {str(e)}")
-                return APIErrorHandler.server_error('An error occurred during registration.')
+                return APIErrorHandler.server_error(
+                    "An error occurred during registration."
+                )
 
         # Log detailed error information
         logger.error(f"User registration validation failed: {serializer.errors}")
 
-        return APIErrorHandler.validation_error("입력 정보를 확인해주세요.", serializer.errors)
+        return APIErrorHandler.validation_error(
+            "입력 정보를 확인해주세요.", serializer.errors
+        )
 
     @swagger_auto_schema(
-        method='get',
+        method="get",
         operation_summary="현재 사용자 정보 조회",
         operation_description="현재 로그인된 사용자의 상세 정보를 조회합니다.",
-        tags=['Authentication'],
+        tags=["Authentication"],
         responses={
             200: UserSerializer,
             401: "인증 필요",
-        }
+        },
     )
     @swagger_auto_schema(
-        method='delete',
+        method="delete",
         operation_summary="계정 삭제 (RESTful)",
         operation_description="""현재 로그인된 사용자의 계정을 완전히 삭제합니다.
 
@@ -254,14 +279,18 @@ class UserViewSet(viewsets.ModelViewSet):
         }
         ```
         """,
-        tags=['Authentication'],
+        tags=["Authentication"],
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'password': openapi.Schema(type=openapi.TYPE_STRING, description="현재 비밀번호"),
-                'confirmation': openapi.Schema(type=openapi.TYPE_STRING, description="'DELETE' 문자열"),
+                "password": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="현재 비밀번호"
+                ),
+                "confirmation": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="'DELETE' 문자열"
+                ),
             },
-            required=['password', 'confirmation']
+            required=["password", "confirmation"],
         ),
         responses={
             200: openapi.Response(
@@ -269,24 +298,29 @@ class UserViewSet(viewsets.ModelViewSet):
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
-                    }
-                )
+                        "message": openapi.Schema(
+                            type=openapi.TYPE_STRING, description="성공 메시지"
+                        ),
+                    },
+                ),
             ),
             400: "잘못된 요청 - 유효성 검사 실패",
             401: "인증 필요",
             500: "서버 오류",
-        }
+        },
     )
-    @action(detail=False, methods=['get', 'delete'], url_path='me')
+    @action(detail=False, methods=["get", "delete"], url_path="me")
     def me(self, request):
         """Get or delete current user (GET/DELETE /users/me/)"""
-        if request.method == 'GET':
+        if request.method == "GET":
             serializer = UserSerializer(request.user)
             return Response(serializer.data)
-        elif request.method == 'DELETE':
+        elif request.method == "DELETE":
             from ..utils.serializers import AccountDeleteSerializer
-            serializer = AccountDeleteSerializer(data=request.data, context={'request': request})
+
+            serializer = AccountDeleteSerializer(
+                data=request.data, context={"request": request}
+            )
             if serializer.is_valid():
                 try:
                     user = request.user
@@ -301,19 +335,21 @@ class UserViewSet(viewsets.ModelViewSet):
                     logger.warning(f"Account deleted for user {email}")
 
                     return Response(
-                        {'message': 'Account deleted successfully'},
-                        status=status.HTTP_200_OK
+                        {"message": "Account deleted successfully"},
+                        status=status.HTTP_200_OK,
                     )
                 except Exception as e:
-                    logger.error(f"Account deletion failed for user {request.user.email}: {str(e)}")
+                    logger.error(
+                        f"Account deletion failed for user {request.user.email}: {str(e)}"
+                    )
                     return Response(
-                        {'error': 'Account deletion failed'},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                        {"error": "Account deletion failed"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
-        method='put',
+        method="put",
         operation_summary="비밀번호 변경 (RESTful)",
         operation_description="""현재 로그인된 사용자의 비밀번호를 변경합니다.
 
@@ -326,7 +362,7 @@ class UserViewSet(viewsets.ModelViewSet):
         }
         ```
         """,
-        tags=['Authentication'],
+        tags=["Authentication"],
         request_body=PasswordChangeSerializer,
         responses={
             200: openapi.Response(
@@ -334,47 +370,52 @@ class UserViewSet(viewsets.ModelViewSet):
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
-                        'action_required': openapi.Schema(type=openapi.TYPE_STRING, description="필요한 조치"),
-                    }
-                )
+                        "message": openapi.Schema(
+                            type=openapi.TYPE_STRING, description="성공 메시지"
+                        ),
+                        "action_required": openapi.Schema(
+                            type=openapi.TYPE_STRING, description="필요한 조치"
+                        ),
+                    },
+                ),
             ),
             400: "잘못된 요청 - 유효성 검사 실패",
             401: "인증 필요",
             500: "서버 오류",
-        }
+        },
     )
-    @action(detail=False, methods=['put'], url_path='me/password')
+    @action(detail=False, methods=["put"], url_path="me/password")
     @transaction.atomic
     def update_password(self, request):
         """Change user password (PUT /users/me/password/)"""
         from .services import AuthService
 
         serializer = PasswordChangeSerializer(
-            data=request.data,
-            context={'request': request}
+            data=request.data, context={"request": request}
         )
 
         if serializer.is_valid():
-            current_password = serializer.validated_data['current_password']
-            new_password = serializer.validated_data['new_password']
+            current_password = serializer.validated_data["current_password"]
+            new_password = serializer.validated_data["new_password"]
 
             # Use AuthService for password change
             auth_service = AuthService(request.user)
             success, error_message = auth_service.change_password(
-                current_password=current_password,
-                new_password=new_password
+                current_password=current_password, new_password=new_password
             )
 
             if success:
-                return Response({
-                    'message': 'Password changed successfully. Please login again on all devices.',
-                    'action_required': 'relogin'
-                }, status=status.HTTP_200_OK)
+                return Response(
+                    {
+                        "message": "Password changed successfully. Please login again on all devices.",
+                        "action_required": "relogin",
+                    },
+                    status=status.HTTP_200_OK,
+                )
             else:
                 return Response(
-                    {'error': error_message or 'Password change failed'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {"error": error_message or "Password change failed"},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -382,6 +423,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class GoogleOAuthView(APIView):
     """Google OAuth 로그인 뷰"""
+
     permission_classes = [AllowAny]
 
     @swagger_auto_schema(
@@ -404,7 +446,7 @@ class GoogleOAuthView(APIView):
         - Access token: 응답 본문에 포함 (메모리에 저장)
         - Refresh token: HttpOnly Cookie로 설정 (XSS 공격 방지)
         """,
-        tags=['Authentication'],
+        tags=["Authentication"],
         request_body=GoogleAuthSerializer,
         responses={
             200: openapi.Response(
@@ -412,17 +454,27 @@ class GoogleOAuthView(APIView):
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
-                        'access': openapi.Schema(type=openapi.TYPE_STRING, description="액세스 토큰"),
-                        'user': openapi.Schema(type=openapi.TYPE_OBJECT, description="사용자 정보"),
-                        'is_new_user': openapi.Schema(type=openapi.TYPE_BOOLEAN, description="신규 사용자 여부"),
-                        'google_user_info': openapi.Schema(type=openapi.TYPE_OBJECT, description="Google 사용자 정보"),
-                    }
-                )
+                        "message": openapi.Schema(
+                            type=openapi.TYPE_STRING, description="성공 메시지"
+                        ),
+                        "access": openapi.Schema(
+                            type=openapi.TYPE_STRING, description="액세스 토큰"
+                        ),
+                        "user": openapi.Schema(
+                            type=openapi.TYPE_OBJECT, description="사용자 정보"
+                        ),
+                        "is_new_user": openapi.Schema(
+                            type=openapi.TYPE_BOOLEAN, description="신규 사용자 여부"
+                        ),
+                        "google_user_info": openapi.Schema(
+                            type=openapi.TYPE_OBJECT, description="Google 사용자 정보"
+                        ),
+                    },
+                ),
             ),
             400: "잘못된 요청 - 유효하지 않은 Google 토큰",
             500: "서버 오류",
-        }
+        },
     )
     def post(self, request):
         """Google OAuth 토큰으로 로그인"""
@@ -437,18 +489,20 @@ class GoogleOAuthView(APIView):
             refresh = RefreshToken.for_user(user)
             access_token = refresh.access_token
 
-            logger.info(f"Google OAuth login successful: {user.email} ({'new' if is_new_user else 'existing'} user)")
+            logger.info(
+                f"Google OAuth login successful: {user.email} ({'new' if is_new_user else 'existing'} user)"
+            )
 
             response_data = {
-                'message': f"Google login {'and registration' if is_new_user else ''} completed successfully.",
-                'access': str(access_token),
-                'user': UserSerializer(user).data,
-                'is_new_user': is_new_user,
-                'google_user_info': {
-                    'name': google_user_info.get('name', ''),
-                    'picture': google_user_info.get('picture', ''),
-                    'locale': google_user_info.get('locale', ''),
-                }
+                "message": f"Google login {'and registration' if is_new_user else ''} completed successfully.",
+                "access": str(access_token),
+                "user": UserSerializer(user).data,
+                "is_new_user": is_new_user,
+                "google_user_info": {
+                    "name": google_user_info.get("name", ""),
+                    "picture": google_user_info.get("picture", ""),
+                    "locale": google_user_info.get("locale", ""),
+                },
             }
 
             response = Response(response_data, status=status.HTTP_200_OK)
@@ -480,7 +534,7 @@ class CookieTokenRefreshView(TokenRefreshView):
         }
         ```
         """,
-        tags=['Authentication'],
+        tags=["Authentication"],
         request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={}),
         responses={
             200: openapi.Response(
@@ -488,44 +542,45 @@ class CookieTokenRefreshView(TokenRefreshView):
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        'access': openapi.Schema(type=openapi.TYPE_STRING, description="새 액세스 토큰 (60분 유효)"),
-                    }
-                )
+                        "access": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description="새 액세스 토큰 (60분 유효)",
+                        ),
+                    },
+                ),
             ),
             401: "인증 실패 - refresh token이 없거나 유효하지 않음",
-        }
+        },
     )
     def post(self, request, *args, **kwargs):
         # Read refresh token from cookie
-        refresh_token = request.COOKIES.get('refresh_token')
+        refresh_token = request.COOKIES.get("refresh_token")
 
         if not refresh_token:
             return Response(
-                {'detail': 'Refresh token not found in cookies'},
-                status=status.HTTP_401_UNAUTHORIZED
+                {"detail": "Refresh token not found in cookies"},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
         # Add refresh token to request data
-        request.data['refresh'] = refresh_token
+        request.data["refresh"] = refresh_token
 
         try:
             response = super().post(request, *args, **kwargs)
 
             # Set new refresh token as HttpOnly cookie (rotation)
-            if response.status_code == 200 and 'refresh' in response.data:
-                new_refresh_token = response.data.pop('refresh')
+            if response.status_code == 200 and "refresh" in response.data:
+                new_refresh_token = response.data.pop("refresh")
                 set_refresh_token_cookie(response, new_refresh_token)
 
             return response
         except (InvalidToken, TokenError) as e:
-            return Response(
-                {'detail': str(e)},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+            return Response({"detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class LogoutView(APIView):
     """Logout view that clears the refresh token cookie"""
+
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
@@ -539,24 +594,26 @@ class LogoutView(APIView):
         **헤더 요구사항:**
         - Authorization: Bearer <access_token>
         """,
-        tags=['Authentication'],
+        tags=["Authentication"],
         responses={
             200: openapi.Response(
                 description="로그아웃 성공",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        'message': openapi.Schema(type=openapi.TYPE_STRING, description="성공 메시지"),
-                    }
-                )
+                        "message": openapi.Schema(
+                            type=openapi.TYPE_STRING, description="성공 메시지"
+                        ),
+                    },
+                ),
             ),
             401: "인증 필요",
-        }
+        },
     )
     def post(self, request):
         try:
             # Get refresh token from cookie
-            refresh_token = request.COOKIES.get('refresh_token')
+            refresh_token = request.COOKIES.get("refresh_token")
 
             if refresh_token:
                 # Blacklist the refresh token
@@ -565,8 +622,7 @@ class LogoutView(APIView):
                 logger.info(f"User {request.user.email} logged out successfully")
 
             response = Response(
-                {'message': 'Logged out successfully'},
-                status=status.HTTP_200_OK
+                {"message": "Logged out successfully"}, status=status.HTTP_200_OK
             )
 
             # Delete the refresh token cookie
@@ -577,8 +633,7 @@ class LogoutView(APIView):
             logger.error(f"Logout failed for user {request.user.email}: {str(e)}")
             # Still delete the cookie even if blacklisting fails
             response = Response(
-                {'message': 'Logged out successfully'},
-                status=status.HTTP_200_OK
+                {"message": "Logged out successfully"}, status=status.HTTP_200_OK
             )
             delete_refresh_token_cookie(response)
             return response

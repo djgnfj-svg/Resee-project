@@ -6,23 +6,32 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('review', '0001_initial'),
+        ("review", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='reviewhistory',
-            name='ai_feedback',
-            field=models.TextField(blank=True, default='', help_text='AI generated feedback'),
+            model_name="reviewhistory",
+            name="ai_feedback",
+            field=models.TextField(
+                blank=True, default="", help_text="AI generated feedback"
+            ),
         ),
         migrations.AddField(
-            model_name='reviewhistory',
-            name='ai_score',
-            field=models.FloatField(blank=True, help_text='AI evaluation score (0-100)', null=True),
+            model_name="reviewhistory",
+            name="ai_score",
+            field=models.FloatField(
+                blank=True, help_text="AI evaluation score (0-100)", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='reviewhistory',
-            name='descriptive_answer',
-            field=models.TextField(blank=True, default='', help_text='User descriptive answer for AI evaluation', max_length=2000),
+            model_name="reviewhistory",
+            name="descriptive_answer",
+            field=models.TextField(
+                blank=True,
+                default="",
+                help_text="User descriptive answer for AI evaluation",
+                max_length=2000,
+            ),
         ),
     ]

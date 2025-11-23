@@ -6,47 +6,47 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_paymenthistory_gateway_order_id_and_more'),
+        ("accounts", "0002_paymenthistory_gateway_order_id_and_more"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='cookieconsent',
-            name='user',
+            model_name="cookieconsent",
+            name="user",
         ),
         migrations.RemoveField(
-            model_name='datadeletionrequest',
-            name='processed_by',
+            model_name="datadeletionrequest",
+            name="processed_by",
         ),
         migrations.RemoveField(
-            model_name='datadeletionrequest',
-            name='user',
+            model_name="datadeletionrequest",
+            name="user",
         ),
         migrations.RemoveField(
-            model_name='dataexportrequest',
-            name='user',
+            model_name="dataexportrequest",
+            name="user",
         ),
         migrations.DeleteModel(
-            name='LegalDocument',
+            name="LegalDocument",
         ),
         migrations.AlterUniqueTogether(
-            name='userconsent',
+            name="userconsent",
             unique_together=None,
         ),
         migrations.RemoveField(
-            model_name='userconsent',
-            name='user',
+            model_name="userconsent",
+            name="user",
         ),
         migrations.DeleteModel(
-            name='CookieConsent',
+            name="CookieConsent",
         ),
         migrations.DeleteModel(
-            name='DataDeletionRequest',
+            name="DataDeletionRequest",
         ),
         migrations.DeleteModel(
-            name='DataExportRequest',
+            name="DataExportRequest",
         ),
         migrations.DeleteModel(
-            name='UserConsent',
+            name="UserConsent",
         ),
     ]

@@ -21,9 +21,12 @@ logger = logging.getLogger(__name__)
 
 class WeeklyTestBalanceState(TypedDict):
     """주간 시험 밸런스 상태"""
+
     contents: List[Dict]  # [{'id': int, 'title': str, 'content': str}]
     target_count: int  # 목표 문제 수 (7-10개)
-    difficulty_scores: Dict[int, Dict]  # {content_id: {'difficulty': str, 'score': int}}
+    difficulty_scores: Dict[
+        int, Dict
+    ]  # {content_id: {'difficulty': str, 'score': int}}
     selected_contents: List[int]  # 선택된 content_id 리스트
     balance: Dict[str, int]  # {'easy': n, 'medium': n, 'hard': n}
 
@@ -40,10 +43,11 @@ def analyze_difficulty(state: WeeklyTestBalanceState) -> WeeklyTestBalanceState:
         model="claude-3-haiku-20240307",
         temperature=0.2,
         max_tokens=200,
-        api_key=settings.ANTHROPIC_API_KEY
+        api_key=settings.ANTHROPIC_API_KEY,
     )
 
-    prompt = ChatPromptTemplate.from_template("""
+    prompt = ChatPromptTemplate.from_template(
+        """
 다음 학습 콘텐츠의 난이도를 평가하세요.
 
 **콘텐츠**:
@@ -57,27 +61,29 @@ def analyze_difficulty(state: WeeklyTestBalanceState) -> WeeklyTestBalanceState:
 
 **응답 형식** (한 줄로):
 difficulty: Easy|Medium|Hard, score: 30-100
-""")
+"""
+    )
 
     difficulty_scores = {}
 
-    for content_data in state['contents']:
+    for content_data in state["contents"]:
         try:
-            response = llm.invoke(prompt.format(
-                title=content_data['title'],
-                content=content_data['content'][:800]
-            ))
+            response = llm.invoke(
+                prompt.format(
+                    title=content_data["title"], content=content_data["content"][:800]
+                )
+            )
 
             response_text = response.content.strip()
 
             # 파싱: "difficulty: Medium, score: 65"
-            parts = response_text.split(',')
-            difficulty = parts[0].split(':')[1].strip()
-            score = int(parts[1].split(':')[1].strip())
+            parts = response_text.split(",")
+            difficulty = parts[0].split(":")[1].strip()
+            score = int(parts[1].split(":")[1].strip())
 
-            difficulty_scores[content_data['id']] = {
-                'difficulty': difficulty,
-                'score': score
+            difficulty_scores[content_data["id"]] = {
+                "difficulty": difficulty,
+                "score": score,
             }
 
             logger.info(
@@ -88,12 +94,12 @@ difficulty: Easy|Medium|Hard, score: 30-100
         except Exception as e:
             logger.error(f"[Analyze] Failed for content {content_data['id']}: {e}")
             # 기본값: Medium
-            difficulty_scores[content_data['id']] = {
-                'difficulty': 'Medium',
-                'score': 60
+            difficulty_scores[content_data["id"]] = {
+                "difficulty": "Medium",
+                "score": 60,
             }
 
-    state['difficulty_scores'] = difficulty_scores
+    state["difficulty_scores"] = difficulty_scores
     logger.info(f"[Analyze] Complete - {len(difficulty_scores)} contents analyzed")
 
     return state
@@ -105,8 +111,8 @@ def select_balanced_contents(state: WeeklyTestBalanceState) -> WeeklyTestBalance
 
     30% Easy, 50% Medium, 20% Hard 비율로 선택
     """
-    target_count = state['target_count']
-    difficulty_scores = state['difficulty_scores']
+    target_count = state["target_count"]
+    difficulty_scores = state["difficulty_scores"]
 
     logger.info(f"[Select] Selecting {target_count} contents with 30/50/20 balance")
 
@@ -116,10 +122,10 @@ def select_balanced_contents(state: WeeklyTestBalanceState) -> WeeklyTestBalance
     hard_contents = []
 
     for content_id, data in difficulty_scores.items():
-        difficulty = data['difficulty']
-        if difficulty == 'Easy':
+        difficulty = data["difficulty"]
+        if difficulty == "Easy":
             easy_contents.append(content_id)
-        elif difficulty == 'Medium':
+        elif difficulty == "Medium":
             medium_contents.append(content_id)
         else:  # Hard
             hard_contents.append(content_id)
@@ -147,15 +153,21 @@ def select_balanced_contents(state: WeeklyTestBalanceState) -> WeeklyTestBalance
         selected.extend(random.sample(easy_contents, target_easy))
     else:
         selected.extend(easy_contents)
-        logger.warning(f"[Select] Not enough Easy contents ({len(easy_contents)}/{target_easy})")
+        logger.warning(
+            f"[Select] Not enough Easy contents ({len(easy_contents)}/{target_easy})"
+        )
 
     # Medium 선택
-    remaining_medium_needed = target_medium + (target_easy - len([c for c in selected if c in easy_contents]))
+    remaining_medium_needed = target_medium + (
+        target_easy - len([c for c in selected if c in easy_contents])
+    )
     if len(medium_contents) >= remaining_medium_needed:
         selected.extend(random.sample(medium_contents, remaining_medium_needed))
     else:
         selected.extend(medium_contents)
-        logger.warning(f"[Select] Not enough Medium contents ({len(medium_contents)}/{remaining_medium_needed})")
+        logger.warning(
+            f"[Select] Not enough Medium contents ({len(medium_contents)}/{remaining_medium_needed})"
+        )
 
     # Hard 선택
     remaining_hard_needed = target_count - len(selected)
@@ -163,7 +175,9 @@ def select_balanced_contents(state: WeeklyTestBalanceState) -> WeeklyTestBalance
         selected.extend(random.sample(hard_contents, remaining_hard_needed))
     else:
         selected.extend(hard_contents)
-        logger.warning(f"[Select] Not enough Hard contents ({len(hard_contents)}/{remaining_hard_needed})")
+        logger.warning(
+            f"[Select] Not enough Hard contents ({len(hard_contents)}/{remaining_hard_needed})"
+        )
 
     # 부족하면 남은 것으로 채우기
     if len(selected) < target_count:
@@ -176,15 +190,15 @@ def select_balanced_contents(state: WeeklyTestBalanceState) -> WeeklyTestBalance
     # 셔플 (난이도 순서 섞기)
     random.shuffle(selected)
 
-    state['selected_contents'] = selected[:target_count]
+    state["selected_contents"] = selected[:target_count]
 
     # 최종 밸런스 계산
-    final_balance = {'easy': 0, 'medium': 0, 'hard': 0}
-    for content_id in state['selected_contents']:
-        diff = difficulty_scores[content_id]['difficulty'].lower()
+    final_balance = {"easy": 0, "medium": 0, "hard": 0}
+    for content_id in state["selected_contents"]:
+        diff = difficulty_scores[content_id]["difficulty"].lower()
         final_balance[diff] = final_balance.get(diff, 0) + 1
 
-    state['balance'] = final_balance
+    state["balance"] = final_balance
 
     logger.info(
         f"[Select] Selected {len(state['selected_contents'])} contents - "
@@ -214,8 +228,7 @@ def create_weekly_test_balance_graph() -> StateGraph:
 
 
 def select_balanced_contents_for_test(
-    contents: List[Dict],
-    target_count: int = 10
+    contents: List[Dict], target_count: int = 10
 ) -> Dict:
     """
     난이도 균형 맞춰 콘텐츠 선택
@@ -243,11 +256,11 @@ def select_balanced_contents_for_test(
     graph = create_weekly_test_balance_graph()
 
     initial_state: WeeklyTestBalanceState = {
-        'contents': contents,
-        'target_count': target_count,
-        'difficulty_scores': {},
-        'selected_contents': [],
-        'balance': {}
+        "contents": contents,
+        "target_count": target_count,
+        "difficulty_scores": {},
+        "selected_contents": [],
+        "balance": {},
     }
 
     result = graph.invoke(initial_state)
@@ -258,7 +271,7 @@ def select_balanced_contents_for_test(
     )
 
     return {
-        'selected_content_ids': result['selected_contents'],
-        'balance': result['balance'],
-        'difficulty_scores': result['difficulty_scores']
+        "selected_content_ids": result["selected_contents"],
+        "balance": result["balance"],
+        "difficulty_scores": result["difficulty_scores"],
     }

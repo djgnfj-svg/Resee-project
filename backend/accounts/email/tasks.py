@@ -1,6 +1,7 @@
 """
 Celery tasks for email operations
 """
+
 import logging
 
 from celery import shared_task
@@ -28,12 +29,16 @@ def send_verification_email_async(self, user_id: int):
         if success:
             logger.info(f"Async verification email sent for user_id: {user_id}")
         else:
-            logger.warning(f"Failed to send async verification email for user_id: {user_id}")
+            logger.warning(
+                f"Failed to send async verification email for user_id: {user_id}"
+            )
 
         return success
 
     except Exception as exc:
-        logger.error(f"Error sending async verification email for user_id {user_id}: {str(exc)}")
+        logger.error(
+            f"Error sending async verification email for user_id {user_id}: {str(exc)}"
+        )
         # Retry after 60 seconds
         raise self.retry(exc=exc, countdown=60)
 
@@ -59,10 +64,14 @@ def send_password_reset_email_async(self, user_id: int, reset_token: str):
         if success:
             logger.info(f"Async password reset email sent for user_id: {user_id}")
         else:
-            logger.warning(f"Failed to send async password reset email for user_id: {user_id}")
+            logger.warning(
+                f"Failed to send async password reset email for user_id: {user_id}"
+            )
 
         return success
 
     except Exception as exc:
-        logger.error(f"Error sending async password reset email for user_id {user_id}: {str(exc)}")
+        logger.error(
+            f"Error sending async password reset email for user_id {user_id}: {str(exc)}"
+        )
         raise self.retry(exc=exc, countdown=60)

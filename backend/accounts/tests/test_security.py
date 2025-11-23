@@ -6,6 +6,7 @@ Tests cover:
 2. Constant-time token comparison (Critical)
 3. JWT token invalidation on password change (Critical)
 """
+
 import hashlib
 import time
 from datetime import timedelta
@@ -16,7 +17,8 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.token_blacklist.models import (
-    BlacklistedToken, OutstandingToken,
+    BlacklistedToken,
+    OutstandingToken,
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -28,9 +30,7 @@ class EmailVerificationTokenSecurityTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass123',
-            is_email_verified=False
+            email="test@example.com", password="testpass123", is_email_verified=False
         )
 
     def test_token_is_hashed_in_database(self):
@@ -52,7 +52,7 @@ class EmailVerificationTokenSecurityTest(TestCase):
         # Verify token in DB is a hash (64 hex characters for SHA-256)
         self.assertEqual(len(self.user.email_verification_token), 64)
         self.assertTrue(
-            all(c in '0123456789abcdef' for c in self.user.email_verification_token)
+            all(c in "0123456789abcdef" for c in self.user.email_verification_token)
         )
 
         # Verify the hash matches expected value
@@ -77,7 +77,7 @@ class EmailVerificationTokenSecurityTest(TestCase):
         """Verify that incorrect tokens are rejected."""
         # Generate token but try different one
         self.user.generate_email_verification_token()
-        result = self.user.verify_email('wrong_token_here')
+        result = self.user.verify_email("wrong_token_here")
 
         # Should fail
         self.assertFalse(result)
@@ -100,9 +100,9 @@ class EmailVerificationTokenSecurityTest(TestCase):
 
         # Create tokens that fail at different positions
         wrong_tokens = [
-            'X' + token[1:],  # Fails at first character
-            token[:32] + 'X' + token[33:],  # Fails in middle
-            token[:-1] + 'X',  # Fails at last character
+            "X" + token[1:],  # Fails at first character
+            token[:32] + "X" + token[33:],  # Fails in middle
+            token[:-1] + "X",  # Fails at last character
         ]
 
         # Measure time for each comparison (multiple iterations for stability)
@@ -119,7 +119,7 @@ class EmailVerificationTokenSecurityTest(TestCase):
         # Calculate variance
         mean_time = sum(times) / len(times)
         variance = sum((t - mean_time) ** 2 for t in times) / len(times)
-        std_dev = variance ** 0.5
+        std_dev = variance**0.5
 
         # If comparison is constant-time, variance should be very small
         # Allow some variation due to system noise (coefficient of variation < 25%)
@@ -131,7 +131,7 @@ class EmailVerificationTokenSecurityTest(TestCase):
             coefficient_of_variation,
             25.0,
             f"Token comparison shows timing variation ({coefficient_of_variation:.2f}%), "
-            f"possible timing attack vulnerability"
+            f"possible timing attack vulnerability",
         )
 
     def test_expired_token_rejected(self):
@@ -162,9 +162,7 @@ class SecurityRegressionTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass123',
-            is_email_verified=False
+            email="test@example.com", password="testpass123", is_email_verified=False
         )
 
     def test_token_not_logged(self):
@@ -188,7 +186,7 @@ class SecurityRegressionTest(TestCase):
 
         # Measure time for existing user (invalid token)
         start = time.perf_counter()
-        self.user.verify_email('invalid_token')
+        self.user.verify_email("invalid_token")
         existing_user_time = time.perf_counter() - start
 
         # Measure time for non-existing scenario (empty token stored)
@@ -196,20 +194,21 @@ class SecurityRegressionTest(TestCase):
         self.user.save()
 
         start = time.perf_counter()
-        self.user.verify_email('invalid_token')
+        self.user.verify_email("invalid_token")
         nonexisting_user_time = time.perf_counter() - start
 
         # Times should be similar (within 1000% variance)
         # This is a very loose check to catch obvious leaks only
         # Microsecond-level operations can have high variance in virtualized environments
         if min(existing_user_time, nonexisting_user_time) > 0:
-            time_ratio = max(existing_user_time, nonexisting_user_time) / \
-                min(existing_user_time, nonexisting_user_time)
+            time_ratio = max(existing_user_time, nonexisting_user_time) / min(
+                existing_user_time, nonexisting_user_time
+            )
 
             self.assertLess(
                 time_ratio,
                 10.0,
                 f"Timing difference too large ({time_ratio:.2f}x), "
-                f"possible user enumeration vulnerability"
+                f"possible user enumeration vulnerability",
             )
         # If time is too small to measure accurately, pass

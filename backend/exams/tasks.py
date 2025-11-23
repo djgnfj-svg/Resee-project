@@ -1,6 +1,7 @@
 """
 Celery tasks for exam question generation
 """
+
 import logging
 
 from celery import shared_task
@@ -30,7 +31,7 @@ def generate_exam_questions(self, test_id, content_ids=None):
         # 이미 문제가 생성되어 있으면 스킵
         if weekly_test.questions.exists():
             logger.info(f"[Task] Test {test_id} already has questions, skipping")
-            weekly_test.status = 'pending'
+            weekly_test.status = "pending"
             weekly_test.save()
             return
 
@@ -43,13 +44,18 @@ def generate_exam_questions(self, test_id, content_ids=None):
         else:
             _generate_balanced_questions(weekly_test, ai_available)
 
-        logger.info(f"[Task] Successfully generated {weekly_test.total_questions} questions for test {test_id}")
+        logger.info(
+            f"[Task] Successfully generated {weekly_test.total_questions} questions for test {test_id}"
+        )
 
     except WeeklyTest.DoesNotExist:
         logger.error(f"[Task] Test {test_id} not found")
         raise
     except Exception as e:
-        logger.error(f"[Task] Failed to generate questions for test {test_id}: {e}", exc_info=True)
+        logger.error(
+            f"[Task] Failed to generate questions for test {test_id}: {e}",
+            exc_info=True,
+        )
 
         # 재시도
         try:
@@ -58,7 +64,7 @@ def generate_exam_questions(self, test_id, content_ids=None):
             # 재시도 실패 시 상태 업데이트
             try:
                 weekly_test = WeeklyTest.objects.get(id=test_id)
-                weekly_test.status = 'pending'
+                weekly_test.status = "pending"
                 weekly_test.save()
             except Exception:
                 pass
@@ -73,9 +79,7 @@ def _generate_questions_from_ids(weekly_test, content_ids, ai_available):
         with transaction.atomic():
             # 콘텐츠 조회 (AI 검증된 콘텐츠만)
             contents = Content.objects.filter(
-                id__in=content_ids,
-                author=weekly_test.user,
-                is_ai_validated=True
+                id__in=content_ids, author=weekly_test.user, is_ai_validated=True
             )
 
             # 존재하지 않거나 검증되지 않은 콘텐츠가 있으면 에러
@@ -100,13 +104,15 @@ def _generate_questions_from_ids(weekly_test, content_ids, ai_available):
             weekly_test.total_questions = weekly_test.questions.count()
 
             # 문제 생성 완료 후 preparing 상태를 pending으로 변경
-            if weekly_test.status == 'preparing':
-                weekly_test.status = 'pending'
+            if weekly_test.status == "preparing":
+                weekly_test.status = "pending"
 
             weekly_test.save()
     except Exception as e:
-        logger.error(f"[Task] Failed to generate questions from IDs: {e}", exc_info=True)
-        weekly_test.status = 'pending'
+        logger.error(
+            f"[Task] Failed to generate questions from IDs: {e}", exc_info=True
+        )
+        weekly_test.status = "pending"
         weekly_test.save()
         raise
 
@@ -121,32 +127,33 @@ def _generate_balanced_questions(weekly_test, ai_available):
     from ai_services.graphs import select_balanced_contents_for_test
     from content.models import Content
 
-    logger.info(f"[Task] Starting balanced question generation for test {weekly_test.id}")
+    logger.info(
+        f"[Task] Starting balanced question generation for test {weekly_test.id}"
+    )
 
     # 이미 문제가 생성되어 있으면 스킵
     if weekly_test.questions.exists():
-        logger.info(f"[Task] Test {weekly_test.id} already has questions, skipping generation")
+        logger.info(
+            f"[Task] Test {weekly_test.id} already has questions, skipping generation"
+        )
         return
 
     # 사용자의 AI 검증된 콘텐츠 조회
     contents = Content.objects.filter(
-        author=weekly_test.user,
-        is_ai_validated=True
-    ).order_by('-created_at')
+        author=weekly_test.user, is_ai_validated=True
+    ).order_by("-created_at")
 
     if not contents.exists():
-        logger.warning(f"[Task] No AI-validated contents for user {weekly_test.user.id}")
-        weekly_test.status = 'pending'
+        logger.warning(
+            f"[Task] No AI-validated contents for user {weekly_test.user.id}"
+        )
+        weekly_test.status = "pending"
         weekly_test.save()
         return
 
     # Balance Graph용 데이터 준비
     content_data = [
-        {
-            'id': content.id,
-            'title': content.title,
-            'content': content.content
-        }
+        {"id": content.id, "title": content.title, "content": content.content}
         for content in contents
     ]
 
@@ -161,13 +168,12 @@ def _generate_balanced_questions(weekly_test, ai_available):
     try:
         # LangGraph Balance Graph 실행
         balance_result = select_balanced_contents_for_test(
-            contents=content_data,
-            target_count=target_count
+            contents=content_data, target_count=target_count
         )
 
-        selected_ids = balance_result['selected_content_ids']
-        balance_info = balance_result['balance']
-        difficulty_scores = balance_result['difficulty_scores']
+        selected_ids = balance_result["selected_content_ids"]
+        balance_info = balance_result["balance"]
+        difficulty_scores = balance_result["difficulty_scores"]
 
         logger.info(
             f"[Task] Selected {len(selected_ids)} contents - "
@@ -194,16 +200,16 @@ def _generate_balanced_questions(weekly_test, ai_available):
             # 밸런스 정보 저장 (메타데이터로)
             weekly_test.total_questions = weekly_test.questions.count()
             weekly_test.metadata = {
-                'balance': balance_info,
-                'difficulty_scores': {
+                "balance": balance_info,
+                "difficulty_scores": {
                     str(cid): score for cid, score in difficulty_scores.items()
                 },
-                'auto_balanced': True
+                "auto_balanced": True,
             }
 
             # 문제 생성 완료 후 preparing 상태를 pending으로 변경
-            if weekly_test.status == 'preparing':
-                weekly_test.status = 'pending'
+            if weekly_test.status == "preparing":
+                weekly_test.status = "pending"
 
             weekly_test.save()
 
@@ -214,8 +220,7 @@ def _generate_balanced_questions(weekly_test, ai_available):
 
     except Exception as e:
         logger.error(
-            f"[Task] Failed to generate balanced questions: {e}",
-            exc_info=True
+            f"[Task] Failed to generate balanced questions: {e}", exc_info=True
         )
         # Fallback: 무작위 선택 (트랜잭션으로 보호)
         with transaction.atomic():
@@ -227,7 +232,7 @@ def _generate_balanced_questions(weekly_test, ai_available):
                     _create_simple_question(weekly_test, content, order)
 
             weekly_test.total_questions = weekly_test.questions.count()
-            weekly_test.status = 'pending'
+            weekly_test.status = "pending"
             weekly_test.save()
 
 
@@ -253,13 +258,13 @@ def _create_ai_question(weekly_test, content, order):
             WeeklyTestQuestion.objects.create(
                 weekly_test=weekly_test,
                 content=content,
-                question_type=question_data['question_type'],
-                question_text=question_data['question_text'],
-                choices=question_data.get('choices'),
-                correct_answer=question_data['correct_answer'],
-                explanation=question_data['explanation'],
+                question_type=question_data["question_type"],
+                question_text=question_data["question_text"],
+                choices=question_data.get("choices"),
+                correct_answer=question_data["correct_answer"],
+                explanation=question_data["explanation"],
                 order=order,
-                points=10
+                points=10,
             )
             logger.info(
                 f"[Task] AI question generated (quality: "
@@ -284,7 +289,9 @@ def _create_simple_question(weekly_test, content, order):
 
     # 중복 체크: 이미 해당 order에 문제가 있으면 스킵
     if WeeklyTestQuestion.objects.filter(weekly_test=weekly_test, order=order).exists():
-        logger.info(f"[Task] Question at order {order} already exists, skipping simple question creation")
+        logger.info(
+            f"[Task] Question at order {order} already exists, skipping simple question creation"
+        )
         return
 
     # 콘텐츠에서 의미있는 문장 추출
@@ -314,18 +321,20 @@ def _create_simple_question(weekly_test, content, order):
         modified_sentence = _wrap_code_elements(modified_sentence)
         question_text = f"'{content.title}'에 대한 다음 설명이 맞습니까? (O/X)\n\n{modified_sentence}"
         correct_answer = "X"
-        explanation = f"X - 학습 내용과 다릅니다. 정확한 내용: {selected_sentence[:100]}..."
+        explanation = (
+            f"X - 학습 내용과 다릅니다. 정확한 내용: {selected_sentence[:100]}..."
+        )
 
     WeeklyTestQuestion.objects.create(
         weekly_test=weekly_test,
         content=content,
-        question_type='true_false',
+        question_type="true_false",
         question_text=question_text,
         choices=None,
         correct_answer=correct_answer,
         explanation=explanation,
         order=order,
-        points=10
+        points=10,
     )
 
 
@@ -334,12 +343,12 @@ def _extract_meaningful_sentences(text):
     import re
 
     # 마크다운 헤더, 코드 블록 등 제거
-    text = re.sub(r'#+\s+', '', text)  # 헤더 제거
-    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)  # 코드 블록 제거
-    text = re.sub(r'`[^`]+`', '', text)  # 인라인 코드 제거
+    text = re.sub(r"#+\s+", "", text)  # 헤더 제거
+    text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)  # 코드 블록 제거
+    text = re.sub(r"`[^`]+`", "", text)  # 인라인 코드 제거
 
     # 문장 분리 (. ! ? 기준)
-    sentences = re.split(r'[.!?]\s+', text)
+    sentences = re.split(r"[.!?]\s+", text)
 
     # 의미있는 길이의 문장만 필터링 (50-300자)
     meaningful = [s.strip() for s in sentences if 50 <= len(s.strip()) <= 300]
@@ -366,25 +375,31 @@ def _wrap_code_elements(text):
     import re
 
     # 이미 백틱으로 감싸진 부분은 보존
-    if '`' in text:
+    if "`" in text:
         return text
 
     # 코드 패턴들 정의
     patterns = [
         # 던더 메서드 (__init__, __str__ 등) - 괄호 포함
-        (r'(__[a-zA-Z_]+__)\s*\(', r'`\1`('),
+        (r"(__[a-zA-Z_]+__)\s*\(", r"`\1`("),
         # 던더 메서드 (__init__, __str__ 등) - 괄호 없음
-        (r'(?<![a-zA-Z0-9_])(__[a-zA-Z_]+__)(?![a-zA-Z0-9_])', r'`\1`'),
+        (r"(?<![a-zA-Z0-9_])(__[a-zA-Z_]+__)(?![a-zA-Z0-9_])", r"`\1`"),
         # self, cls 같은 특수 키워드 (한글 앞뒤 허용)
-        (r'(?<![a-zA-Z0-9_])(self|cls)(?![a-zA-Z0-9_])', r'`\1`'),
+        (r"(?<![a-zA-Z0-9_])(self|cls)(?![a-zA-Z0-9_])", r"`\1`"),
         # 함수/메서드 호출 (괄호 포함, 던더 메서드 제외)
-        (r'(?<![a-zA-Z0-9_])(?!__)([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', r'`\1`('),
+        (r"(?<![a-zA-Z0-9_])(?!__)([a-zA-Z_][a-zA-Z0-9_]*)\s*\(", r"`\1`("),
         # 파이썬 키워드들
-        (r'(?<![a-zA-Z0-9_])(def|class|import|from|return|if|else|elif|for|while|try|except|with|as|lambda|yield|async|await)(?![a-zA-Z0-9_])', r'`\1`'),
+        (
+            r"(?<![a-zA-Z0-9_])(def|class|import|from|return|if|else|elif|for|while|try|except|with|as|lambda|yield|async|await)(?![a-zA-Z0-9_])",
+            r"`\1`",
+        ),
         # 타입 힌트나 타입 이름
-        (r'(?<![a-zA-Z0-9_])(int|str|float|bool|list|dict|tuple|set|None|True|False)(?![a-zA-Z0-9_])', r'`\1`'),
+        (
+            r"(?<![a-zA-Z0-9_])(int|str|float|bool|list|dict|tuple|set|None|True|False)(?![a-zA-Z0-9_])",
+            r"`\1`",
+        ),
         # 변수명 패턴 (언더스코어 포함)
-        (r'(?<![a-zA-Z0-9_])([a-z][a-z0-9_]*_[a-z0-9_]+)(?![a-zA-Z0-9_])', r'`\1`'),
+        (r"(?<![a-zA-Z0-9_])([a-z][a-z0-9_]*_[a-z0-9_]+)(?![a-zA-Z0-9_])", r"`\1`"),
     ]
 
     result = text
@@ -392,6 +407,6 @@ def _wrap_code_elements(text):
         result = re.sub(pattern, replacement, result)
 
     # 중복 백틱 제거 (예: ``code``)
-    result = re.sub(r'`+', '`', result)
+    result = re.sub(r"`+", "`", result)
 
     return result

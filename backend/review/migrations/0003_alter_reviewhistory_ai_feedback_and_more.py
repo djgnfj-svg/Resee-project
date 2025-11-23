@@ -6,18 +6,24 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('review', '0002_reviewhistory_ai_feedback_reviewhistory_ai_score_and_more'),
+        ("review", "0002_reviewhistory_ai_feedback_reviewhistory_ai_score_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='reviewhistory',
-            name='ai_feedback',
-            field=models.TextField(blank=True, help_text='AI generated feedback', null=True),
+            model_name="reviewhistory",
+            name="ai_feedback",
+            field=models.TextField(
+                blank=True, help_text="AI generated feedback", null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='reviewhistory',
-            name='descriptive_answer',
-            field=models.TextField(blank=True, help_text='User descriptive answer for AI evaluation', max_length=2000),
+            model_name="reviewhistory",
+            name="descriptive_answer",
+            field=models.TextField(
+                blank=True,
+                help_text="User descriptive answer for AI evaluation",
+                max_length=2000,
+            ),
         ),
     ]

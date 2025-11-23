@@ -27,10 +27,7 @@ class ContentValidator(BaseAIService):
 
     def __init__(self):
         # Use Claude 3.7 Sonnet for high-quality validation
-        super().__init__(
-            model="claude-3-7-sonnet-20250219",
-            use_langchain=True
-        )
+        super().__init__(model="claude-3-7-sonnet-20250219", use_langchain=True)
 
     def _get_temperature(self) -> float:
         return 0.3
@@ -63,9 +60,7 @@ class ContentValidator(BaseAIService):
         try:
             prompt_template = self._create_validation_prompt()
             response_text = self.call_langchain(
-                prompt_template,
-                title=title,
-                content=content
+                prompt_template, title=title, content=content
             )
 
             if not response_text:
@@ -79,11 +74,11 @@ class ContentValidator(BaseAIService):
 
             # Validate structure
             required_keys = [
-                'is_valid',
-                'factual_accuracy',
-                'logical_consistency',
-                'title_relevance',
-                'overall_feedback'
+                "is_valid",
+                "factual_accuracy",
+                "logical_consistency",
+                "title_relevance",
+                "overall_feedback",
             ]
 
             if not self.validate_required_fields(result, required_keys):
@@ -94,13 +89,14 @@ class ContentValidator(BaseAIService):
         except Exception as e:
             logger.error(
                 f"AI validation failed for title '{title[:50]}...': {str(e)}",
-                exc_info=True
+                exc_info=True,
             )
             return self._get_error_response(f"AI 검증 중 오류가 발생했습니다: {str(e)}")
 
     def _create_validation_prompt(self) -> ChatPromptTemplate:
         """Create validation prompt template."""
-        return ChatPromptTemplate.from_template("""당신은 학습 자료 검증 전문가입니다. 다음 학습 콘텐츠를 엄격하게 검토해주세요.
+        return ChatPromptTemplate.from_template(
+            """당신은 학습 자료 검증 전문가입니다. 다음 학습 콘텐츠를 엄격하게 검토해주세요.
 
 제목: {title}
 내용:
@@ -147,7 +143,8 @@ class ContentValidator(BaseAIService):
 - 50-69점: 보통, 중요한 개선 필요
 - 0-49점: 부족, 전면 수정 필요
 
-JSON만 반환하세요.""")
+JSON만 반환하세요."""
+        )
 
     def _get_error_response(self, error_message: str) -> dict:
         """Get error response structure."""
@@ -156,7 +153,7 @@ JSON만 반환하세요.""")
             "factual_accuracy": {"score": 0, "issues": ["AI 검증 실패"]},
             "logical_consistency": {"score": 0, "issues": ["AI 검증 실패"]},
             "title_relevance": {"score": 0, "issues": ["AI 검증 실패"]},
-            "overall_feedback": error_message
+            "overall_feedback": error_message,
         }
 
 

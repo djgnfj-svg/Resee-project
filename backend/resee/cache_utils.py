@@ -1,6 +1,7 @@
 """
 Caching utilities for the Resee application
 """
+
 import hashlib
 from functools import wraps
 
@@ -57,18 +58,20 @@ class CacheManager:
             return False
 
 
-def cached_method(timeout=None, key_prefix=''):
+def cached_method(timeout=None, key_prefix=""):
     """
     Decorator for caching method results
     """
+
     def decorator(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             # Generate cache key
             cache_key = CacheManager.get_cache_key(
                 f"{key_prefix}{self.__class__.__name__}.{func.__name__}",
-                self.pk if hasattr(self, 'pk') else str(self),
-                *args, **kwargs
+                self.pk if hasattr(self, "pk") else str(self),
+                *args,
+                **kwargs,
             )
 
             # Try to get from cache
@@ -81,21 +84,23 @@ def cached_method(timeout=None, key_prefix=''):
             CacheManager.set_cache(cache_key, result, timeout)
 
             return result
+
         return wrapper
+
     return decorator
 
 
-def cached_function(timeout=None, key_prefix=''):
+def cached_function(timeout=None, key_prefix=""):
     """
     Decorator for caching function results
     """
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             # Generate cache key
             cache_key = CacheManager.get_cache_key(
-                f"{key_prefix}{func.__name__}",
-                *args, **kwargs
+                f"{key_prefix}{func.__name__}", *args, **kwargs
             )
 
             # Try to get from cache
@@ -108,7 +113,9 @@ def cached_function(timeout=None, key_prefix=''):
             CacheManager.set_cache(cache_key, result, timeout)
 
             return result
+
         return wrapper
+
     return decorator
 
 

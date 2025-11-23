@@ -10,7 +10,8 @@ class UserOwnershipMixin:
     Automatically sets the user field when creating objects
     and filters queryset to only show user's own objects.
     """
-    user_field = 'user'  # Override if the foreign key field name is different
+
+    user_field = "user"  # Override if the foreign key field name is different
 
     def get_queryset(self):
         queryset = super().get_queryset()

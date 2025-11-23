@@ -1,6 +1,7 @@
 """
 Google OAuth 인증 처리
 """
+
 import logging
 
 from django.conf import settings
@@ -36,20 +37,19 @@ class GoogleAuthService:
         """
         try:
             # Google 클라이언트 ID
-            client_id = settings.SOCIALACCOUNT_PROVIDERS['google']['APP']['client_id']
+            client_id = settings.SOCIALACCOUNT_PROVIDERS["google"]["APP"]["client_id"]
 
             if not client_id:
                 raise GoogleOAuthError("Google OAuth client ID가 설정되지 않았습니다.")
 
             # 토큰 검증
-            idinfo = id_token.verify_oauth2_token(
-                token,
-                requests.Request(),
-                client_id
-            )
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), client_id)
 
             # 발급자 확인
-            if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+            if idinfo["iss"] not in [
+                "accounts.google.com",
+                "https://accounts.google.com",
+            ]:
                 raise GoogleOAuthError("잘못된 토큰 발급자입니다.")
 
             logger.info(f"Google OAuth 검증 성공: {idinfo.get('email')}")
@@ -73,7 +73,7 @@ class GoogleAuthService:
         Returns:
             tuple: (User 객체, 생성 여부)
         """
-        email = google_user_info.get('email')
+        email = google_user_info.get("email")
         if not email:
             raise GoogleOAuthError("Google 계정에서 이메일을 가져올 수 없습니다.")
 
@@ -92,13 +92,13 @@ class GoogleAuthService:
 
         except User.DoesNotExist:
             # 새 사용자 생성
-            first_name = google_user_info.get('given_name', '')
-            last_name = google_user_info.get('family_name', '')
-            name = google_user_info.get('name', '')
+            first_name = google_user_info.get("given_name", "")
+            last_name = google_user_info.get("family_name", "")
+            name = google_user_info.get("name", "")
 
             # 이름이 없으면 name에서 추출 시도
             if not first_name and not last_name and name:
-                name_parts = name.split(' ', 1)
+                name_parts = name.split(" ", 1)
                 first_name = name_parts[0]
                 if len(name_parts) > 1:
                     last_name = name_parts[1]
@@ -116,6 +116,7 @@ class GoogleAuthService:
 
 class GoogleAuthSerializer(serializers.Serializer):
     """Google OAuth 인증 시리얼라이저"""
+
     token = serializers.CharField(required=True, help_text="Google ID 토큰")
 
     def validate_token(self, value):
@@ -141,16 +142,18 @@ class GoogleAuthSerializer(serializers.Serializer):
             raise serializers.ValidationError(str(e))
         except Exception as e:
             logger.error(f"Google OAuth 처리 오류: {str(e)}")
-            raise serializers.ValidationError("Google 인증 처리 중 오류가 발생했습니다.")
+            raise serializers.ValidationError(
+                "Google 인증 처리 중 오류가 발생했습니다."
+            )
 
     def get_user(self):
         """인증된 사용자 반환"""
-        return getattr(self, '_user', None)
+        return getattr(self, "_user", None)
 
     def is_new_user(self):
         """신규 사용자 여부"""
-        return getattr(self, '_created', False)
+        return getattr(self, "_created", False)
 
     def get_google_user_info(self):
         """Google 사용자 정보 반환"""
-        return getattr(self, '_google_user_info', {})
+        return getattr(self, "_google_user_info", {})

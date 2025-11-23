@@ -30,10 +30,7 @@ class AnswerEvaluator(BaseAIService):
 
     def __init__(self):
         # Use Claude 3 Haiku for cost-efficient evaluation
-        super().__init__(
-            model="claude-3-haiku-20240307",
-            use_langchain=True
-        )
+        super().__init__(model="claude-3-haiku-20240307", use_langchain=True)
 
     def _get_temperature(self) -> float:
         return 0.3
@@ -42,10 +39,7 @@ class AnswerEvaluator(BaseAIService):
         return 500
 
     def evaluate_answer(
-        self,
-        content_title: str,
-        content_body: str,
-        user_answer: str
+        self, content_title: str, content_body: str, user_answer: str
     ) -> Optional[Dict]:
         """
         Evaluate user's answer using AI.
@@ -71,10 +65,10 @@ class AnswerEvaluator(BaseAIService):
         # Check answer length
         if not user_answer or len(user_answer.strip()) < 10:
             return {
-                'score': 0,
-                'feedback': '답변이 너무 짧습니다. 학습한 내용을 더 자세히 설명해주세요.',
-                'evaluation': 'poor',
-                'auto_result': 'forgot'
+                "score": 0,
+                "feedback": "답변이 너무 짧습니다. 학습한 내용을 더 자세히 설명해주세요.",
+                "evaluation": "poor",
+                "auto_result": "forgot",
             }
 
         try:
@@ -82,8 +76,9 @@ class AnswerEvaluator(BaseAIService):
             response_text = self.call_langchain(
                 prompt_template,
                 title=content_title,
-                content=content_body[:1500] + ("..." if len(content_body) > 1500 else ""),
-                answer=user_answer
+                content=content_body[:1500]
+                + ("..." if len(content_body) > 1500 else ""),
+                answer=user_answer,
             )
 
             if not response_text:
@@ -95,26 +90,26 @@ class AnswerEvaluator(BaseAIService):
                 return None
 
             # Validate required fields
-            required_fields = ['score', 'evaluation', 'feedback']
+            required_fields = ["score", "evaluation", "feedback"]
             if not self.validate_required_fields(result, required_fields):
                 return None
 
             # Validate and normalize score
-            score = float(result['score'])
+            score = float(result["score"])
             if not (0 <= score <= 100):
                 logger.warning(f"Invalid score: {score}")
                 score = max(0, min(100, score))
 
             # Auto-generate auto_result if not provided
-            auto_result = result.get('auto_result')
+            auto_result = result.get("auto_result")
             if not auto_result:
-                auto_result = 'remembered' if score >= 70 else 'forgot'
+                auto_result = "remembered" if score >= 70 else "forgot"
 
             evaluation_result = {
-                'score': score,
-                'evaluation': result['evaluation'],
-                'feedback': result['feedback'],
-                'auto_result': auto_result
+                "score": score,
+                "evaluation": result["evaluation"],
+                "feedback": result["feedback"],
+                "auto_result": auto_result,
             }
 
             logger.info(
@@ -125,14 +120,14 @@ class AnswerEvaluator(BaseAIService):
 
         except Exception as e:
             logger.error(
-                f"Failed to evaluate answer for '{content_title}': {e}",
-                exc_info=True
+                f"Failed to evaluate answer for '{content_title}': {e}", exc_info=True
             )
             return None
 
     def _create_evaluation_prompt(self) -> ChatPromptTemplate:
         """Create evaluation prompt template."""
-        return ChatPromptTemplate.from_template("""다음 학습 콘텐츠에 대한 사용자의 서술형 답변을 **깐깐하게** 평가해주세요.
+        return ChatPromptTemplate.from_template(
+            """다음 학습 콘텐츠에 대한 사용자의 서술형 답변을 **깐깐하게** 평가해주세요.
 
 **학습 콘텐츠:**
 제목: {title}
@@ -175,7 +170,8 @@ class AnswerEvaluator(BaseAIService):
 - **무의미한 답변은 즉시 0점**
 - 정확성과 완성도를 엄격하게 평가
 - 핵심 개념이 누락되었거나 부정확하면 반드시 감점
-- 70점 미만은 "forgot", 70점 이상만 "remembered"로 판단""")
+- 70점 미만은 "forgot", 70점 이상만 "remembered"로 판단"""
+        )
 
 
 # Singleton instance

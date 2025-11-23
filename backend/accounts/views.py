@@ -10,7 +10,9 @@ from rest_framework.views import APIView
 from resee.error_handlers import APIErrorHandler
 
 from .utils.serializers import (
-    NotificationPreferenceSerializer, ProfileSerializer, UserSerializer,
+    NotificationPreferenceSerializer,
+    ProfileSerializer,
+    UserSerializer,
 )
 
 User = get_user_model()
@@ -19,16 +21,17 @@ logger = logging.getLogger(__name__)
 
 class ProfileView(APIView):
     """User profile view"""
+
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_summary="프로필 조회",
         operation_description="현재 로그인된 사용자의 프로필 정보를 조회합니다.",
-        tags=['User Profile'],
+        tags=["User Profile"],
         responses={
             200: ProfileSerializer,
             401: "인증 필요",
-        }
+        },
     )
     def get(self, request):
         """Get user profile"""
@@ -49,13 +52,13 @@ class ProfileView(APIView):
         }
         ```
         """,
-        tags=['User Profile'],
+        tags=["User Profile"],
         request_body=ProfileSerializer,
         responses={
             200: ProfileSerializer,
             400: "잘못된 요청 - 유효성 검사 실패",
             401: "인증 필요",
-        }
+        },
     )
     def put(self, request):
         """Update user profile"""
@@ -68,14 +71,13 @@ class ProfileView(APIView):
 
 class WeeklyGoalUpdateView(APIView):
     """주간 목표 설정 API"""
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """주간 목표 조회"""
         user = request.user
-        return Response({
-            'weekly_goal': user.weekly_goal
-        }, status=status.HTTP_200_OK)
+        return Response({"weekly_goal": user.weekly_goal}, status=status.HTTP_200_OK)
 
     def put(self, request):
         """주간 목표 업데이트 (PUT method)"""
@@ -88,47 +90,56 @@ class WeeklyGoalUpdateView(APIView):
     def _update_weekly_goal(self, request):
         """주간 목표 업데이트 공통 로직"""
         user = request.user
-        weekly_goal = request.data.get('weekly_goal')
+        weekly_goal = request.data.get("weekly_goal")
 
         if weekly_goal is None:
-            return APIErrorHandler.validation_error({'weekly_goal': ['Weekly goal is required']})
+            return APIErrorHandler.validation_error(
+                {"weekly_goal": ["Weekly goal is required"]}
+            )
 
         try:
             weekly_goal = int(weekly_goal)
             if weekly_goal < 1 or weekly_goal > 100:
                 return APIErrorHandler.validation_error(
-                    {'weekly_goal': ['Weekly goal must be between 1 and 100']}
+                    {"weekly_goal": ["Weekly goal must be between 1 and 100"]}
                 )
         except ValueError:
-            return APIErrorHandler.validation_error({'weekly_goal': ['Must be a valid number']})
+            return APIErrorHandler.validation_error(
+                {"weekly_goal": ["Must be a valid number"]}
+            )
 
         user.weekly_goal = weekly_goal
         user.save()
 
-        return Response({
-            'message': '주간 목표가 성공적으로 업데이트되었습니다.',
-            'weekly_goal': weekly_goal
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "message": "주간 목표가 성공적으로 업데이트되었습니다.",
+                "weekly_goal": weekly_goal,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class NotificationPreferenceView(APIView):
     """Notification preference management view"""
+
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_summary="알림 설정 조회",
         operation_description="현재 로그인된 사용자의 알림 설정을 조회합니다.",
-        tags=['Notification'],
+        tags=["Notification"],
         responses={
             200: NotificationPreferenceSerializer,
             401: "인증 필요",
-        }
+        },
     )
     def get(self, request):
         """Get user notification preferences"""
         try:
             # Get or create notification preference for user
             from .models import NotificationPreference
+
             preference, created = NotificationPreference.objects.get_or_create(
                 user=request.user
             )
@@ -136,8 +147,12 @@ class NotificationPreferenceView(APIView):
             serializer = NotificationPreferenceSerializer(preference)
             return Response(serializer.data)
         except Exception as e:
-            logger.error(f"Failed to get notification preferences for {request.user.email}: {str(e)}")
-            return APIErrorHandler.server_error('Failed to get notification preferences')
+            logger.error(
+                f"Failed to get notification preferences for {request.user.email}: {str(e)}"
+            )
+            return APIErrorHandler.server_error(
+                "Failed to get notification preferences"
+            )
 
     @swagger_auto_schema(
         operation_summary="알림 설정 수정",
@@ -157,13 +172,13 @@ class NotificationPreferenceView(APIView):
         }
         ```
         """,
-        tags=['Notification'],
+        tags=["Notification"],
         request_body=NotificationPreferenceSerializer,
         responses={
             200: NotificationPreferenceSerializer,
             400: "잘못된 요청 - 유효성 검사 실패",
             401: "인증 필요",
-        }
+        },
     )
     def put(self, request):
         """Update user notification preferences"""
@@ -178,14 +193,20 @@ class NotificationPreferenceView(APIView):
             serializer = NotificationPreferenceSerializer(preference, data=request.data)
             if serializer.is_valid():
                 serializer.save()
-                logger.info(f"Notification preferences updated for user {request.user.email}")
+                logger.info(
+                    f"Notification preferences updated for user {request.user.email}"
+                )
                 return Response(serializer.data)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            logger.error(f"Failed to update notification preferences for {request.user.email}: {str(e)}")
-            return APIErrorHandler.server_error('Failed to save notification preferences')
+            logger.error(
+                f"Failed to update notification preferences for {request.user.email}: {str(e)}"
+            )
+            return APIErrorHandler.server_error(
+                "Failed to save notification preferences"
+            )
 
 
 # Views are imported directly in urls.py to avoid circular imports

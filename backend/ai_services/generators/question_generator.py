@@ -28,10 +28,7 @@ class QuestionGenerator(BaseAIService):
 
     def __init__(self):
         # Use Claude 3 Haiku for cost-efficient generation
-        super().__init__(
-            model="claude-3-haiku-20240307",
-            use_langchain=True
-        )
+        super().__init__(model="claude-3-haiku-20240307", use_langchain=True)
 
     def _get_temperature(self) -> float:
         return 0.3
@@ -73,25 +70,25 @@ class QuestionGenerator(BaseAIService):
             choices_result = generate_quality_choices(
                 content_title=content.title,
                 content_body=content.content,
-                correct_answer=correct_answer_data['answer']
+                correct_answer=correct_answer_data["answer"],
             )
 
-            if not choices_result or not choices_result.get('choices'):
+            if not choices_result or not choices_result.get("choices"):
                 logger.warning(f"Failed to generate choices: {content.title}")
                 return None
 
             # Step 3: Combine results
             question_data = {
-                'question_type': 'multiple_choice',
-                'question_text': correct_answer_data['question'],
-                'choices': choices_result['choices'],
-                'correct_answer': choices_result['correct_answer'],
-                'explanation': correct_answer_data['explanation'],
-                'metadata': {
-                    'quality_score': choices_result['metadata'].get('quality_score', 0),
-                    'iterations': choices_result['metadata'].get('iterations', 0),
-                    'version': 'langgraph'
-                }
+                "question_type": "multiple_choice",
+                "question_text": correct_answer_data["question"],
+                "choices": choices_result["choices"],
+                "correct_answer": choices_result["correct_answer"],
+                "explanation": correct_answer_data["explanation"],
+                "metadata": {
+                    "quality_score": choices_result["metadata"].get("quality_score", 0),
+                    "iterations": choices_result["metadata"].get("iterations", 0),
+                    "version": "langgraph",
+                },
             }
 
             logger.info(
@@ -103,8 +100,7 @@ class QuestionGenerator(BaseAIService):
 
         except Exception as e:
             logger.error(
-                f"Failed to generate question for '{content.title}': {e}",
-                exc_info=True
+                f"Failed to generate question for '{content.title}': {e}", exc_info=True
             )
             return None
 
@@ -126,11 +122,13 @@ class QuestionGenerator(BaseAIService):
             prompt_template,
             title=content.title,
             category=category_name,
-            content=content.content[:1500]
+            content=content.content[:1500],
         )
 
         if not response_text:
-            logger.warning(f"No response for correct answer generation: {content.title}")
+            logger.warning(
+                f"No response for correct answer generation: {content.title}"
+            )
             return None
 
         result = self.parse_json_response(response_text)
@@ -138,7 +136,7 @@ class QuestionGenerator(BaseAIService):
             return None
 
         # Validate required fields
-        required = ['question', 'answer', 'explanation']
+        required = ["question", "answer", "explanation"]
         if not self.validate_required_fields(result, required):
             logger.warning("Missing required fields in correct answer")
             return None
@@ -147,7 +145,8 @@ class QuestionGenerator(BaseAIService):
 
     def _create_correct_answer_prompt(self) -> ChatPromptTemplate:
         """Create prompt for correct answer generation."""
-        return ChatPromptTemplate.from_template("""
+        return ChatPromptTemplate.from_template(
+            """
 다음 학습 콘텐츠를 분석하여 객관식 문제를 생성하세요.
 
 **콘텐츠 정보:**
@@ -175,7 +174,8 @@ class QuestionGenerator(BaseAIService):
   "answer": "리스트는 mutable하여 생성 후에도 요소를 자유롭게 추가, 삭제, 수정할 수 있다",
   "explanation": "리스트는 가변(mutable) 자료구조로, 생성 후에도 내용을 변경할 수 있습니다. 이는 튜플(immutable)과 구분되는 핵심 특징입니다."
 }}
-""")
+"""
+        )
 
     def generate_batch_questions(self, contents: List) -> List[Dict]:
         """
@@ -192,7 +192,7 @@ class QuestionGenerator(BaseAIService):
         for content in contents:
             question = self.generate_question(content)
             if question:
-                question['content_id'] = content.id
+                question["content_id"] = content.id
                 questions.append(question)
 
         logger.info(

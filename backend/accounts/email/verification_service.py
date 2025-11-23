@@ -1,6 +1,7 @@
 """
 Email verification service for handling email verification logic.
 """
+
 import hashlib
 import logging
 import secrets
@@ -58,10 +59,9 @@ class EmailVerificationService:
         # Store hash and timestamp
         self.user.email_verification_token = token_hash
         self.user.email_verification_sent_at = timezone.now()
-        self.user.save(update_fields=[
-            'email_verification_token',
-            'email_verification_sent_at'
-        ])
+        self.user.save(
+            update_fields=["email_verification_token", "email_verification_sent_at"]
+        )
 
         logger.info(f"Verification token generated for user {self.user.email}")
 
@@ -99,21 +99,20 @@ class EmailVerificationService:
         token_hash = hashlib.sha256(token.encode()).hexdigest()
 
         # Constant-time comparison to prevent timing attacks
-        if not secrets.compare_digest(
-            self.user.email_verification_token,
-            token_hash
-        ):
+        if not secrets.compare_digest(self.user.email_verification_token, token_hash):
             return False, "Invalid verification token"
 
         # Mark email as verified
         self.user.is_email_verified = True
         self.user.email_verification_token = None
         self.user.email_verification_sent_at = None
-        self.user.save(update_fields=[
-            'is_email_verified',
-            'email_verification_token',
-            'email_verification_sent_at'
-        ])
+        self.user.save(
+            update_fields=[
+                "is_email_verified",
+                "email_verification_token",
+                "email_verification_sent_at",
+            ]
+        )
 
         logger.info(f"Email verified for user {self.user.email}")
 
@@ -156,9 +155,7 @@ class EmailVerificationService:
         if not self.user.email_verification_sent_at:
             return False
 
-        expiry_days = getattr(settings, 'EMAIL_VERIFICATION_TIMEOUT_DAYS', 1)
-        expiry_time = self.user.email_verification_sent_at + timedelta(
-            days=expiry_days
-        )
+        expiry_days = getattr(settings, "EMAIL_VERIFICATION_TIMEOUT_DAYS", 1)
+        expiry_time = self.user.email_verification_sent_at + timedelta(days=expiry_days)
 
         return timezone.now() <= expiry_time

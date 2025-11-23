@@ -1,6 +1,7 @@
 """
 Tests for review models (ReviewSchedule and ReviewHistory).
 """
+
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -19,16 +20,14 @@ class ReviewScheduleModelTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass123',
-            is_email_verified=True
+            email="test@example.com", password="testpass123", is_email_verified=True
         )
-        self.category = Category.objects.create(name='Test', user=self.user)
+        self.category = Category.objects.create(name="Test", user=self.user)
         self.content = Content.objects.create(
-            title='Test Content',
-            content='Test body',
+            title="Test Content",
+            content="Test body",
             author=self.user,
-            category=self.category
+            category=self.category,
         )
 
     def test_review_schedule_creation(self):
@@ -71,7 +70,7 @@ class ReviewScheduleModelTest(TestCase):
             ReviewSchedule.objects.create(
                 content=self.content,
                 user=self.user,
-                next_review_date=timezone.now() + timedelta(days=2)
+                next_review_date=timezone.now() + timedelta(days=2),
             )
 
     def test_review_schedule_ordering(self):
@@ -85,9 +84,7 @@ class ReviewScheduleModelTest(TestCase):
 
         # Create second content (auto-creates its schedule)
         content2 = Content.objects.create(
-            title='Content 2',
-            content='Body',
-            author=self.user
+            title="Content 2", content="Body", author=self.user
         )
         schedule2 = ReviewSchedule.objects.get(content=content2, user=self.user)
         schedule2.next_review_date = now + timedelta(days=1)
@@ -100,20 +97,19 @@ class ReviewScheduleModelTest(TestCase):
     def test_review_schedule_validation_content_user_mismatch(self):
         """Test validation when content belongs to different user."""
         user2 = User.objects.create_user(
-            email='user2@example.com',
-            password='testpass123'
+            email="user2@example.com", password="testpass123"
         )
 
         schedule = ReviewSchedule(
             content=self.content,  # belongs to self.user
             user=user2,  # different user
-            next_review_date=timezone.now() + timedelta(days=1)
+            next_review_date=timezone.now() + timedelta(days=1),
         )
 
         with self.assertRaises(ValidationError) as context:
             schedule.save()
 
-        self.assertIn('content', context.exception.message_dict)
+        self.assertIn("content", context.exception.message_dict)
 
     def test_review_schedule_interval_index_non_negative(self):
         """Test interval_index must be non-negative."""
@@ -122,7 +118,7 @@ class ReviewScheduleModelTest(TestCase):
             content=self.content,
             user=self.user,
             next_review_date=timezone.now() + timedelta(days=1),
-            interval_index=-1
+            interval_index=-1,
         )
 
         with self.assertRaises(ValidationError):
@@ -167,16 +163,14 @@ class ReviewHistoryModelTest(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass123',
-            is_email_verified=True
+            email="test@example.com", password="testpass123", is_email_verified=True
         )
-        self.category = Category.objects.create(name='Test', user=self.user)
+        self.category = Category.objects.create(name="Test", user=self.user)
         self.content = Content.objects.create(
-            title='Test Content',
-            content='Test body',
+            title="Test Content",
+            content="Test body",
             author=self.user,
-            category=self.category
+            category=self.category,
         )
 
     def test_review_history_creation(self):
@@ -184,35 +178,31 @@ class ReviewHistoryModelTest(TestCase):
         history = ReviewHistory.objects.create(
             content=self.content,
             user=self.user,
-            result='remembered',
+            result="remembered",
             time_spent=120,
-            notes='Good review'
+            notes="Good review",
         )
 
         self.assertEqual(history.content, self.content)
         self.assertEqual(history.user, self.user)
-        self.assertEqual(history.result, 'remembered')
+        self.assertEqual(history.result, "remembered")
         self.assertEqual(history.time_spent, 120)
-        self.assertEqual(history.notes, 'Good review')
+        self.assertEqual(history.notes, "Good review")
 
     def test_review_history_result_choices(self):
         """Test all result choices."""
-        results = ['remembered', 'partial', 'forgot']
+        results = ["remembered", "partial", "forgot"]
 
         for result in results:
             history = ReviewHistory.objects.create(
-                content=self.content,
-                user=self.user,
-                result=result
+                content=self.content, user=self.user, result=result
             )
             self.assertEqual(history.result, result)
 
     def test_review_history_str(self):
         """Test string representation."""
         history = ReviewHistory.objects.create(
-            content=self.content,
-            user=self.user,
-            result='remembered'
+            content=self.content, user=self.user, result="remembered"
         )
 
         expected = f"{self.content.title} - remembered"
@@ -221,19 +211,16 @@ class ReviewHistoryModelTest(TestCase):
     def test_review_history_ordering(self):
         """Test ordering by review_date descending."""
         history1 = ReviewHistory.objects.create(
-            content=self.content,
-            user=self.user,
-            result='remembered'
+            content=self.content, user=self.user, result="remembered"
         )
 
         # Small delay to ensure different timestamps
         import time
+
         time.sleep(0.01)
 
         history2 = ReviewHistory.objects.create(
-            content=self.content,
-            user=self.user,
-            result='forgot'
+            content=self.content, user=self.user, result="forgot"
         )
 
         histories = list(ReviewHistory.objects.all())
@@ -245,80 +232,76 @@ class ReviewHistoryModelTest(TestCase):
         history = ReviewHistory.objects.create(
             content=self.content,
             user=self.user,
-            result='remembered',
-            descriptive_answer='User answer here',
+            result="remembered",
+            descriptive_answer="User answer here",
             ai_score=85.5,
-            ai_feedback='Good answer'
+            ai_feedback="Good answer",
         )
 
         history.refresh_from_db()
-        self.assertEqual(history.descriptive_answer, 'User answer here')
+        self.assertEqual(history.descriptive_answer, "User answer here")
         self.assertEqual(history.ai_score, 85.5)
-        self.assertEqual(history.ai_feedback, 'Good answer')
+        self.assertEqual(history.ai_feedback, "Good answer")
 
     def test_review_history_with_selected_choice(self):
         """Test with multiple choice selected_choice field."""
         history = ReviewHistory.objects.create(
             content=self.content,
             user=self.user,
-            result='remembered',
-            selected_choice='Option A'
+            result="remembered",
+            selected_choice="Option A",
         )
 
         history.refresh_from_db()
-        self.assertEqual(history.selected_choice, 'Option A')
+        self.assertEqual(history.selected_choice, "Option A")
 
     def test_review_history_with_user_title(self):
         """Test with subjective mode user_title field."""
         history = ReviewHistory.objects.create(
             content=self.content,
             user=self.user,
-            result='remembered',
-            user_title='My Guess'
+            result="remembered",
+            user_title="My Guess",
         )
 
         history.refresh_from_db()
-        self.assertEqual(history.user_title, 'My Guess')
+        self.assertEqual(history.user_title, "My Guess")
 
     def test_review_history_validation_content_user_mismatch(self):
         """Test validation when content belongs to different user."""
         user2 = User.objects.create_user(
-            email='user2@example.com',
-            password='testpass123'
+            email="user2@example.com", password="testpass123"
         )
 
         history = ReviewHistory(
             content=self.content,  # belongs to self.user
             user=user2,  # different user
-            result='remembered'
+            result="remembered",
         )
 
         with self.assertRaises(ValidationError) as context:
             history.save()
 
-        self.assertIn('content', context.exception.message_dict)
+        self.assertIn("content", context.exception.message_dict)
 
     def test_review_history_time_spent_validation(self):
         """Test time_spent cannot exceed 24 hours."""
         history = ReviewHistory(
             content=self.content,
             user=self.user,
-            result='remembered',
-            time_spent=86401  # 24 hours + 1 second
+            result="remembered",
+            time_spent=86401,  # 24 hours + 1 second
         )
 
         with self.assertRaises(ValidationError) as context:
             history.save()
 
-        self.assertIn('time_spent', context.exception.message_dict)
+        self.assertIn("time_spent", context.exception.message_dict)
 
     def test_review_history_time_spent_non_negative(self):
         """Test time_spent must be non-negative."""
         history = ReviewHistory(
-            content=self.content,
-            user=self.user,
-            result='remembered',
-            time_spent=-1
+            content=self.content, user=self.user, result="remembered", time_spent=-1
         )
 
         with self.assertRaises(ValidationError):
@@ -327,10 +310,7 @@ class ReviewHistoryModelTest(TestCase):
     def test_review_history_time_spent_null_allowed(self):
         """Test time_spent can be null."""
         history = ReviewHistory.objects.create(
-            content=self.content,
-            user=self.user,
-            result='remembered',
-            time_spent=None
+            content=self.content, user=self.user, result="remembered", time_spent=None
         )
 
         history.refresh_from_db()
@@ -341,9 +321,7 @@ class ReviewHistoryModelTest(TestCase):
         before = timezone.now()
 
         history = ReviewHistory.objects.create(
-            content=self.content,
-            user=self.user,
-            result='remembered'
+            content=self.content, user=self.user, result="remembered"
         )
 
         after = timezone.now()

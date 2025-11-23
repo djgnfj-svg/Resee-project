@@ -28,7 +28,9 @@ class BaseAIService(ABC):
     Provides common initialization, validation, and utility methods.
     """
 
-    def __init__(self, model: str = "claude-3-haiku-20240307", use_langchain: bool = True):
+    def __init__(
+        self, model: str = "claude-3-haiku-20240307", use_langchain: bool = True
+    ):
         """
         Initialize AI service.
 
@@ -47,7 +49,9 @@ class BaseAIService(ABC):
         api_key = self._get_api_key()
 
         if not api_key:
-            logger.warning(f"{self.__class__.__name__}: ANTHROPIC_API_KEY not configured")
+            logger.warning(
+                f"{self.__class__.__name__}: ANTHROPIC_API_KEY not configured"
+            )
             return
 
         if not self._validate_api_key(api_key):
@@ -60,22 +64,26 @@ class BaseAIService(ABC):
                     model=self.model,
                     temperature=self._get_temperature(),
                     max_tokens=self._get_max_tokens(),
-                    api_key=api_key
+                    api_key=api_key,
                 )
-                logger.info(f"{self.__class__.__name__}: LangChain client initialized (model: {self.model})")
+                logger.info(
+                    f"{self.__class__.__name__}: LangChain client initialized (model: {self.model})"
+                )
             else:
                 self.client = anthropic.Anthropic(api_key=api_key)
-                logger.info(f"{self.__class__.__name__}: Anthropic SDK client initialized (model: {self.model})")
+                logger.info(
+                    f"{self.__class__.__name__}: Anthropic SDK client initialized (model: {self.model})"
+                )
         except Exception as e:
             logger.error(f"{self.__class__.__name__}: Failed to initialize client: {e}")
 
     def _get_api_key(self) -> Optional[str]:
         """Get Anthropic API key from settings."""
-        return getattr(settings, 'ANTHROPIC_API_KEY', None)
+        return getattr(settings, "ANTHROPIC_API_KEY", None)
 
     def _validate_api_key(self, api_key: str) -> bool:
         """Validate API key format."""
-        return api_key.startswith('sk-ant-api') and len(api_key) >= 20
+        return api_key.startswith("sk-ant-api") and len(api_key) >= 20
 
     def is_available(self) -> bool:
         """Check if AI service is available."""
@@ -106,25 +114,25 @@ class BaseAIService(ABC):
             text = response_text.strip()
 
             # Remove code blocks
-            if text.startswith('```json'):
+            if text.startswith("```json"):
                 text = text[7:].strip()
-                if '```' in text:
-                    text = text[:text.index('```')].strip()
-            elif text.startswith('```'):
+                if "```" in text:
+                    text = text[: text.index("```")].strip()
+            elif text.startswith("```"):
                 text = text[3:].strip()
-                if '```' in text:
-                    text = text[:text.index('```')].strip()
+                if "```" in text:
+                    text = text[: text.index("```")].strip()
 
             # Find JSON object boundaries using brace counting
-            if text.startswith('{'):
+            if text.startswith("{"):
                 brace_count = 0
                 for i, char in enumerate(text):
-                    if char == '{':
+                    if char == "{":
                         brace_count += 1
-                    elif char == '}':
+                    elif char == "}":
                         brace_count -= 1
                         if brace_count == 0:
-                            text = text[:i+1]
+                            text = text[: i + 1]
                             break
 
             result = json.loads(text)
@@ -135,10 +143,15 @@ class BaseAIService(ABC):
             logger.error(f"Raw AI response: {response_text[:1000]}")
             return None
         except Exception as e:
-            logger.error(f"{self.__class__.__name__}: Response parsing failed: {e}", exc_info=True)
+            logger.error(
+                f"{self.__class__.__name__}: Response parsing failed: {e}",
+                exc_info=True,
+            )
             return None
 
-    def validate_required_fields(self, data: Dict[str, Any], required_fields: list) -> bool:
+    def validate_required_fields(
+        self, data: Dict[str, Any], required_fields: list
+    ) -> bool:
         """
         Validate that all required fields are present in data.
 
@@ -152,7 +165,9 @@ class BaseAIService(ABC):
         missing = [field for field in required_fields if field not in data]
 
         if missing:
-            logger.warning(f"{self.__class__.__name__}: Missing required fields: {missing}")
+            logger.warning(
+                f"{self.__class__.__name__}: Missing required fields: {missing}"
+            )
             return False
 
         return True
@@ -176,11 +191,17 @@ class BaseAIService(ABC):
             response = self.llm.invoke(prompt_template.format(**kwargs))
             return response.content if response else None
         except Exception as e:
-            logger.error(f"{self.__class__.__name__}: LangChain call failed: {e}", exc_info=True)
+            logger.error(
+                f"{self.__class__.__name__}: LangChain call failed: {e}", exc_info=True
+            )
             return None
 
-    def call_anthropic(self, prompt: str, temperature: Optional[float] = None,
-                       max_tokens: Optional[int] = None) -> Optional[str]:
+    def call_anthropic(
+        self,
+        prompt: str,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Optional[str]:
         """
         Call Anthropic SDK with prompt.
 
@@ -201,9 +222,7 @@ class BaseAIService(ABC):
                 model=self.model,
                 max_tokens=max_tokens or self._get_max_tokens(),
                 temperature=temperature or self._get_temperature(),
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             return message.content[0].text if message.content else None
@@ -221,5 +240,7 @@ class BaseAIService(ABC):
             logger.warning(f"{self.__class__.__name__}: API timeout: {e}")
             return None
         except Exception as e:
-            logger.error(f"{self.__class__.__name__}: API call failed: {e}", exc_info=True)
+            logger.error(
+                f"{self.__class__.__name__}: API call failed: {e}", exc_info=True
+            )
             return None

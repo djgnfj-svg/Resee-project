@@ -3,6 +3,7 @@ Structured JSON logging configuration for Resee application.
 
 This module provides JSON-formatted logging for better log aggregation and analysis.
 """
+
 import json
 import logging
 import traceback
@@ -28,48 +29,72 @@ class JSONFormatter(logging.Formatter):
             JSON-formatted log string
         """
         log_data: Dict[str, Any] = {
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
-            'level': record.levelname,
-            'logger': record.name,
-            'message': record.getMessage(),
-            'module': record.module,
-            'function': record.funcName,
-            'line': record.lineno,
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
         }
 
         # Add exception information if present
         if record.exc_info:
-            log_data['exception'] = {
-                'type': record.exc_info[0].__name__,
-                'value': str(record.exc_info[1]),
-                'traceback': traceback.format_exception(*record.exc_info)
+            log_data["exception"] = {
+                "type": record.exc_info[0].__name__,
+                "value": str(record.exc_info[1]),
+                "traceback": traceback.format_exception(*record.exc_info),
             }
 
         # Add custom fields from extra parameter
-        if hasattr(record, 'user_id'):
-            log_data['user_id'] = record.user_id
-        if hasattr(record, 'request_id'):
-            log_data['request_id'] = record.request_id
-        if hasattr(record, 'ip_address'):
-            log_data['ip_address'] = record.ip_address
-        if hasattr(record, 'endpoint'):
-            log_data['endpoint'] = record.endpoint
-        if hasattr(record, 'method'):
-            log_data['method'] = record.method
-        if hasattr(record, 'status_code'):
-            log_data['status_code'] = record.status_code
-        if hasattr(record, 'duration'):
-            log_data['duration_ms'] = record.duration
+        if hasattr(record, "user_id"):
+            log_data["user_id"] = record.user_id
+        if hasattr(record, "request_id"):
+            log_data["request_id"] = record.request_id
+        if hasattr(record, "ip_address"):
+            log_data["ip_address"] = record.ip_address
+        if hasattr(record, "endpoint"):
+            log_data["endpoint"] = record.endpoint
+        if hasattr(record, "method"):
+            log_data["method"] = record.method
+        if hasattr(record, "status_code"):
+            log_data["status_code"] = record.status_code
+        if hasattr(record, "duration"):
+            log_data["duration_ms"] = record.duration
 
         # Add any other extra fields
         for key, value in record.__dict__.items():
-            if key not in ['name', 'msg', 'args', 'created', 'filename', 'funcName',
-                          'levelname', 'levelno', 'lineno', 'module', 'msecs',
-                          'message', 'pathname', 'process', 'processName',
-                          'relativeCreated', 'thread', 'threadName', 'exc_info',
-                          'exc_text', 'stack_info', 'user_id', 'request_id',
-                          'ip_address', 'endpoint', 'method', 'status_code', 'duration']:
-                if not key.startswith('_'):
+            if key not in [
+                "name",
+                "msg",
+                "args",
+                "created",
+                "filename",
+                "funcName",
+                "levelname",
+                "levelno",
+                "lineno",
+                "module",
+                "msecs",
+                "message",
+                "pathname",
+                "process",
+                "processName",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+                "user_id",
+                "request_id",
+                "ip_address",
+                "endpoint",
+                "method",
+                "status_code",
+                "duration",
+            ]:
+                if not key.startswith("_"):
                     # Only add JSON serializable values
                     try:
                         json.dumps(value)
@@ -99,13 +124,7 @@ class StructuredLogger:
         """
         self.logger = logging.getLogger(name)
 
-    def _log(
-        self,
-        level: int,
-        message: str,
-        exc_info: bool = False,
-        **kwargs
-    ) -> None:
+    def _log(self, level: int, message: str, exc_info: bool = False, **kwargs) -> None:
         """
         Internal logging method with extra context.
 

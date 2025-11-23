@@ -23,32 +23,34 @@ __version__ = "2.0.0"
 
 from .evaluators import ai_answer_evaluator, ai_title_evaluator
 from .generators import (
-    ai_question_generator, generate_multiple_choice_options, mc_generator,
+    ai_question_generator,
+    generate_multiple_choice_options,
+    mc_generator,
 )
 from .graphs import (
-    create_distractor_generation_graph, create_weekly_test_balance_graph,
-    generate_quality_choices, select_balanced_contents_for_test,
+    create_distractor_generation_graph,
+    create_weekly_test_balance_graph,
+    generate_quality_choices,
+    select_balanced_contents_for_test,
 )
+
 # Import all services for easy access
 from .validators import content_validator, validate_content
 
 __all__ = [
     # Validators
-    'content_validator',
-    'validate_content',
-
+    "content_validator",
+    "validate_content",
     # Evaluators
-    'ai_answer_evaluator',
-    'ai_title_evaluator',
-
+    "ai_answer_evaluator",
+    "ai_title_evaluator",
     # Generators
-    'mc_generator',
-    'generate_multiple_choice_options',
-    'ai_question_generator',
-
+    "mc_generator",
+    "generate_multiple_choice_options",
+    "ai_question_generator",
     # Graphs
-    'generate_quality_choices',
-    'select_balanced_contents_for_test',
-    'create_distractor_generation_graph',
-    'create_weekly_test_balance_graph',
+    "generate_quality_choices",
+    "select_balanced_contents_for_test",
+    "create_distractor_generation_graph",
+    "create_weekly_test_balance_graph",
 ]

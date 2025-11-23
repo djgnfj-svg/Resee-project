@@ -1,6 +1,7 @@
 """
 통합 이메일 서비스 - 모델, 유틸리티, 백엔드 기능 통합
 """
+
 import logging
 from typing import Any, Dict, Optional
 
@@ -23,7 +24,7 @@ class EmailService:
         context: Dict[str, Any],
         subject: str,
         recipient_email: str,
-        from_email: Optional[str] = None
+        from_email: Optional[str] = None,
     ) -> bool:
         """
         템플릿 기반 이메일 발송
@@ -40,7 +41,7 @@ class EmailService:
         """
         try:
             # HTML 템플릿 렌더링
-            html_message = render_to_string(f'emails/{template_name}.html', context)
+            html_message = render_to_string(f"emails/{template_name}.html", context)
             plain_message = strip_tags(html_message)
 
             # 발신자 이메일 설정
@@ -54,7 +55,7 @@ class EmailService:
                 from_email=from_email,
                 recipient_list=[recipient_email],
                 html_message=html_message,
-                fail_silently=False
+                fail_silently=False,
             )
 
             logger.info(f"Email sent successfully to {recipient_email}")
@@ -81,18 +82,20 @@ class EmailService:
 
             # 이메일 발송
             context = {
-                'user': user,
-                'verification_url': f"{settings.FRONTEND_URL}/verify-email?token={token}&email={user.email}",
-                'company_name': getattr(settings, 'COMPANY_NAME', 'Your Company'),
-                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@yourcompany.com'),
-                'expiry_hours': settings.EMAIL_VERIFICATION_TIMEOUT_DAYS * 24,
+                "user": user,
+                "verification_url": f"{settings.FRONTEND_URL}/verify-email?token={token}&email={user.email}",
+                "company_name": getattr(settings, "COMPANY_NAME", "Your Company"),
+                "support_email": getattr(
+                    settings, "SUPPORT_EMAIL", "support@yourcompany.com"
+                ),
+                "expiry_hours": settings.EMAIL_VERIFICATION_TIMEOUT_DAYS * 24,
             }
 
             success = self.send_template_email(
-                template_name='email_verification',
+                template_name="email_verification",
                 context=context,
                 subject=f"[{context['company_name']}] 이메일 인증을 완료해주세요",
-                recipient_email=user.email
+                recipient_email=user.email,
             )
 
             if success:
@@ -118,16 +121,18 @@ class EmailService:
             user = User.objects.get(id=user_id)
 
             context = {
-                'user': user,
-                'company_name': getattr(settings, 'COMPANY_NAME', 'Your Company'),
-                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@yourcompany.com'),
+                "user": user,
+                "company_name": getattr(settings, "COMPANY_NAME", "Your Company"),
+                "support_email": getattr(
+                    settings, "SUPPORT_EMAIL", "support@yourcompany.com"
+                ),
             }
 
             success = self.send_template_email(
-                template_name='welcome_email',
+                template_name="welcome_email",
                 context=context,
                 subject=f"[{context['company_name']}] 환영합니다!",
-                recipient_email=user.email
+                recipient_email=user.email,
             )
 
             if success:
