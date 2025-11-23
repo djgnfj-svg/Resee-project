@@ -1,5 +1,5 @@
 """
-Custom permission classes for the Resee application.
+Resee 애플리케이션을 위한 커스텀 권한 클래스
 """
 
 from rest_framework.permissions import BasePermission
@@ -7,7 +7,7 @@ from rest_framework.permissions import BasePermission
 
 class EmailVerifiedRequired(BasePermission):
     """
-    Permission class that requires email verification.
+    이메일 인증이 필요한 권한 클래스
     """
 
     message = "이메일 인증이 필요합니다."
@@ -18,7 +18,7 @@ class EmailVerifiedRequired(BasePermission):
 
 class SubscriptionRequired(BasePermission):
     """
-    Permission class that requires an active subscription.
+    활성 구독이 필요한 권한 클래스
     """
 
     message = "구독이 필요한 기능입니다."
@@ -33,7 +33,7 @@ class SubscriptionRequired(BasePermission):
 
 class AIFeaturesRequired(BasePermission):
     """
-    Permission class that requires AI features access.
+    AI 기능 접근이 필요한 권한 클래스
     """
 
     message = "AI 기능을 사용할 수 없습니다. 구독을 확인해주세요."

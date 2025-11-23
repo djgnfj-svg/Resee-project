@@ -1,12 +1,12 @@
 """
-Base AI Service with common functionality for all AI services.
+모든 AI 서비스의 공통 기능을 제공하는 기본 AI 서비스
 
-Provides:
-- API key validation
-- LangChain/Anthropic SDK initialization
-- JSON parsing utilities
-- Error handling
-- Logging
+제공 기능:
+- API 키 검증
+- LangChain/Anthropic SDK 초기화
+- JSON 파싱 유틸리티
+- 에러 처리
+- 로깅
 """
 
 import json
@@ -23,20 +23,20 @@ logger = logging.getLogger(__name__)
 
 class BaseAIService(ABC):
     """
-    Base class for all AI services using Anthropic Claude.
+    Anthropic Claude를 사용하는 모든 AI 서비스의 기본 클래스
 
-    Provides common initialization, validation, and utility methods.
+    공통 초기화, 검증, 유틸리티 메서드를 제공합니다.
     """
 
     def __init__(
         self, model: str = "claude-3-haiku-20240307", use_langchain: bool = True
     ):
         """
-        Initialize AI service.
+        AI 서비스를 초기화합니다.
 
         Args:
-            model: Claude model to use
-            use_langchain: If True, use LangChain; otherwise use Anthropic SDK
+            model: 사용할 Claude 모델
+            use_langchain: True이면 LangChain 사용, 아니면 Anthropic SDK 사용
         """
         self.model = model
         self.use_langchain = use_langchain
@@ -45,17 +45,17 @@ class BaseAIService(ABC):
         self._initialize()
 
     def _initialize(self):
-        """Initialize API client."""
+        """API 클라이언트를 초기화합니다."""
         api_key = self._get_api_key()
 
         if not api_key:
             logger.warning(
-                f"{self.__class__.__name__}: ANTHROPIC_API_KEY not configured"
+                f"{self.__class__.__name__}: ANTHROPIC_API_KEY가 설정되지 않았습니다"
             )
             return
 
         if not self._validate_api_key(api_key):
-            logger.error(f"{self.__class__.__name__}: Invalid ANTHROPIC_API_KEY format")
+            logger.error(f"{self.__class__.__name__}: 잘못된 ANTHROPIC_API_KEY 형식")
             return
 
         try:
@@ -78,42 +78,42 @@ class BaseAIService(ABC):
             logger.error(f"{self.__class__.__name__}: Failed to initialize client: {e}")
 
     def _get_api_key(self) -> Optional[str]:
-        """Get Anthropic API key from settings."""
+        """설정에서 Anthropic API 키를 가져옵니다."""
         return getattr(settings, "ANTHROPIC_API_KEY", None)
 
     def _validate_api_key(self, api_key: str) -> bool:
-        """Validate API key format."""
+        """API 키 형식을 검증합니다."""
         return api_key.startswith("sk-ant-api") and len(api_key) >= 20
 
     def is_available(self) -> bool:
-        """Check if AI service is available."""
+        """AI 서비스가 사용 가능한지 확인합니다."""
         return (self.llm is not None) or (self.client is not None)
 
     @abstractmethod
     def _get_temperature(self) -> float:
-        """Get temperature for this service. Must be implemented by subclasses."""
+        """이 서비스의 temperature 값을 반환합니다. 하위 클래스에서 구현해야 합니다."""
 
     @abstractmethod
     def _get_max_tokens(self) -> int:
-        """Get max tokens for this service. Must be implemented by subclasses."""
+        """이 서비스의 max_tokens 값을 반환합니다. 하위 클래스에서 구현해야 합니다."""
 
     def parse_json_response(self, response_text: str) -> Optional[Dict[str, Any]]:
         """
-        Parse AI response to extract JSON object.
+        AI 응답에서 JSON 객체를 추출하여 파싱합니다.
 
-        Uses brace counting to find complete JSON objects.
-        Handles code blocks (```json, ```).
+        중괄호 카운팅을 사용하여 완전한 JSON 객체를 찾습니다.
+        코드 블록(```json, ```)을 처리합니다.
 
         Args:
-            response_text: Raw AI response text
+            response_text: 원본 AI 응답 텍스트
 
         Returns:
-            Parsed JSON dict or None if parsing fails
+            파싱된 JSON dict 또는 파싱 실패 시 None
         """
         try:
             text = response_text.strip()
 
-            # Remove code blocks
+            # 코드 블록 제거
             if text.startswith("```json"):
                 text = text[7:].strip()
                 if "```" in text:
@@ -123,7 +123,7 @@ class BaseAIService(ABC):
                 if "```" in text:
                     text = text[: text.index("```")].strip()
 
-            # Find JSON object boundaries using brace counting
+            # 중괄호 카운팅으로 JSON 객체 경계 찾기
             if text.startswith("{"):
                 brace_count = 0
                 for i, char in enumerate(text):
@@ -153,14 +153,14 @@ class BaseAIService(ABC):
         self, data: Dict[str, Any], required_fields: list
     ) -> bool:
         """
-        Validate that all required fields are present in data.
+        데이터에 모든 필수 필드가 있는지 검증합니다.
 
         Args:
-            data: Data dict to validate
-            required_fields: List of required field names
+            data: 검증할 데이터 딕셔너리
+            required_fields: 필수 필드 이름 리스트
 
         Returns:
-            True if all fields present, False otherwise
+            모든 필드가 있으면 True, 그렇지 않으면 False
         """
         missing = [field for field in required_fields if field not in data]
 
@@ -174,14 +174,14 @@ class BaseAIService(ABC):
 
     def call_langchain(self, prompt_template, **kwargs) -> Optional[str]:
         """
-        Call LangChain with prompt template.
+        프롬프트 템플릿으로 LangChain을 호출합니다.
 
         Args:
-            prompt_template: ChatPromptTemplate instance
-            **kwargs: Variables for prompt template
+            prompt_template: ChatPromptTemplate 인스턴스
+            **kwargs: 프롬프트 템플릿 변수
 
         Returns:
-            Response text or None if call fails
+            응답 텍스트 또는 호출 실패 시 None
         """
         if not self.llm:
             logger.warning(f"{self.__class__.__name__}: LangChain not initialized")
@@ -203,15 +203,15 @@ class BaseAIService(ABC):
         max_tokens: Optional[int] = None,
     ) -> Optional[str]:
         """
-        Call Anthropic SDK with prompt.
+        프롬프트로 Anthropic SDK를 호출합니다.
 
         Args:
-            prompt: Prompt text
-            temperature: Override default temperature
-            max_tokens: Override default max_tokens
+            prompt: 프롬프트 텍스트
+            temperature: 기본 temperature 값 오버라이드
+            max_tokens: 기본 max_tokens 값 오버라이드
 
         Returns:
-            Response text or None if call fails
+            응답 텍스트 또는 호출 실패 시 None
         """
         if not self.client:
             logger.warning(f"{self.__class__.__name__}: Anthropic SDK not initialized")

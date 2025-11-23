@@ -1,7 +1,7 @@
 """
-AI Evaluators
+AI 평가기
 
-Answer and title evaluation services using Claude AI.
+Claude AI를 사용한 답변 및 제목 평가 서비스
 """
 
 from .answer_evaluator import ai_answer_evaluator

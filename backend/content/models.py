@@ -10,7 +10,7 @@ User = get_user_model()
 
 
 class Category(TimestampMixin):
-    """Content category"""
+    """콘텐츠 카테고리"""
 
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, blank=True)
@@ -28,7 +28,7 @@ class Category(TimestampMixin):
         ]
 
     def clean(self):
-        """Validate model data"""
+        """모델 데이터를 검증합니다"""
         super().clean()
         validate_category_name(self.name)
 
@@ -36,9 +36,9 @@ class Category(TimestampMixin):
         self.full_clean()
         if not self.slug:
             self.slug = slugify(self.name)
-            # Handle cases where slugify returns empty string (e.g., emojis)
+            # slugify가 빈 문자열을 반환하는 경우 처리 (예: 이모지)
             if not self.slug:
-                # Use a fallback slug based on the category ID or a unique identifier
+                # 카테고리 ID 또는 고유 식별자 기반 대체 슬러그 사용
                 import uuid
 
                 self.slug = f"category-{str(uuid.uuid4())[:8]}"
@@ -49,7 +49,7 @@ class Category(TimestampMixin):
 
 
 class Content(TimestampMixin):
-    """Learning content"""
+    """학습 콘텐츠"""
 
     REVIEW_MODE_CHOICES = [
         ("objective", "기억 확인 (제목만 보고 기억함/모름 선택)"),
@@ -71,9 +71,9 @@ class Content(TimestampMixin):
     )
 
     def __init__(self, *args, **kwargs):
-        """Store original values to detect changes without additional DB query"""
+        """추가 DB 쿼리 없이 변경 감지를 위해 원본 값 저장"""
         super().__init__(*args, **kwargs)
-        # Store original values for change detection
+        # 변경 감지를 위한 원본 값 저장
         self._original_title = self.title
         self._original_content = self.content
 
@@ -130,14 +130,14 @@ class Content(TimestampMixin):
         ]
 
     def clean(self):
-        """Validate model data"""
+        """모델 데이터를 검증합니다"""
         super().clean()
         validate_content_length(self.content)
 
         if not self.title or not self.title.strip():
             raise ValidationError({"title": "Title cannot be empty."})
 
-        # AI 평가 모드(서술형, 객관식)는 콘텐츠가 200자 이상이어야 함
+        # AI 평가 모드(서술형, 객관식)는 정확한 판단을 위해 콘텐츠가 200자 이상이어야 함
         if self.review_mode in ["descriptive", "multiple_choice"]:
             content_length = len(self.content.strip())
             if content_length < 200:
@@ -148,24 +148,24 @@ class Content(TimestampMixin):
                 )
 
     def save(self, *args, **kwargs):
-        """Override save to run validation and handle AI validation reset"""
-        # Check if title or content changed (no DB query needed)
+        """검증 실행 및 AI 검증 리셋을 처리하도록 save를 오버라이드"""
+        # 제목 또는 내용이 변경되었는지 확인 (DB 쿼리 불필요)
         if self.pk and (
             self._original_content != self.content or self._original_title != self.title
         ):
-            # Content changed, reset AI validation
+            # 콘텐츠가 변경됨, AI 검증 리셋
             self.is_ai_validated = False
             self.ai_validation_score = None
             self.ai_validation_result = None
             self.ai_validated_at = None
-            # Reset MC choices if in multiple choice mode
+            # 객관식 모드인 경우 MC 선택지 리셋
             if self.review_mode == "multiple_choice":
                 self.mc_choices = None
 
         self.full_clean()
         super().save(*args, **kwargs)
 
-        # Update original values after save
+        # 저장 후 원본 값 업데이트
         self._original_title = self.title
         self._original_content = self.content
 

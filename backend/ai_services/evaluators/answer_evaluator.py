@@ -1,10 +1,10 @@
 """
-AI-powered answer evaluation service.
+AI 기반 답변 평가 서비스
 
-Evaluates user's written answers against learning content.
-Provides scoring, feedback, and remembering/forgetting classification.
+사용자의 서술형 답변을 학습 콘텐츠와 비교하여 평가합니다.
+점수, 피드백, 기억함/잊음 분류를 제공합니다.
 
-Uses Claude 3 Haiku for cost-efficient evaluation.
+비용 효율적인 평가를 위해 Claude 3 Haiku를 사용합니다.
 """
 
 import logging
@@ -19,17 +19,17 @@ logger = logging.getLogger(__name__)
 
 class AnswerEvaluator(BaseAIService):
     """
-    Evaluates user's written answers using AI.
+    AI를 사용하여 사용자의 서술형 답변을 평가합니다.
 
-    Features:
-    - Invalid answer detection (spam, meaningless input)
-    - Scoring (0-100) based on understanding
-    - Detailed feedback in Korean
-    - Automatic remembered/forgot classification
+    기능:
+    - 무효 답변 감지 (스팸, 무의미한 입력)
+    - 이해도 기반 점수 평가 (0-100)
+    - 상세한 한국어 피드백
+    - 자동 기억함/잊음 분류
     """
 
     def __init__(self):
-        # Use Claude 3 Haiku for cost-efficient evaluation
+        # 비용 효율적인 평가를 위해 Claude 3 Haiku 사용
         super().__init__(model="claude-3-haiku-20240307", use_langchain=True)
 
     def _get_temperature(self) -> float:
@@ -42,12 +42,12 @@ class AnswerEvaluator(BaseAIService):
         self, content_title: str, content_body: str, user_answer: str
     ) -> Optional[Dict]:
         """
-        Evaluate user's answer using AI.
+        AI를 사용하여 사용자의 답변을 평가합니다.
 
         Args:
-            content_title: Learning content title
-            content_body: Learning content body
-            user_answer: User's written answer
+            content_title: 학습 콘텐츠 제목
+            content_body: 학습 콘텐츠 본문
+            user_answer: 사용자가 작성한 답변
 
         Returns:
             {
@@ -56,13 +56,13 @@ class AnswerEvaluator(BaseAIService):
                 'feedback': str,
                 'auto_result': str ('remembered' or 'forgot')
             }
-            or None if AI service unavailable
+            또는 AI 서비스를 사용할 수 없는 경우 None
         """
         if not self.is_available():
             logger.warning("AI service not available")
             return None
 
-        # Check answer length
+        # 답변 길이 확인
         if not user_answer or len(user_answer.strip()) < 10:
             return {
                 "score": 0,
@@ -89,18 +89,18 @@ class AnswerEvaluator(BaseAIService):
             if not result:
                 return None
 
-            # Validate required fields
+            # 필수 필드 검증
             required_fields = ["score", "evaluation", "feedback"]
             if not self.validate_required_fields(result, required_fields):
                 return None
 
-            # Validate and normalize score
+            # 점수 검증 및 정규화
             score = float(result["score"])
             if not (0 <= score <= 100):
                 logger.warning(f"Invalid score: {score}")
                 score = max(0, min(100, score))
 
-            # Auto-generate auto_result if not provided
+            # auto_result가 없으면 자동 생성 (70점 이상이면 remembered)
             auto_result = result.get("auto_result")
             if not auto_result:
                 auto_result = "remembered" if score >= 70 else "forgot"
@@ -125,7 +125,7 @@ class AnswerEvaluator(BaseAIService):
             return None
 
     def _create_evaluation_prompt(self) -> ChatPromptTemplate:
-        """Create evaluation prompt template."""
+        """평가 프롬프트 템플릿을 생성합니다."""
         return ChatPromptTemplate.from_template(
             """다음 학습 콘텐츠에 대한 사용자의 서술형 답변을 **깐깐하게** 평가해주세요.
 
@@ -174,5 +174,5 @@ class AnswerEvaluator(BaseAIService):
         )
 
 
-# Singleton instance
+# 싱글톤 인스턴스
 ai_answer_evaluator = AnswerEvaluator()

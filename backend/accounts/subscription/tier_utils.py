@@ -1,11 +1,11 @@
 """
-Utility functions for subscription tier operations.
+구독 티어 작업을 위한 유틸리티 함수
 
-Provides functions for:
-- Tier hierarchy and comparison
-- Pricing calculations
-- Feature and limit lookups
-- Tier validation
+제공 기능:
+- 티어 계층 구조 및 비교
+- 가격 계산
+- 기능 및 제한 조회
+- 티어 검증
 """
 
 from decimal import Decimal
@@ -26,27 +26,27 @@ from ..models import BillingCycle, SubscriptionTier
 
 def get_tier_level(tier: str) -> int:
     """
-    Get numeric level for a tier.
+    티어의 숫자 레벨을 반환합니다.
 
     Args:
-        tier: Subscription tier (FREE, BASIC, PRO)
+        tier: 구독 티어 (FREE, BASIC, PRO)
 
     Returns:
-        Numeric level (0=FREE, 1=BASIC, 2=PRO)
+        숫자 레벨 (0=FREE, 1=BASIC, 2=PRO)
     """
     return TIER_HIERARCHY.get(tier, 0)
 
 
 def is_upgrade(from_tier: str, to_tier: str) -> bool:
     """
-    Check if tier change is an upgrade.
+    티어 변경이 업그레이드인지 확인합니다.
 
     Args:
-        from_tier: Current tier
-        to_tier: Target tier
+        from_tier: 현재 티어
+        to_tier: 목표 티어
 
     Returns:
-        True if upgrade, False otherwise
+        업그레이드이면 True, 아니면 False
     """
     from_level = get_tier_level(from_tier)
     to_level = get_tier_level(to_tier)
@@ -55,14 +55,14 @@ def is_upgrade(from_tier: str, to_tier: str) -> bool:
 
 def is_downgrade(from_tier: str, to_tier: str) -> bool:
     """
-    Check if tier change is a downgrade.
+    티어 변경이 다운그레이드인지 확인합니다.
 
     Args:
-        from_tier: Current tier
-        to_tier: Target tier
+        from_tier: 현재 티어
+        to_tier: 목표 티어
 
     Returns:
-        True if downgrade, False otherwise
+        다운그레이드이면 True, 아니면 False
     """
     from_level = get_tier_level(from_tier)
     to_level = get_tier_level(to_tier)
@@ -71,59 +71,59 @@ def is_downgrade(from_tier: str, to_tier: str) -> bool:
 
 def can_change_tier(from_tier: str, to_tier: str) -> bool:
     """
-    Check if tier change is valid (not same tier).
+    티어 변경이 유효한지 확인합니다 (동일 티어가 아닌지).
 
     Args:
-        from_tier: Current tier
-        to_tier: Target tier
+        from_tier: 현재 티어
+        to_tier: 목표 티어
 
     Returns:
-        True if valid change, False if same tier
+        유효한 변경이면 True, 동일 티어이면 False
     """
     return from_tier != to_tier
 
 
 def get_max_interval(tier: str) -> int:
     """
-    Get maximum review interval for a tier.
+    티어의 최대 복습 간격을 반환합니다.
 
     Args:
-        tier: Subscription tier
+        tier: 구독 티어
 
     Returns:
-        Maximum interval in days
+        최대 간격 (일 단위)
     """
     return TIER_MAX_INTERVALS.get(tier, 3)
 
 
 def get_monthly_price(tier: str) -> Decimal:
     """
-    Get monthly price for a tier.
+    티어의 월간 가격을 반환합니다.
 
     Args:
-        tier: Subscription tier
+        tier: 구독 티어
 
     Returns:
-        Monthly price as Decimal
+        월간 가격 (Decimal)
     """
     return TIER_MONTHLY_PRICES.get(tier, Decimal("0.00"))
 
 
 def calculate_price(tier: str, billing_cycle: str = BillingCycle.MONTHLY) -> Decimal:
     """
-    Calculate price based on tier and billing cycle.
+    티어와 결제 주기를 기반으로 가격을 계산합니다.
 
     Args:
-        tier: Subscription tier
-        billing_cycle: MONTHLY or YEARLY
+        tier: 구독 티어
+        billing_cycle: MONTHLY 또는 YEARLY
 
     Returns:
-        Total price as Decimal
+        총 가격 (Decimal)
     """
     monthly_price = get_monthly_price(tier)
 
     if billing_cycle == BillingCycle.YEARLY:
-        # Yearly: 12 months with discount
+        # 연간: 12개월 + 할인
         yearly_price = monthly_price * 12
         discount = yearly_price * YEARLY_DISCOUNT_RATE
         return yearly_price - discount
@@ -133,66 +133,66 @@ def calculate_price(tier: str, billing_cycle: str = BillingCycle.MONTHLY) -> Dec
 
 def get_content_limit(tier: str) -> int:
     """
-    Get content creation limit for a tier.
+    티어의 콘텐츠 생성 제한을 반환합니다.
 
     Args:
-        tier: Subscription tier
+        tier: 구독 티어
 
     Returns:
-        Content limit
+        콘텐츠 제한 개수
     """
     return CONTENT_LIMITS.get(tier, 20)
 
 
 def get_category_limit(tier: str) -> int:
     """
-    Get category creation limit for a tier.
+    티어의 카테고리 생성 제한을 반환합니다.
 
     Args:
-        tier: Subscription tier
+        tier: 구독 티어
 
     Returns:
-        Category limit
+        카테고리 제한 개수
     """
     return CATEGORY_LIMITS.get(tier, 1)
 
 
 def get_features(tier: str) -> List[str]:
     """
-    Get list of features for a tier.
+    티어의 기능 목록을 반환합니다.
 
     Args:
-        tier: Subscription tier
+        tier: 구독 티어
 
     Returns:
-        List of feature descriptions
+        기능 설명 리스트
     """
     return TIER_FEATURES.get(tier, [])
 
 
 def get_billing_cycle_days(billing_cycle: str) -> int:
     """
-    Get number of days for a billing cycle.
+    결제 주기의 일수를 반환합니다.
 
     Args:
-        billing_cycle: MONTHLY or YEARLY
+        billing_cycle: MONTHLY 또는 YEARLY
 
     Returns:
-        Number of days
+        일수
     """
     return BILLING_CYCLE_DAYS.get(billing_cycle, 30)
 
 
 def get_tier_info(tier: str, billing_cycle: str = BillingCycle.MONTHLY) -> Dict:
     """
-    Get comprehensive information about a tier.
+    티어에 대한 종합 정보를 반환합니다.
 
     Args:
-        tier: Subscription tier
-        billing_cycle: MONTHLY or YEARLY
+        tier: 구독 티어
+        billing_cycle: MONTHLY 또는 YEARLY
 
     Returns:
-        Dictionary with tier information
+        티어 정보가 담긴 딕셔너리
     """
     return {
         "tier": tier,
@@ -210,13 +210,13 @@ def get_tier_info(tier: str, billing_cycle: str = BillingCycle.MONTHLY) -> Dict:
 
 def get_all_tiers_info(billing_cycle: str = BillingCycle.MONTHLY) -> List[Dict]:
     """
-    Get information for all available tiers.
+    모든 사용 가능한 티어의 정보를 반환합니다.
 
     Args:
-        billing_cycle: MONTHLY or YEARLY
+        billing_cycle: MONTHLY 또는 YEARLY
 
     Returns:
-        List of tier information dictionaries
+        티어 정보 딕셔너리 리스트
     """
     return [get_tier_info(tier, billing_cycle) for tier, _ in SubscriptionTier.choices]
 
@@ -225,15 +225,15 @@ def calculate_prorated_refund(
     current_price: Decimal, days_remaining: int, total_days: int
 ) -> Decimal:
     """
-    Calculate prorated refund for downgrade/cancellation.
+    다운그레이드/해지에 대한 일할 환불 금액을 계산합니다.
 
     Args:
-        current_price: Price paid for current period
-        days_remaining: Days left in current period
-        total_days: Total days in billing period
+        current_price: 현재 기간에 지불한 가격
+        days_remaining: 현재 기간의 남은 일수
+        total_days: 결제 기간의 총 일수
 
     Returns:
-        Refund amount as Decimal
+        환불 금액 (Decimal)
     """
     if days_remaining <= 0 or total_days <= 0:
         return Decimal("0.00")

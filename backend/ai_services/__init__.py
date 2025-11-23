@@ -1,22 +1,22 @@
 """
-AI Services Package
+AI 서비스 패키지
 
-Centralized AI services using Anthropic Claude:
+Anthropic Claude를 사용하는 중앙화된 AI 서비스:
 
-Validators:
-- content_validator: Validates learning content for accuracy and consistency
+검증기 (Validators):
+- content_validator: 학습 콘텐츠의 정확성과 일관성을 검증
 
-Evaluators:
-- ai_answer_evaluator: Evaluates user's written answers
-- ai_title_evaluator: Evaluates user's guessed titles
+평가기 (Evaluators):
+- ai_answer_evaluator: 사용자의 서술형 답변을 평가
+- ai_title_evaluator: 사용자가 추측한 제목을 평가
 
-Generators:
-- mc_generator: Generates multiple choice options
-- ai_question_generator: Generates weekly test questions (LangChain + LangGraph)
+생성기 (Generators):
+- mc_generator: 객관식 보기 생성
+- ai_question_generator: 주간 시험 문제 생성 (LangChain + LangGraph)
 
-Graphs (LangGraph Workflows):
-- generate_quality_choices: High-quality distractor generation
-- select_balanced_contents_for_test: Balanced test content selection
+그래프 (LangGraph 워크플로우):
+- generate_quality_choices: 고품질 오답지 생성
+- select_balanced_contents_for_test: 균형잡힌 시험 콘텐츠 선택
 """
 
 __version__ = "2.0.0"
@@ -34,21 +34,21 @@ from .graphs import (
     select_balanced_contents_for_test,
 )
 
-# Import all services for easy access
+# 쉬운 접근을 위해 모든 서비스 import
 from .validators import content_validator, validate_content
 
 __all__ = [
-    # Validators
+    # 검증기
     "content_validator",
     "validate_content",
-    # Evaluators
+    # 평가기
     "ai_answer_evaluator",
     "ai_title_evaluator",
-    # Generators
+    # 생성기
     "mc_generator",
     "generate_multiple_choice_options",
     "ai_question_generator",
-    # Graphs
+    # 그래프
     "generate_quality_choices",
     "select_balanced_contents_for_test",
     "create_distractor_generation_graph",

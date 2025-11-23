@@ -1,1 +1,1 @@
-# Subscription module exports
+# 구독 모듈 exports

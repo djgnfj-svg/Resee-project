@@ -1,12 +1,12 @@
 """
-AI-powered content validation service.
+AI 기반 콘텐츠 검증 서비스
 
-Validates learning content for:
-- Factual accuracy
-- Logical consistency
-- Title relevance
+학습 콘텐츠를 다음 항목에 대해 검증합니다:
+- 사실적 정확성
+- 논리적 일관성
+- 제목 적합성
 
-Uses Claude 3.7 Sonnet for high-quality validation.
+고품질 검증을 위해 Claude 3.7 Sonnet을 사용합니다.
 """
 
 import logging
@@ -20,13 +20,13 @@ logger = logging.getLogger(__name__)
 
 class ContentValidator(BaseAIService):
     """
-    Validates learning content using AI.
+    AI를 사용하여 학습 콘텐츠를 검증합니다.
 
-    Checks factual accuracy, logical consistency, and title-content alignment.
+    사실적 정확성, 논리적 일관성, 제목-내용 일치도를 확인합니다.
     """
 
     def __init__(self):
-        # Use Claude 3.7 Sonnet for high-quality validation
+        # 고품질 검증을 위해 Claude 3.7 Sonnet 사용
         super().__init__(model="claude-3-7-sonnet-20250219", use_langchain=True)
 
     def _get_temperature(self) -> float:
@@ -37,14 +37,14 @@ class ContentValidator(BaseAIService):
 
     def validate_content(self, title: str, content: str) -> dict:
         """
-        Validate learning content using AI.
+        AI를 사용하여 학습 콘텐츠를 검증합니다.
 
         Args:
-            title: Content title
-            content: Content body (markdown)
+            title: 콘텐츠 제목
+            content: 콘텐츠 본문 (마크다운)
 
         Returns:
-            dict: Validation results with scores and feedback
+            dict: 점수와 피드백이 포함된 검증 결과
             {
                 'is_valid': bool,
                 'factual_accuracy': {'score': int, 'issues': list},
@@ -72,7 +72,7 @@ class ContentValidator(BaseAIService):
             if not result:
                 return self._get_error_response("AI 응답 파싱 실패")
 
-            # Validate structure
+            # 응답 구조 검증
             required_keys = [
                 "is_valid",
                 "factual_accuracy",
@@ -94,7 +94,7 @@ class ContentValidator(BaseAIService):
             return self._get_error_response(f"AI 검증 중 오류가 발생했습니다: {str(e)}")
 
     def _create_validation_prompt(self) -> ChatPromptTemplate:
-        """Create validation prompt template."""
+        """검증 프롬프트 템플릿을 생성합니다."""
         return ChatPromptTemplate.from_template(
             """당신은 학습 자료 검증 전문가입니다. 다음 학습 콘텐츠를 엄격하게 검토해주세요.
 
@@ -147,7 +147,7 @@ JSON만 반환하세요."""
         )
 
     def _get_error_response(self, error_message: str) -> dict:
-        """Get error response structure."""
+        """에러 응답 구조를 반환합니다."""
         return {
             "is_valid": False,
             "factual_accuracy": {"score": 0, "issues": ["AI 검증 실패"]},
@@ -157,15 +157,15 @@ JSON만 반환하세요."""
         }
 
 
-# Singleton instance
+# 싱글톤 인스턴스
 content_validator = ContentValidator()
 
 
-# Backward compatibility function
+# 하위 호환성을 위한 함수
 def validate_content(title: str, content: str) -> dict:
     """
-    Validate learning content using AI.
+    AI를 사용하여 학습 콘텐츠를 검증합니다.
 
-    Backward-compatible function interface.
+    하위 호환성을 위한 함수 인터페이스입니다.
     """
     return content_validator.validate_content(title, content)

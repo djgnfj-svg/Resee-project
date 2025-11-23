@@ -1,7 +1,7 @@
 """
-AI Generators
+AI 생성기
 
-Question and multiple choice generation services using Claude AI.
+Claude AI를 사용한 문제 및 객관식 보기 생성 서비스
 """
 
 from .mc_generator import generate_multiple_choice_options, mc_generator

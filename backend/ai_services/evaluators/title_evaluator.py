@@ -1,10 +1,10 @@
 """
-AI-powered title evaluation service.
+AI 기반 제목 평가 서비스
 
-Evaluates user's guessed title based on content.
-Provides scoring, correctness check, and feedback.
+콘텐츠 기반으로 사용자가 추측한 제목을 평가합니다.
+점수, 정답 여부, 피드백을 제공합니다.
 
-Uses Claude 3 Haiku for cost-efficient evaluation.
+비용 효율적인 평가를 위해 Claude 3 Haiku를 사용합니다.
 """
 
 import logging
@@ -19,17 +19,17 @@ logger = logging.getLogger(__name__)
 
 class TitleEvaluator(BaseAIService):
     """
-    Evaluates user's guessed title using AI.
+    AI를 사용하여 사용자가 추측한 제목을 평가합니다.
 
-    Features:
-    - Semantic similarity check with actual title
-    - Scoring (0-100) based on understanding
-    - Detailed feedback in Korean
-    - Automatic remembered/forgot classification
+    기능:
+    - 실제 제목과의 의미적 유사성 확인
+    - 이해도 기반 점수 평가 (0-100)
+    - 상세한 한국어 피드백
+    - 자동 기억함/잊음 분류
     """
 
     def __init__(self):
-        # Use Claude 3 Haiku for cost-efficient evaluation
+        # 비용 효율적인 평가를 위해 Claude 3 Haiku 사용
         super().__init__(model="claude-3-haiku-20240307", use_langchain=True)
 
     def _get_temperature(self) -> float:
@@ -42,12 +42,12 @@ class TitleEvaluator(BaseAIService):
         self, content: str, user_title: str, actual_title: str
     ) -> Optional[Dict]:
         """
-        Evaluate user's guessed title using AI.
+        AI를 사용하여 사용자가 추측한 제목을 평가합니다.
 
         Args:
-            content: Learning content body
-            user_title: User's guessed title
-            actual_title: Actual title (correct answer)
+            content: 학습 콘텐츠 본문
+            user_title: 사용자가 추측한 제목
+            actual_title: 실제 제목 (정답)
 
         Returns:
             {
@@ -56,13 +56,13 @@ class TitleEvaluator(BaseAIService):
                 'is_correct': bool,
                 'auto_result': str ('remembered' or 'forgot')
             }
-            or None if AI service unavailable
+            또는 AI 서비스를 사용할 수 없는 경우 None
         """
         if not self.is_available():
             logger.warning("AI service not available")
             return None
 
-        # Check title length
+        # 제목 길이 확인
         if not user_title or len(user_title.strip()) < 2:
             return {
                 "score": 0,
@@ -90,21 +90,21 @@ class TitleEvaluator(BaseAIService):
             if not result:
                 return None
 
-            # Validate required fields
+            # 필수 필드 검증
             required_fields = ["score", "is_correct", "feedback"]
             if not self.validate_required_fields(result, required_fields):
                 return None
 
-            # Validate and normalize score
+            # 점수 검증 및 정규화
             score = float(result["score"])
             if not (0 <= score <= 100):
                 logger.warning(f"Invalid score: {score}")
                 score = max(0, min(100, score))
 
-            # Ensure is_correct matches score
+            # is_correct는 점수 기반으로 결정 (70점 이상이면 정답)
             is_correct = score >= 70
 
-            # Auto-generate auto_result if not provided
+            # auto_result가 없으면 자동 생성
             auto_result = result.get("auto_result")
             if not auto_result:
                 auto_result = "remembered" if score >= 70 else "forgot"
@@ -127,7 +127,7 @@ class TitleEvaluator(BaseAIService):
             return None
 
     def _create_evaluation_prompt(self) -> ChatPromptTemplate:
-        """Create evaluation prompt template."""
+        """평가 프롬프트 템플릿을 생성합니다."""
         return ChatPromptTemplate.from_template(
             """다음 학습 콘텐츠의 내용을 읽고, 사용자가 유추한 제목이 적절한지 평가해주세요.
 
@@ -170,5 +170,5 @@ class TitleEvaluator(BaseAIService):
         )
 
 
-# Singleton instance
+# 싱글톤 인스턴스
 ai_title_evaluator = TitleEvaluator()

@@ -1,5 +1,5 @@
 """
-Review system utility functions
+복습 시스템 유틸리티 함수
 """
 
 from datetime import timedelta
@@ -10,30 +10,30 @@ from accounts.subscription.services import SubscriptionService
 
 
 def get_review_intervals(user=None):
-    """Get review intervals based on user's subscription tier using Ebbinghaus forgetting curve
+    """에빙하우스 망각곡선을 사용한 사용자 구독 티어 기반 복습 간격 반환
 
-    Based on Hermann Ebbinghaus's research on optimal spaced repetition intervals:
-    - 1 day: Initial reinforcement
-    - 3 days: Short-term consolidation
-    - 7 days: Working memory to long-term transfer
-    - 14 days: Long-term memory strengthening
-    - 30 days: Monthly reinforcement
-    - 60 days: Bi-monthly consolidation
-    - 120 days: Quarterly review (4 months)
-    - 180 days: Semi-annual review (6 months)
+    Hermann Ebbinghaus의 최적 간격 반복 연구를 기반으로:
+    - 1일: 초기 강화
+    - 3일: 단기 공고화
+    - 7일: 작업 기억에서 장기 기억으로 전환
+    - 14일: 장기 기억 강화
+    - 30일: 월간 강화
+    - 60일: 격월 공고화
+    - 120일: 분기별 복습 (4개월)
+    - 180일: 반기별 복습 (6개월)
 
     Args:
-        user: User instance (optional). If not provided, returns default intervals.
+        user: 사용자 인스턴스 (선택). 제공되지 않으면 기본 간격 반환.
 
     Returns:
-        list: Review intervals in days based on subscription tier
+        list: 구독 티어 기반 복습 간격 (일 단위)
     """
-    # Return intervals based on subscription tier
+    # 구독 티어에 따라 간격 반환
     from accounts.models import SubscriptionTier
 
-    # Ebbinghaus-optimized intervals for each tier
+    # 각 티어별 에빙하우스 최적화 간격
     tier_intervals = {
-        SubscriptionTier.FREE: [1, 3],  # Basic spaced repetition (max 3 days)
+        SubscriptionTier.FREE: [1, 3],  # 기본 간격 반복 (최대 3일)
         SubscriptionTier.BASIC: [
             1,
             3,
@@ -42,7 +42,7 @@ def get_review_intervals(user=None):
             30,
             60,
             90,
-        ],  # Medium-term memory (max 90 days)
+        ],  # 중기 기억 (최대 90일)
         SubscriptionTier.PRO: [
             1,
             3,
@@ -52,49 +52,49 @@ def get_review_intervals(user=None):
             60,
             120,
             180,
-        ],  # Complete long-term retention (max 180 days)
+        ],  # 완전한 장기 보존 (최대 180일)
     }
 
-    # Default to free tier intervals if no user
+    # 사용자가 없으면 무료 티어 간격으로 기본 설정
     if not user:
         return tier_intervals[SubscriptionTier.FREE]
 
-    # Check if user has active subscription
+    # 사용자가 활성 구독을 가지고 있는지 확인
     if not hasattr(user, "subscription"):
         return tier_intervals[SubscriptionTier.FREE]
 
     subscription = user.subscription
 
-    # Check if subscription is active and not expired
+    # 구독이 활성화되어 있고 만료되지 않았는지 확인
     if not subscription.is_active or subscription.is_expired():
         return tier_intervals[SubscriptionTier.FREE]
 
-    # Return intervals for user's tier
+    # 사용자 티어의 간격 반환
     return tier_intervals.get(subscription.tier, tier_intervals[SubscriptionTier.FREE])
 
 
 def calculate_next_review_date(user, interval_index, result="remembered"):
     """
-    Calculate next review date using Ebbinghaus forgetting curve intervals
+    에빙하우스 망각곡선 간격을 사용하여 다음 복습 날짜를 계산합니다
 
     Args:
-        user: User instance
-        interval_index: Current interval index
-        result: Review result ('remembered' or 'forgotten')
+        user: 사용자 인스턴스
+        interval_index: 현재 간격 인덱스
+        result: 복습 결과 ('remembered' 또는 'forgotten')
 
     Returns:
-        tuple: (next_review_date, new_interval_index)
+        tuple: (다음_복습_날짜, 새_간격_인덱스)
     """
     intervals = get_review_intervals(user)
 
     if result == "forgotten":
-        # Reset to first interval on failure
+        # 실패 시 첫 번째 간격으로 리셋
         new_interval_index = 0
     else:
-        # Progress to next interval on success
+        # 성공 시 다음 간격으로 진행
         new_interval_index = min(interval_index + 1, len(intervals) - 1)
 
-    # Get the interval in days
+    # 간격을 일 단위로 가져오기
     interval_days = intervals[new_interval_index]
     next_review_date = timezone.now() + timedelta(days=interval_days)
 
@@ -103,24 +103,24 @@ def calculate_next_review_date(user, interval_index, result="remembered"):
 
 def calculate_success_rate(user, category=None, days=30):
     """
-    Calculate success rate for a user within specified days
+    지정된 기간 내 사용자의 성공률을 계산합니다
 
     Args:
-        user: User instance
-        category: Category instance (optional)
-        days: Number of days to look back (default: 30)
+        user: 사용자 인스턴스
+        category: 카테고리 인스턴스 (선택)
+        days: 조회할 일수 (기본: 30)
 
     Returns:
-        tuple: (success_rate, total_reviews, details)
+        tuple: (성공률, 총_복습_수, 상세정보)
     """
     from .models import ReviewHistory
 
     start_date = timezone.now().date() - timedelta(days=days)
 
-    # Base queryset
+    # 기본 쿼리셋
     reviews = ReviewHistory.objects.filter(user=user, review_date__date__gte=start_date)
 
-    # Filter by category if provided
+    # 카테고리가 제공되면 필터링
     if category:
         reviews = reviews.filter(content__category=category)
 
@@ -131,7 +131,7 @@ def calculate_success_rate(user, category=None, days=30):
         (successful_reviews / total_reviews * 100) if total_reviews > 0 else 0
     )
 
-    # Create details dict with breakdown by result
+    # 결과별 분류가 포함된 상세 딕셔너리 생성
     details = {}
     for result_choice, _ in ReviewHistory.RESULT_CHOICES:
         count = reviews.filter(result=result_choice).count()
@@ -142,17 +142,17 @@ def calculate_success_rate(user, category=None, days=30):
 
 def get_today_reviews_count(user, category=None):
     """
-    Get count of today's reviews for a user
+    사용자의 오늘 복습 수를 반환합니다
 
-    This function should match the logic used in TodayReviewView to ensure consistency
-    between dashboard and review page counts.
+    대시보드와 복습 페이지 간 일관성을 보장하기 위해
+    TodayReviewView에서 사용하는 로직과 일치해야 합니다.
 
     Args:
-        user: User instance
-        category: Category instance (optional)
+        user: 사용자 인스턴스
+        category: 카테고리 인스턴스 (선택)
 
     Returns:
-        int: Number of reviews due today (including initial reviews not yet completed)
+        int: 오늘 해야 할 복습 수 (아직 완료되지 않은 초기 복습 포함)
     """
     from datetime import timedelta
 
@@ -162,16 +162,16 @@ def get_today_reviews_count(user, category=None):
 
     today = timezone.now().date()
 
-    # Get user's subscription tier and determine overdue limit (same as TodayReviewView)
+    # 사용자의 구독 티어를 가져오고 연체 제한 결정 (TodayReviewView와 동일)
     max_overdue_days = SubscriptionService(user).get_max_review_interval()
     if not max_overdue_days:
-        max_overdue_days = 7  # Default to FREE tier
+        max_overdue_days = 7  # FREE 티어 기본값
 
-    # Calculate cutoff date for overdue reviews based on subscription
+    # 구독을 기반으로 연체 복습 마감일 계산
     cutoff_date = timezone.now() - timedelta(days=max_overdue_days)
 
     schedules = ReviewSchedule.objects.filter(user=user, is_active=True).filter(
-        # Same logic as TodayReviewView: due today/overdue OR initial review not completed
+        # TodayReviewView와 동일 로직: 오늘/연체 또는 초기 복습 미완료
         Q(next_review_date__date__lte=today, next_review_date__gte=cutoff_date)
         | Q(initial_review_completed=False)
     )
@@ -184,14 +184,14 @@ def get_today_reviews_count(user, category=None):
 
 def get_pending_reviews_count(user, category=None):
     """
-    Get count of pending (overdue) reviews for a user
+    사용자의 대기 중인(연체된) 복습 수를 반환합니다
 
     Args:
-        user: User instance
-        category: Category instance (optional)
+        user: 사용자 인스턴스
+        category: 카테고리 인스턴스 (선택)
 
     Returns:
-        int: Number of pending (overdue) reviews
+        int: 대기 중인(연체된) 복습 수
     """
     from .models import ReviewSchedule
 
