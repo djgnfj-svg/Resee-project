@@ -67,7 +67,7 @@ class ReviewScheduleSerializerTest(TestCase):
     def test_serialize_multiple_schedules(self):
         """Test serializing multiple schedules."""
         # Create additional content
-        content2 = Content.objects.create(
+        _content2 = Content.objects.create(
             title="Content 2",
             content="Body 2",
             author=self.user,

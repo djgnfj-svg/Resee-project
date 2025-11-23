@@ -96,7 +96,7 @@ class TestAIQuestionGenerator(TestCase):
         # 길이 균형 검증
         lengths = [len(c) for c in choices]
         avg_len = sum(lengths) / len(lengths)
-        max_deviation = max(abs(l - avg_len) for l in lengths)
+        max_deviation = max(abs(length - avg_len) for length in lengths)
 
         # 평균 길이의 50% 이내 편차 허용
         self.assertLess(max_deviation, avg_len * 0.5, "선택지 길이 편차가 너무 큼")

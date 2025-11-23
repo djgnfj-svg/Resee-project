@@ -125,7 +125,7 @@ class TodayReviewViewTest(TestCase):
     def test_get_today_reviews_includes_initial_uncompleted(self):
         """Test initial uncompleted reviews are always included."""
         # Create new content (initial_review_completed=False by default)
-        new_content = Content.objects.create(
+        _new_content = Content.objects.create(
             title="New Content", content="New body", author=self.user
         )
 

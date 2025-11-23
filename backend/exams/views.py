@@ -675,7 +675,7 @@ class TestSessionViewSet(viewsets.GenericViewSet):
         """
         # Verify test session exists and belongs to user
         try:
-            test_session = self.get_queryset().get(pk=pk)
+            _test_session = self.get_queryset().get(pk=pk)
         except WeeklyTest.DoesNotExist:
             return Response(
                 {"error": "존재하지 않는 시험입니다."}, status=status.HTTP_404_NOT_FOUND

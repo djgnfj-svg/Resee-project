@@ -95,13 +95,13 @@ class WeeklyTestModelTest(TestCase):
 
     def test_weekly_test_ordering(self):
         """Test ordering by created_at descending."""
-        test1 = WeeklyTest.objects.create(
+        _test1 = WeeklyTest.objects.create(
             user=self.user,
             title="First",
             start_date=date.today(),
             end_date=date.today() + timedelta(days=7),
         )
-        test2 = WeeklyTest.objects.create(
+        _test2 = WeeklyTest.objects.create(
             user=self.user,
             title="Second",
             start_date=date.today() + timedelta(days=10),
@@ -233,21 +233,21 @@ class WeeklyTestQuestionModelTest(TestCase):
 
     def test_question_ordering(self):
         """Test ordering by order field."""
-        q1 = WeeklyTestQuestion.objects.create(
+        _q1 = WeeklyTestQuestion.objects.create(
             weekly_test=self.weekly_test,
             content=self.content,
             question_text="Q1",
             correct_answer="A",
             order=3,
         )
-        q2 = WeeklyTestQuestion.objects.create(
+        _q2 = WeeklyTestQuestion.objects.create(
             weekly_test=self.weekly_test,
             content=self.content,
             question_text="Q2",
             correct_answer="B",
             order=1,
         )
-        q3 = WeeklyTestQuestion.objects.create(
+        _q3 = WeeklyTestQuestion.objects.create(
             weekly_test=self.weekly_test,
             content=self.content,
             question_text="Q3",
