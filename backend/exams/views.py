@@ -62,6 +62,7 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         """Create 메서드 오버라이드로 주간 제한 확인"""
+        import zoneinfo
         from datetime import timedelta
 
         from django.conf import settings
@@ -72,7 +73,9 @@ class WeeklyTestListCreateView(UserOwnershipMixin, generics.ListCreateAPIView):
 
         # 주간 시험 생성 제한 확인 (모든 티어에서 주당 1회)
         # 이번 주에 생성된 시험 개수 확인 (월요일 기준)
-        today = timezone.now().date()
+        # 로컬 타임존 기준으로 날짜 계산
+        local_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
+        today = timezone.now().astimezone(local_tz).date()
         week_start = today - timedelta(days=today.weekday())
         week_end = week_start + timedelta(days=6)
 
