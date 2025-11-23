@@ -84,7 +84,7 @@ def _generate_questions_from_ids(weekly_test, content_ids, ai_available):
 
             # 존재하지 않거나 검증되지 않은 콘텐츠가 있으면 에러
             if contents.count() != len(content_ids):
-                logger.warning(f"[Task] Some contents not found or not validated")
+                logger.warning("[Task] Some contents not found or not validated")
                 return
 
             # 순서 유지를 위해 딕셔너리 생성 후 재정렬
@@ -314,7 +314,7 @@ def _create_simple_question(weekly_test, content, order):
         # 실제 내용을 그대로 사용 (정답: O)
         question_text = f"'{content.title}'에 대한 다음 설명이 맞습니까? (O/X)\n\n{selected_sentence}"
         correct_answer = "O"
-        explanation = f"O - 학습 내용에 정확히 포함된 내용입니다."
+        explanation = "O - 학습 내용에 정확히 포함된 내용입니다."
     else:
         # 내용을 살짝 변형하여 오답 생성 (정답: X)
         modified_sentence = _create_modified_statement(content.title, selected_sentence)

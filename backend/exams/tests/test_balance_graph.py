@@ -32,7 +32,7 @@ class TestWeeklyTestBalanceGraph(TestCase):
         for i in range(5):
             content = Content.objects.create(
                 title=f"기본 개념 {i+1}",
-                content=f"""
+                content="""
                 기본적인 정의입니다.
 
                 **핵심 특징:**
@@ -54,7 +54,7 @@ class TestWeeklyTestBalanceGraph(TestCase):
         for i in range(7):
             content = Content.objects.create(
                 title=f"중급 개념 {i+1}",
-                content=f"""
+                content="""
                 중급 수준의 개념 설명입니다.
 
                 **핵심 내용:**
@@ -78,7 +78,7 @@ class TestWeeklyTestBalanceGraph(TestCase):
         for i in range(3):
             content = Content.objects.create(
                 title=f"고급 개념 {i+1}",
-                content=f"""
+                content="""
                 고급 수준의 복잡한 개념 설명입니다.
 
                 **심화 내용:**

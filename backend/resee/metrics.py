@@ -7,7 +7,7 @@ Provides endpoints for monitoring application health, performance, and resource 
 import os
 import psutil
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Dict, Any
 
 from django.conf import settings

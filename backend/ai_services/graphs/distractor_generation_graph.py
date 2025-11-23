@@ -583,7 +583,7 @@ def should_improve(state: DistractorGenerationState) -> Literal["improve", "fina
         return "finalize"
 
     if iteration >= 1:
-        logger.warning(f"[Decision] Max iteration reached → Finalize anyway")
+        logger.warning("[Decision] Max iteration reached → Finalize anyway")
         return "finalize"
 
     logger.info(f"[Decision] Quality low ({quality_score:.1f}) → Improve")

@@ -13,14 +13,8 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.utils import timezone
-from rest_framework.test import APIClient
-from rest_framework_simplejwt.token_blacklist.models import (
-    BlacklistedToken,
-    OutstandingToken,
-)
-from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
 
@@ -173,7 +167,6 @@ class SecurityRegressionTest(TestCase):
         """
         # This test documents the expectation
         # In production, configure logging to filter sensitive fields
-        pass
 
     def test_no_timing_leak_on_email_existence(self):
         """
@@ -182,7 +175,7 @@ class SecurityRegressionTest(TestCase):
         Both existing and non-existing users should take similar time.
         """
         # Generate token for existing user
-        token = self.user.generate_email_verification_token()
+        self.user.generate_email_verification_token()
 
         # Measure time for existing user (invalid token)
         start = time.perf_counter()

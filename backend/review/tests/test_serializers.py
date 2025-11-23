@@ -2,11 +2,9 @@
 Tests for review serializers.
 """
 
-from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.utils import timezone
 
 from content.models import Category, Content
 from review.models import ReviewHistory, ReviewSchedule

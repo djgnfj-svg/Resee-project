@@ -19,7 +19,6 @@ def convert_deprecated_review_modes(apps, schema_editor):
 
 def reverse_migration(apps, schema_editor):
     """Reverse migration - no-op as we can't know which mode to revert to."""
-    pass
 
 
 class Migration(migrations.Migration):

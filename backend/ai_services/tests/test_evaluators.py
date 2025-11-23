@@ -2,7 +2,7 @@
 Tests for AI evaluator services.
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 

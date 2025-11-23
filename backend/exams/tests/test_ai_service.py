@@ -91,7 +91,7 @@ class TestAIQuestionGenerator(TestCase):
             self.skipTest("AI 문제 생성 실패")
 
         choices = result["choices"]
-        correct_answer = result["correct_answer"]
+        result["correct_answer"]
 
         # 길이 균형 검증
         lengths = [len(c) for c in choices]

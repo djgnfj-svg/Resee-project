@@ -9,7 +9,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from accounts.models import Subscription, SubscriptionTier
+from accounts.models import SubscriptionTier
 from accounts.subscription import tier_utils
 
 User = get_user_model()

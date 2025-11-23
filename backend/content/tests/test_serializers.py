@@ -289,7 +289,6 @@ class ContentSerializerTest(TestCase):
 
     def test_get_next_review_date_prefetched(self):
         """Test get_next_review_date uses prefetched value."""
-        from datetime import datetime
 
         from django.utils import timezone
 

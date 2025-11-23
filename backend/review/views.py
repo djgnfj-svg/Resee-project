@@ -247,10 +247,10 @@ class CompleteReviewView(APIView):
         operation_summary="복습 완료 처리",
         operation_description="""
         복습 결과를 기록하고 다음 복습 일정을 자동으로 계산합니다.
-        
+
         **결과 옵션:**
         - `remembered`: 완전히 기억함 → 다음 간격으로 진행
-        - `partial`: 애매하게 기억함 → 현재 간격 반복  
+        - `partial`: 애매하게 기억함 → 현재 간격 반복
         - `forgot`: 기억하지 못함 → 첫 번째 간격(1일)으로 리셋
         """,
         request_body=openapi.Schema(
