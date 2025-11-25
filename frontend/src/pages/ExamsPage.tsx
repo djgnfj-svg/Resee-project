@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import TestResultsView from '../components/weeklytest/TestResultsView';
 import TestQuestionView from '../components/weeklytest/TestQuestionView';
@@ -10,6 +10,10 @@ import { useExamSession } from '../hooks/useExamSession';
 
 const ExamsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+
+  useEffect(() => {
+    document.title = '주간시험 - Resee';
+  }, []);
 
   // 시험 목록 관리
   const { tests, isLoading: listLoading, error: listError, loadTests } = useExamList();

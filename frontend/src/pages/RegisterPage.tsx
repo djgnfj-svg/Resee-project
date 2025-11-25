@@ -17,6 +17,8 @@ const RegisterPage: React.FC = () => {
   const password = watch('password');
 
   useEffect(() => {
+    document.title = '회원가입 - Resee';
+
     // Redirect authenticated users to dashboard
     if (isAuthenticated) {
       navigate('/dashboard', { replace: true });

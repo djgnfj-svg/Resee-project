@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SubscriptionTierInfo, SubscriptionTier, ApiError } from '../types';
@@ -12,6 +12,10 @@ const SubscriptionPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { confirm, ConfirmDialogComponent } = useConfirm();
   const [billingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  useEffect(() => {
+    document.title = '구독 - Resee';
+  }, []);
 
   // Fetch current subscription
   const { data: currentSubscription, isLoading: subscriptionLoading } = useQuery({

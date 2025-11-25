@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const NotFoundPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = '404 Not Found - Resee';
+  }, []);
 
   const handleGoBack = () => {
     navigate(-1);

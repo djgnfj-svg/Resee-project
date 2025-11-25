@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -22,6 +22,10 @@ const ContentPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [expandedContents, setExpandedContents] = useState<Set<number>>(new Set());
   const [showCategoryManager, setShowCategoryManager] = useState<boolean>(false);
+
+  useEffect(() => {
+    document.title = '콘텐츠 - Resee';
+  }, []);
 
 
   // Fetch contents with pagination

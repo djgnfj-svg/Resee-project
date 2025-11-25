@@ -8,6 +8,8 @@ const HomePage: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    document.title = 'Resee - 과학적 복습 플랫폼';
+
     // Redirect authenticated users to dashboard
     if (isAuthenticated) {
       navigate('/dashboard', { replace: true });

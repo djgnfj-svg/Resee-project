@@ -31,8 +31,25 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      // 재시도 전략
       retry: 1,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+
+      // 캐시 전략
+      staleTime: 5 * 60 * 1000, // 5분 - 이 시간 동안은 데이터가 "fresh"로 간주됨
+      cacheTime: 10 * 60 * 1000, // 10분 - 사용하지 않는 데이터를 메모리에 보관할 시간
+
+      // 리페칭 동작
       refetchOnWindowFocus: false,
+      refetchOnReconnect: true, // 네트워크 재연결 시 자동 리페치
+      refetchOnMount: true, // 컴포넌트 마운트 시 stale 데이터는 리페치
+
+      // 에러 처리
+      useErrorBoundary: false, // 각 컴포넌트에서 에러 처리
+    },
+    mutations: {
+      // 뮤테이션 재시도 (일반적으로 재시도 안 함)
+      retry: 0,
     },
   },
 });

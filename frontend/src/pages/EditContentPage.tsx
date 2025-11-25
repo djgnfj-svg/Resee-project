@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
@@ -13,6 +13,10 @@ const EditContentPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
+
+  useEffect(() => {
+    document.title = '콘텐츠 수정 - Resee';
+  }, []);
 
   // Fetch existing content
   const { data: content, isLoading, error } = useQuery({

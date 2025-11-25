@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
@@ -13,6 +13,10 @@ const CreateContentPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [contentUsage, setContentUsage] = useState<ContentUsage | null>(null);
+
+  useEffect(() => {
+    document.title = '콘텐츠 생성 - Resee';
+  }, []);
 
   // Check content usage and redirect if at limit
   useQuery({

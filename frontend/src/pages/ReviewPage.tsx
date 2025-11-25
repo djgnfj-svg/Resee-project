@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useReviewLogic } from '../hooks/useReviewLogic';
 import { useReviewState } from '../hooks/useReviewState';
 import ReviewHeader from '../components/review/ReviewHeader';
@@ -8,6 +8,10 @@ import UpgradeModal from '../components/review/UpgradeModal';
 import Toast from '../components/common/Toast';
 
 const ReviewPage: React.FC = () => {
+  useEffect(() => {
+    document.title = '복습 - Resee';
+  }, []);
+
   // Descriptive mode: 제목 보고 내용 작성
   const [descriptiveAnswer, setDescriptiveAnswer] = useState<string>('');
   // Multiple choice mode: 내용 보고 제목 선택

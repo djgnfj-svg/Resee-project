@@ -19,6 +19,8 @@ const LoginPage: React.FC = () => {
   const from = location.state?.from?.pathname || '/dashboard';
 
   useEffect(() => {
+    document.title = '로그인 - Resee';
+
     // Redirect authenticated users to dashboard
     if (isAuthenticated) {
       navigate('/dashboard', { replace: true });

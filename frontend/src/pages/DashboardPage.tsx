@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { reviewAPI, contentAPI } from '../utils/api';
@@ -12,6 +12,10 @@ import { useAuth } from '../contexts/AuthContext';
 
 const SimpleDashboard: React.FC = () => {
   const { user } = useAuth();
+
+  useEffect(() => {
+    document.title = '대시보드 - Resee';
+  }, []);
 
   const { data: dashboardData, isLoading, error, refetch } = useQuery<DashboardData>({
     queryKey: ['dashboard', user?.id],
