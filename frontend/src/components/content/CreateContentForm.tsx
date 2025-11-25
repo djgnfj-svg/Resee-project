@@ -1,13 +1,10 @@
-import React, { useState, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
-import { useQuery } from '@tanstack/react-query';
-import { contentAPI } from '../../utils/api';
-import { Category, ContentUsage, ReviewMode, CreateContentData } from '../../types';
-import { extractResults } from '../../utils/helpers';
+import React, { useCallback } from 'react';
+import { CreateContentData, ReviewMode } from '../../types';
 import TipTapEditor from '../editor/TipTapEditor';
 import CategoryField from './form/CategoryField';
 import ValidationResultCard from './form/ValidationResultCard';
 import { useContentValidation } from '../../hooks/useContentValidation';
+import { useContentForm } from '../../hooks/useContentForm';
 
 interface CreateContentFormProps {
   onSubmit: (data: CreateContentData) => void;
@@ -25,55 +22,22 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
   const {
     register,
     handleSubmit,
-    formState: { errors },
-    watch,
+    errors,
+    watchedTitle,
     setValue,
-  } = useForm<CreateContentData>({
-    mode: 'onChange',
-    defaultValues: initialData
-  });
-
-  const [content, setContent] = useState<string>(initialData?.content || '');
-  const [contentUsage, setContentUsage] = useState<ContentUsage | null>(null);
-  const [reviewMode, setReviewMode] = useState<ReviewMode>(
-    initialData?.review_mode || 'objective'
-  );
+    onFormSubmit,
+    content,
+    setContent,
+    contentLength,
+    hasValidContentLength,
+    needsLongContent,
+    reviewMode,
+    setReviewMode,
+    canCreateContent,
+    categories,
+  } = useContentForm({ initialData, onSubmit });
 
   const { isValidating, validationResult, validateContent } = useContentValidation();
-  const watchedTitle = watch('title');
-
-  const contentLength = content.trim().length;
-  // AI modes (descriptive, multiple_choice) require 200+ chars
-  // Only objective mode can be short
-  const needsLongContent = reviewMode === 'descriptive' || reviewMode === 'multiple_choice';
-  const minContentLength = needsLongContent ? 200 : 1;
-  const hasValidContentLength = contentLength >= minContentLength;
-
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ['categories'],
-    queryFn: () => contentAPI.getCategories().then(extractResults),
-  });
-
-  useQuery({
-    queryKey: ['content-usage'],
-    queryFn: async () => {
-      const response = await contentAPI.getContents();
-      if (response.usage) {
-        setContentUsage(response.usage);
-      }
-      return response;
-    },
-  });
-
-  const canCreateContent = contentUsage ? contentUsage.can_create : true;
-
-  const onFormSubmit = useCallback((data: CreateContentData) => {
-    onSubmit({
-      ...data,
-      content,
-      review_mode: reviewMode,
-    });
-  }, [content, reviewMode, onSubmit]);
 
   const handleValidate = useCallback(() => {
     const title = watchedTitle?.trim();
