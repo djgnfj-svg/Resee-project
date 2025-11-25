@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { contentAPI } from '../utils/api';
 import { CreateContentData } from '../types';
-import CreateContentForm from '../components/CreateContentForm';
+import CreateContentForm from '../components/content/CreateContentForm';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 

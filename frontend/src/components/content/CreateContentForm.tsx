@@ -1,13 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
-import { contentAPI } from '../utils/api';
-import { Category, ContentUsage, ReviewMode, CreateContentData } from '../types';
-import { extractResults } from '../utils/helpers';
-import TipTapEditor from './TipTapEditor';
-import CategoryField from './contentform/CategoryField';
-import ValidationResultCard from './contentform/ValidationResultCard';
-import { useContentValidation } from '../hooks/useContentValidation';
+import { contentAPI } from '../../utils/api';
+import { Category, ContentUsage, ReviewMode, CreateContentData } from '../../types';
+import { extractResults } from '../../utils/helpers';
+import TipTapEditor from '../editor/TipTapEditor';
+import CategoryField from './form/CategoryField';
+import ValidationResultCard from './form/ValidationResultCard';
+import { useContentValidation } from '../../hooks/useContentValidation';
 
 interface CreateContentFormProps {
   onSubmit: (data: CreateContentData) => void;

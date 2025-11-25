@@ -1,5 +1,5 @@
 import React from 'react';
-import { ValidationResult } from '../../hooks/useContentValidation';
+import { ValidationResult } from '../../../hooks/useContentValidation';
 
 interface ValidationResultCardProps {
   result: ValidationResult;

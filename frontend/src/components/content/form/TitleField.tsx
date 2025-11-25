@@ -1,6 +1,6 @@
 import React from 'react';
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
-import { CreateContentData } from '../../types';
+import { CreateContentData } from '../../../types';
 
 type ContentFormData = CreateContentData;
 

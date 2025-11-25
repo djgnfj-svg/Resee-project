@@ -3,10 +3,10 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import ErrorBoundary from './components/ErrorBoundary';
-import Layout from './components/Layout';
-import LoadingFallback from './components/LoadingFallback';
-import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import Layout from './components/layout/Layout';
+import LoadingFallback from './components/common/LoadingFallback';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import './styles/design-system.css';
 import './styles/animations.css';
 

@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { contentAPI } from '../../utils/api';
-import { Category, CategoryUsage, CreateContentData } from '../../types';
+import { contentAPI } from '../../../utils/api';
+import { Category, CategoryUsage, CreateContentData } from '../../../types';
 
 type ContentFormData = CreateContentData;
 

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { ThemeToggle } from './ThemeToggle';
-import NetworkStatus from './NetworkStatus';
+import { useAuth } from '../../contexts/AuthContext';
+import { ThemeToggle } from '../common/ThemeToggle';
+import NetworkStatus from '../common/NetworkStatus';
 import Footer from './Footer';
 
 interface LayoutProps {

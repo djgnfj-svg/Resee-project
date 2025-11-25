@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { contentAPI } from '../utils/api';
-import { Category, CreateCategoryData } from '../types';
-import { extractResults } from '../utils/helpers';
+import { contentAPI } from '../../utils/api';
+import { Category, CreateCategoryData } from '../../types';
+import { extractResults } from '../../utils/helpers';
 
 interface CategoryManagerProps {
   onClose: () => void;

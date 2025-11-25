@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext';
 import { LoginData } from '../types';
-import GoogleSignInButton from '../components/GoogleSignInButton';
+import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 
 const LoginPage: React.FC = () => {
   const { login, isAuthenticated } = useAuth();

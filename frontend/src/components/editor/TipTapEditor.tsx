@@ -1,8 +1,8 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import { useEffect } from 'react';
-import { createEditorExtensions, editorProps } from './editor/EditorConfig';
-import { convertToMarkdown, convertFromMarkdown } from '../utils/markdown-converter';
-import EditorStyles from './editor/EditorStyles';
+import { createEditorExtensions, editorProps } from './EditorConfig';
+import { convertToMarkdown, convertFromMarkdown } from '../../utils/markdown-converter';
+import EditorStyles from './EditorStyles';
 
 interface TipTapEditorProps {
   content: string;

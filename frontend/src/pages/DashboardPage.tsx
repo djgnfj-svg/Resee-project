@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { reviewAPI, contentAPI } from '../utils/api';
 import { DashboardData, ContentUsage, CategoryUsage } from '../types';
-import LoadingSpinner from '../components/LoadingSpinner';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import EmptyDashboard from '../components/dashboard/EmptyDashboard';
 import ErrorDashboard from '../components/dashboard/ErrorDashboard';
 import { useAuth } from '../contexts/AuthContext';

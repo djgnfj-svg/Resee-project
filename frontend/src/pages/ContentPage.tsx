@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { contentAPI } from '../utils/api';
 import { Content, Category, ContentListResponse } from '../types';
 import { extractResults } from '../utils/helpers';
-import CategoryManager from '../components/CategoryManager';
+import CategoryManager from '../components/content/CategoryManager';
 import ContentFilters from '../components/content/ContentFilters';
 import ContentList from '../components/content/ContentList';
 import { useAuth } from '../contexts/AuthContext';
