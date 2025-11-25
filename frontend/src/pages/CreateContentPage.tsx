@@ -14,7 +14,7 @@ const CreateContentPage: React.FC = () => {
 
   // Check content usage and redirect if at limit
   useQuery({
-    queryKey: ['contents-usage-check', user?.id],
+    queryKey: ['content-usage'],
     queryFn: async () => {
       const response = await contentAPI.getContents();
       if (response.usage) {

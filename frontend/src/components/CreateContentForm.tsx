@@ -55,7 +55,7 @@ const CreateContentForm: React.FC<CreateContentFormProps> = ({
   });
 
   useQuery({
-    queryKey: ['contents-usage'],
+    queryKey: ['content-usage'],
     queryFn: async () => {
       const response = await contentAPI.getContents();
       if (response.usage) {

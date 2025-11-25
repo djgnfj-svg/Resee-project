@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { User, LoginData, RegisterData, RegisterResponse } from '../types';
 import { authAPI } from '../utils/api';
@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
 
-  const isAuthenticated = !!user;
+  const isAuthenticated = useMemo(() => !!user, [user]);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (data: LoginData) => {
+  const login = useCallback(async (data: LoginData) => {
     try {
       const response = await authAPI.login(data);
       // Access token stored in memory, refresh token in HttpOnly cookie
@@ -78,9 +78,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Re-throw the error so the login component can handle it
       throw error;
     }
-  };
+  }, []);
 
-  const register = async (data: RegisterData) => {
+  const register = useCallback(async (data: RegisterData) => {
     const response = await authAPI.register(data);
 
     // If email verification is required, don't auto-login
@@ -93,9 +93,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Skip welcome modal and go directly to dashboard
 
     return response;
-  };
+  }, [login]);
 
-  const loginWithGoogle = async (token: string) => {
+  const loginWithGoogle = useCallback(async (token: string) => {
     try {
       const response = await authAPI.googleLogin(token);
 
@@ -111,9 +111,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       throw error;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       // Call logout endpoint to clear HttpOnly cookie
       await authAPI.logout();
@@ -128,28 +128,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Clear access token from memory
     setAccessToken(null);
     setUser(null);
-  };
+  }, [queryClient]);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const userData = await authAPI.getProfile();
       setUser(userData);
     } catch (error) {
     }
-  };
+  }, []);
 
-  const value = {
-    user,
-    isLoading,
-    login,
-    register,
-    loginWithGoogle,
-    logout,
-    isAuthenticated,
-    showWelcome,
-    setShowWelcome,
-    refreshUser,
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      isLoading,
+      login,
+      register,
+      loginWithGoogle,
+      logout,
+      isAuthenticated,
+      showWelcome,
+      setShowWelcome,
+      refreshUser,
+    }),
+    [user, isLoading, login, register, loginWithGoogle, logout, isAuthenticated, showWelcome, refreshUser]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -150,4 +150,8 @@ const MultipleChoiceReviewCard: React.FC<MultipleChoiceReviewProps> = ({
   );
 };
 
-export default MultipleChoiceReviewCard;
+if (process.env.NODE_ENV === 'development') {
+  (MultipleChoiceReviewCard as any).whyDidYouRender = true;
+}
+
+export default React.memo(MultipleChoiceReviewCard);

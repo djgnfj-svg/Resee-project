@@ -180,4 +180,8 @@ const TestListItem: React.FC<TestListItemProps> = ({
   );
 };
 
-export default TestListItem;
+if (process.env.NODE_ENV === 'development') {
+  (TestListItem as any).whyDidYouRender = true;
+}
+
+export default React.memo(TestListItem);

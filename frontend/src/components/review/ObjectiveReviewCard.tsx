@@ -58,4 +58,8 @@ const ObjectiveReviewCard: React.FC<ObjectiveReviewProps> = ({
   );
 };
 
-export default ObjectiveReviewCard;
+if (process.env.NODE_ENV === 'development') {
+  (ObjectiveReviewCard as any).whyDidYouRender = true;
+}
+
+export default React.memo(ObjectiveReviewCard);

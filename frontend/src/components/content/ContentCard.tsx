@@ -219,4 +219,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
   );
 };
 
-export default ContentCard;
+if (process.env.NODE_ENV === 'development') {
+  (ContentCard as any).whyDidYouRender = true;
+}
+
+export default React.memo(ContentCard);

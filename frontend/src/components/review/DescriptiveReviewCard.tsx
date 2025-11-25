@@ -109,4 +109,8 @@ const DescriptiveReviewCard: React.FC<DescriptiveReviewProps> = ({
   );
 };
 
-export default DescriptiveReviewCard;
+if (process.env.NODE_ENV === 'development') {
+  (DescriptiveReviewCard as any).whyDidYouRender = true;
+}
+
+export default React.memo(DescriptiveReviewCard);
