@@ -85,4 +85,8 @@ const ContentList: React.FC<ContentListProps> = ({
   );
 };
 
-export default ContentList;
+if (process.env.NODE_ENV === 'development') {
+  (ContentList as any).whyDidYouRender = true;
+}
+
+export default React.memo(ContentList);

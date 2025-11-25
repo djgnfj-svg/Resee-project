@@ -1,6 +1,7 @@
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 import { authAPI } from '../../utils/api';
 
 interface SecuritySettings {
@@ -21,18 +22,18 @@ const SecurityTab: React.FC = () => {
   const changePasswordMutation = useMutation({
     mutationFn: authAPI.changePassword,
     onSuccess: () => {
-      alert('Success: 비밀번호가 성공적으로 변경되었습니다!');
+      toast.success('비밀번호가 성공적으로 변경되었습니다!');
       securityForm.reset();
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.current_password || error.response?.data?.new_password || '비밀번호 변경에 실패했습니다.';
-      alert('Error: ' + errorMessage);
+      toast.error(errorMessage);
     },
   });
 
   const onSecuritySubmit = (data: SecuritySettings) => {
     if (data.new_password !== data.confirm_password) {
-      alert('Error: 새 비밀번호가 일치하지 않습니다.');
+      toast.error('새 비밀번호가 일치하지 않습니다.');
       return;
     }
     changePasswordMutation.mutate({

@@ -96,4 +96,8 @@ const ContentFilters: React.FC<ContentFiltersProps> = ({
   );
 };
 
-export default ContentFilters;
+if (process.env.NODE_ENV === 'development') {
+  (ContentFilters as any).whyDidYouRender = true;
+}
+
+export default React.memo(ContentFilters);

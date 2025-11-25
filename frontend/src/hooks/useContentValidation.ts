@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
 import { contentAPI } from '../utils/api';
 
 export interface ValidationResult {
@@ -23,7 +24,7 @@ export const useContentValidation = () => {
       const result = await contentAPI.validateContent(title, content);
       setValidationResult(result);
     } catch (error: any) {
-      alert(`AI 검증 실패: ${error.response?.data?.error || error.message}`);
+      toast.error(`AI 검증 실패: ${error.response?.data?.error || error.message}`);
     } finally {
       setIsValidating(false);
     }

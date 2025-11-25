@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 import { contentAPI } from '../utils/api';
 import { CreateContentData, ContentUsage } from '../types';
 import CreateContentForm from '../components/content/CreateContentForm';
@@ -35,7 +36,7 @@ const CreateContentPage: React.FC = () => {
   const createContentMutation = useMutation({
     mutationFn: contentAPI.createContent,
     onSuccess: async () => {
-      alert('Success: 콘텐츠가 성공적으로 생성되었습니다!');
+      toast.success('콘텐츠가 성공적으로 생성되었습니다!');
       await queryClient.invalidateQueries({ queryKey: ['contents'] });
       await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       await queryClient.invalidateQueries({ queryKey: ['todayReviews'] });  // 복습 목록 캐시 무효화
@@ -43,7 +44,7 @@ const CreateContentPage: React.FC = () => {
     },
     onError: (error: any) => {
       logger.error('콘텐츠 생성 실패:', error);
-      alert('Error: 콘텐츠 생성에 실패했습니다.');
+      toast.error('콘텐츠 생성에 실패했습니다.');
     },
   });
 

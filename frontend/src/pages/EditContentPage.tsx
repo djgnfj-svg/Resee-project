@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 import { contentAPI } from '../utils/api';
 import { CreateContentData } from '../types';
 import CreateContentForm from '../components/content/CreateContentForm';
@@ -25,7 +26,7 @@ const EditContentPage: React.FC = () => {
     mutationFn: ({ contentId, data }: { contentId: number; data: CreateContentData }) =>
       contentAPI.updateContent(contentId, data),
     onSuccess: async () => {
-      alert('Success: 콘텐츠가 성공적으로 수정되었습니다!');
+      toast.success('콘텐츠가 성공적으로 수정되었습니다!');
       await queryClient.invalidateQueries({ queryKey: ['contents'] });
       await queryClient.invalidateQueries({ queryKey: ['content', user?.id, id] });
       await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -33,7 +34,7 @@ const EditContentPage: React.FC = () => {
     },
     onError: (error: any) => {
       logger.error('콘텐츠 수정 실패:', error);
-      alert('Error: 콘텐츠 수정에 실패했습니다.');
+      toast.error('콘텐츠 수정에 실패했습니다.');
     },
   });
 

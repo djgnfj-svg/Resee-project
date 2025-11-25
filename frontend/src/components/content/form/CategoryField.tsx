@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 import { contentAPI } from '../../../utils/api';
 import { Category, CategoryUsage, CreateContentData } from '../../../types';
 
@@ -55,16 +56,16 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
       setNewCategoryName('');
       setIsCreatingCategory(false);
 
-      alert(`카테고리 "${newCategory.name}"가 생성되어 선택되었습니다!`);
+      toast.success(`카테고리 "${newCategory.name}"가 생성되어 선택되었습니다!`);
     },
     onError: (error: any) => {
       setIsCreatingCategory(false);
       if (error.response?.status === 402) {
         const errorData = error.response.data;
-        alert(`${errorData.error}\n\n${errorData.message}`);
+        toast.error(`${errorData.error}\n\n${errorData.message}`);
       } else {
         const errorMessage = error.response?.data?.name?.[0] || '카테고리 생성에 실패했습니다.';
-        alert(`오류: ${errorMessage}`);
+        toast.error(`오류: ${errorMessage}`);
       }
     }
   });

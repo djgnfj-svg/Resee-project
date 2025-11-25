@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { contentAPI } from '../utils/api';
 import { Content, Category, ContentListResponse } from '../types';
 import { extractResults } from '../utils/helpers';
@@ -55,50 +56,51 @@ const ContentPage: React.FC = () => {
   const deleteContentMutation = useMutation({
     mutationFn: contentAPI.deleteContent,
     onSuccess: () => {
-      alert('Success: 콘텐츠가 성공적으로 삭제되었습니다!');
+      toast.success('콘텐츠가 성공적으로 삭제되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['contents'] });
     },
     onError: () => {
-      alert('Error: 콘텐츠 삭제에 실패했습니다.');
+      toast.error('콘텐츠 삭제에 실패했습니다.');
     },
   });
 
-  const handleDelete = (id: number) => {
+  const handleDelete = useCallback((id: number) => {
     if (window.confirm('정말로 이 콘텐츠를 삭제하시겠습니까?')) {
       deleteContentMutation.mutate(id);
     }
-  };
+  }, [deleteContentMutation]);
 
-  const handleEdit = (content: Content) => {
+  const handleEdit = useCallback((content: Content) => {
     navigate(`/content/${content.id}/edit`);
-  };
+  }, [navigate]);
 
-
-  const toggleContentExpansion = (contentId: number) => {
-    const newExpanded = new Set(expandedContents);
-    if (newExpanded.has(contentId)) {
-      newExpanded.delete(contentId);
-    } else {
-      newExpanded.add(contentId);
-    }
-    setExpandedContents(newExpanded);
-  };
+  const toggleContentExpansion = useCallback((contentId: number) => {
+    setExpandedContents(prev => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(contentId)) {
+        newExpanded.delete(contentId);
+      } else {
+        newExpanded.add(contentId);
+      }
+      return newExpanded;
+    });
+  }, []);
 
   // Reset to page 1 when filters change
-  const handleCategoryChange = (category: string) => {
+  const handleCategoryChange = useCallback((category: string) => {
     setSelectedCategory(category);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleSortChange = (sort: string) => {
+  const handleSortChange = useCallback((sort: string) => {
     setSortBy(sort);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleSearchChange = (query: string) => {
+  const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
     setCurrentPage(1);
-  };
+  }, []);
 
   return (
     <div className="min-h-screen">

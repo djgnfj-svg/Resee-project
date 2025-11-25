@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 import { authAPI } from '../../utils/api';
 import { User } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
@@ -36,14 +37,14 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({ user }) => {
   const updateProfileMutation = useMutation({
     mutationFn: authAPI.updateProfile,
     onSuccess: async (updatedUser) => {
-      alert('Success: 프로필이 성공적으로 업데이트되었습니다!');
+      toast.success('프로필이 성공적으로 업데이트되었습니다!');
       queryClient.setQueryData(['profile'], updatedUser);
       // Update AuthContext user to reflect changes in navbar immediately
       await refreshUser();
       setIsEditing(false);
     },
     onError: () => {
-      alert('Error: 프로필 업데이트에 실패했습니다.');
+      toast.error('프로필 업데이트에 실패했습니다.');
     },
   });
 

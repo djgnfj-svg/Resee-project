@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 import { contentAPI } from '../../utils/api';
 import { Category, CreateCategoryData } from '../../types';
 import { extractResults } from '../../utils/helpers';
@@ -25,29 +26,29 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => {
   const createCategoryMutation = useMutation({
     mutationFn: contentAPI.createCategory,
     onSuccess: () => {
-      alert('Success: 카테고리가 성공적으로 생성되었습니다!');
+      toast.success('카테고리가 성공적으로 생성되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setNewCategoryName('');
       setShowCreateForm(false);
     },
     onError: () => {
-      alert('Error: 카테고리 생성에 실패했습니다.');
+      toast.error('카테고리 생성에 실패했습니다.');
     },
   });
 
   // Update category mutation
   const updateCategoryMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CreateCategoryData }) => 
+    mutationFn: ({ id, data }: { id: number; data: CreateCategoryData }) =>
       contentAPI.updateCategory(id, data),
     onSuccess: () => {
-      alert('Success: 카테고리가 성공적으로 수정되었습니다!');
+      toast.success('카테고리가 성공적으로 수정되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['contents'] });
       setEditingCategory(null);
       setEditName('');
     },
     onError: () => {
-      alert('Error: 카테고리 수정에 실패했습니다.');
+      toast.error('카테고리 수정에 실패했습니다.');
     },
   });
 
@@ -55,12 +56,12 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => {
   const deleteCategoryMutation = useMutation({
     mutationFn: contentAPI.deleteCategory,
     onSuccess: () => {
-      alert('Success: 카테고리가 성공적으로 삭제되었습니다!');
+      toast.success('카테고리가 성공적으로 삭제되었습니다!');
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['contents'] });
     },
     onError: () => {
-      alert('Error: 카테고리 삭제에 실패했습니다.');
+      toast.error('카테고리 삭제에 실패했습니다.');
     },
   });
 

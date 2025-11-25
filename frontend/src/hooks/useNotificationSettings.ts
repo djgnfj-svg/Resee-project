@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 import { authAPI } from '../utils/api';
 
 export interface NotificationSettings {
@@ -81,12 +82,12 @@ export const useNotificationSettings = () => {
   const notificationMutation = useMutation({
     mutationFn: (data: NotificationSettings) => authAPI.updateNotificationPreferences(data),
     onSuccess: () => {
-      alert('알림 설정이 성공적으로 저장되었습니다.');
+      toast.success('알림 설정이 성공적으로 저장되었습니다.');
       // Invalidate and refetch notification preferences
       queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
     },
     onError: (error: any) => {
-      alert(`Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     },
   });
 
