@@ -1,0 +1,78 @@
+{
+  "comment": "ECS Task Definition Health Check Configuration",
+  "description": "Add this health check configuration to your ECS task definitions for auto-rollback support",
+
+  "healthCheck_backend": {
+    "command": [
+      "CMD-SHELL",
+      "curl -f http://localhost:8000/api/health/ || exit 1"
+    ],
+    "interval": 30,
+    "timeout": 5,
+    "retries": 3,
+    "startPeriod": 60
+  },
+
+  "healthCheck_celery_worker": {
+    "command": [
+      "CMD-SHELL",
+      "celery -A resee inspect ping -d celery@$HOSTNAME || exit 1"
+    ],
+    "interval": 30,
+    "timeout": 10,
+    "retries": 3,
+    "startPeriod": 90
+  },
+
+  "healthCheck_celery_beat": {
+    "command": [
+      "CMD-SHELL",
+      "ps aux | grep 'celery.*beat' | grep -v grep || exit 1"
+    ],
+    "interval": 30,
+    "timeout": 5,
+    "retries": 3,
+    "startPeriod": 60
+  },
+
+  "usage": {
+    "method1_aws_console": "Go to ECS > Task Definitions > Create New Revision > Add healthCheck section",
+    "method2_aws_cli": "aws ecs register-task-definition --cli-input-json file://task-definition.json",
+    "method3_terraform": "Add health_check block in aws_ecs_task_definition resource"
+  },
+
+  "example_full_task_definition": {
+    "family": "resee-backend-task",
+    "containerDefinitions": [
+      {
+        "name": "resee-backend",
+        "image": "YOUR_ECR_REPOSITORY:latest",
+        "portMappings": [
+          {
+            "containerPort": 8000,
+            "protocol": "tcp"
+          }
+        ],
+        "healthCheck": {
+          "command": [
+            "CMD-SHELL",
+            "curl -f http://localhost:8000/api/health/ || exit 1"
+          ],
+          "interval": 30,
+          "timeout": 5,
+          "retries": 3,
+          "startPeriod": 60
+        },
+        "environment": [
+          {
+            "name": "DJANGO_SETTINGS_MODULE",
+            "value": "resee.settings.production"
+          }
+        ]
+      }
+    ],
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "256",
+    "memory": "512"
+  }
+}

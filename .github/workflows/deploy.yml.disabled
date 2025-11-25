@@ -122,41 +122,56 @@ jobs:
           echo "revision=$NEW_REVISION" >> $GITHUB_OUTPUT
           echo "✅ Celery Beat task definition updated to revision $NEW_REVISION"
 
-      - name: Deploy Backend Service
+      - name: Deploy Backend Service (with Auto Rollback)
         run: |
-          echo "🚀 Deploying Backend service..."
+          echo "🚀 Deploying Backend service with Circuit Breaker..."
           aws ecs update-service \
             --cluster ${{ env.ECS_CLUSTER }} \
             --service ${{ env.ECS_SERVICE_BACKEND }} \
             --task-definition ${{ env.TASK_DEFINITION_BACKEND }}:${{ steps.backend-task-def.outputs.revision }} \
+            --deployment-configuration "\
+              minimumHealthyPercent=50,\
+              maximumPercent=200,\
+              deploymentCircuitBreaker={enable=true,rollback=true}" \
             --force-new-deployment \
             --region ${{ env.AWS_REGION }}
 
-          echo "✅ Backend service deployment initiated"
+          echo "✅ Backend service deployment initiated with auto-rollback enabled"
+          echo "📊 Deployment Config: min=50%, max=200%, circuit-breaker=enabled"
 
-      - name: Deploy Celery Worker Service
+      - name: Deploy Celery Worker Service (with Auto Rollback)
         run: |
-          echo "🚀 Deploying Celery Worker service..."
+          echo "🚀 Deploying Celery Worker service with Circuit Breaker..."
           aws ecs update-service \
             --cluster ${{ env.ECS_CLUSTER }} \
             --service ${{ env.ECS_SERVICE_CELERY_WORKER }} \
             --task-definition ${{ env.TASK_DEFINITION_CELERY_WORKER }}:${{ steps.worker-task-def.outputs.revision }} \
+            --deployment-configuration "\
+              minimumHealthyPercent=50,\
+              maximumPercent=200,\
+              deploymentCircuitBreaker={enable=true,rollback=true}" \
             --force-new-deployment \
             --region ${{ env.AWS_REGION }}
 
-          echo "✅ Celery Worker service deployment initiated"
+          echo "✅ Celery Worker service deployment initiated with auto-rollback enabled"
+          echo "📊 Deployment Config: min=50%, max=200%, circuit-breaker=enabled"
 
-      - name: Deploy Celery Beat Service
+      - name: Deploy Celery Beat Service (with Auto Rollback)
         run: |
-          echo "🚀 Deploying Celery Beat service..."
+          echo "🚀 Deploying Celery Beat service with Circuit Breaker..."
           aws ecs update-service \
             --cluster ${{ env.ECS_CLUSTER }} \
             --service ${{ env.ECS_SERVICE_CELERY_BEAT }} \
             --task-definition ${{ env.TASK_DEFINITION_CELERY_BEAT }}:${{ steps.beat-task-def.outputs.revision }} \
+            --deployment-configuration "\
+              minimumHealthyPercent=0,\
+              maximumPercent=100,\
+              deploymentCircuitBreaker={enable=true,rollback=true}" \
             --force-new-deployment \
             --region ${{ env.AWS_REGION }}
 
-          echo "✅ Celery Beat service deployment initiated"
+          echo "✅ Celery Beat service deployment initiated with auto-rollback enabled"
+          echo "📊 Deployment Config: min=0%, max=100%, circuit-breaker=enabled (single instance)"
 
       - name: Wait for Backend service to stabilize
         run: |
@@ -184,28 +199,59 @@ jobs:
 
           echo "✅ All Celery services are stable"
 
-      - name: Verify deployment
+      - name: Verify deployment and rollback status
         run: |
-          echo "🔍 Verifying deployment..."
+          echo "🔍 Verifying deployment and checking for rollbacks..."
 
-          # Check service status
-          BACKEND_STATUS=$(aws ecs describe-services \
+          # Check Backend service status
+          BACKEND_INFO=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_BACKEND }} \
+            --region ${{ env.AWS_REGION }})
+
+          BACKEND_STATUS=$(echo $BACKEND_INFO | jq -r '.services[0].deployments[0].rolloutState')
+          ROLLBACK_TRIGGERED=$(echo $BACKEND_INFO | jq -r '.services[0].deployments[0].failedTasks // 0')
+
+          echo "📊 Backend deployment status: $BACKEND_STATUS"
+          echo "🔄 Failed tasks (rollback indicator): $ROLLBACK_TRIGGERED"
+
+          # Check for circuit breaker events
+          CIRCUIT_BREAKER_STATUS=$(aws ecs describe-services \
             --cluster ${{ env.ECS_CLUSTER }} \
             --services ${{ env.ECS_SERVICE_BACKEND }} \
             --region ${{ env.AWS_REGION }} \
-            --query 'services[0].deployments[0].rolloutState' \
-            --output text)
+            --query 'services[0].deploymentConfiguration.deploymentCircuitBreaker' \
+            --output json)
 
-          echo "Backend deployment status: $BACKEND_STATUS"
+          echo "⚡ Circuit Breaker Config: $CIRCUIT_BREAKER_STATUS"
 
-          # Test health endpoint
-          HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" https://reseeall.com/api/health/ || echo "Failed")
-          echo "Health check status: $HEALTH_CHECK"
+          # Test health endpoint (3 retries)
+          echo "🏥 Testing health endpoint..."
+          for i in {1..3}; do
+            HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" https://reseeall.com/api/health/ || echo "Failed")
+            echo "  Attempt $i/3: $HEALTH_CHECK"
 
-          if [ "$HEALTH_CHECK" = "200" ]; then
-            echo "✅ Health check passed"
+            if [ "$HEALTH_CHECK" = "200" ]; then
+              echo "✅ Health check passed"
+              break
+            else
+              if [ $i -eq 3 ]; then
+                echo "❌ Health check failed after 3 attempts: $HEALTH_CHECK"
+                echo "⚠️ Service may have been auto-rolled back by Circuit Breaker"
+                exit 1
+              fi
+              sleep 10
+            fi
+          done
+
+          # Verify no rollback occurred
+          if [ "$BACKEND_STATUS" = "COMPLETED" ]; then
+            echo "✅ Deployment completed successfully without rollback"
+          elif [ "$BACKEND_STATUS" = "IN_PROGRESS" ]; then
+            echo "⏳ Deployment still in progress..."
           else
-            echo "⚠️ Health check returned: $HEALTH_CHECK"
+            echo "⚠️ Deployment status: $BACKEND_STATUS"
+            echo "🔄 Check ECS events for rollback details"
           fi
 
       - name: Deployment summary
