@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Content } from '../../types';
+import { useAccessibleModal } from '../../hooks/useAccessibleModal';
 
 interface ContentSelectorModalProps {
   show: boolean;
@@ -24,6 +25,13 @@ const ContentSelectorModal: React.FC<ContentSelectorModalProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
+  const { modalRef, handleBackdropClick } = useAccessibleModal({
+    isOpen: show,
+    onClose,
+    closeOnBackdropClick: true,
+    closeOnEscape: true,
+  });
+
   if (!show) return null;
 
   // 검증된 콘텐츠와 미검증 콘텐츠 분리
@@ -42,15 +50,25 @@ const ContentSelectorModal: React.FC<ContentSelectorModalProps> = ({
   const isValid = selectedCount >= 7 && selectedCount <= 10;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+    >
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="content-selector-title"
+        aria-describedby="content-selector-description"
+        className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col"
+      >
         {/* 헤더 */}
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        <h3 id="content-selector-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           주간 시험 콘텐츠 선택
         </h3>
 
         {/* 안내 메시지 */}
-        <div className="mb-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-400 dark:border-indigo-600 rounded-lg">
+        <div id="content-selector-description" className="mb-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-400 dark:border-indigo-600 rounded-lg">
           <p className="text-indigo-800 dark:text-indigo-200 text-sm">
             <strong>AI 검증이 완료된 콘텐츠</strong>를 <strong>7~10개</strong> 선택해주세요.
             {selectedCount > 0 && (

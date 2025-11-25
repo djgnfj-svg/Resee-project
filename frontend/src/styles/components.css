@@ -175,3 +175,13 @@
 .gradient-text {
   @apply bg-gradient-to-r from-primary-600 to-primary-700 dark:from-primary-400 dark:to-primary-500 bg-clip-text text-transparent;
 }
+
+/* Touch Target (Accessibility) */
+.touch-target {
+  @apply min-w-touch min-h-touch inline-flex items-center justify-center;
+}
+
+/* Card Elevated (더 강한 그림자) */
+.card-elevated {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700;
+}

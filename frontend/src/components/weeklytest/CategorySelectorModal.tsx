@@ -1,5 +1,6 @@
 import React from 'react';
 import { Category } from '../../types';
+import { useAccessibleModal } from '../../hooks/useAccessibleModal';
 
 interface CategorySelectorModalProps {
   show: boolean;
@@ -22,12 +23,29 @@ const CategorySelectorModal: React.FC<CategorySelectorModalProps> = ({
   onCreate,
   onClose,
 }) => {
+  const { modalRef, handleBackdropClick } = useAccessibleModal({
+    isOpen: show,
+    onClose,
+    closeOnBackdropClick: true,
+    closeOnEscape: true,
+  });
+
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="category-selector-title"
+        aria-describedby="category-selector-description"
+        className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4"
+      >
+        <h3 id="category-selector-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           카테고리 선택
         </h3>
 
@@ -60,7 +78,7 @@ const CategorySelectorModal: React.FC<CategorySelectorModalProps> = ({
           </div>
         )}
 
-        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <div id="category-selector-description" className="text-sm text-gray-600 dark:text-gray-400 mb-4">
           {selectedCategoryIds.length === 0
             ? "카테고리를 선택하세요. 선택된 카테고리에서 200자 이상 콘텐츠 7개가 필요합니다."
             : `선택된 카테고리에서 200자 이상 콘텐츠 7개가 필요합니다.`

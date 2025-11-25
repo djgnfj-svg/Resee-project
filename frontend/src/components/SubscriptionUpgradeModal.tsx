@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useSubscription } from '../hooks/useSubscription';
+import { useAccessibleModal } from '../hooks/useAccessibleModal';
 
 interface SubscriptionUpgradeModalProps {
   isOpen: boolean;
@@ -15,6 +16,13 @@ export const SubscriptionUpgradeModal: React.FC<SubscriptionUpgradeModalProps> =
     upgradeSuccess,
   } = useSubscription();
 
+  const { modalRef, handleBackdropClick } = useAccessibleModal({
+    isOpen,
+    onClose,
+    closeOnBackdropClick: true,
+    closeOnEscape: true,
+  });
+
   // Close modal on successful upgrade
   useEffect(() => {
     if (upgradeSuccess) {
@@ -27,21 +35,31 @@ export const SubscriptionUpgradeModal: React.FC<SubscriptionUpgradeModalProps> =
 
   if (!isOpen) return null;
 
-
-
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto"
+      onClick={handleBackdropClick}
+    >
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
-        
-        <div className="relative bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">유료 구독 안내</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50" aria-hidden="true" />
+
+        <div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="subscription-modal-title"
+          className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+        >
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+            <h2 id="subscription-modal-title" className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              유료 구독 안내
+            </h2>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="모달 닫기"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg"
             >
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6" aria-hidden="true" />
             </button>
           </div>
 

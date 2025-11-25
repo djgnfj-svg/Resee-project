@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAccessibleModal } from '../../hooks/useAccessibleModal';
 
 interface UpgradeModalProps {
   show: boolean;
@@ -11,17 +12,34 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
   onClose,
   onUpgrade,
 }) => {
+  const { modalRef, handleBackdropClick } = useAccessibleModal({
+    isOpen: show,
+    onClose,
+    closeOnBackdropClick: true,
+    closeOnEscape: true,
+  });
+
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upgrade-modal-title"
+        aria-describedby="upgrade-modal-description"
+        className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+      >
         <div className="text-center">
-          <div className="text-4xl mb-4"></div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+          <div className="text-4xl mb-4" aria-hidden="true">💎</div>
+          <h3 id="upgrade-modal-title" className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             AI 평가 기능
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p id="upgrade-modal-description" className="text-gray-600 dark:text-gray-400 mb-6">
             AI 평가 기능은 <span className="font-semibold text-indigo-600 dark:text-indigo-400">유료 구독</span>에서 사용할 수 있습니다.
           </p>
           

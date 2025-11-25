@@ -62,9 +62,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <button
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                     className="btn btn-ghost btn-sm touch-target"
-                    aria-expanded="false"
+                    aria-expanded={mobileMenuOpen}
+                    aria-label={mobileMenuOpen ? '메인 메뉴 닫기' : '메인 메뉴 열기'}
                   >
-                    <span className="sr-only">메인 메뉴 열기</span>
+                    <span className="sr-only">{mobileMenuOpen ? '메인 메뉴 닫기' : '메인 메뉴 열기'}</span>
                     {!mobileMenuOpen ? (
                       <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -81,25 +82,29 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <div className="hidden sm:block relative">
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                    className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg"
+                    aria-expanded={userMenuOpen}
+                    aria-haspopup="true"
+                    aria-label="사용자 메뉴"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold" aria-hidden="true">
                       {user?.email[0].toUpperCase()}
                     </div>
                     <span className="hidden md:block text-gray-900 dark:text-gray-100">
                       안녕하세요, {user?.username || user?.email.split('@')[0]}님
                     </span>
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                       <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
 
                   {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 card card-elevated z-50">
+                    <div className="absolute right-0 mt-2 w-48 card card-elevated z-50" role="menu" aria-orientation="vertical">
                       <Link
                         to="/profile"
                         onClick={() => setUserMenuOpen(false)}
                         className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        role="menuitem"
                       >
                         프로필 관리
                       </Link>
@@ -107,6 +112,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         to="/settings"
                         onClick={() => setUserMenuOpen(false)}
                         className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        role="menuitem"
                       >
                         설정
                       </Link>
@@ -114,6 +120,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         to="/subscription"
                         onClick={() => setUserMenuOpen(false)}
                         className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        role="menuitem"
                       >
                         구독 관리
                       </Link>
@@ -123,6 +130,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           setUserMenuOpen(false);
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-md"
+                        role="menuitem"
                       >
                         로그아웃
                       </button>
@@ -199,7 +207,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       logout();
                       setMobileMenuOpen(false);
                     }}
-                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     로그아웃
                   </button>

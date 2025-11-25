@@ -6,6 +6,7 @@ import {
   BookOpenIcon,
   ArrowRightIcon,
 } from '@heroicons/react/24/outline';
+import { useAccessibleModal } from '../hooks/useAccessibleModal';
 
 interface WelcomeModalProps {
   isOpen: boolean;
@@ -15,6 +16,13 @@ interface WelcomeModalProps {
 
 const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }) => {
   const navigate = useNavigate();
+
+  const { modalRef, handleBackdropClick } = useAccessibleModal({
+    isOpen,
+    onClose,
+    closeOnBackdropClick: false, // 환영 모달은 백드롭 클릭으로 닫지 않음
+    closeOnEscape: true,
+  });
 
   if (!isOpen) return null;
 
@@ -29,7 +37,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto" onClick={handleBackdropClick}>
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
         <div className="fixed inset-0 transition-opacity" aria-hidden="true">
@@ -37,30 +45,38 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }
         </div>
 
         {/* Modal panel */}
-        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 animate-bounce-in">
+        <div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="welcome-modal-title"
+          aria-describedby="welcome-modal-description"
+          className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 animate-bounce-in"
+        >
           {/* Close button */}
           <div className="absolute top-4 right-4">
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="환영 모달 닫기"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg"
             >
-              <XMarkIcon className="w-6 h-6" />
+              <XMarkIcon className="w-6 h-6" aria-hidden="true" />
             </button>
           </div>
 
           {/* Content */}
           <div className="text-center">
             {/* Icon */}
-            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 mb-4">
+            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 mb-4" aria-hidden="true">
               <SparklesIcon className="h-8 w-8 text-white" />
             </div>
 
             {/* Title */}
-            <h3 className="text-2xl leading-6 font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <h3 id="welcome-modal-title" className="text-2xl leading-6 font-bold text-gray-900 dark:text-gray-100 mb-2">
               🎉 회원가입 완료!
             </h3>
             
-            <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+            <p id="welcome-modal-description" className="text-lg text-gray-600 dark:text-gray-400 mb-6">
               {userName ? `${userName}님, ` : ''}Resee에 오신 것을 환영합니다!
             </p>
 
