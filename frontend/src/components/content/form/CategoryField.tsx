@@ -3,7 +3,7 @@ import { UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { contentAPI } from '../../../utils/api';
-import { Category, CategoryUsage, CreateContentData } from '../../../types';
+import { Category, CategoryUsage, CreateContentData, ApiError } from '../../../types';
 
 type ContentFormData = CreateContentData;
 
@@ -58,13 +58,14 @@ const CategoryField: React.FC<CategoryFieldProps> = ({ register, setValue, categ
 
       toast.success(`카테고리 "${newCategory.name}"가 생성되어 선택되었습니다!`);
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      const apiError = error as ApiError;
       setIsCreatingCategory(false);
-      if (error.response?.status === 402) {
-        const errorData = error.response.data;
+      if (apiError.response?.status === 402) {
+        const errorData = apiError.response.data;
         toast.error(`${errorData.error}\n\n${errorData.message}`);
       } else {
-        const errorMessage = error.response?.data?.name?.[0] || '카테고리 생성에 실패했습니다.';
+        const errorMessage = (apiError.response?.data as any)?.name?.[0] || '카테고리 생성에 실패했습니다.';
         toast.error(`오류: ${errorMessage}`);
       }
     }

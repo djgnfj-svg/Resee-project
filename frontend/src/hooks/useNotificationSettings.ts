@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { authAPI } from '../utils/api';
+import { ApiError } from '../types';
 
 export interface NotificationSettings {
   email_notifications_enabled: boolean;
@@ -86,8 +87,9 @@ export const useNotificationSettings = () => {
       // Invalidate and refetch notification preferences
       queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
     },
-    onError: (error: any) => {
-      toast.error(`Error: ${error.message}`);
+    onError: (error) => {
+      const apiError = error as ApiError;
+      toast.error(`Error: ${apiError.message}`);
     },
   });
 

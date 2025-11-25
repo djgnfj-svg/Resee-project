@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { authAPI } from '../../utils/api';
+import { ApiError } from '../../types';
 
 interface SecuritySettings {
   current_password: string;
@@ -25,8 +26,10 @@ const SecurityTab: React.FC = () => {
       toast.success('비밀번호가 성공적으로 변경되었습니다!');
       securityForm.reset();
     },
-    onError: (error: any) => {
-      const errorMessage = error.response?.data?.current_password || error.response?.data?.new_password || '비밀번호 변경에 실패했습니다.';
+    onError: (error) => {
+      const apiError = error as ApiError;
+      const errorData = apiError.response?.data as any;
+      const errorMessage = errorData?.current_password || errorData?.new_password || '비밀번호 변경에 실패했습니다.';
       toast.error(errorMessage);
     },
   });

@@ -287,3 +287,23 @@ export interface SubscriptionUpgradeError {
   email_verified?: boolean;
   tier?: string[];
 }
+
+// API Error types
+export interface ApiErrorData {
+  detail?: string;
+  message?: string;
+  error?: string;
+  non_field_errors?: string[];
+  [key: string]: any; // For field-specific errors
+}
+
+export interface ApiError extends Error {
+  response?: {
+    status: number;
+    data: ApiErrorData;
+  };
+  request?: any;
+  config?: any;
+  userMessage?: string;
+  isAuthError?: boolean;
+}

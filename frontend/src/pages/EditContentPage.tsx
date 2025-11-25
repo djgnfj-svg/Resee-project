@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { contentAPI } from '../utils/api';
-import { CreateContentData } from '../types';
+import { CreateContentData, ApiError } from '../types';
 import CreateContentForm from '../components/content/CreateContentForm';
 import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
@@ -32,8 +32,9 @@ const EditContentPage: React.FC = () => {
       await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       navigate('/content');
     },
-    onError: (error: any) => {
-      logger.error('콘텐츠 수정 실패:', error);
+    onError: (error) => {
+      const apiError = error as ApiError;
+      logger.error('콘텐츠 수정 실패:', apiError);
       toast.error('콘텐츠 수정에 실패했습니다.');
     },
   });

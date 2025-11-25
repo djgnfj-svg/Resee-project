@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { ApiError } from '../../types';
 
 declare global {
   interface Window {
@@ -50,8 +51,9 @@ const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
       onSuccess?.();
 
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.error || error.message || 'Google 로그인에 실패했습니다.';
+    } catch (error) {
+      const apiError = error as ApiError;
+      const errorMessage = apiError.response?.data?.error || apiError.message || 'Google 로그인에 실패했습니다.';
       onError?.(errorMessage);
     }
   }, [loginWithGoogle, navigate, redirectTo, onSuccess, onError]);

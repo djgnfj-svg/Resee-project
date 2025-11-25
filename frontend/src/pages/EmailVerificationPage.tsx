@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { verifyEmail, resendVerificationEmail } from '../utils/api';
+import { ApiError } from '../types';
 
 interface VerificationStatus {
   loading: boolean;
@@ -45,11 +46,12 @@ const EmailVerificationPage: React.FC = () => {
         });
       }, 3000);
 
-    } catch (error: any) {
+    } catch (error) {
+      const apiError = error as ApiError;
       setStatus({
         loading: false,
         success: false,
-        error: error.userMessage || '이메일 인증에 실패했습니다.',
+        error: apiError.userMessage || '이메일 인증에 실패했습니다.',
         message: '',
       });
     }
@@ -79,10 +81,11 @@ const EmailVerificationPage: React.FC = () => {
         message: response.message || '인증 이메일이 재발송되었습니다.',
         error: '',
       }));
-    } catch (error: any) {
+    } catch (error) {
+      const apiError = error as ApiError;
       setStatus(prev => ({
         ...prev,
-        error: error.userMessage || '이메일 재발송에 실패했습니다.',
+        error: apiError.userMessage || '이메일 재발송에 실패했습니다.',
       }));
     } finally {
       setResendLoading(false);

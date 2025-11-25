@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { SubscriptionTierInfo, SubscriptionTier } from '../types';
+import { SubscriptionTierInfo, SubscriptionTier, ApiError } from '../types';
 import { toast } from 'react-hot-toast';
 import TierCard from '../components/subscription/TierCard';
 import { subscriptionAPI } from '../utils/api';
@@ -94,8 +94,9 @@ const SubscriptionPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['todayReviews'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    onError: (error: any) => {
-      toast.error(error.message || '구독 변경에 실패했습니다.');
+    onError: (error) => {
+      const apiError = error as ApiError;
+      toast.error(apiError.message || '구독 변경에 실패했습니다.');
     }
   });
 

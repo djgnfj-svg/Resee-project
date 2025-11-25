@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { resendVerificationEmail } from '../utils/api';
+import { ApiError } from '../types';
 
 const VerificationPendingPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -19,8 +20,9 @@ const VerificationPendingPage: React.FC = () => {
       setResendError('');
       const response = await resendVerificationEmail(email);
       setResendMessage(response.message || '인증 이메일이 재발송되었습니다.');
-    } catch (error: any) {
-      setResendError(error.userMessage || '이메일 재발송에 실패했습니다.');
+    } catch (error) {
+      const apiError = error as ApiError;
+      setResendError(apiError.userMessage || '이메일 재발송에 실패했습니다.');
     } finally {
       setResendLoading(false);
     }

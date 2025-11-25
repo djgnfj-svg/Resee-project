@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Fetch user data after successful login
       const userData = await authAPI.getProfile();
       setUser(userData);
-    } catch (error: any) {
+    } catch (error) {
       // Clean up any partial state
       setAccessToken(null);
       setUser(null);
