@@ -23,6 +23,8 @@ const Navigation: React.FC<NavigationProps> = ({ isAuthenticated }) => {
         <Link
           key={item.name}
           to={item.href}
+          aria-current={item.current ? 'page' : undefined}
+          aria-label={`${item.name} 페이지로 이동`}
           className={`inline-flex items-center px-1 pt-1 text-sm font-medium transition-colors duration-200 ${
             item.current
               ? 'border-b-2 border-primary-500 text-gray-900 dark:text-gray-100'

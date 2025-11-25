@@ -26,11 +26,15 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   };
 
   return (
-    <div className={`flex flex-col items-center justify-center ${className}`}>
-      <div className={`animate-spin rounded-full border-2 border-gray-200 dark:border-gray-700 ${sizeClasses[size]} ${colorClasses[color]} border-t-transparent`}></div>
+    <div className={`flex flex-col items-center justify-center ${className}`} role="status" aria-live="polite">
+      <div
+        className={`animate-spin rounded-full border-2 border-gray-200 dark:border-gray-700 ${sizeClasses[size]} ${colorClasses[color]} border-t-transparent`}
+        aria-label="로딩 중"
+      ></div>
       {text && (
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{text}</p>
       )}
+      <span className="sr-only">{text || '로딩 중...'}</span>
     </div>
   );
 };

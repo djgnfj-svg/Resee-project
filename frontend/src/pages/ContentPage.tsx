@@ -9,11 +9,13 @@ import CategoryManager from '../components/content/CategoryManager';
 import ContentFilters from '../components/content/ContentFilters';
 import ContentList from '../components/content/ContentList';
 import { useAuth } from '../contexts/AuthContext';
+import { useConfirm } from '../hooks/useConfirm';
 
 const ContentPage: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { confirm, ConfirmDialogComponent } = useConfirm();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('-created_at');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -64,11 +66,19 @@ const ContentPage: React.FC = () => {
     },
   });
 
-  const handleDelete = useCallback((id: number) => {
-    if (window.confirm('정말로 이 콘텐츠를 삭제하시겠습니까?')) {
+  const handleDelete = useCallback(async (id: number) => {
+    const confirmed = await confirm({
+      title: '콘텐츠 삭제',
+      message: '정말로 이 콘텐츠를 삭제하시겠습니까?\n삭제된 콘텐츠는 복구할 수 없습니다.',
+      confirmText: '삭제',
+      cancelText: '취소',
+      variant: 'danger',
+    });
+
+    if (confirmed) {
       deleteContentMutation.mutate(id);
     }
-  }, [deleteContentMutation]);
+  }, [confirm, deleteContentMutation]);
 
   const handleEdit = useCallback((content: Content) => {
     navigate(`/content/${content.id}/edit`);
@@ -234,6 +244,9 @@ const ContentPage: React.FC = () => {
           onClose={() => setShowCategoryManager(false)}
         />
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialogComponent />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -7,7 +7,10 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, fullWidth = false, className = '', ...props }, ref) => {
+  ({ label, error, fullWidth = false, className = '', required, ...props }, ref) => {
+    const inputId = useId();
+    const errorId = `${inputId}-error`;
+
     const baseStyles = 'px-4 py-3 bg-white dark:bg-gray-800 border text-gray-900 dark:text-white rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
     const borderStyles = error
@@ -21,17 +24,23 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={fullWidth ? 'w-full' : ''}>
         {label && (
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {label}
+            {required && <span className="text-red-500 ml-1" aria-label="필수">*</span>}
           </label>
         )}
         <input
+          id={inputId}
           ref={ref}
+          required={required}
+          aria-invalid={!!error}
+          aria-describedby={error ? errorId : undefined}
+          aria-required={required}
           className={combinedClassName}
           {...props}
         />
         {error && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          <p id={errorId} role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
             {error}
           </p>
         )}

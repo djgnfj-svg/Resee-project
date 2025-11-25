@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { contentAPI } from '../../utils/api';
 import { Category, CreateCategoryData } from '../../types';
 import { extractResults } from '../../utils/helpers';
+import { useConfirm } from '../../hooks/useConfirm';
 
 interface CategoryManagerProps {
   onClose: () => void;
@@ -11,6 +12,7 @@ interface CategoryManagerProps {
 
 const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => {
   const queryClient = useQueryClient();
+  const { confirm, ConfirmDialogComponent } = useConfirm();
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editName, setEditName] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -85,8 +87,16 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => {
     }
   };
 
-  const handleDeleteCategory = (category: Category) => {
-    if (window.confirm(`"${category.name}" 카테고리를 정말 삭제하시겠습니까?\n이 카테고리를 사용하는 콘텐츠들의 카테고리는 해제됩니다.`)) {
+  const handleDeleteCategory = async (category: Category) => {
+    const confirmed = await confirm({
+      title: '카테고리 삭제',
+      message: `"${category.name}" 카테고리를 정말 삭제하시겠습니까?\n\n이 카테고리를 사용하는 콘텐츠들의 카테고리는 해제됩니다.`,
+      confirmText: '삭제',
+      cancelText: '취소',
+      variant: 'danger',
+    });
+
+    if (confirmed) {
       deleteCategoryMutation.mutate(category.id);
     }
   };
@@ -252,6 +262,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ onClose }) => {
           </button>
         </div>
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialogComponent />
     </div>
   );
 };

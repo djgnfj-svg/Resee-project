@@ -5,10 +5,12 @@ import { SubscriptionTierInfo, SubscriptionTier } from '../types';
 import { toast } from 'react-hot-toast';
 import TierCard from '../components/subscription/TierCard';
 import { subscriptionAPI } from '../utils/api';
+import { useConfirm } from '../hooks/useConfirm';
 
 const SubscriptionPage: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
+  const { confirm, ConfirmDialogComponent } = useConfirm();
   const [billingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
   // Fetch current subscription
@@ -97,7 +99,7 @@ const SubscriptionPage: React.FC = () => {
     }
   });
 
-  const handleTierUpgrade = (tier: SubscriptionTier, billingCycle: 'monthly' | 'yearly') => {
+  const handleTierUpgrade = async (tier: SubscriptionTier, billingCycle: 'monthly' | 'yearly') => {
     if (!user?.is_email_verified) {
       toast.error('구독을 변경하려면 먼저 이메일 인증을 완료해주세요.');
       return;
@@ -105,9 +107,15 @@ const SubscriptionPage: React.FC = () => {
 
     // For FREE tier, use password-based flow
     if (tier === 'free') {
-      const confirmMessage = '무료 플랜으로 변경하시겠습니까?';
+      const confirmed = await confirm({
+        title: '무료 플랜 변경',
+        message: '무료 플랜으로 변경하시겠습니까?\n\n변경 후에는 일부 기능이 제한될 수 있습니다.',
+        confirmText: '변경',
+        cancelText: '취소',
+        variant: 'warning',
+      });
 
-      if (window.confirm(confirmMessage)) {
+      if (confirmed) {
         const password = window.prompt('보안을 위해 비밀번호를 입력해주세요:');
 
         if (!password) {
@@ -191,6 +199,9 @@ const SubscriptionPage: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialogComponent />
     </div>
   );
 };
