@@ -210,29 +210,6 @@ feat(exams): Implement async exam question generation with polling
 
 ---
 
-## Testing Requirements
-
-**CRITICAL: Always use MCP Playwright for end-to-end testing**
-
-When testing features:
-- ✅ Use MCP Playwright browser testing (navigate, click, fill, verify)
-- ✅ Check browser console for errors
-- ❌ DO NOT use curl for testing user-facing features
-- ❌ DO NOT test APIs in isolation without UI verification
-
-**Example Flow**:
-```
-1. Start: docker-compose up -d
-2. MCP Playwright:
-   - Navigate to page
-   - Interact with UI
-   - Verify changes visually
-   - Check console errors
-3. Use curl/shell only for backend debugging
-```
-
----
-
 ## Project Structure
 
 ### Backend Critical Files
