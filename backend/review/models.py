@@ -184,17 +184,17 @@ class ReviewHistory(TimestampMixin, UserOwnedMixin):
         ordering = ["-review_date"]
         verbose_name_plural = "Review histories"
         indexes = [
+            # Primary index: user + date filtering (most common query pattern)
             models.Index(
                 fields=["user", "-review_date"], name="review_history_user_date"
             ),
+            # Success rate calculation: user + result filtering
             models.Index(
-                fields=["content", "-review_date"], name="review_history_content_date"
-            ),
-            models.Index(
-                fields=["user", "result", "-review_date"],
+                fields=["user", "result"],
                 name="review_hist_user_result",
             ),
-            models.Index(fields=["-review_date"], name="review_history_date_only"),
+            # Removed: review_history_content_date (content-based queries not used)
+            # Removed: review_history_date_only (redundant with user_date index)
         ]
         constraints = [
             models.CheckConstraint(
