@@ -4,6 +4,7 @@ import ObjectiveReviewCard from './ObjectiveReviewCard';
 import DescriptiveReviewCard from './DescriptiveReviewCard';
 import MultipleChoiceReviewCard from './MultipleChoiceReviewCard';
 import { AIEvaluation } from './types';
+import { logger } from '../../utils/logger';
 
 interface ReviewCardProps {
   review: ReviewSchedule;
@@ -64,7 +65,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   // Mode 2: Descriptive (제목 → 내용 작성)
   if (reviewMode === 'descriptive') {
     if (!onSubmitDescriptive) {
-      console.error('DescriptiveReviewCard requires onSubmitDescriptive');
+      logger.error('DescriptiveReviewCard requires onSubmitDescriptive');
       return null;
     }
 
@@ -84,7 +85,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   // Mode 3: Multiple Choice (내용 → 제목 선택)
   if (reviewMode === 'multiple_choice') {
     if (!onSelectChoice || !onSubmitMultipleChoice) {
-      console.error('MultipleChoiceReviewCard requires onSelectChoice and onSubmitMultipleChoice');
+      logger.error('MultipleChoiceReviewCard requires onSelectChoice and onSubmitMultipleChoice');
       return null;
     }
 
@@ -101,7 +102,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   }
 
   // Unknown mode
-  console.error(`Unknown review mode: ${reviewMode}`);
+  logger.error(`Unknown review mode: ${reviewMode}`);
   return null;
 };
 

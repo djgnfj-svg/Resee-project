@@ -7,6 +7,7 @@ import TestResultsView from '../components/weeklytest/TestResultsView';
 import TestQuestionView from '../components/weeklytest/TestQuestionView';
 import ContentSelectorModal from '../components/weeklytest/ContentSelectorModal';
 import TestListItem from '../components/weeklytest/TestListItem';
+import { logger } from '../utils/logger';
 
 const ExamsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ const ExamsPage: React.FC = () => {
         navigate(`/exams/${testId}`);
       }
     } catch (error: any) {
-      console.error('Failed to start test:', error);
+      logger.error('Failed to start test:', error);
       setError(error.response?.data?.detail || '시험 시작에 실패했습니다.');
     } finally {
       setIsLoading(false);
@@ -58,7 +59,7 @@ const ExamsPage: React.FC = () => {
       const response = await contentAPI.getContents();
       setContents(response.results || []);
     } catch (error) {
-      console.error('Failed to load contents:', error);
+      logger.error('Failed to load contents:', error);
     }
   };
 
@@ -68,7 +69,7 @@ const ExamsPage: React.FC = () => {
       const testList = await weeklyTestAPI.getExams();
       setTests(Array.isArray(testList) ? testList : []);
     } catch (error) {
-      console.error('Failed to load tests:', error);
+      logger.error('Failed to load tests:', error);
       setError('시험 목록을 불러오는데 실패했습니다.');
       setTests([]);
     } finally {
@@ -112,7 +113,7 @@ const ExamsPage: React.FC = () => {
       // 2초 후 메시지 제거
       setTimeout(() => setCreatingTestMessage(null), 2000);
     } catch (error: any) {
-      console.error('Failed to create test:', error);
+      logger.error('Failed to create test:', error);
 
       // 다양한 에러 형식 처리
       let errorMessage = '시험 생성에 실패했습니다.';
@@ -154,13 +155,13 @@ const ExamsPage: React.FC = () => {
         // 1초 대기
         await new Promise(resolve => setTimeout(resolve, pollInterval));
       } catch (error) {
-        console.error('Polling error:', error);
+        logger.error('Polling error:', error);
         // 에러 발생 시 계속 시도
       }
     }
 
     // 타임아웃 - 에러는 발생시키지 않고 그냥 진행
-    console.warn('Test creation polling timeout');
+    logger.warn('Test creation polling timeout');
   };
 
   const handleContentToggle = (contentId: number) => {
@@ -189,7 +190,7 @@ const ExamsPage: React.FC = () => {
       });
       setAnswers(prev => ({ ...prev, [questionId]: answer }));
     } catch (error) {
-      console.error('Failed to submit answer:', error);
+      logger.error('Failed to submit answer:', error);
     }
   };
 
@@ -228,7 +229,7 @@ const ExamsPage: React.FC = () => {
       setTestResults(detailedResults);
       await loadTests();
     } catch (error: any) {
-      console.error('Failed to complete test:', error);
+      logger.error('Failed to complete test:', error);
       setError(error.response?.data?.detail || '시험 완료에 실패했습니다.');
     } finally {
       setIsLoading(false);

@@ -5,6 +5,7 @@ import { contentAPI } from '../utils/api';
 import { CreateContentData, ContentUsage } from '../types';
 import CreateContentForm from '../components/CreateContentForm';
 import { useAuth } from '../contexts/AuthContext';
+import { logger } from '../utils/logger';
 
 const CreateContentPage: React.FC = () => {
   const { user } = useAuth();
@@ -41,7 +42,7 @@ const CreateContentPage: React.FC = () => {
       navigate('/content');
     },
     onError: (error: any) => {
-      console.error('콘텐츠 생성 실패:', error);
+      logger.error('콘텐츠 생성 실패:', error);
       alert('Error: 콘텐츠 생성에 실패했습니다.');
     },
   });

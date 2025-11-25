@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { User, LoginData, RegisterData, RegisterResponse } from '../types';
 import { authAPI } from '../utils/api';
 import { setAccessToken } from '../utils/api/index';
+import { logger } from '../utils/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -119,7 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await authAPI.logout();
     } catch (error) {
       // Continue logout even if API call fails
-      console.error('Logout API call failed:', error);
+      logger.error('Logout API call failed:', error);
     }
 
     // Clear all React Query cache first to prevent data leakage between users
