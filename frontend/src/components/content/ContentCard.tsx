@@ -2,6 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Content } from '../../types';
+import { formatRelativeDate } from '../../utils/helpers';
 
 interface ContentCardProps {
   content: Content;
@@ -29,32 +30,6 @@ const ContentCard: React.FC<ContentCardProps> = ({
     return firstLine.substring(0, maxLength) + '...';
   };
 
-  const formatDate = (dateString: string, isFutureDate: boolean = false) => {
-    const date = new Date(dateString);
-    const now = new Date();
-
-    // 시간을 무시하고 날짜만 비교 (자정 기준)
-    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const diffDays = Math.round((dateOnly.getTime() - nowOnly.getTime()) / (1000 * 60 * 60 * 24));
-
-    // 미래 날짜인 경우 (다음 복습 날짜)
-    if (isFutureDate) {
-      if (diffDays === 0) return '오늘';
-      if (diffDays === 1) return '내일';
-      if (diffDays > 0) return `D-${diffDays}`;
-      // 과거 날짜인 경우 (복습 기한 지남)
-      if (diffDays === -1) return '어제';
-      if (diffDays < 0) return `D+${Math.abs(diffDays)}`;
-    }
-
-    // 과거 날짜인 경우 (생성 날짜)
-    const pastDiffDays = Math.round((nowOnly.getTime() - dateOnly.getTime()) / (1000 * 60 * 60 * 24));
-    if (pastDiffDays === 0) return '오늘';
-    if (pastDiffDays === 1) return '어제';
-    if (pastDiffDays < 7) return `${pastDiffDays}일 전`;
-    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' });
-  };
 
   const getModeInfo = () => {
     if (content.review_mode === 'objective') {
@@ -140,7 +115,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                {formatDate(content.created_at)}
+                {formatRelativeDate(content.created_at)}
               </span>
             </div>
           </div>
@@ -193,7 +168,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="font-medium text-indigo-700 dark:text-indigo-300">
-                {content.next_review_date ? `다음 복습: ${formatDate(content.next_review_date, true)}` : '복습 대기 중'}
+                {content.next_review_date ? `다음 복습: ${formatRelativeDate(content.next_review_date, true)}` : '복습 대기 중'}
               </span>
             </div>
           </div>

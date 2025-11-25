@@ -108,4 +108,4 @@ const TierCard: React.FC<TierCardProps> = ({
   );
 };
 
-export default TierCard;
+export default React.memo(TierCard);

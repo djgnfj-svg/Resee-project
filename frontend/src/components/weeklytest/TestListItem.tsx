@@ -1,5 +1,6 @@
 import React from 'react';
 import { WeeklyTest } from '../../utils/api/exams';
+import { formatAbsoluteDate } from '../../utils/helpers';
 
 interface TestListItemProps {
   test: WeeklyTest;
@@ -76,12 +77,7 @@ const TestListItem: React.FC<TestListItemProps> = ({
       label = '생성일';
     }
 
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-
-    return `${label}: ${year}.${month}.${day}`;
+    return `${label}: ${formatAbsoluteDate(dateString)}`;
   };
 
   return (

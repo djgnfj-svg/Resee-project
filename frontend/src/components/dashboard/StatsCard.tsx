@@ -39,4 +39,4 @@ const StatsCard: React.FC<StatsCardProps> = ({ stat, index }) => {
   );
 };
 
-export default StatsCard;
+export default React.memo(StatsCard);

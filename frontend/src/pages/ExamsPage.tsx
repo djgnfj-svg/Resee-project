@@ -1,267 +1,68 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { weeklyTestAPI, WeeklyTest } from '../utils/api/exams';
-import { contentAPI } from '../utils/api/content';
-import { Content } from '../types';
+import React from 'react';
+import { useParams } from 'react-router-dom';
 import TestResultsView from '../components/weeklytest/TestResultsView';
 import TestQuestionView from '../components/weeklytest/TestQuestionView';
 import ContentSelectorModal from '../components/weeklytest/ContentSelectorModal';
 import TestListItem from '../components/weeklytest/TestListItem';
-import { logger } from '../utils/logger';
+import { useExamList } from '../hooks/useExamList';
+import { useExamCreation } from '../hooks/useExamCreation';
+import { useExamSession } from '../hooks/useExamSession';
 
 const ExamsPage: React.FC = () => {
-  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [tests, setTests] = useState<WeeklyTest[]>([]);
-  const [currentTest, setCurrentTest] = useState<WeeklyTest | null>(null);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [testResults, setTestResults] = useState<any>(null);
-  const [error, setError] = useState<string>('');
-  const [showContentSelector, setShowContentSelector] = useState(false);
-  const [contents, setContents] = useState<Content[]>([]);
-  const [selectedContentIds, setSelectedContentIds] = useState<number[]>([]);
-  const [creatingTestMessage, setCreatingTestMessage] = useState<string | null>(null);
 
-  const startTest = useCallback(async (testId: number) => {
-    try {
-      setIsLoading(true);
-      const response = await weeklyTestAPI.startTest(testId);
-      setCurrentTest(response.test);
-      setCurrentQuestionIndex(0);
-      setAnswers({});
-      setError('');
-      // URL을 /exams/:id로 변경
-      if (!id) {
-        navigate(`/exams/${testId}`);
-      }
-    } catch (error: any) {
-      logger.error('Failed to start test:', error);
-      setError(error.response?.data?.detail || '시험 시작에 실패했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [navigate, id]);
+  // 시험 목록 관리
+  const { tests, isLoading: listLoading, error: listError, loadTests } = useExamList();
 
-  useEffect(() => {
-    loadTests();
-    loadContents();
+  // 시험 생성 관리
+  const {
+    showContentSelector,
+    contents,
+    selectedContentIds,
+    creatingTestMessage,
+    isLoading: creationLoading,
+    error: creationError,
+    openContentSelector,
+    handleContentToggle,
+    createNewTest,
+    closeContentSelector,
+  } = useExamCreation(loadTests);
 
-    // URL에 시험 ID가 있으면 해당 시험 로드
-    if (id) {
-      startTest(parseInt(id));
-    }
-  }, [id, startTest]);
+  // 시험 응시 관리
+  const {
+    currentTest,
+    currentQuestionIndex,
+    answers,
+    testResults,
+    isLoading: sessionLoading,
+    error: sessionError,
+    startTest,
+    submitAnswer,
+    nextQuestion,
+    prevQuestion,
+    completeTest,
+    resetView,
+    viewTestResults,
+  } = useExamSession(id, loadTests);
 
-  const loadContents = async () => {
-    try {
-      const response = await contentAPI.getContents();
-      setContents(response.results || []);
-    } catch (error) {
-      logger.error('Failed to load contents:', error);
-    }
-  };
+  // 통합 상태
+  const isLoading = listLoading || creationLoading || sessionLoading;
+  const error = listError || creationError || sessionError;
 
-  const loadTests = async () => {
-    try {
-      setIsLoading(true);
-      const testList = await weeklyTestAPI.getExams();
-      setTests(Array.isArray(testList) ? testList : []);
-    } catch (error) {
-      logger.error('Failed to load tests:', error);
-      setError('시험 목록을 불러오는데 실패했습니다.');
-      setTests([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const openContentSelector = () => {
-    setShowContentSelector(true);
-    setSelectedContentIds([]);
-    setError('');
-  };
-
-  const createNewTest = async () => {
-    if (selectedContentIds.length < 7 || selectedContentIds.length > 10) {
-      setError('AI 검증된 콘텐츠를 7~10개 선택해주세요.');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError('');
-      setCreatingTestMessage('시험을 생성하고 있습니다...');
-
-      const testData = { content_ids: selectedContentIds };
-
-      // 시험 생성 (preparing 상태로 생성됨)
-      const createdTest = await weeklyTestAPI.createExam(testData);
-
-      setShowContentSelector(false);
-      setSelectedContentIds([]);
-
-      // 문제 생성 완료까지 폴링
-      setCreatingTestMessage('AI가 문제를 생성하고 있습니다... (최대 1분 소요)');
-      await pollTestStatus(createdTest.id);
-
-      // 완료 후 목록 새로고침
-      setCreatingTestMessage('시험 생성이 완료되었습니다!');
-      await loadTests();
-
-      // 2초 후 메시지 제거
-      setTimeout(() => setCreatingTestMessage(null), 2000);
-    } catch (error: any) {
-      logger.error('Failed to create test:', error);
-
-      // 다양한 에러 형식 처리
-      let errorMessage = '시험 생성에 실패했습니다.';
-
-      if (error.response?.data) {
-        const data = error.response.data;
-        // ValidationError는 non_field_errors, detail, 또는 특정 필드로 올 수 있음
-        if (data.non_field_errors && Array.isArray(data.non_field_errors)) {
-          errorMessage = data.non_field_errors[0];
-        } else if (data.detail) {
-          errorMessage = data.detail;
-        } else if (data.content_ids && Array.isArray(data.content_ids)) {
-          errorMessage = data.content_ids[0];
-        } else if (typeof data === 'string') {
-          errorMessage = data;
-        }
-      }
-
-      setError(errorMessage);
-      setCreatingTestMessage(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const pollTestStatus = async (testId: number) => {
-    const maxAttempts = 60; // 최대 60초 대기
-    const pollInterval = 1000; // 1초마다 확인
-
-    for (let i = 0; i < maxAttempts; i++) {
-      try {
-        const test = await weeklyTestAPI.getExam(testId);
-
-        // preparing 상태가 아니면 완료
-        if (test.status !== 'preparing') {
-          return;
-        }
-
-        // 1초 대기
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-      } catch (error) {
-        logger.error('Polling error:', error);
-        // 에러 발생 시 계속 시도
-      }
-    }
-
-    // 타임아웃 - 에러는 발생시키지 않고 그냥 진행
-    logger.warn('Test creation polling timeout');
-  };
-
-  const handleContentToggle = (contentId: number) => {
-    setSelectedContentIds(prev => {
-      if (prev.includes(contentId)) {
-        return prev.filter(id => id !== contentId);
-      } else {
-        // 최대 10개까지만 선택 가능
-        if (prev.length >= 10) {
-          setError('최대 10개까지만 선택할 수 있습니다.');
-          return prev;
-        }
-        setError('');
-        return [...prev, contentId];
-      }
-    });
-  };
-
-  const submitAnswer = async (questionId: number, answer: string) => {
-    if (!currentTest) return;
-
-    try {
-      await weeklyTestAPI.submitAnswer(currentTest.id, {
-        question_id: questionId,
-        user_answer: answer
-      });
-      setAnswers(prev => ({ ...prev, [questionId]: answer }));
-    } catch (error) {
-      logger.error('Failed to submit answer:', error);
-    }
-  };
-
-  const nextQuestion = () => {
-    if (currentTest && currentQuestionIndex < currentTest.questions!.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-    }
-  };
-
-  const prevQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
-    }
-  };
-
-  const completeTest = async () => {
-    if (!currentTest) return;
-
-    const totalQuestions = currentTest.questions?.length || 0;
-    const answeredCount = Object.keys(answers).length;
-
-    if (answeredCount < totalQuestions) {
-      const unansweredCount = totalQuestions - answeredCount;
-      setError(
-        `${unansweredCount}개의 문제를 아직 답하지 않았습니다. ` +
-        `모든 문제에 답해주세요. (${answeredCount}/${totalQuestions} 완료)`
-      );
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError('');
-      await weeklyTestAPI.completeTest(currentTest.id);
-      const detailedResults = await weeklyTestAPI.getTestResults(currentTest.id);
-      setTestResults(detailedResults);
-      await loadTests();
-    } catch (error: any) {
-      logger.error('Failed to complete test:', error);
-      setError(error.response?.data?.detail || '시험 완료에 실패했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resetView = () => {
-    setCurrentTest(null);
-    setCurrentQuestionIndex(0);
-    setAnswers({});
-    setTestResults(null);
-    setError('');
-    navigate('/exams');
-  };
-
-  const viewTestResults = async (testId: number) => {
-    const results = await weeklyTestAPI.getTestResults(testId);
-    setTestResults(results);
-  };
-
+  // 결과 보기
   if (testResults) {
     return <TestResultsView testResults={testResults} onReset={resetView} />;
   }
 
+  // 시험 진행 중
   if (currentTest && currentTest.questions && currentTest.questions.length > 0) {
     return (
       <TestQuestionView
         test={currentTest}
         currentQuestionIndex={currentQuestionIndex}
         answers={answers}
-        error={error}
-        isLoading={isLoading}
+        error={sessionError}
+        isLoading={sessionLoading}
         onAnswerSelect={submitAnswer}
         onPrevious={prevQuestion}
         onNext={nextQuestion}
@@ -270,6 +71,7 @@ const ExamsPage: React.FC = () => {
     );
   }
 
+  // 시험 목록 화면
   return (
     <div className="min-h-screen">
       <div>
@@ -293,6 +95,7 @@ const ExamsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* 시험 생성 상태 메시지 */}
         {creatingTestMessage && (
           <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-lg shadow-sm">
             <div className="flex items-start gap-3">
@@ -305,6 +108,7 @@ const ExamsPage: React.FC = () => {
           </div>
         )}
 
+        {/* 에러 메시지 */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg shadow-sm">
             <div className="flex items-start gap-3">
@@ -316,17 +120,19 @@ const ExamsPage: React.FC = () => {
           </div>
         )}
 
+        {/* 콘텐츠 선택 모달 */}
         <ContentSelectorModal
           show={showContentSelector}
           contents={contents}
           selectedContentIds={selectedContentIds}
-          error={error}
-          isLoading={isLoading}
+          error={creationError}
+          isLoading={creationLoading}
           onToggleContent={handleContentToggle}
           onCreate={createNewTest}
-          onClose={() => setShowContentSelector(false)}
+          onClose={closeContentSelector}
         />
 
+        {/* 시험 목록 */}
         <div className="space-y-4">
           {isLoading && (!tests || tests.length === 0) ? (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12">
@@ -366,7 +172,7 @@ const ExamsPage: React.FC = () => {
               <TestListItem
                 key={test.id}
                 test={test}
-                isLoading={isLoading}
+                isLoading={sessionLoading}
                 onStart={startTest}
                 onViewResults={viewTestResults}
               />
