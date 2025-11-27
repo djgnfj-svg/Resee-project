@@ -27,6 +27,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const MaintenancePage = lazy(() => import('./pages/MaintenancePage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,14 @@ const queryClient = new QueryClient({
 
 // AppContent component that uses Auth context
 const AppContent: React.FC = () => {
+  // 🚧 점검 모드 - 2025년 11월 29일까지
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <MaintenancePage />
+    </Suspense>
+  );
+
+  /* 점검 완료 후 아래 주석 해제
   const { isLoading } = useAuth();
 
   // Show loading spinner during initial auth check
@@ -153,13 +162,14 @@ const AppContent: React.FC = () => {
                 </ProtectedRoute>
               }
             />
-            {/* 404 페이지 - 모든 라우트의 맨 마지막에 위치 */}
+            {/* 404 페이지 - 모든 라우트의 맨 마지막에 위치 *}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
       </Layout>
     </Router>
   );
+  */
 };
 
 function App() {
