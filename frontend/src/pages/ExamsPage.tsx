@@ -8,6 +8,9 @@ import { useExamList } from '../hooks/useExamList';
 import { useExamCreation } from '../hooks/useExamCreation';
 import { useExamSession } from '../hooks/useExamSession';
 
+// 🚧 점검 모드 - 2025년 11월 29일까지
+const MAINTENANCE_MODE = true;
+
 const ExamsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
@@ -52,6 +55,96 @@ const ExamsPage: React.FC = () => {
   // 통합 상태
   const isLoading = listLoading || creationLoading || sessionLoading;
   const error = listError || creationError || sessionError;
+
+  // 🚧 점검 모드일 때 점검 페이지 표시
+  if (MAINTENANCE_MODE) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-6">
+            {/* Icon */}
+            <div className="mx-auto w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+              <svg
+                className="w-10 h-10 text-yellow-600 dark:text-yellow-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              주간 시험 기능 점검 중
+            </h1>
+
+            {/* Description */}
+            <p className="text-gray-600 dark:text-gray-300">
+              더 나은 시험 기능을 위해 시스템 점검을 진행하고 있습니다.
+              <br />
+              다른 기능들은 정상적으로 이용 가능합니다.
+            </p>
+
+            {/* Maintenance Period */}
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                점검 예정 완료 시간
+              </p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                2025년 11월 29일
+              </p>
+            </div>
+
+            {/* Test Account Info */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-left">
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                테스트 계정 안내
+              </p>
+              <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+                <div>
+                  <span className="font-medium">PRO 계정:</span>
+                  <br />
+                  <code className="bg-blue-100 dark:bg-blue-800/50 px-1 rounded">interview@resee.com</code>
+                  <span className="mx-1">/</span>
+                  <code className="bg-blue-100 dark:bg-blue-800/50 px-1 rounded">interview2025!</code>
+                </div>
+                <div>
+                  <span className="font-medium">BASIC 계정:</span>
+                  <br />
+                  <code className="bg-blue-100 dark:bg-blue-800/50 px-1 rounded">admin@resee.com</code>
+                  <span className="mx-1">/</span>
+                  <code className="bg-blue-100 dark:bg-blue-800/50 px-1 rounded">admin123!</code>
+                </div>
+              </div>
+            </div>
+
+            {/* Back Button */}
+            <a
+              href="/dashboard"
+              className="inline-flex items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              대시보드로 돌아가기
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // 결과 보기
   if (testResults) {
