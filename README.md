@@ -1,6 +1,6 @@
 # Resee - 과학적 복습 시스템
 
-**배포 URL**: [reseeall.com](https://reseeall.com) </br>
+**배포 URL**: 베타테스트 해봤는데 사용을 안할꺼 같아서 패기하고 다음 프로젝트를 진행 </br>
 **개발 기간**: 2025.09 - 2025.11 (약 2개월) </br>
 **개발 인원**: 1인
 <br/>
@@ -33,8 +33,7 @@ AI가 학습 콘텐츠를 검증하고 복습 답변을 평가하여 효과적�
 ## ✨ 주요 기능
 
 ### 1. 📚 에빙하우스 기반 복습 시스템 
-
-![Review System](./docs/images/review-system.gif)
+![Exam Solve](./docs/images/exam-solve.gif)
 
 <br/>
 
@@ -44,7 +43,7 @@ AI가 학습 콘텐츠를 검증하고 복습 답변을 평가하여 효과적�
 ![Exam Create](./docs/images/exam-create.gif)
 
 **시험 풀기** </br>
-![Exam Solve](./docs/images/exam-solve.gif)
+![Review System](./docs/images/review-system.gif)
 
 <br/>
 
@@ -89,7 +88,6 @@ workflow.add_conditional_edges(
 ```
 
 **결과**
-- 문제 생성 품질 31% 개선 (오답 그럴듯함 점수 70+ 달성)
 - 자동 품질 검증으로 낮은 품질 문제 사전 차단
 - LangGraph 반복 개선 로직으로 안정적인 품질 유지
 
